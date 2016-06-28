@@ -35,84 +35,75 @@
 * DAMAGE.
 *
 *****************************************************************************/
-#ifndef IMG_METADATA_H
-#define IMG_METADATA_H
-#include <stdio.h>
-#include <string>
-#include <iostream>
+
+// ************************************************************************* //
+//                             avtVolumeFilter.h                             //
+// ************************************************************************* //
+
+#ifndef AVT_VOLUME_FILTER_H
+#define AVT_VOLUME_FILTER_H
+
+#include <avtDatasetToDatasetFilter.h>
+
+#include <VolumeAttributes.h>
+
+#include <avtImage.h>
+#include <vtkMatrix4x4.h>
+#include <vtkCamera.h>
+
+class     WindowAttributes;
+
 
 // ****************************************************************************
-//  Struct:  imgMetaData
+//  Class: avtVolumeFilter
 //
 //  Purpose:
-//    Holds information about patches but not the image 
+//      Decides if a volume renderer should output a software rendered image
+//      or if it should output a resampled volume plot.
 //
-//  Programmer:  
-//  Creation:   
+//  Programmer: Hank Childs
+//  Creation:   November 20, 2001
+//
+//  Modifications:
+//
+//    Hank Childs, Wed Nov 24 16:21:39 PST 2004
+//    Changed inheritance hierarchy.  This filter now simply does software
+//    volume rendering and is used by the volume plot.  It is the interface
+//    from the volume plot to the ray tracer.  Also removed many support 
+//    methods that are no longer necessary since this filter doesn't switch
+//    between multiple modes.
+//
+//    Jeremy Meredith, Thu Feb 15 11:44:28 EST 2007
+//    Added support for rectilinear grids with an inherent transform.
 //
 // ****************************************************************************
-struct imgMetaData
+
+class avtVolumeFilter : public avtDatasetToDatasetFilter
 {
-    int procId;       // processor that produced the patch
-    int patchNumber;  // id of the patch on that processor - with procId, acts as a key
+  public:
+                             avtVolumeFilter();
+    virtual                 ~avtVolumeFilter();
 
-    int destProcId;   // destination proc where this patch gets composited
+    void                     SetAttributes(const VolumeAttributes &);
+    virtual const char      *GetType(void) { return "avtVolumeFilter"; };
+    virtual const char      *GetDescription(void)
+                                  { return "Volume rendering"; };
 
-    int inUse;   // whether the patch is composed locally or not
-    int dims[2];      // height, width
-    int screen_ll[2]; // position in the final image
-    int screen_ur[2];
+    avtImage_p               RenderImage(avtImage_p, const WindowAttributes &);
+    avtImage_p               RenderImageRaycastingSLIVR(avtImage_p opaque_image, const WindowAttributes &);
+    int                      GetNumberOfStages(const WindowAttributes &);
 
-    float avg_z;        // camera space z = depth of the patch
-    float eye_z;        // camera space z
-    float clip_z;       // clip space z
+  protected:
+    VolumeAttributes         atts;
+    char                    *primaryVariable;
+
+    virtual void             Execute(void);
+    virtual avtContract_p    ModifyContract(avtContract_p);
+    virtual void             VerifyInput(void);
+    virtual bool             FilterUnderstandsTransformedRectMesh();
 };
 
-
-// ****************************************************************************
-//  Struct:  imgData
-//
-//  Purpose:
-//    Holds the image data generated
-//
-//  Programmer:  
-//  Creation:    
-//
-// ****************************************************************************
-struct imgData
-{
-    int procId;         // processor that produced the patch
-    int patchNumber;    // id of the patch on that processor  - with procId, acts as a key
-
-    float *imagePatch;  // the image data - RGBA
-    float *imageDepth;  // depth
-
-    bool operator==(const imgData &a)
-        return (patchNumber == a.patchNumber);
-};
-
-
-// ****************************************************************************
-//  Struct:  iotaMeta
-//
-//  Purpose:
-//    Holds the image data generated
-//
-//  Programmer:  
-//  Creation:    
-//
-// ****************************************************************************
-struct iotaMeta
-{
-    int procId;  
-    int patchNumber; 
-  
-    int dims[2];      // height, width
-    int screen_ll[2]; // position in the final image
-    float avg_z;   
-
-    bool operator==(const iotaMeta &a)
-        return (patchNumber == a.patchNumber) && (procId == a.procId);
-};
 
 #endif
+
+

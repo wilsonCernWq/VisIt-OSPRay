@@ -1051,17 +1051,21 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             imgMetaData tmpImageMetaPatch;
             tmpImageMetaPatch = initMetaPatch(patchCount);
 
-            float tempClipDepth;
-            massVoxelExtractor->getImageDimensions(tmpImageMetaPatch.inUse, tmpImageMetaPatch.dims, tmpImageMetaPatch.screen_ll, tmpImageMetaPatch.screen_ur, tmpImageMetaPatch.avg_z, tempClipDepth);
-            if (tmpImageMetaPatch.inUse == 1){
+            massVoxelExtractor->getImageDimensions(tmpImageMetaPatch.inUse, tmpImageMetaPatch.dims, tmpImageMetaPatch.screen_ll, tmpImageMetaPatch.screen_ur, tmpImageMetaPatch.eye_z, tmpImageMetaPatch.clip_z);
+            if (tmpImageMetaPatch.inUse == 1)
+            {
+                tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
                 tmpImageMetaPatch.destProcId = tmpImageMetaPatch.procId;
                 imageMetaPatchVector.push_back(tmpImageMetaPatch);
                 
                 imgData tmpImageDataHash;
-                tmpImageDataHash.procId = tmpImageMetaPatch.procId;           tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;         tmpImageDataHash.imagePatch = NULL;
-                tmpImageDataHash.imagePatch = new float[(tmpImageMetaPatch.dims[0]*4)*tmpImageMetaPatch.dims[1]];
+                tmpImageDataHash.procId = tmpImageMetaPatch.procId;           
+                tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;         
+                tmpImageDataHash.imagePatch = new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] * 4 ];
+                tmpImageDataHash.imageDepth = new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] ];
 
                 massVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
+                massVoxelExtractor->getImageDepth(tmpImageDataHash.imageDepth);
                 imgDataHashMap.insert( std::pair<int, imgData> (tmpImageDataHash.patchNumber , tmpImageDataHash) );
 
                 patchCount++;

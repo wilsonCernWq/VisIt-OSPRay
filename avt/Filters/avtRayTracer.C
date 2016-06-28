@@ -465,7 +465,7 @@ avtRayTracer::Execute(void)
         trans.SetPassThruRectilinearGrids(true);
         extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
     }
-    int  timingVolToImg = 0;
+    int timingVolToImg = 0;
     if (rayCastingSLIVR == true && parallelOn)
         timingVolToImg = visitTimer->StartTimer();
 
@@ -483,8 +483,8 @@ avtRayTracer::Execute(void)
         //
         // Single Processor
         //
-        if (parallelOn == false){
-            
+        if (parallelOn == false)
+        {
             //
             // Get the metadata
             //
@@ -512,22 +512,25 @@ avtRayTracer::Execute(void)
             // Creates a buffer to store the composited image
             float *composedData = new float[screen[0] * screen[1] * 4];
 
-            for (int i=0; i<(screen[0] * screen[1] * 4); i+=4){
+            for (int i=0; i<(screen[0] * screen[1] * 4); i+=4)
+            {
                 composedData[i+0] = background[0]/255.0;   
                 composedData[i+1] = background[1]/255.0; 
                 composedData[i+2] = background[2]/255.0; 
                 composedData[i+3] = 1.0;
             }
 
-            for (int i=0; i<numPatches; i++){
+            for (int i=0; i<numPatches; i++)
+            {
                 imgMetaData currentPatch = allImgMetaData[i];
 
                 imgData tempImgData;
                 tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
                 extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
 
-                for (int j=0; j<currentPatch.dims[1]; j++){
-                    for (int k=0; k<currentPatch.dims[0]; k++){
+                for (int j=0; j<currentPatch.dims[1]; j++)
+                    for (int k=0; k<currentPatch.dims[0]; k++)
+                    {
 
                         int startingX = currentPatch.screen_ll[0];
                         int startingY = currentPatch.screen_ll[1]; 
@@ -547,7 +550,7 @@ avtRayTracer::Execute(void)
                         composedData[bufferIndex+2] = imgComm.clamp((composedData[bufferIndex+2] * (1.0 - tempImgData.imagePatch[subImgIndex+3])) + tempImgData.imagePatch[subImgIndex+2]);
                         composedData[bufferIndex+3] = imgComm.clamp((composedData[bufferIndex+3] * (1.0 - tempImgData.imagePatch[subImgIndex+3])) + tempImgData.imagePatch[subImgIndex+3]);
                     }
-                }
+                
 
                 if (tempImgData.imagePatch != NULL)
                     delete []tempImgData.imagePatch;
@@ -577,7 +580,8 @@ avtRayTracer::Execute(void)
 
             // Get the composited image
             for (int i=0; i< screen[1]; i++)
-                for (int j=0; j<screen[0]; j++){
+                for (int j=0; j<screen[0]; j++)
+                {
                     int bufferIndex = (screen[0]*4*i) + (j*4);
                     int wholeImgIndex = (screen[0]*3*i) + (j*3);
 
@@ -599,9 +603,6 @@ avtRayTracer::Execute(void)
         //
         // Parallel
         //
-
-        //
-        // -- -- -- Timing -- 
 
         // imgComm.syncAllProcs();     // only required for time testing purposes
 

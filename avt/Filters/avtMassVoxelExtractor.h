@@ -126,6 +126,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     // Getting the image
     void             getImageDimensions(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth);
     void             getComputedImage(float *image);
+    void             getImageDepth(float *imageDepth);
     void             setProcIdPatchID(int _proc, int _patch){ proc = _proc; patch = _patch; }
 
   protected:

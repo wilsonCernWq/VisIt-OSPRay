@@ -156,6 +156,7 @@ avtMassVoxelExtractor::avtMassVoxelExtractor(int w, int h, int d,
     eyeSpaceDepth = -1; 
     clipSpaceDepth = -1;
     imgArray = NULL;                            // the image data
+    imgDepths = NULL;                           // the depth data
     countt = 0;
 }
 
@@ -728,8 +729,11 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
         {
             double origin[4];       // starting point where we start sampling
             double terminus[4];     // ending point where we stop sampling
-            GetSegment(i, j, origin, terminus);             // find the starting point & ending point of the ray
-            SampleAlongSegment(origin, terminus, i, j);     // Go get the segments along this ray and store them in 
+            
+            GetSegment(i, j, origin, terminus);                     // find the starting point & ending point of the ray
+            SampleAlongSegment(origin, terminus, i, j);             // Go get the segments along this ray and store them in 
+
+            imgDepths[(j-yMin)*imgWidth + (i-xMin)] = _clipSpaceZ;  // TODO: move to first intersection
         }
 
 
@@ -739,7 +743,11 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
         if (imgArray != NULL)
             delete []imgArray;
 
+        if (imgDepths != NULL)
+            delete []imgDepths;
+
         imgArray = NULL;
+        imgDepths = NULL;
     }
 }
 
@@ -788,12 +796,37 @@ avtMassVoxelExtractor::getImageDimensions(int &inUse, int dims[2], int screen_ll
 void
 avtMassVoxelExtractor::getComputedImage(float *image)
 {
-    memcpy(image,imgArray, imgDims[0]*4*imgDims[1]*sizeof(float));
+    memcpy(image, imgArray, imgDims[0]*4*imgDims[1]*sizeof(float));
    
     if (imgArray != NULL)
         delete []imgArray;
     imgArray = NULL;
 }
+
+
+// ****************************************************************************
+//  Method: avtMassVoxelExtractor::getImageDepth
+//
+//  Purpose:
+//      allocates space to the pointer address and copy the image generated to it
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+void
+avtMassVoxelExtractor::getImageDepth(float *imageDepth)
+{
+    memcpy(imageDepth, imgDepths, imgDims[0]*imgDims[1]*sizeof(float));
+   
+    if (imgDepths != NULL)
+        delete []imgDepths;
+    imgDepths = NULL;
+}
+
 
 
 // ****************************************************************************
@@ -2045,7 +2078,8 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
     //
     // Make sure we get runs at the end.
     //
-    if (rayCastingSLIVR){
+    if (rayCastingSLIVR)
+    {
         imgArray[(h-yMin)*(imgWidth*4) + (w-xMin)*4 + 0] = std::min(std::max(dest_rgb[0],0.0),1.0);
         imgArray[(h-yMin)*(imgWidth*4) + (w-xMin)*4 + 1] = std::min(std::max(dest_rgb[1],0.0),1.0);
         imgArray[(h-yMin)*(imgWidth*4) + (w-xMin)*4 + 2] = std::min(std::max(dest_rgb[2],0.0),1.0);
