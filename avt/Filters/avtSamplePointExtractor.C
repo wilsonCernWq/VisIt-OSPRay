@@ -1045,7 +1045,9 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         massVoxelExtractor->SetViewUp(view_up);
         massVoxelExtractor->Extract((vtkRectilinearGrid *) ds,
                                     varnames, varsizes);
-        if (rayCastingSLIVR == true){
+        
+        if (rayCastingSLIVR == true)
+        {
             imgMetaData tmpImageMetaPatch;
             tmpImageMetaPatch = initMetaPatch(patchCount);
 
