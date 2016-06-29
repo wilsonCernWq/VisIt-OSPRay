@@ -291,7 +291,4 @@ class AVTFILTERS_API avtSamplePointExtractor
     void                      GetLoadingInfoForArrays(vtkDataSet *, LoadingInfo &);
 };
 
-
 #endif
-
-

@@ -87,8 +87,9 @@ struct imgData
     float *imagePatch;  // the image data - RGBA
     float *imageDepth;  // depth
 
-    bool operator==(const imgData &a)
+    bool operator==(const imgData &a){
         return (patchNumber == a.patchNumber);
+    }
 };
 
 
@@ -110,9 +111,12 @@ struct iotaMeta
     int dims[2];      // height, width
     int screen_ll[2]; // position in the final image
     float avg_z;   
+    float eye_z;   // same as avg_z
+    float clip_z;   
 
-    bool operator==(const iotaMeta &a)
+    bool operator==(const iotaMeta &a){
         return (patchNumber == a.patchNumber) && (procId == a.procId);
+    }
 };
 
 #endif

@@ -208,7 +208,10 @@ avtMassVoxelExtractor::~avtMassVoxelExtractor()
         delete [] divisors_Z;
     if (imgArray != NULL)
         delete []imgArray;
+    if (imgDepths != NULL)
+        delete []imgDepths;
 
+    imgDepths = NULL;
     imgArray = NULL;
 }
 

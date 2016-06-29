@@ -114,8 +114,8 @@ class avtImgCommunicator
     int     num_procs;
     int     my_id;
 
-    imgMetaData setImg(int _inUse, int _procId, int _patchNumber, float dim_x, float dim_y, float screen_ll_x, float screen_ll_y, float screen_ur_x, float screen_ur_y, float _avg_z);
-    iotaMeta setIota(int _procId, int _patchNumber, int dim_x, int dim_y, int screen_ll_x, int screen_ll_y, float _avg_z);
+    imgMetaData setImg(int _inUse, int _procId, int _patchNumber, float dim_x, float dim_y, float screen_ll_x, float screen_ll_y, float screen_ur_x, float screen_ur_y, float _avg_z, float _clip_z);
+    iotaMeta setIota(int _procId, int _patchNumber, int dim_x, int dim_y, int screen_ll_x, int screen_ll_y, float _avg_z, float _clip_z);
     int getDataPatchID(int procID, int patchID);
    
 
@@ -125,7 +125,7 @@ public:
 
   virtual const char       *GetType(void)
                                          { return "avtImgCommunicator"; };
-    virtual const char       *GetDescription(void)
+  virtual const char       *GetDescription(void)
                                          { return "Doing compositing for ray casting SLIVR";};
 
   void init();

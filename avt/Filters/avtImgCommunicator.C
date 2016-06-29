@@ -319,59 +319,67 @@ void avtImgCommunicator::gatherNumPatches(int numPatches){
 //  Modifications:
 //
 // ****************************************************************************
-void avtImgCommunicator::gatherIotaMetaData(int arraySize, float *allIotaMetadata){
-
+void avtImgCommunicator::gatherIotaMetaData(int arraySize, float *allIotaMetadata)
+{
   #ifdef PARALLEL
     int *recvSizePerProc = NULL;
     float *tempRecvBuffer = NULL;
     int *offsetBuffer = NULL;
 
-    if (my_id == 0){
-      tempRecvBuffer = new float[totalPatches*7]; // x7: procId, patchNumber, dims[0], dims[1], screen_ll[0], screen_ll[1], avg_z
-      recvSizePerProc = new int[num_procs]; 
-      offsetBuffer = new int[num_procs];  
-      for (int i=0; i<num_procs; i++){
-        if (i == 0)
-          offsetBuffer[i] = 0;
-        else
-          offsetBuffer[i] = offsetBuffer[i-1] + recvSizePerProc[i-1];
+    if (my_id == 0)
+    {
+        tempRecvBuffer = new float[totalPatches*8]; // x8: procId, patchNumber, dims[0], dims[1], screen_ll[0], screen_ll[1], eye_z, clip_z
+        recvSizePerProc = new int[num_procs]; 
+        offsetBuffer = new int[num_procs];
 
-        recvSizePerProc[i] = processorPatchesCount[i]*7;
-      }
+        for (int i=0; i<num_procs; i++)
+        {
+            if (i == 0)
+                offsetBuffer[i] = 0;
+            else
+                offsetBuffer[i] = offsetBuffer[i-1] + recvSizePerProc[i-1];
+
+            recvSizePerProc[i] = processorPatchesCount[i]*8;
+        }
     }
+
 
     MPI_Gatherv(allIotaMetadata, arraySize, MPI_FLOAT,   tempRecvBuffer, recvSizePerProc, offsetBuffer,MPI_FLOAT,    0, MPI_COMM_WORLD);// all send to proc 0
 
-    if (my_id == 0){
-      allRecvIotaMeta = new iotaMeta[totalPatches]; // allocate space to receive the many patches
 
-      iotaMeta tempPatch;
-      for (int i=0; i<totalPatches; i++){
-        tempPatch.procId =    (int) tempRecvBuffer[i*7 + 0];
-        tempPatch.patchNumber = (int) tempRecvBuffer[i*7 + 1];
-        tempPatch.dims[0] =   (int) tempRecvBuffer[i*7 + 2];
-        tempPatch.dims[1] =   (int) tempRecvBuffer[i*7 + 3];
-        tempPatch.screen_ll[0] =(int) tempRecvBuffer[i*7 + 4];
-        tempPatch.screen_ll[1] =(int) tempRecvBuffer[i*7 + 5];
-        tempPatch.avg_z =         tempRecvBuffer[i*7 + 6];
+    if (my_id == 0)
+    {
+        allRecvIotaMeta = new iotaMeta[totalPatches]; // allocate space to receive the many patches
 
-        int patchIndex = getDataPatchID(tempPatch.procId, tempPatch.patchNumber);
-        allRecvIotaMeta[patchIndex] = setIota(tempPatch.procId, tempPatch.patchNumber, tempPatch.dims[0], tempPatch.dims[1], tempPatch.screen_ll[0], tempPatch.screen_ll[1], tempPatch.avg_z);
-        all_avgZ_proc0.insert(tempPatch.avg_z); //insert avg_zs into the set to keep a count of the total number of avg_zs
-      }
+        iotaMeta tempPatch;
+        for (int i=0; i<totalPatches; i++)
+        {
+            tempPatch.procId        = (int) tempRecvBuffer[i*8 + 0];
+            tempPatch.patchNumber   = (int) tempRecvBuffer[i*8 + 1];
+            tempPatch.dims[0]       = (int) tempRecvBuffer[i*8 + 2];
+            tempPatch.dims[1]       = (int) tempRecvBuffer[i*8 + 3];
+            tempPatch.screen_ll[0]  = (int) tempRecvBuffer[i*8 + 4];
+            tempPatch.screen_ll[1]  = (int) tempRecvBuffer[i*8 + 5];
+            tempPatch.avg_z = tempPatch.eye_z = tempRecvBuffer[i*8 + 6];
+            tempPatch.clip_z        =       tempRecvBuffer[i*8 + 7];
 
-      if (recvSizePerProc != NULL)
-        delete []recvSizePerProc;
-      recvSizePerProc = NULL;
+            int patchIndex = getDataPatchID(tempPatch.procId, tempPatch.patchNumber);
+            allRecvIotaMeta[patchIndex] = setIota(tempPatch.procId, tempPatch.patchNumber, tempPatch.dims[0], tempPatch.dims[1], tempPatch.screen_ll[0], tempPatch.screen_ll[1], tempPatch.avg_z, tempPatch.clip_z);
+            all_avgZ_proc0.insert(tempPatch.avg_z); //insert avg_zs into the set to keep a count of the total number of avg_zs
+        }
 
-      if (offsetBuffer != NULL)
-        delete []offsetBuffer;
-      offsetBuffer = NULL;
 
-      if (tempRecvBuffer != NULL)
-        delete []tempRecvBuffer;
-      tempRecvBuffer = NULL;
+        if (recvSizePerProc != NULL)
+            delete []recvSizePerProc;
+        recvSizePerProc = NULL;
 
+        if (offsetBuffer != NULL)
+            delete []offsetBuffer;
+        offsetBuffer = NULL;
+
+        if (tempRecvBuffer != NULL)
+            delete []tempRecvBuffer;
+        tempRecvBuffer = NULL;
     }
   #endif  
 }
@@ -1197,7 +1205,7 @@ void avtImgCommunicator::getcompositedImage(int imgBufferWidth, int imgBufferHei
 //  Modifications:
 //
 // ****************************************************************************
-imgMetaData avtImgCommunicator::setImg(int _inUse, int _procId, int _patchNumber, float dim_x, float dim_y, float screen_ll_x, float screen_ll_y, float screen_ur_x, float screen_ur_y, float _avg_z){
+imgMetaData avtImgCommunicator::setImg(int _inUse, int _procId, int _patchNumber, float dim_x, float dim_y, float screen_ll_x, float screen_ll_y, float screen_ur_x, float screen_ur_y, float _avg_z, float _clip_z){
   imgMetaData temp;
   temp.inUse = _inUse;
   temp.procId = _procId;
@@ -1207,6 +1215,8 @@ imgMetaData avtImgCommunicator::setImg(int _inUse, int _procId, int _patchNumber
   temp.screen_ll[0] = screen_ll_x;    temp.screen_ll[1] = screen_ll_y;
   temp.screen_ur[0] = screen_ur_x;    temp.screen_ur[1] = screen_ur_y;
   temp.avg_z = _avg_z;
+  temp.eye_z = _avg_z;
+  temp.clip_z = _clip_z;
   
   return temp;
 }
@@ -1223,13 +1233,15 @@ imgMetaData avtImgCommunicator::setImg(int _inUse, int _procId, int _patchNumber
 //  Modifications:
 //
 // ****************************************************************************
-iotaMeta avtImgCommunicator::setIota(int _procId, int _patchNumber, int dim_x, int dim_y, int screen_ll_x, int screen_ll_y, float _avg_z){
+iotaMeta avtImgCommunicator::setIota(int _procId, int _patchNumber, int dim_x, int dim_y, int screen_ll_x, int screen_ll_y, float _avg_z, float _clip_z){
   iotaMeta temp;
   temp.procId = _procId;
   temp.patchNumber = _patchNumber;
   temp.dims[0] = dim_x;         temp.dims[1] = dim_y;
   temp.screen_ll[0] = screen_ll_x;    temp.screen_ll[1] = screen_ll_y;
   temp.avg_z = _avg_z;
+  temp.eye_z = _avg_z;
+  temp.clip_z = _clip_z;
   
   return temp;
 }
@@ -1421,10 +1433,10 @@ void avtImgCommunicator::rleDecode(int encSize, float *encoding, int offset, flo
 #ifdef PARALLEL
 MPI_Datatype avtImgCommunicator::createMetaDataType(){
   MPI_Datatype _imgMeta_mpi;
-  const int numItems = 7;
-  int blockLengths[numItems] = {1, 1, 1, 2, 2, 2, 1};
-  MPI_Datatype type[numItems] = { MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_FLOAT };
-  MPI_Aint offsets[numItems] = {0, sizeof(int), sizeof(int)*2, sizeof(int)*3, sizeof(int)*5, sizeof(int)*7, sizeof(int)*9 };
+  const int numItems = 8;
+  int blockLengths[numItems] = {1, 1, 1, 2, 2, 2, 1, 1};  // 11
+  MPI_Datatype type[numItems] = { MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_FLOAT, MPI_FLOAT};
+  MPI_Aint offsets[numItems] = {0, sizeof(int), sizeof(int)*2, sizeof(int)*3, sizeof(int)*5, sizeof(int)*7, sizeof(int)*9, sizeof(int)*10 };
   MPI_Type_struct(numItems, blockLengths,  offsets, type, &_imgMeta_mpi);
   
   return _imgMeta_mpi;

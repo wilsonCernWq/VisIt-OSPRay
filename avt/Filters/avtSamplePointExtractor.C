@@ -692,7 +692,6 @@ avtSamplePointExtractor::PostExecute(void)
         datatree_childindex(avtDataTree_p dt_, int idx_) : dt(dt_),idx(idx_),visited(false) {}
     };
 
-
 void
 avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 {
@@ -804,15 +803,21 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 //  Modifications:
 //
 // ****************************************************************************
+
 void
 avtSamplePointExtractor::delImgPatches(){
     imageMetaPatchVector.clear();
 
-    for (iter_t it=imgDataHashMap.begin(); it!=imgDataHashMap.end(); it++){
+    for (iter_t it=imgDataHashMap.begin(); it!=imgDataHashMap.end(); it++)
+    {
         if ((*it).second.imagePatch != NULL)
             delete [](*it).second.imagePatch;
 
+        if ((*it).second.imageDepth != NULL)
+            delete [](*it).second.imageDepth;
+
         (*it).second.imagePatch = NULL;
+        (*it).second.imageDepth = NULL;
     }
     imgDataHashMap.clear();
 }
@@ -831,6 +836,7 @@ avtSamplePointExtractor::delImgPatches(){
 //  Modifications:
 //
 // ****************************************************************************
+
 void 
 avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
     iter_t it = imgDataHashMap.find(patchId);
@@ -838,10 +844,14 @@ avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
     tempImgData.procId = it->second.procId;
     tempImgData.patchNumber = it->second.patchNumber;
     memcpy(tempImgData.imagePatch,it->second.imagePatch,imageMetaPatchVector[patchId].dims[0] * 4 * imageMetaPatchVector[patchId].dims[1] * sizeof(float));
+    memcpy(tempImgData.imageDepth,it->second.imageDepth,imageMetaPatchVector[patchId].dims[0] *     imageMetaPatchVector[patchId].dims[1] * sizeof(float));
 
     delete [](*it).second.imagePatch;
+    delete [](*it).second.imageDepth;
     it->second.imagePatch = NULL;
+    it->second.imageDepth = NULL;
 }
+
 
 
 // ****************************************************************************
@@ -856,6 +866,7 @@ avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
 //  Modifications:
 //
 // ****************************************************************************
+
 imgMetaData
 avtSamplePointExtractor::initMetaPatch(int id){
     imgMetaData temp;
@@ -867,9 +878,12 @@ avtSamplePointExtractor::initMetaPatch(int id){
     temp.screen_ll[0] = temp.screen_ll[1] = -1;
     temp.screen_ur[0] = temp.screen_ur[1] = -1;
     temp.avg_z = -1.0;
+    temp.eye_z = -1.0;
+    temp.clip_z = -1.0;
     
     return temp;
 }
+
 
 
 // ****************************************************************************
@@ -986,6 +1000,7 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
         }
     }
 }
+
 
 
 // ****************************************************************************
@@ -2373,5 +2388,3 @@ avtSamplePointExtractor::GetLoadingInfoForArrays(vtkDataSet *ds,
         }
     }
 }
-
-
