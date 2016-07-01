@@ -162,6 +162,9 @@ public:
 
   float clamp(float x);
   void setBackground(unsigned char _background[3]){ for (int i=0; i<3; i++) background[i] = _background[i]; }
+  void barrier();
+
+  void initImage(int sizeX, int sizeY, float color[4]);
   
 #ifdef PARALLEL
   MPI_Status status;
