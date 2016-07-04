@@ -5072,7 +5072,26 @@ void CPUCompositing::todTree(Image _img, int r, int k, int tag[3], int width, in
 
 
 void 
-avtRayTracer::blendBackToFront(float *src, int dimsSrc[2], int posSrc[2],  float *dst, int dimsDst[2], int posDst[2])
+avtImgCommunicator::blendWithBackground(float *_image, int extents[4], float backgroundColor[4])
+{
+    int numPixels = (extents[3]-extents[2]) * (extents[1]-extents[0]);
+
+    for (int index=0; index<numPixels; index++)      // estimated potential speedup: 2.240
+    {
+        int indexSrc = index*4;
+        float alpha = (1.0 - _image[indexSrc+3]);
+
+        _image[indexSrc+0] = backgroundColor[0] * alpha +  _image[indexSrc+0];
+        _image[indexSrc+1] = backgroundColor[1] * alpha +  _image[indexSrc+1];
+        _image[indexSrc+2] = backgroundColor[2] * alpha +  _image[indexSrc+2];
+        _image[indexSrc+3] = backgroundColor[3] * alpha +  _image[indexSrc+3];
+    }
+}
+
+
+
+void 
+avtImgCommunicator::blendBackToFront(float *src, int dimsSrc[2], int posSrc[2],  float *dst, int dimsDst[2], int posDst[2])
 {
     for (int _y=0; _y<dimsSrc[1]; _y++)
         for (int _x=0; _x<dimsSrc[0]; _x++)
@@ -5098,97 +5117,143 @@ avtRayTracer::blendBackToFront(float *src, int dimsSrc[2], int posSrc[2],  float
         }
 }
 
-//
-// Direct Send
-//
-inline void CPUCompositing::serialDirectSend(Image _img, int tags[2], float backgroundColor[4], int width, int height)
+
+
+
+
+void 
+avtImgCommunicator::gatherDepthAtRoot(int _numPatchGroup, int &totalPatches, int *patchCountPerRank, int *patchesDepth)
 {
-        int myId = my_id;
-        if (myId == 0)
+    //
+    // Get how many patches are coming from each MPI rank
+    totalPatches = 0;
+    int *patchesOffset = NULL;
+
+    if (my_id == 0) // root!
+        patchCountPerRank = new int[num_procs];
+
+    MPI_Gather(&_numPatchGroup, _numPatchGroup, MPI_INT,  &patchCountPerRank, num_procs, MPI_INT,    0, MPI_COMM_WORLD);
+
+
+
+    //
+    // Gather number of patch group
+    if (my_id == 0)
+    {
+        patchesOffset = new int[num_procs];
+        patchesOffset[0] = 0;
+
+        for (int i=0; i<num_procs; i++)
         {
+            totalPatches += patchCountPerRank[i];
 
-            int recvParams[5];
-            recvImg.createImage(0,width, 0,height);
-            fullImg.initializeZero();
+            if (i == 0)
+                patchesOffset[i] = 0;
+            else
+                patchesOffset[i] = patchesOffset[i-1] + patchCountPerRank[i-1]; 
+        }
+
+        patchesDepth = new float[totalPatches];
+    }
+
+    MPI_Gatherv(&_numPatchGroup, _numPatchGroup, MPI_FLOAT,  patchesDepth, patchCountPerRank, patchesOffset,  MPI_FLOAT, 0, MPI_COMM_WORLD);
 
 
-            // Receive from 
-            //std::cout << "compositingOrder.size(): " << compositingOrder.size() << std::endl;
+    //
+    // Cleanup
+    if (i == 0)
+        if (patchesOffset != NULL)
+            delete []patchesOffset;
+        
+    patchesOffset = NULL;
+} 
 
-            for (int i=0; i<compositingOrder.size(); i++)
+
+
+//
+// Serial Direct Send
+//
+inline void avtImgCommunicator::serialDirectSend(int numPatches, float backgroundColor[4], int width, int height)
+{
+    float *recvImage = NULL; 
+    float *fullImage = NULL;
+
+    int tags[2] = {5781, 5782};
+
+    int totalPatches;
+    int *patchCountPerRank;
+    int *patchesDepth;
+    gatherDepthAtRoot(numPatches, totalPatches, patchCountPerRank, patchesDepth);
+
+    //int myId = my_id;
+    if (my_id == 0)
+    {
+        //
+        // Root
+        int srcSize[2], srcPos[2], dstSize[2], dstPos[2];
+        srcSize[0] = width;  srcSize[1] = height;  
+        srcPos[0] = 0;       srcPos[1] = 0;  
+
+        //
+        // Sort patches we will receive
+        std::multimap<float,int> depthRankPatches;
+
+        int index = 0;
+        for (int i=0; i<num_procs; i++)
+            for (int j=0; j<patchCountPerRank[i]; j++)
             {
-                if (compositingOrder[i] == myId){
-                  blendTimer.start();
-                    blendInto(FRONT_TO_BACK, fullImg, _img);
-                  blendTimer.stop();
+                depthRankPatches.insert( std::pair<float,int>(patchCountPerRank[index],i) );
+                index++;
+            }
+        
 
-                    addProfilingTimingMsg("b|"  + toString(_img.extents[1]-_img.extents[0]) + " x " + toString(_img.extents[3]-_img.extents[2]) + ":" + toString(blendTimer.getDuration()) + ",");
-                    addTimingMsg(toString(myId) + " ~ blend local "  + toString(_img.extents[1]-_img.extents[0]) + " x " + toString(_img.extents[3]-_img.extents[2]) + ":" + toString(blendTimer.getDuration())  + "\n" );
-                }   
-                else
-                {
-                    MPI_Recv(recvParams, 5, MPI_INT, compositingOrder[i], tags[0], MPI_COMM_WORLD, MPI_STATUS_IGNORE);                      // recv params
-                    if ( (recvParams[1]-recvParams[0])*(recvParams[3]-recvParams[2]) > 0)
-                    {
-                        
-                      recvTimer.start();
-                        MPI_Recv(recvImg.data, width*height*4, MPI_FLOAT, compositingOrder[i], tags[1], MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // recv image
-                      recvTimer.stop();
-                        
-                      blendTimer.start();
-                        recvImg.setExtents(recvParams[0],recvParams[1],recvParams[2],recvParams[3]);
-                        blendInto(FRONT_TO_BACK, fullImg, recvImg);
-                      blendTimer.stop();
+        //
+        // Create space for buffers
+        int recvParams[4];                          // minX, minY, maxX, maxY
+        recvImage = new float[width*height*4]();
+        fullImage = new float[width*height*4]();
 
-                        addProfilingTimingMsg("f|"  + toString(recvParams[1]-recvParams[0]) + " x " + toString(recvParams[3]-recvParams[2]) + ":" + toString(recvTimer.getDuration()) + ",");
-                        addProfilingTimingMsg("b|"  + toString(recvParams[1]-recvParams[0]) + " x " + toString(recvParams[3]-recvParams[2]) + ":" + toString(blendTimer.getDuration()) + ",");
-                    
-                        addTimingMsg( toString(myId) + " ~ recv size "  + toString(recvParams[1]-recvParams[0]) + " x " + toString(recvParams[3]-recvParams[2]) + ":" + toString(recvTimer.getDuration())  + "\n" );
-                        addTimingMsg( toString(myId) + " ~ blend with " + toString(recvParams[1]-recvParams[0]) + " x " + toString(recvParams[3]-recvParams[2]) + ":" + toString(blendTimer.getDuration())  + "\n" );
-                    }
-                }
+
+        //
+        // Compositing
+        for (std::multimap<float,int>::iterator it=depthRankPatches.begin(); it!=depthRankPatches.end(); ++it)
+        {
+            int rank = (*it).second;
+
+            if (rank != my_id)
+            {
+                MPI_Recv(recvParams,             4, MPI_INT,   rank, tags[0],  MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // recv image info
+                MPI_Recv(recvImage, width*height*4, MPI_FLOAT, rank, tags[1],  MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // recv image
+
+                dstPos[0]  = dstPos[0];                      dstPos[1]  = dstPos[1];
+                dstSize[0] = recvParams[2]-recvParams[0];    dstSize[1] = recvParams[3]-recvParams[1];
+            }
+            else
+            {
+                // It's local
+
             }
 
-          bkgTimer.start();
-            blendWithBackground(backgroundColor, fullImg);
-          bkgTimer.stop();
-
-            addProfilingTimingMsg("x| "  + toString(width) + " x " + toString(height) + ":" + toString(bkgTimer.getDuration()) + ",");
-            addTimingMsg( toString(myId) + " ~ Blend with bkg " + toString(width) + " x " + toString(height) + ":" + toString(bkgTimer.getDuration()) + "\n" );
-
-            recvImg.deleteImage();
+            blendBackToFront(fullImage, srcSize, srcPos,  recvImage, dstSize, dstPos);
+            //blendWithBackground();
         }
-        else
+    }
+    else
+    {
+        //
+        // Sender
+        for (int i=0; i<numPatches; i++)
         {
-            Timer sendTimer;
+          //MPI_Send(sendParams, 5, MPI_INT, 0, tags[0], MPI_COMM_WORLD);             // send params
 
-            // Sender
-            int sendParams[5] = {0};
-            int numPixels = _img.getNumPixels();
-
-            //_img.outputPPM("output/sender");
-            //std::cout << myId << " ~ Extents: " << _img.extents[0] << ", " << _img.extents[1] << "    " << _img.extents[2] << ", " << _img.extents[3] << " numPixels:" << numPixels << std::endl;
-
-            for (int i=0; i<4; i++)
-                sendParams[i] = _img.extents[i];
-
-          sendTimer.start();
-            MPI_Send(sendParams, 5, MPI_INT, 0, tags[0], MPI_COMM_WORLD);             // send params
-
-            if (numPixels > 0)
-                MPI_Send(_img.data, numPixels*4, MPI_FLOAT, 0, tags[1], MPI_COMM_WORLD);    // Send the actual image
-          sendTimer.stop();
-
-            addTimingMsg( toString(myId) + " ~  Elapsed time sending to 0 : " + toString(_img.extents[1]-_img.extents[0]) + " x " + toString(_img.extents[3]-_img.extents[2]) + " : " + toString(sendTimer.getDuration()) + "\n" );
-            addProfilingTimingMsg("e|to 0 ~ "  + toString(_img.extents[1]-_img.extents[0]) + " x " + toString(_img.extents[3]-_img.extents[2]) + ":" + toString(sendTimer.getDuration()) + ",");
+            MPI_Send( , 4, MPI_INT, 0, tags[0], MPI_COMM_WORLD);
+            MPI_Send( ,  , MPI_INT, 0, tags[1], MPI_COMM_WORLD);
         }
-      overallTimer.stop();
-
-
+    }
 }
 
-
-inline void CPUCompositing::parallelDirectSend(Image _img, int region[], int numInRegion, int tags[3], float backgroundColor[4], int width, int height)
+/*
+inline void avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRegion, int tags[3], float backgroundColor[4], int width, int height)
 {
     Timer overallTimer;
 
@@ -5545,6 +5610,167 @@ inline void CPUCompositing::parallelDirectSend(Image _img, int region[], int num
     // }
 }
 
+
+inline void avtImgCommunicator::gatherImages(int regionGather[], int numToRecv, Image inputImg, Image outputImg, int tag[2], int width, int height, float backgroundColor[4])
+{
+    if (myId == 0)  // Display process
+    {
+        //
+        // Receive at root/display node!
+        Timer recvTimer, blendTimer, bkgTimer, setupTimer;
+
+        int *msgBuffer = new int[numToRecv*5];
+        int regionHeight = height/numToRecv;
+        int lastRegionHeight = height - regionHeight*(numToRecv-1);
+        if ( lastRegionHeight > regionHeight)
+            regionHeight = lastRegionHeight;
+        int bufferSize = width * regionHeight * 4;
+
+        Image tempImg;
+        float *gatherBuffer = NULL;
+
+        #ifdef __INTEL_COMPILER
+            gatherBuffer = (float *)_mm_malloc( bufferSize * numToRecv * sizeof(float), _ALIGN_);
+        #else
+            gatherBuffer = new float[ bufferSize * numToRecv];
+        #endif
+
+
+        // Adjust numtoRecv
+        for (int i=0; i<numToRecv; i++)
+            if (regionGather[i] == myId){
+                numToRecv--;
+                break;
+            }
+        
+        //
+        // Create buffers for async reciving
+        MPI_Request *recvMetaRq = new MPI_Request[ numToRecv ];
+        MPI_Request *recvImageRq = new MPI_Request[ numToRecv ];
+
+        MPI_Status *recvMetaSt = new MPI_Status[ numToRecv ];
+        MPI_Status *recvImageSt = new MPI_Status[ numToRecv ];
+
+
+        // Async Recv
+        int recvCount=0;
+        for (int i=0; i<numToRecv; i++)
+        {
+            int src = regionGather[i];
+            if (src == myId)
+                continue;
+
+            MPI_Irecv(&msgBuffer[i*5],                         5*sizeof(int),   MPI_INT, src, tag[0], MPI_COMM_WORLD,  &recvMetaRq[recvCount] );
+            MPI_Irecv(&gatherBuffer[i*bufferSize],  bufferSize*sizeof(float), MPI_FLOAT, src, tag[1], MPI_COMM_WORLD,  &recvImageRq[recvCount] );
+            recvCount++;
+        }
+
+
+
+        // create image with background
+      bkgTimer.start();
+        outputImg.colorImage(backgroundColor[0], backgroundColor[1], backgroundColor[2], backgroundColor[3]);
+      bkgTimer.stop();
+        addProfilingTimingMsg("b| with bkg ~ "  + toString(width) + " x " + toString(height) + ":" + toString(bkgTimer.getDuration()) + ",");
+
+
+        // If root has data for the final image
+        if (compositingDone == false)
+        {
+          blendTimer.start();
+            blendInto(FRONT_TO_BACK, outputImg, inputImg);
+          blendTimer.stop();
+
+            //outputImg.outputPPM("output/blendLocal_" + toString(myId));
+            addProfilingTimingMsg("z| local ~ "  + toString(inputImg.extents[1]-inputImg.extents[0]) + " x " + toString(inputImg.extents[3]-inputImg.extents[2]) + ":" + toString(blendTimer.getDuration()) + ",");
+        }
+
+       
+        int recvBlend = 0;
+        for (int i=0; i<numToRecv; i++)
+        {
+            MPI_Wait(&recvMetaRq[recvBlend], &recvMetaSt[recvBlend]);
+
+            if ((msgBuffer[recvBlend*5+1]-msgBuffer[recvBlend*5+0]) * (msgBuffer[recvBlend*5+3]-msgBuffer[recvBlend*5+2]))
+            {
+                // Has Data!
+              recvTimer.start();
+                MPI_Wait(&recvImageRq[recvBlend], &recvImageSt[recvBlend]);
+              recvTimer.stop();
+                
+                // Blend
+              blendTimer.start();
+                tempImg.extents[0] = msgBuffer[recvBlend*5 + 0];
+                tempImg.extents[1] = msgBuffer[recvBlend*5 + 1];
+                tempImg.extents[2] = msgBuffer[recvBlend*5 + 2];
+                tempImg.extents[3] = msgBuffer[recvBlend*5 + 3];
+                tempImg.data = &gatherBuffer[recvBlend*bufferSize];
+
+                blendInto(FRONT_TO_BACK, outputImg, tempImg);
+
+              blendTimer.stop();
+
+                addProfilingTimingMsg("f| " + toString(i) + " :" + toString(recvTimer.getDuration()) + ",");
+                addProfilingTimingMsg("z| " + toString(i) + " ~ " + toString(tempImg.extents[1]-tempImg.extents[0]) + " x " + toString(tempImg.extents[3]-tempImg.extents[2]) + ":" + toString(blendTimer.getDuration()) + ",");
+            }
+
+            recvBlend++;
+        }
+
+ 
+         #ifdef __INTEL_COMPILER
+            _mm_free(gatherBuffer);
+            gatherBuffer = NULL;
+        #else
+            delete []gatherBuffer;
+            gatherBuffer = NULL;
+        #endif
+
+        if (recvMetaRq != NULL){
+            delete []recvMetaRq;
+            recvMetaRq = NULL;
+        }
+
+        if (recvImageRq != NULL){
+           delete []recvImageRq;
+           recvImageRq = NULL;
+        }
+
+        if (recvMetaSt != NULL){
+            delete []recvMetaSt;
+            recvMetaSt = NULL;
+        }
+
+        if (recvImageSt != NULL){
+           delete []recvImageSt;
+           recvImageSt = NULL;
+        }
+
+        delete []msgBuffer;
+        msgBuffer = NULL;
+    }
+    else
+    {
+        if (compositingDone == false)   // If root has data for the final image
+        {
+            Timer sendImageTimer;
+
+          sendImageTimer.start();
+            int sendParams[5];
+            for (int i=0; i<4; i++)
+                sendParams[i] = inputImg.extents[i];
+            sendParams[4]=0;
+
+            MPI_Send(sendParams,                                                      5, MPI_INT,   0, tag[0], MPI_COMM_WORLD);    // Send meta data
+            MPI_Send(inputImg.data, inputImg.getNumPixels()*inputImg.getNumComponents(), MPI_FLOAT, 0, tag[1], MPI_COMM_WORLD);    // Send the actual image
+          sendImageTimer.stop();
+
+            addTimingMsg(toString(myId) +" ~ Gather Send ~ " + toString(inputImg.extents[1]-inputImg.extents[0]) + " x " + toString(inputImg.extents[3]-inputImg.extents[2]) + ":" + toString(sendImageTimer.getDuration()) + "\n");
+            addProfilingTimingMsg("v| " + toString(myId) + " ~ " + toString(inputImg.extents[1]-inputImg.extents[0]) + " x " + toString(inputImg.extents[3]-inputImg.extents[2]) + ":" + toString(sendImageTimer.getDuration()) + ",");
+        }
+    }
+}
+*/
 
 // ****************************************************************************
 //  Method: avtImgCommunicator::

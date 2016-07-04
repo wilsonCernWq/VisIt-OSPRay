@@ -715,14 +715,14 @@ avtRayTracer::Execute(void)
         // Parallel
         //
 
-
         //
         // Get the metadata for all patches
         std::vector<imgMetaData> allImgMetaData;          // contains the metadata to composite the image
         int numPatches = extractor.getImgPatchSize();     // get the number of patches
 
 
-        int imgDims[4] = {0,0,0,0}; //minX, minY,  maxY, maxY 
+        //int imgDims[4] = {0,0,0,0}; //minX, minY,  maxY, maxY 
+        int imgDims[4] = {0,0,0,0}; //minX, maxY,  minY, maxY 
         int imgSize[2];             // x, y
         for (int i=0; i<numPatches; i++)
         {
@@ -733,8 +733,9 @@ avtRayTracer::Execute(void)
             if (i==0)
             {
                 imgDims[0]=temp.screen_ll[0];   // minX
-                imgDims[1]=temp.screen_ll[1];   // minY
-                imgDims[2]=temp.screen_ur[0];   // maxX
+                imgDims[1]=temp.screen_ur[0];   // maxX
+
+                imgDims[2]=temp.screen_ll[1];   // minY
                 imgDims[3]=temp.screen_ur[1];   // maxY
             }
             else
@@ -742,11 +743,11 @@ avtRayTracer::Execute(void)
                 if (temp.screen_ll[0] < imgDims[0])
                     imgDims[0]=temp.screen_ll[0];
 
-                if (temp.screen_ll[1] < imgDims[1])
-                    imgDims[1]=temp.screen_ll[1];
+                if (temp.screen_ur[0] > imgDims[1])
+                    imgDims[1]=temp.screen_ur[1];
 
-                if (temp.screen_ur[0] > imgDims[2])
-                    imgDims[2]=temp.screen_ur[0];
+                if (temp.screen_ll[0] < imgDims[2])
+                    imgDims[2]=temp.screen_ll[0];
 
                 if (temp.screen_ur[1] > imgDims[3])
                     imgDims[3]=temp.screen_ur[1];
@@ -757,11 +758,11 @@ avtRayTracer::Execute(void)
 
         //
         // Set the image size
-        imgSize[0] = imgDims[2]-imgDims[0];
-        imgSize[1] = imgDims[3]-imgDims[1];
+        imgSize[0] = imgDims[1]-imgDims[0];
+        imgSize[1] = imgDims[3]-imgDims[2];
 
 
-        debug5 << "Number of patches: " << numPatches << " image (minX, minY, maxX, maxY): " << imgDims[0] << ", " << imgDims[1] << ", " << imgDims[2] << ", " << imgDims[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
+        debug5 << "Number of patches: " << numPatches << " image (minX, minY, maxX, maxY): " << imgDims[0] << ", " << imgDims[2] << ", " << imgDims[1] << ", " << imgDims[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
 
         imgComm.barrier();
 
@@ -790,7 +791,7 @@ avtRayTracer::Execute(void)
             extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
 
             int startPos[2];
-            startPos[0] = imgDims[0];   startPos[1] = imgDims[1];
+            startPos[0] = imgDims[0];   startPos[1] = imgDims[2];
             blendImages(tempImgData.imagePatch, currentPatch.dims, currentPatch.screen_ll, composedData, imgSize, startPos);
             
             //
@@ -812,6 +813,11 @@ avtRayTracer::Execute(void)
         imgComm.barrier();
         debug5 << "Local composing done" << std::endl;
         imgComm.barrier();
+
+
+        //
+        // Do image compositing
+        
 
         //
         // Move final composited image to visit structures
