@@ -721,8 +721,8 @@ avtRayTracer::Execute(void)
         int numPatches = extractor.getImgPatchSize();     // get the number of patches
 
 
-        //int imgDims[4] = {0,0,0,0}; //minX, minY,  maxY, maxY 
-        int imgDims[4] = {0,0,0,0}; //minX, maxY,  minY, maxY 
+        //int imgDims[4] = {0,0,0,0}; //minX, minY,  maxX, maxY 
+        int imgDims[4] = {0,0,0,0}; //minX, maxX,  minY, maxY 
         int imgSize[2];             // x, y
         for (int i=0; i<numPatches; i++)
         {
@@ -762,7 +762,7 @@ avtRayTracer::Execute(void)
         imgSize[1] = imgDims[3]-imgDims[2];
 
 
-        debug5 << "Number of patches: " << numPatches << " image (minX, minY, maxX, maxY): " << imgDims[0] << ", " << imgDims[2] << ", " << imgDims[1] << ", " << imgDims[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
+        debug5 << "Number of patches: " << numPatches << " image (minX, minY   maxX, maxY): " << imgDims[0] << ", " << imgDims[2] << "    " << imgDims[1] << ", " << imgDims[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
 
         imgComm.barrier();
 
@@ -774,7 +774,7 @@ avtRayTracer::Execute(void)
         //
         // Sort with the largest z first
         std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
-
+        float *localPatchesDepth = new float[1];
 
         //
         // Blend images
@@ -803,6 +803,9 @@ avtRayTracer::Execute(void)
             if (tempImgData.imageDepth != NULL)
                 delete []tempImgData.imageDepth;
             tempImgData.imageDepth = NULL;
+
+            if (i == numPatches-1)
+                localPatchesDepth[0] = currentPatch.eye_z;
         }
         allImgMetaData.clear();
 
@@ -816,8 +819,20 @@ avtRayTracer::Execute(void)
 
 
         //
-        // Do image compositing
-        
+        // Do image compositing 
+        // Temporary
+        int _numPatches = 1;
+        float localDepth = 1.0;
+        float backgroundColor[4];
+        backgroundColor[0] = background[0]/255.0; 
+        backgroundColor[1] = background[1]/255.0; 
+        backgroundColor[2] = background[2]/255.0; 
+        backgroundColor[3] = 1.0;
+
+        //inline void avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, float *extents, float *imgData, float backgroundColor[4], int width, int height)
+        imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgDims, composedData, backgroundColor, screen[0], screen[1]);
+
+        //   void serialDirectSend(int numPatches, float *localPatchesDepth, float *extents, float *imgData, float backgroundColor[4], int width, int height);
 
         //
         // Move final composited image to visit structures
