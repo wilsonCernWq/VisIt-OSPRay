@@ -77,55 +77,13 @@
 using     std::vector;
 
 
-template <class T> 
-inline std::string toStr(T x){
-    std::ostringstream ss;
-    ss << x;
-    return ss.str();
-}
+// template <class T> 
+// inline std::string toStr(T x){
+//     std::ostringstream ss;
+//     ss << x;
+//     return ss.str();
+// }
 
-inline void createColorPPM(unsigned char *data, int width, int height, const char *filename){
-    std::ofstream outputFile(filename, std::ios::out | std::ios::binary);
-    outputFile <<  "P6\n" << width << "\n" << height << "\n" << 255 << "\n";
-    
-    for (int y=0; y<height; ++y){
-        for (int x=0; x<width; ++x){
-            int index = ((y * width) + x)*3;
-            
-            char color[3];
-            color[0] = data[index+0];  // red
-            color[1] = data[index+1];  // green 
-            color[2] = data[index+2];  // blue
-            outputFile.write(color,3);
-        }
-    }
-    
-    outputFile.close();
-}
-
-
-inline void writeArrayToPPM( std::string filename , float * image, int dimX, int dimY )
-{
-    std::ofstream outputFile( (filename+ ".ppm").c_str(), std::ios::out | std::ios::binary);
-    outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n";
- 
-    for (int y=0; y<dimY; ++y)
-    {
-        for (int x=0; x<dimX; ++x)
-        {
-            int index = (y * dimX + x)*4;
- 
-            char color[3];
-            float alpha = image[index + 3];
-            color[0] = std::max( std::min(image[index + 0]*alpha , 1.0f), 0.0f) * 255;  // red
-            color[1] = std::max( std::min(image[index + 1]*alpha , 1.0f), 0.0f) * 255;  // green
-            color[2] = std::max( std::min(image[index + 2]*alpha , 1.0f), 0.0f) * 255;  // blue
-            outputFile.write(color,3);
-        }
-    }
- 
-    outputFile.close();
-}
 
 
 bool sortImgMetaDataByDepth(imgMetaData const& before, imgMetaData const& after){ return before.avg_z > after.avg_z; }
@@ -722,7 +680,7 @@ avtRayTracer::Execute(void)
 
 
         //int imgDims[4] = {0,0,0,0}; //minX, minY,  maxX, maxY 
-        int imgDims[4] = {0,0,0,0}; //minX, maxX,  minY, maxY 
+        int imgExtents[4] = {0,0,0,0}; //minX, maxX,  minY, maxY 
         int imgSize[2];             // x, y
         for (int i=0; i<numPatches; i++)
         {
@@ -732,25 +690,25 @@ avtRayTracer::Execute(void)
             // Set image size
             if (i==0)
             {
-                imgDims[0]=temp.screen_ll[0];   // minX
-                imgDims[1]=temp.screen_ur[0];   // maxX
+                imgExtents[0]=temp.screen_ll[0];   // minX
+                imgExtents[1]=temp.screen_ur[0];   // maxX
 
-                imgDims[2]=temp.screen_ll[1];   // minY
-                imgDims[3]=temp.screen_ur[1];   // maxY
+                imgExtents[2]=temp.screen_ll[1];   // minY
+                imgExtents[3]=temp.screen_ur[1];   // maxY
             }
             else
             {
-                if (temp.screen_ll[0] < imgDims[0])
-                    imgDims[0]=temp.screen_ll[0];
+                if (temp.screen_ll[0] < imgExtents[0])
+                    imgExtents[0]=temp.screen_ll[0];
 
-                if (temp.screen_ur[0] > imgDims[1])
-                    imgDims[1]=temp.screen_ur[1];
+                if (temp.screen_ur[0] > imgExtents[1])
+                    imgExtents[1]=temp.screen_ur[0];
 
-                if (temp.screen_ll[0] < imgDims[2])
-                    imgDims[2]=temp.screen_ll[0];
+                if (temp.screen_ll[1] < imgExtents[2])
+                    imgExtents[2]=temp.screen_ll[1];
 
-                if (temp.screen_ur[1] > imgDims[3])
-                    imgDims[3]=temp.screen_ur[1];
+                if (temp.screen_ur[1] > imgExtents[3])
+                    imgExtents[3]=temp.screen_ur[1];
             }
 
             allImgMetaData.push_back(temp);
@@ -758,11 +716,11 @@ avtRayTracer::Execute(void)
 
         //
         // Set the image size
-        imgSize[0] = imgDims[1]-imgDims[0];
-        imgSize[1] = imgDims[3]-imgDims[2];
+        imgSize[0] = imgExtents[1]-imgExtents[0];
+        imgSize[1] = imgExtents[3]-imgExtents[2];
 
 
-        debug5 << "Number of patches: " << numPatches << " image (minX, minY   maxX, maxY): " << imgDims[0] << ", " << imgDims[2] << "    " << imgDims[1] << ", " << imgDims[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
+        debug5 << "Number of patches: " << numPatches << " image (minX, minY   maxX, maxY): " << imgExtents[0] << ", " << imgExtents[2] << "    " << imgExtents[1] << ", " << imgExtents[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
 
         imgComm.barrier();
 
@@ -774,7 +732,7 @@ avtRayTracer::Execute(void)
         //
         // Sort with the largest z first
         std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
-        float *localPatchesDepth = new float[1];
+        float *localPatchesDepth = new float[1]();
 
         //
         // Blend images
@@ -791,7 +749,7 @@ avtRayTracer::Execute(void)
             extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
 
             int startPos[2];
-            startPos[0] = imgDims[0];   startPos[1] = imgDims[2];
+            startPos[0] = imgExtents[0];   startPos[1] = imgExtents[2];
             blendImages(tempImgData.imagePatch, currentPatch.dims, currentPatch.screen_ll, composedData, imgSize, startPos);
             
             //
@@ -813,24 +771,30 @@ avtRayTracer::Execute(void)
         if (imgSize[0] * imgSize[1] > 0)
             writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);   
 
-        imgComm.barrier();
-        debug5 << "Local composing done" << std::endl;
-        imgComm.barrier();
+        
 
 
         //
         // Do image compositing 
         // Temporary
-        int _numPatches = 1;
-        float localDepth = 1.0;
+        int _numPatches = 1; 
+        if (numPatches  == 0)
+            _numPatches = 0;
         float backgroundColor[4];
         backgroundColor[0] = background[0]/255.0; 
         backgroundColor[1] = background[1]/255.0; 
         backgroundColor[2] = background[2]/255.0; 
         backgroundColor[3] = 1.0;
 
+        debug5 << "SDS Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  -  " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  -  " 
+                                << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
+
+        imgComm.barrier();
+        debug5 << "Local composing done" << std::endl;
+        imgComm.barrier();
+
         //inline void avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, float *extents, float *imgData, float backgroundColor[4], int width, int height)
-        imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgDims, composedData, backgroundColor, screen[0], screen[1]);
+        imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgExtents, composedData, backgroundColor, screen[0], screen[1]);
 
         //   void serialDirectSend(int numPatches, float *localPatchesDepth, float *extents, float *imgData, float backgroundColor[4], int width, int height);
 

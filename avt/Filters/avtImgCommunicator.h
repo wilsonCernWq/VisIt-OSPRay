@@ -120,10 +120,10 @@ class avtImgCommunicator
    
 
     void blendWithBackground(float *_image, int extents[4], float backgroundColor[4]);
-    void blendFrontToBack(float *srcImage, int srcExtents[4], float *dstImage, int dstExtents[4]);
-    void blendBackToFront(float *srcImage, int srcExtents[4], float *dstImage, int dstExtents[4]);
+    void blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
+    void blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
 
-    void gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *patchCountPerRank, float *allPatchesDepth);
+    void gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth);
     
 
 public:

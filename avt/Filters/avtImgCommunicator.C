@@ -1485,7 +1485,7 @@ avtImgCommunicator::blendWithBackground(float *_image, int extents[4], float bac
 
 
 void 
-avtImgCommunicator::blendFrontToBack(float *srcImage, int srcExtents[4], float *dstImage, int dstExtents[4])
+avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
     int widthSrc, heightSrc, widthDst;
     widthSrc  = srcExtents[1] - srcExtents[0];
@@ -1519,7 +1519,7 @@ avtImgCommunicator::blendFrontToBack(float *srcImage, int srcExtents[4], float *
 
 
 void 
-avtImgCommunicator::blendBackToFront(float *srcImage, int srcExtents[4], float *dstImage, int dstExtents[4])
+avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
     int widthSrc, heightSrc, widthDst;
     widthSrc  = srcExtents[1] - srcExtents[0];
@@ -1556,7 +1556,7 @@ avtImgCommunicator::blendBackToFront(float *srcImage, int srcExtents[4], float *
 
 
 void 
-avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *patchCountPerRank, float *allPatchesDepth)
+avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth)
 {
   #ifdef PARALLEL
     //
@@ -1564,18 +1564,18 @@ avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDe
     totalPatches = 0;
     int *patchesOffset = NULL;
 
+
     if (my_id == 0) // root!
-        patchCountPerRank = new int[num_procs];
+        patchCountPerRank = new int[num_procs]();
 
-    MPI_Gather(&numlocalPatches, numlocalPatches, MPI_INT,   &patchCountPerRank, num_procs, MPI_INT,    0, MPI_COMM_WORLD);
-
+    MPI_Gather(&numlocalPatches, 1, MPI_INT,   patchCountPerRank, 1, MPI_INT,    0, MPI_COMM_WORLD);
 
 
     //
     // Gather number of patch group
     if (my_id == 0)
     {
-        patchesOffset = new int[num_procs];
+        patchesOffset = new int[num_procs]();
         patchesOffset[0] = 0;
 
         for (int i=0; i<num_procs; i++)
@@ -1590,9 +1590,8 @@ avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDe
 
         allPatchesDepth = new float[totalPatches];
     }
-
+    
     MPI_Gatherv(localPatchesDepth, numlocalPatches, MPI_FLOAT,   allPatchesDepth, patchCountPerRank, patchesOffset,    MPI_FLOAT, 0, MPI_COMM_WORLD);
-
 
     //
     // Cleanup
@@ -1613,6 +1612,8 @@ void
 avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height)
 {
   #ifdef PARALLEL
+    debug5 << "serialDirectSend" << std::endl;
+
     float *recvImage = NULL; 
     float *fullImage = NULL;
 
@@ -1622,6 +1623,11 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
     int *patchCountPerRank = NULL;
     float *patchesDepth = NULL;
     gatherDepthAtRoot(numPatches, localPatchesDepth, totalPatches, patchCountPerRank, patchesDepth);
+
+    debug5 << "Gather done!  totalPatches: " << totalPatches << std::endl;
+    if (my_id == 0)
+        for (int i=0; i<totalPatches; i++)
+            debug5 << "patchesDepth[" << i << "]: " << patchesDepth[i] << std::endl; 
 
 
     if (my_id == 0)
@@ -1659,9 +1665,12 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 
         //
         // Compositing
+        int __index = 0;
         for (std::multimap<float,int>::iterator it=depthRankPatches.begin(); it!=depthRankPatches.end(); ++it)
         {
             int rank = (*it).second;
+
+            debug5 << "\nRecv and blend from " << rank << std::endl;
 
             if (rank != my_id)
             {
@@ -1670,6 +1679,8 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 
                 dstPos[0]  = dstPos[0];                      dstPos[1]  = dstPos[1];
                 dstSize[0] = recvParams[2]-recvParams[0];    dstSize[1] = recvParams[3]-recvParams[1];
+
+                writeArrayToPPM("/home/pascal/Desktop/debugImages/recv_from_" + toStr(rank), recvImage, recvParams[1]-recvParams[0], recvParams[3]-recvParams[2]);
             }
             else
             {
@@ -1686,8 +1697,19 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
                 localIndex++;
             }
 
-            blendBackToFront(fullImage, imgExtents, recvImage, recvParams);
+            debug5 << "Original extents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
+            debug5 << "recvParams extents: " << recvParams[0] << ", " << recvParams[1] << ", " << recvParams[2] << ", " << recvParams[3] << std::endl;
+
+            //blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
+            blendBackToFront(recvImage, recvParams, fullImage, imgExtents);
+
+            writeArrayToPPM("/home/pascal/Desktop/debugImages/blended_with_" + toStr(__index), fullImage, width, height);
+            __index++;
         }
+
+
+        writeArrayToPPM("/home/pascal/Desktop/debugImages/full_" + toStr(__index), fullImage, imgExtents[1]-imgExtents[0], imgExtents[3]-imgExtents[2]);
+
         blendWithBackground(fullImage, imgExtents, backgroundColor);
     }
     else
@@ -1696,11 +1718,16 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
         // Sender
         for (int i=0; i<numPatches; i++)
         {
-          //MPI_Send(sendParams, 5, MPI_INT, 0, tags[0], MPI_COMM_WORLD);             // send params
             int imgSize = (extents[i*4 + 1] - extents[i*4 + 0]) * (extents[i*4 + 3] - extents[i*4 + 2]) * 4;
 
-            MPI_Send( &extents[i*4],                       4, MPI_INT,   0, tags[0], MPI_COMM_WORLD);
-            MPI_Send( &imgData[i*(width*height*4)],  imgSize, MPI_FLOAT, 0, tags[1], MPI_COMM_WORLD);
+            if (imgSize > 0)
+            {
+                debug5 << "Sending: Extents " <<  extents[i*4 + 0] << ", " << extents[i*4 + 1] << ", " << extents[i*4 + 2] << ", " << extents[i*4 + 3] << std::endl;
+                writeArrayToPPM("/home/pascal/Desktop/debugImages/sending_to_root_from_" + toStr(my_id), &imgData[i*(width*height*4)], (extents[i*4 + 1] - extents[i*4 + 0]), (extents[i*4 + 3] - extents[i*4 + 2]) );
+
+                MPI_Send( &extents[i*4],                       4, MPI_INT,   0, tags[0], MPI_COMM_WORLD);
+                MPI_Send( &imgData[i*(width*height*4)],  imgSize, MPI_FLOAT, 0, tags[1], MPI_COMM_WORLD);
+            }
         }
     }
 
@@ -1729,25 +1756,9 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 }
 
 
-
-oid avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRegion, int tags[3], float backgroundColor[4], int width, int height)
+/*
+void avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRegion, int tags[3], float backgroundColor[4], int width, int height)
 {
-    Timer overallTimer;
-
-    // Create final image for Display node
-    // if (myId == 0)
-    //     fullImg.createImage(0,width, 0,height);
-
-    //for (int iter=0; iter<numIterations; iter++)
-    //{
-        //MPI_Barrier(MPI_COMM_WORLD);
-
-
-      overallTimer.start();
-        Timer blendTimer, prepareTimer, waitTimer, recvTimer, otherTimer;
-
-
-      prepareTimer.start();
 
         // 
         // Determine position in region (positionInRegion)
@@ -1915,11 +1926,6 @@ oid avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRe
         interimImg.initializeZero();
 
 
-      prepareTimer.stop();
-        addProfilingTimingMsg("p| from " + toString(myId) + ":" + toString(prepareTimer.getDuration()) + ",");
-        addTimingMsg( toString(myId) + " ~ Prepare " + toString(myId) +  " : " + toString(prepareTimer.getDuration()) + "\n" );
-
-
 
         //
         // Blend
@@ -1941,7 +1947,6 @@ oid avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRe
 
                 if (regionVector[index] == myId)
                 {
-                  blendTimer.start();
 
                     int regionStart = startingHeight;
                     int regionEnd = endingHeight;
@@ -1974,14 +1979,11 @@ oid avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRe
                         updateBoundingBox(boundingBox, extentsSectionRecv);
                         numBlends++;
                     }
-                  blendTimer.stop();
 
-                    addProfilingTimingMsg("b| from " + toString(myId) + " ~ " + toString(_img.extents[1]-_img.extents[0]) + "x"  + toString(_img.extents[3]-_img.extents[2]) + ":" + toString(blendTimer.getDuration()) + ",");
-                    addTimingMsg( toString(myId) + " ~ Blending " + toString(myId) + " size: " + toString(_img.extents[1]-_img.extents[0]) + "x"  + toString(_img.extents[3]-_img.extents[2]) + " : " + toString(blendTimer.getDuration()) + "\n" ); 
-                }
+                   }
                 else
                 {
-                  recvTimer.start();
+
                     MPI_Wait(&recvMetaRq[countBlend], &recvMetaSt[countBlend]);
 
                     for (int j=0; j<4; j++)
@@ -1994,9 +1996,9 @@ oid avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRe
                         MPI_Wait(&recvImageRq[countBlend], &recvImageSt[countBlend]);
                         recvImage.data = &dataBuffer[index*sizeOneBuffer];
                     }
-                  recvTimer.stop();
+
                     
-                  blendTimer.start();
+
                     if (hasData)
                     {
                         if (firstHalf)
@@ -2006,14 +2008,8 @@ oid avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRe
                         updateBoundingBox(boundingBox, recvImage.extents);
                         numBlends++;
                     }
-                  blendTimer.stop();
+
                     countBlend++;
-
-                    addProfilingTimingMsg("f| from " + toString(regionVector[index]) + " ~ " + toString(recvImage.extents[1]-recvImage.extents[0]) + "x"  + toString(recvImage.extents[3]-recvImage.extents[2]) + ":" + toString(recvTimer.getDuration()) + ",");
-                    addTimingMsg( toString(myId) + " ~ Receiving " + toString(regionVector[index]) + " size: " + toString(recvImage.extents[1]-recvImage.extents[0]) + "x"  + toString(recvImage.extents[3]-recvImage.extents[2]) + " : " + toString(recvTimer.getDuration()) + "\n" );
-
-                    addProfilingTimingMsg("b| from " + toString(regionVector[index]) + " ~ " + toString(recvImage.extents[1]-recvImage.extents[0]) + "x"  + toString(recvImage.extents[3]-recvImage.extents[2]) + ":" + toString(blendTimer.getDuration()) + ",");
-                    addTimingMsg( toString(myId) + " ~ Blending " + toString(regionVector[index]) + " size: " + toString(recvImage.extents[1]-recvImage.extents[0]) + "x"  + toString(recvImage.extents[3]-recvImage.extents[2]) + " : " + toString(blendTimer.getDuration()) + "\n" );
                 }
             }
 
@@ -2030,7 +2026,7 @@ oid avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRe
         gatherTags[0] = tags[2];     gatherTags[1] = tags[2]+1;
         gatherImages(region, numInRegion, interimImg, fullImg, gatherTags, width, height, backgroundColor);
 
-      overallTimer.stop();
+
 
         // if (myId == 0)
         // {
@@ -2074,17 +2070,6 @@ oid avtImgCommunicator::parallelDirectSend(Image _img, int region[], int numInRe
         sendImageSt = NULL;
 
         interimImg.deleteImage();
-    //}
-
-    //_img.deleteImage();
-
-  
-    // Display the image
-    // if (myId == 0)
-    // {
-    //     fullImg.outputPPM("output/pds_" +  toString(width) + "__" + toString(numProcesses) + "_");
-    //     compositingDone = true;
-    // }
 }
 
 /*

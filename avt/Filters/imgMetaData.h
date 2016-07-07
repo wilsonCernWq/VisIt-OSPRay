@@ -119,4 +119,56 @@ struct iotaMeta
     }
 };
 
+
+template <class T> 
+inline std::string toStr(T x){
+    std::ostringstream ss;
+    ss << x;
+    return ss.str();
+}
+
+
+inline void createColorPPM(unsigned char *data, int width, int height, const char *filename){
+    std::ofstream outputFile(filename, std::ios::out | std::ios::binary);
+    outputFile <<  "P6\n" << width << "\n" << height << "\n" << 255 << "\n";
+    
+    for (int y=0; y<height; ++y){
+        for (int x=0; x<width; ++x){
+            int index = ((y * width) + x)*3;
+            
+            char color[3];
+            color[0] = data[index+0];  // red
+            color[1] = data[index+1];  // green 
+            color[2] = data[index+2];  // blue
+            outputFile.write(color,3);
+        }
+    }
+    
+    outputFile.close();
+}
+
+
+inline void writeArrayToPPM( std::string filename , float * image, int dimX, int dimY )
+{
+    std::ofstream outputFile( (filename+ ".ppm").c_str(), std::ios::out | std::ios::binary);
+    outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n";
+ 
+    for (int y=0; y<dimY; ++y)
+    {
+        for (int x=0; x<dimX; ++x)
+        {
+            int index = (y * dimX + x)*4;
+ 
+            char color[3];
+            float alpha = image[index + 3];
+            color[0] = std::max( std::min(image[index + 0]*alpha , 1.0f), 0.0f) * 255;  // red
+            color[1] = std::max( std::min(image[index + 1]*alpha , 1.0f), 0.0f) * 255;  // green
+            color[2] = std::max( std::min(image[index + 2]*alpha , 1.0f), 0.0f) * 255;  // blue
+            outputFile.write(color,3);
+        }
+    }
+ 
+    outputFile.close();
+}
+
 #endif
