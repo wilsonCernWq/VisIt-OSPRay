@@ -95,6 +95,7 @@ class   vtkMatrix4x4;
 //    Add method TightenClippingPlanes.
 //
 //    Pascal Grosset, Fri Sep 20 2013
+
 //    Added ray casting slivr & trilinear interpolation
 //
 // ****************************************************************************

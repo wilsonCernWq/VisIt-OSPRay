@@ -626,7 +626,7 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     eyeSpaceDepth = __depth;
 
 
-    double _imgDepth = 0;
+    //double _imgDepth = 0;
     double _clipSpaceZ = 0;
     double _world[4], _view[4], _clip[4];
     _world[3] = 1.0;
@@ -662,17 +662,17 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
 
         if (i == 0)
         {
-            _imgDepth = _view[2];
+            //_imgDepth = _view[2];
             _clipSpaceZ = (_clip[2] + 1)/2.0;        // set the range to 0 - 1
         }
         else
-            if (_imgDepth > _view[2])
+            if ( _clipSpaceZ > (_clip[2] + 1)/2.0 )
             {
-                _imgDepth = _view[2];
+                //_imgDepth = _view[2];
                 _clipSpaceZ = (_clip[2] + 1)/2.0;    // set the range to 0 - 1
             }
     }
-    eyeSpaceDepth = _imgDepth;
+    //eyeSpaceDepth = _imgDepth;
     clipSpaceDepth = _clipSpaceZ;   
 
 

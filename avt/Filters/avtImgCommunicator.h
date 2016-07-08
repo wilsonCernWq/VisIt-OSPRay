@@ -119,9 +119,17 @@ class avtImgCommunicator
     int getDataPatchID(int procID, int patchID);
    
 
+    
+
+    void placeInImage(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
+    void colorImage(float *& srcImage, int widthSrc, int heightSrc, float _color[4]);
+
     void blendWithBackground(float *_image, int extents[4], float backgroundColor[4]);
+
     void blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
     void blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
+
+
 
     void gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth);
     
@@ -175,6 +183,7 @@ public:
 
 
   void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
+  void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int tag, int width, int height);
   
 #ifdef PARALLEL
   MPI_Status status;

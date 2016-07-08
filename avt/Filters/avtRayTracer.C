@@ -669,6 +669,9 @@ avtRayTracer::Execute(void)
             return;
         }
 
+
+
+
         //
         // Parallel
         //
@@ -768,8 +771,8 @@ avtRayTracer::Execute(void)
         allImgMetaData.clear();
 
 
-        if (imgSize[0] * imgSize[1] > 0)
-            writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);   
+        //if (imgSize[0] * imgSize[1] > 0)
+        //    writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);   
 
         
 
@@ -808,8 +811,8 @@ avtRayTracer::Execute(void)
         if (PAR_Rank() == 0)
         {
             // TEMPORARY - To have some output 
-            float _color[4] = {0,1,0, 1};
-            imgComm.initImage(screen[0],screen[1], _color);
+            //float _color[4] = {0,1,0, 1};
+            //imgComm.initImage(screen[0],screen[1], _color);
 
             whole_image = new avtImage(this);
 
