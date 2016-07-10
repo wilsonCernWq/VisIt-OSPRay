@@ -771,8 +771,8 @@ avtRayTracer::Execute(void)
         allImgMetaData.clear();
 
 
-        //if (imgSize[0] * imgSize[1] > 0)
-        //    writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);   
+        if (imgSize[0] * imgSize[1] > 0)
+            writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);   
 
         
 
@@ -789,17 +789,31 @@ avtRayTracer::Execute(void)
         backgroundColor[2] = background[2]/255.0; 
         backgroundColor[3] = 1.0;
 
-        debug5 << "SDS Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  -  " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  -  " 
-                                << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
+        debug5 << "Compositing Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  -  " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  -  " 
+                                        << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
 
         imgComm.barrier();
         debug5 << "Local composing done" << std::endl;
         imgComm.barrier();
 
         //inline void avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, float *extents, float *imgData, float backgroundColor[4], int width, int height)
-        imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgExtents, composedData, backgroundColor, screen[0], screen[1]);
+        //imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgExtents, composedData, backgroundColor, screen[0], screen[1]);
 
         //   void serialDirectSend(int numPatches, float *localPatchesDepth, float *extents, float *imgData, float backgroundColor[4], int width, int height);
+
+        //parallelDirectSend(composedData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int width, int height)
+
+        int tags[3] = {1081, 1681, 2681};
+        int numMPIRanks = imgComm.GetNumProcs();
+        int *regions = new int[numMPIRanks]();
+        
+
+        imgComm.regionAllocation(numMPIRanks, regions);
+
+        for (int i=0; i<numMPIRanks; i++)
+            debug5 << regions[i] << std::endl;
+
+        imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, backgroundColor, screen[0], screen[1]);
 
         //
         // Move final composited image to visit structures
@@ -841,7 +855,7 @@ avtRayTracer::Execute(void)
             if (zbuffer != NULL)
                 delete []zbuffer;
         }
-        imgComm.syncAllProcs();
+        imgComm.barrier();
 
         if (PAR_Rank() == 0)
             tempImage->Copy(*whole_image);
