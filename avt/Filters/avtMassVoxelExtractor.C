@@ -133,6 +133,7 @@ avtMassVoxelExtractor::avtMassVoxelExtractor(int w, int h, int d,
     aspect = 1;
     view_to_world_transform = vtkMatrix4x4::New();
     world_to_view_transform = vtkMatrix4x4::New();
+    projection_transform = vtkMatrix4x4::New();
     X = NULL;
     Y = NULL;
     Z = NULL;
@@ -188,6 +189,8 @@ avtMassVoxelExtractor::~avtMassVoxelExtractor()
 {
     view_to_world_transform->Delete();
     world_to_view_transform->Delete();
+    projection_transform->Delete();
+
     if (prop_buffer != NULL)
     delete [] prop_buffer;
     if (ind_buffer != NULL)
@@ -431,6 +434,26 @@ avtMassVoxelExtractor::SetGridsAreInWorldSpace(bool val, const avtViewInfo &v,
     vtkMatrix4x4 *mat = cam->GetCompositeProjectionTransformMatrix(aspect,
                                          cur_clip_range[0], cur_clip_range[1]);
 
+
+    if (view.orthographic == true)
+    {
+
+    }
+    else
+    {   // Perspective
+        projection_transform->Zero();
+        const double pi = 3.14159265358979323846;
+        double viewAngleRadians = view.viewAngle * 2. * pi / 360.;
+        double cot = 1./tan(viewAngleRadians / 2.);
+        projection_transform->SetElement(0, 0, cot);
+        projection_transform->SetElement(1, 1, cot);
+        projection_transform->SetElement(2, 2, (view.farPlane+view.nearPlane) / (view.farPlane-view.nearPlane));
+        projection_transform->SetElement(2, 3, -1.);
+        projection_transform->SetElement(3, 2, (2*view.farPlane*view.nearPlane) / (view.farPlane-view.nearPlane));
+    }
+
+
+
     if (xform)
     {
         vtkMatrix4x4 *rectTrans = vtkMatrix4x4::New();
@@ -446,6 +469,13 @@ avtMassVoxelExtractor::SetGridsAreInWorldSpace(bool val, const avtViewInfo &v,
         vtkMatrix4x4::Invert(mat, view_to_world_transform);
         world_to_view_transform->DeepCopy(mat);
     }
+
+    // static int thisCountII = 0;
+    // if (thisCountII == 0)
+    //     debug5 << "MMMMass Voxel Matrix: " << *world_to_view_transform << std::endl;
+    // thisCountII++;
+
+
     cam->Delete();
 }
 
@@ -558,6 +588,67 @@ avtMassVoxelExtractor::ExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     }
 }
 
+
+
+void 
+avtMassVoxelExtractor::project3Dto2D(double _3Dextents[6], int height, int width, int _2DExtents[4])
+{
+    double _world[4], _view[4];
+    _world[3] = 1.0;
+
+    int xMin, xMax, yMin, yMax;
+    xMin = yMin = std::numeric_limits<int>::max();
+    xMax = yMax = std::numeric_limits<int>::min();
+
+
+    float coordinates[8][3];
+    coordinates[0][0] = _3Dextents[0];   coordinates[0][1] = _3Dextents[2];   coordinates[0][2] = _3Dextents[4];
+    coordinates[1][0] = _3Dextents[1];   coordinates[1][1] = _3Dextents[2];   coordinates[1][2] = _3Dextents[4];
+    coordinates[2][0] = _3Dextents[1];   coordinates[2][1] = _3Dextents[3];   coordinates[2][2] = _3Dextents[4];
+    coordinates[3][0] = _3Dextents[0];   coordinates[3][1] = _3Dextents[3];   coordinates[3][2] = _3Dextents[4];
+
+    coordinates[4][0] = _3Dextents[0];   coordinates[4][1] = _3Dextents[2];   coordinates[4][2] = _3Dextents[5];
+    coordinates[5][0] = _3Dextents[1];   coordinates[5][1] = _3Dextents[2];   coordinates[5][2] = _3Dextents[5];
+    coordinates[6][0] = _3Dextents[1];   coordinates[6][1] = _3Dextents[3];   coordinates[6][2] = _3Dextents[5];
+    coordinates[7][0] = _3Dextents[0];   coordinates[7][1] = _3Dextents[3];   coordinates[7][2] = _3Dextents[5];
+
+
+    for (int i=0; i<8; i++)
+    {
+        _world[0] = coordinates[i][0];
+        _world[1] = coordinates[i][1];
+        _world[2] = coordinates[i][2];
+
+        world_to_view_transform->MultiplyPoint(_world, _view);
+
+        if (_view[3] != 0.){
+            _view[0] /= _view[3];
+            _view[1] /= _view[3];
+            _view[2] /= _view[3];
+        }
+
+        _view[0] = _view[0]*(width/2.)  + (width/2.);
+        _view[1] = _view[1]*(height/2.) + (height/2.);
+
+        if (xMin > _view[0]+0.5)
+            xMin = _view[0]+0.5;
+
+        if (xMax < _view[0]+0.5)
+            xMax = _view[0]+0.5;
+
+        if (yMin > _view[1]+0.5)
+            yMin = _view[1]+0.5;
+
+        if (yMax < _view[1]+0.5)
+            yMax = _view[1]+0.5;
+    }
+
+    _2DExtents[0] = xMin;
+    _2DExtents[1] = xMax;
+    _2DExtents[2] = yMin;
+    _2DExtents[3] = yMax;
+}
+
 // ****************************************************************************
 //  Method: avtMassVoxelExtractor::simpleExtractWorldSpaceGrid
 //
@@ -631,6 +722,13 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     double _world[4], _view[4], _clip[4];
     _world[3] = 1.0;
 
+    static int thisCount = 0;
+    if (thisCount == 0)
+        debug5 << "Mass Voxel Matrix: " << *world_to_view_transform << std::endl;
+    thisCount++;
+
+
+
     for (int i=0; i<8; i++)
     {
         _world[0] = coordinates[i][0];
@@ -659,6 +757,12 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
 
         if (yMax < _view[1]+0.5)
             yMax = _view[1]+0.5;
+
+        projection_transform->MultiplyPoint(_view, _clip);
+        _clip[0] /= _clip[3];
+        _clip[1] /= _clip[3];
+        _clip[2] /= _clip[3];
+
 
         if (i == 0)
         {

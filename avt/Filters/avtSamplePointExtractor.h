@@ -177,11 +177,19 @@ class AVTFILTERS_API avtSamplePointExtractor
     void                      SetLighting(bool l) {lighting = l; };
     void                      SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
     void                      SetLightDirection(double _lightDir[3]) { for (int i=0;i<3;i++) lightDirection[i]=_lightDir[i]; }
+
     void                      SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
     void                      SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
+
     void                      SetModelViewMatrix(double _modelViewMatrix[16]) { for (int i=0;i<16;i++) modelViewMatrix[i]=_modelViewMatrix[i]; }
     void                      SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
     void                      SetViewUp(double *vu){ for (int i=0; i<3; i++) view_up[i] = vu[i]; }
+
+    void                      getSpatialExtents(double _spatialExtents[6]){ for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
+    void                      getAvgPatchExtents(double _avgPatchExtents[6]){ for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i]; }
+    void                      getCellDimension(double _cellDimension[6]){ for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i]; }
+
+    void                      getProjectedExents(int _projectedExtents[4]){ for (int i=0; i<4; i++) _projectedExtents[i]=projectedImageExtents[i]; }
 
     // Getting image information
     int                       getTotalAssignedPatches() { return totalAssignedPatches; }              // gets the max number of patches it could have
@@ -189,6 +197,7 @@ class AVTFILTERS_API avtSamplePointExtractor
     imgMetaData               getImgMetaPatch(int patchId){ return imageMetaPatchVector.at(patchId);} // gets the metadata
     void                      getnDelImgData(int patchId, imgData &tempImgData);                      // gets the image & erase its existence
     void                      delImgPatches();                                                        // deletes patches
+
 
   protected:
     int                       width, height, depth;
@@ -200,6 +209,10 @@ class AVTFILTERS_API avtSamplePointExtractor
     bool                      modeIs3D;
     bool                      kernelBasedSampling;
     double                    point_radius;
+
+    double                    minMaxSpatialBounds[6];
+    double                    avgPatchExtents[3];
+    double                    cellDimension[3];
 
     bool                      shouldSetUpArbitrator;
     std::string               arbitratorVarName;
@@ -222,6 +235,8 @@ class AVTFILTERS_API avtSamplePointExtractor
     avtViewInfo               viewInfo;
     double                    aspect;
 
+    int                       projectedImageExtents[4];
+
     int                       patchCount;
     int                       totalAssignedPatches;
 
@@ -234,11 +249,12 @@ class AVTFILTERS_API avtSamplePointExtractor
     bool                      trilinearInterpolation;
     bool                      rayCastingSLIVR;
 
-    // lighting & material
+    // Camera
     double                    view_direction[3];
     double                    view_up[3];
     double                    modelViewMatrix[16];
 
+    // lighting & material
     bool                      lighting;
     double                    lightPosition[4];
     double                    lightDirection[3];

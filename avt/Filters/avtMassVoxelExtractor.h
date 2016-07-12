@@ -54,6 +54,7 @@ class     vtkRectilinearGrid;
 class     vtkMatrix4x4;
 
 #include <vtkMatrix3x3.h>
+#include <vtkMatrix4x4.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <algorithm>    // std::max
@@ -114,20 +115,27 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
                                             std::vector<int> varsize);
     void             SetRayCastingSLIVR(bool s) {rayCastingSLIVR = s; };
     void             SetTrilinear(bool t) {trilinearInterpolation = t;   };
+
     void             SetLighting(bool l) {lighting = l; };
     void             SetLightDirection(double _lightDir[3]) { for (int i=0;i<3;i++) lightDirection[i]=_lightDir[i]; }
     void             SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
     void             SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
+
     void             SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
+
     void             SetModelViewMatrix(double _modelViewMatrix[16]) { for (int i=0;i<16;i++) modelViewMatrix[i]=_modelViewMatrix[i]; }
     void             SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
     void             SetViewUp(double *vu){ for (int i=0; i<3; i++) view_up[i] = vu[i]; }
+
+    void             get_world_to_view_transform(vtkMatrix4x4 *_world_to_view_transform){ _world_to_view_transform->DeepCopy(world_to_view_transform); }
 
     // Getting the image
     void             getImageDimensions(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth);
     void             getComputedImage(float *image);
     void             getImageDepth(float *imageDepth);
     void             setProcIdPatchID(int _proc, int _patch){ proc = _proc; patch = _patch; }
+
+    void             project3Dto2D(double _3Dextents[6], int height, int width, int _2DExtents[4]);
 
   protected:
     bool             gridsAreInWorldSpace;
@@ -137,6 +145,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     double           cur_clip_range[2];
     vtkMatrix4x4    *view_to_world_transform;
     vtkMatrix4x4    *world_to_view_transform;
+    vtkMatrix4x4    *projection_transform;
     double           modelViewMatrix[16];
 
     double           *X;
@@ -232,7 +241,6 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             computeIndices(int dims[3], int indices[6], int returnIndices[8]);
     void             computeIndicesVert(int dims[3], int indices[6], int returnIndices[8]);
     void             getIndexandDistFromCenter(float dist, int index,    int &index_before, int &index_after,    float &dist_before, float &dist_after);
-
 };
 
 #endif

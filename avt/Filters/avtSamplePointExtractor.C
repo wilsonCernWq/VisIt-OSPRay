@@ -60,6 +60,7 @@
 #include <vtkWedge.h>
 #include <vtkPolygon.h>
 #include <vtkIdList.h>
+#include <vtkRectilinearGrid.h>
 
 #include <avtCellList.h>
 #include <avtDatasetExaminer.h>
@@ -84,6 +85,8 @@
 #include <Utility.h>
 #include <DebugStream.h>
 
+#include <limits>
+#include <algorithm>
 #include <stack>
 
 // ****************************************************************************
@@ -145,6 +148,8 @@ avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
 
     currentNode = 0;
     totalNodes  = 0;
+
+    projectedImageExtents[0] = projectedImageExtents[1] = projectedImageExtents[2] = projectedImageExtents[3] = 0;
 
     hexExtractor        = NULL;
     hex20Extractor      = NULL;
@@ -709,16 +714,114 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     imageMetaPatchVector.clear();
     imgDataHashMap.clear();
 
-    //need to pass the datatree as well as its index in its parent to RasterBasedSample.
-    /*struct datatree_childindex { 
-        avtDataTree_p dt; int idx; bool visited;
-        datatree_childindex(avtDataTree_p dt_, int idx_) : dt(dt_),idx(idx_),visited(false) {}
-    };*/
-
-    std::stack<datatree_childindex*> nodes;
     if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
         return;
 
+
+    // Get Extents
+    std::stack<datatree_childindex*> tempNodes;
+
+    minMaxSpatialBounds[0] = minMaxSpatialBounds[2] = minMaxSpatialBounds[4] = std::numeric_limits<float>::max();
+    minMaxSpatialBounds[1] = minMaxSpatialBounds[3] = minMaxSpatialBounds[5] = std::numeric_limits<float>::min();
+
+    avgPatchExtents[0] = avgPatchExtents[1] = avgPatchExtents[2] = 0;
+    cellDimension[0] = cellDimension[1] = cellDimension[2] = 0;
+
+    tempNodes.push(new datatree_childindex(dt,0));
+    int patchesProcessed = 0;
+    while (!tempNodes.empty())
+    {
+        datatree_childindex *ci=tempNodes.top();
+        avtDataTree_p ch=ci->dt;
+
+        if (ch->GetNChildren() != 0)
+        {
+            tempNodes.pop();  // if it has children, it never gets processed below
+            for (int i = 0; i < ch->GetNChildren(); i++)
+            {
+                if (ch->ChildIsPresent(i))
+                {
+                    if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
+                        continue;
+                    tempNodes.push(new datatree_childindex(ch->GetChild(i),i));
+                }
+            }
+
+            continue;
+        }
+
+        //do the work
+        tempNodes.pop();
+
+        if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
+            continue;
+
+        //
+        // Get the dataset for this leaf in the tree.
+        //
+        vtkDataSet *ds = ch->GetDataRepresentation().GetDataVTK();
+
+        double _minMaxBounds[6];
+        ds->GetBounds(_minMaxBounds);
+
+        minMaxSpatialBounds[0] = std::min(minMaxSpatialBounds[0], _minMaxBounds[0]);
+        minMaxSpatialBounds[2] = std::min(minMaxSpatialBounds[2], _minMaxBounds[2]);
+        minMaxSpatialBounds[4] = std::min(minMaxSpatialBounds[4], _minMaxBounds[4]);
+
+        minMaxSpatialBounds[1] = std::max(minMaxSpatialBounds[1], _minMaxBounds[1]);
+        minMaxSpatialBounds[3] = std::max(minMaxSpatialBounds[3], _minMaxBounds[3]);
+        minMaxSpatialBounds[5] = std::max(minMaxSpatialBounds[5], _minMaxBounds[5]);
+
+        avgPatchExtents[0] = minMaxSpatialBounds[1]-minMaxSpatialBounds[0];
+        avgPatchExtents[1] = minMaxSpatialBounds[3]-minMaxSpatialBounds[2];
+        avgPatchExtents[2] = minMaxSpatialBounds[5]-minMaxSpatialBounds[4];
+
+        // massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
+
+        if (patchesProcessed == 0)
+        {
+            int patchDim[3];
+            vtkRectilinearGrid* rg = vtkRectilinearGrid::SafeDownCast(ds);
+            rg->GetDimensions(patchDim);
+            cellDimension[0] = (minMaxSpatialBounds[1]-minMaxSpatialBounds[0])/patchDim[0];
+            cellDimension[1] = (minMaxSpatialBounds[3]-minMaxSpatialBounds[2])/patchDim[1];
+            cellDimension[2] = (minMaxSpatialBounds[5]-minMaxSpatialBounds[4])/patchDim[2];
+        }
+        patchesProcessed++;
+    }
+
+    if (patchesProcessed == 0)
+    {
+        minMaxSpatialBounds[0] = minMaxSpatialBounds[2] = minMaxSpatialBounds[4] = 0;
+        minMaxSpatialBounds[1] = minMaxSpatialBounds[3] = minMaxSpatialBounds[5] = 0;
+    }
+    else
+    {
+        avgPatchExtents[0] = avgPatchExtents[0]/patchesProcessed;
+        avgPatchExtents[1] = avgPatchExtents[1]/patchesProcessed;
+        avgPatchExtents[2] = avgPatchExtents[2]/patchesProcessed;
+    }
+    debug5 << "Spatial Extents: " << minMaxSpatialBounds[0] << ", " << minMaxSpatialBounds[1] << "    "
+                                  << minMaxSpatialBounds[2] << ", " << minMaxSpatialBounds[3] << "    "
+                                  << minMaxSpatialBounds[4] << ", " << minMaxSpatialBounds[5] <<  std::endl;
+    debug5 << "avgPatchExtents: " << avgPatchExtents[0] << ", " << avgPatchExtents[1] << ", " << avgPatchExtents[2] << std::endl;
+    debug5 << "cellDimension: " << cellDimension[0] << ", " << cellDimension[1] << ", " << cellDimension[2] << std::endl;
+
+    avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
+    const double *xform = NULL;
+    if (atts.GetRectilinearGridHasTransform())
+        xform = atts.GetRectilinearGridTransform();
+
+    massVoxelExtractor->SetGridsAreInWorldSpace( rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
+    massVoxelExtractor->project3Dto2D(minMaxSpatialBounds, height, width, projectedImageExtents);
+    debug5 << "2D extents: " << projectedImageExtents[0] << ", " << projectedImageExtents[1] << "   " << projectedImageExtents[2] << ", " << projectedImageExtents[3] << std::endl;
+
+
+
+    //
+    // Process tree
+    std::stack<datatree_childindex*> nodes;
+    
     //iterative depth-first sampling
     nodes.push(new datatree_childindex(dt,0));
     while (!nodes.empty())
@@ -786,8 +889,6 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     avtMemory::GetMemorySize(m_size, m_rss);
     debug5 << PAR_Rank() << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
            <<  "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
-
-
 }
 
 
@@ -819,6 +920,7 @@ avtSamplePointExtractor::delImgPatches(){
         (*it).second.imagePatch = NULL;
         (*it).second.imageDepth = NULL;
     }
+
     imgDataHashMap.clear();
 }
 

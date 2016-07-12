@@ -52,6 +52,7 @@
 #include <fstream>
 #include <DebugStream.h>
 #include <limits>
+#include <algorithm>
 
 
 #ifdef PARALLEL
@@ -110,28 +111,10 @@ avtImgCommunicator::avtImgCommunicator()
   #endif
     
     totalPatches = 0;
-    numPatchesToCompose = 0;
+
 
     processorPatchesCount = NULL;
     imgBuffer = NULL;
-
-
-    patchesToSendArray = NULL;
-    patchesToRecvArray = NULL;
-    numPatchesToSendArray = NULL;
-    numPatchesToRecvArray = NULL;
-    recvDisplacementForProcs = NULL;
-    sendDisplacementForProcs = NULL;
-    numPatchesToSendRecvArray = NULL;
-    boundsPerBlockArray = NULL;
-    blockDisplacementForProcs = NULL;
-    numBlocksPerProc = NULL;
-    patchesToCompositeLocallyArray = NULL;
-    numPatchesToCompositeLocally = NULL;
-    compositeDisplacementForProcs = NULL;
-
-
-    all_avgZ_proc0.clear();
 }
 
 
@@ -147,46 +130,16 @@ avtImgCommunicator::avtImgCommunicator()
 //  Modifications:
 //
 // ****************************************************************************
-avtImgCommunicator::~avtImgCommunicator(){
-  if (my_id == 0){
-    if (processorPatchesCount != NULL)
-      delete []processorPatchesCount;
+avtImgCommunicator::~avtImgCommunicator()
+{
+    if (my_id == 0)
+    {
+        if (processorPatchesCount != NULL)
+            delete []processorPatchesCount;
 
-    if (imgBuffer != NULL)
-      delete []imgBuffer;
-
-
-
-    if (patchesToSendArray!=NULL) delete[] patchesToSendArray;
-        if (patchesToRecvArray!=NULL) delete[] patchesToRecvArray;
-        if (numPatchesToSendArray!=NULL) delete[] numPatchesToSendArray;
-        if (numPatchesToRecvArray!=NULL) delete[] numPatchesToRecvArray;
-        if (recvDisplacementForProcs!=NULL) delete[] recvDisplacementForProcs;
-        if (sendDisplacementForProcs!=NULL) delete[] sendDisplacementForProcs;
-        if (blockDisplacementForProcs!=NULL) delete[] blockDisplacementForProcs;
-        if (numPatchesToSendRecvArray!=NULL) delete[] numPatchesToSendRecvArray;
-        if (boundsPerBlockArray!=NULL) delete[] boundsPerBlockArray;
-        if (numBlocksPerProc!=NULL) delete[] numBlocksPerProc;
-        if (patchesToCompositeLocallyArray!=NULL) delete[] patchesToCompositeLocallyArray;
-        if (numPatchesToCompositeLocally!=NULL) delete[] numPatchesToCompositeLocally;
-        if (compositeDisplacementForProcs!=NULL) delete[] compositeDisplacementForProcs;
-
-    patchesToSendArray = NULL;
-    patchesToRecvArray = NULL;
-    numPatchesToSendArray = NULL;
-    numPatchesToRecvArray = NULL;
-    recvDisplacementForProcs = NULL;
-    sendDisplacementForProcs = NULL;
-    numPatchesToSendRecvArray = NULL;
-    boundsPerBlockArray = NULL;
-    blockDisplacementForProcs = NULL;
-    numBlocksPerProc = NULL;
-    patchesToCompositeLocallyArray = NULL;
-    numPatchesToCompositeLocally = NULL;
-    compositeDisplacementForProcs = NULL;
-  }
-  
-  all_avgZ_proc0.clear();
+        if (imgBuffer != NULL)
+            delete []imgBuffer;
+    }
 }
 
 
@@ -1003,6 +956,9 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
                     extentsSectionRecv[3] = regionEnd;
 
                     blendFrontToBack(imgData, imgExtents, extentsSectionRecv, myCompositedRegionImg, myCompositedRegionExtents);
+                    debug5 << "extentsSectionRecv: " << extentsSectionRecv[0] << ", " << extentsSectionRecv[1] << "    " << extentsSectionRecv[2] << ", " << extentsSectionRecv[3] << ", "  << std::endl;
+                    writeArrayToPPM("/home/pascal/Desktop/debugImages/composited_AFTER_recv_from_" + toStr(regionVector[index]) + "_at_" + toStr(my_id), myCompositedRegionImg, myCompositedRegionExtents[1]-myCompositedRegionExtents[0], myCompositedRegionExtents[3]-myCompositedRegionExtents[2]);
+
                    
                     updateBoundingBox(boundingBox, extentsSectionRecv);
                     numBlends++;
@@ -1027,9 +983,14 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
                 
                 if (hasData)
                 {
+                    
                     blendFrontToBack(recvImageData, recvImageExtents, myCompositedRegionImg, myCompositedRegionExtents);
 
-                    debug5 << "recvImageExtents" << recvImageExtents[0] << ", " << recvImageExtents[1] << "    " << recvImageExtents[2] << ", " << recvImageExtents[3] << ", "  << std::endl;
+                    writeArrayToPPM("/home/pascal/Desktop/debugImages/recv_from_" + toStr(regionVector[index]) + "_at_" + toStr(my_id), recvImageData, recvImageExtents[1]-recvImageExtents[0], recvImageExtents[3]-recvImageExtents[2]);
+                    writeArrayToPPM("/home/pascal/Desktop/debugImages/composited_AFTER_recv_from_" + toStr(regionVector[index]) + "_at_" + toStr(my_id), myCompositedRegionImg, myCompositedRegionExtents[1]-myCompositedRegionExtents[0], myCompositedRegionExtents[3]-myCompositedRegionExtents[2]);
+
+
+                    debug5 << "recvImageExtents: " << recvImageExtents[0] << ", " << recvImageExtents[1] << "    " << recvImageExtents[2] << ", " << recvImageExtents[3] << ", "  << std::endl;
 
                     updateBoundingBox(boundingBox, recvImageExtents);
                     numBlends++;
@@ -1151,6 +1112,8 @@ void avtImgCommunicator::gatherImages(int regionGather[], int numToRecv, float *
 }
 
 
+
+
 // ****************************************************************************
 //  Method: avtImgCommunicator::
 //
@@ -1163,5 +1126,29 @@ void avtImgCommunicator::gatherImages(int regionGather[], int numToRecv, float *
 //
 // ****************************************************************************
 
+void avtImgCommunicator::allGather2DExtents(int rankExtents[4])
+{
+  #ifdef PARALLEL
+    int *allRankExtents = NULL;
+    allRankExtents = new int[num_procs * 4];
 
+    MPI_Allgather(rankExtents, 4, MPI_INT,  allRankExtents, 4, MPI_INT,  MPI_COMM_WORLD);
 
+    fullImageExtents[0] = allRankExtents[0];
+    fullImageExtents[1] = allRankExtents[1];
+    fullImageExtents[2] = allRankExtents[2];
+    fullImageExtents[3] = allRankExtents[3];
+
+    for (int i=1; i<num_procs; i++)
+    {
+        fullImageExtents[0] = std::min(fullImageExtents[0], allRankExtents[i*4 +0]);
+        fullImageExtents[1] = std::max(fullImageExtents[1], allRankExtents[i*4 +1]);
+        fullImageExtents[2] = std::min(fullImageExtents[2], allRankExtents[i*4 +2]);
+        fullImageExtents[3] = std::max(fullImageExtents[3], allRankExtents[i*4 +3]);
+    }
+
+    if (allRankExtents != NULL)
+        delete []allRankExtents;
+    allRankExtents = NULL;
+  #endif
+}

@@ -497,8 +497,9 @@ avtRayTracer::Execute(void)
     extractor.RegisterRayFunction(rayfoo);
     extractor.SetJittering(true);
     extractor.SetInput(trans.GetOutput());
-    if (trilinearInterpolation || rayCastingSLIVR){
-      extractor.SetTrilinear(trilinearInterpolation);
+    if (trilinearInterpolation || rayCastingSLIVR)
+    {
+        extractor.SetTrilinear(trilinearInterpolation);
         extractor.SetRayCastingSLIVR(rayCastingSLIVR);
         extractor.SetLighting(lighting);
         extractor.SetLightDirection(lightDirection);
@@ -670,8 +671,6 @@ avtRayTracer::Execute(void)
         }
 
 
-
-
         //
         // Parallel
         //
@@ -732,6 +731,7 @@ avtRayTracer::Execute(void)
         float *composedData = new float[imgSize[0] * imgSize[1] * 4]();
 
 
+
         //
         // Sort with the largest z first
         std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
@@ -770,7 +770,6 @@ avtRayTracer::Execute(void)
         }
         allImgMetaData.clear();
 
-
         if (imgSize[0] * imgSize[1] > 0)
             writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);   
 
@@ -796,12 +795,15 @@ avtRayTracer::Execute(void)
         debug5 << "Local composing done" << std::endl;
         imgComm.barrier();
 
-        //inline void avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, float *extents, float *imgData, float backgroundColor[4], int width, int height)
+
         //imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgExtents, composedData, backgroundColor, screen[0], screen[1]);
+        int rankExtents[4];
+        int fullImageExtents[4];
+        extractor.getProjectedExents(rankExtents);
+        imgComm.allGather2DExtents(rankExtents);
+        imgComm.getFullImageExtents(fullImageExtents);
 
-        //   void serialDirectSend(int numPatches, float *localPatchesDepth, float *extents, float *imgData, float backgroundColor[4], int width, int height);
 
-        //parallelDirectSend(composedData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int width, int height)
 
         int tags[3] = {1081, 1681, 2681};
         int numMPIRanks = imgComm.GetNumProcs();

@@ -61,14 +61,10 @@ const int SEND = 1;
 const int RECEIVE = 2;
 
 struct imageBuffer{
-  float *image;
-  float depth;
+    float *image;
+    float depth;
 };
 
-struct code{
-  float count;  // should be int but float makes it easier to send with MPI!
-  float color[4];
-};
 
 // ****************************************************************************
 //  Class: avtRayTracer
@@ -83,43 +79,28 @@ struct code{
 
 class avtImgCommunicator
 {
-  int totalPatches;
-  int numPatchesToCompose;
-  int *processorPatchesCount;
+    int totalPatches;
+    int *processorPatchesCount;
 
-  float *imgBuffer;
-  iotaMeta *allRecvIotaMeta;
+    int num_procs;
+    int my_id;
+    bool compositingDone;
 
+    float *imgBuffer;
 
-  std::set<float> all_avgZ_proc0;
-  std::vector<std::vector<float> > boundsPerBlockVec;
+    int fullImageExtents[4];
+    unsigned char background[3];
 
-  int *patchesToSendArray, *patchesToRecvArray;
-  int *numPatchesToSendArray, *numPatchesToRecvArray;
-  int *recvDisplacementForProcs, *sendDisplacementForProcs;
-
-  int *numPatchesToSendRecvArray;
-  float *boundsPerBlockArray;
-  int *blockDisplacementForProcs;
-  int *numBlocksPerProc;
-
-  int* patchesToCompositeLocallyArray;
-  int* numPatchesToCompositeLocally;
-  int* compositeDisplacementForProcs;
-
-  int *compressedSizePerDiv;  //size of each division
-  
-  unsigned char background[3];
-
-    int     num_procs;
-    int     my_id;
-    bool    compositingDone;
 
     int getDataPatchID(int procID, int patchID);
    
     void placeInImage(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
     void colorImage(float *& srcImage, int widthSrc, int heightSrc, float _color[4]);
     void updateBoundingBox(int currentBoundingBox[4], int imageExtents[4]);
+
+    void gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth);
+    
+
 
     void blendWithBackground(float *_image, int extents[4], float backgroundColor[4]);
 
@@ -129,35 +110,37 @@ class avtImgCommunicator
     void blendFrontToBack(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4]);
     void blendBackToFront(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4]);
 
-    void gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth);
+    
+public:
+    avtImgCommunicator();
+    ~avtImgCommunicator();
+
+    virtual const char *GetType(void) { return "avtImgCommunicator"; };
+    virtual const char *GetDescription(void) { return "Doing compositing for ray casting SLIVR";};
+
+    void init();
+
+    void getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage);  // get the final composited image
+
+    void barrier();
+
+    int GetNumProcs(){ return num_procs;};
+    int GetMyId(){ return my_id;};
+
+    void getFullImageExtents(int _fullImageExtents[4]){ for (int i=0; i<4; i++) _fullImageExtents[i] = fullImageExtents[i];}
+
+    float clamp(float x);
+    void setBackground(unsigned char _background[3]){ for (int i=0; i<3; i++) background[i] = _background[i]; }
     
 
-public:
-  avtImgCommunicator();
-  ~avtImgCommunicator();
+    void initImage(int sizeX, int sizeY, float color[4]);
+    void regionAllocation(int numMPIRanks, int *& regions);
 
-  virtual const char *GetType(void) { return "avtImgCommunicator"; };
-  virtual const char *GetDescription(void) { return "Doing compositing for ray casting SLIVR";};
+    void allGather2DExtents(int rankExtents[4]);
 
-  void init();
-
-  void getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage);  // get the final composited image
-
-  void barrier();
-
-  int GetNumProcs(){ return num_procs;};
-  int GetMyId(){ return my_id;};
-
-  float clamp(float x);
-  void setBackground(unsigned char _background[3]){ for (int i=0; i<3; i++) background[i] = _background[i]; }
-  
-
-  void initImage(int sizeX, int sizeY, float color[4]);
-  void regionAllocation(int numMPIRanks, int *& regions);
-
-  void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
-  void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int tag, int width, int height);
-  void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int width, int height);
+    void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
+    void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int tag, int width, int height);
+    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int width, int height);
 };
 
 
