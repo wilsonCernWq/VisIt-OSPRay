@@ -722,7 +722,7 @@ avtRayTracer::Execute(void)
         imgSize[1] = imgExtents[3]-imgExtents[2];
 
 
-        debug5 << "Number of patches: " << numPatches << " image (minX, minY   maxX, maxY): " << imgExtents[0] << ", " << imgExtents[2] << "    " << imgExtents[1] << ", " << imgExtents[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
+        debug5 << "Number of patches: " << numPatches << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
 
         imgComm.barrier();
 
@@ -788,7 +788,7 @@ avtRayTracer::Execute(void)
         backgroundColor[2] = background[2]/255.0; 
         backgroundColor[3] = 1.0;
 
-        debug5 << "Compositing Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  -  " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  -  " 
+        debug5 << "Compositing Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  Extents: " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  bkg color: " 
                                         << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
 
         imgComm.barrier();
@@ -802,6 +802,7 @@ avtRayTracer::Execute(void)
         extractor.getProjectedExents(rankExtents);
         imgComm.allGather2DExtents(rankExtents);
         imgComm.getFullImageExtents(fullImageExtents);
+        debug5 << "Full image extents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "   " << fullImageExtents[2] << ", " << fullImageExtents[3] << std::endl;
 
 
 
@@ -815,8 +816,11 @@ avtRayTracer::Execute(void)
         for (int i=0; i<numMPIRanks; i++)
             debug5 << regions[i] << std::endl;
 
-        imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, backgroundColor, screen[0], screen[1]);
+        imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, backgroundColor, fullImageExtents);
+        debug5 << "PDS done!" << std::endl;
+        imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tags[2], fullImageExtents);
 
+        debug5 << "Gather done!" << std::endl;
         //
         // Move final composited image to visit structures
         avtImage_p whole_image, tempImage;

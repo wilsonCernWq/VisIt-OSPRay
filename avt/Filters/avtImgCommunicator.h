@@ -86,10 +86,14 @@ class avtImgCommunicator
     int my_id;
     bool compositingDone;
 
-    float *imgBuffer;
+    float *imgBuffer;                   // Final image is here
+    int finalImageExtents[4];
+    int finalBB[4];
 
-    int fullImageExtents[4];
+    
+
     unsigned char background[3];
+
 
 
     int getDataPatchID(int procID, int patchID);
@@ -112,6 +116,13 @@ class avtImgCommunicator
 
     
 public:
+    float *intermediateImage;           // Intermediate image, e.g. in parallel direct send
+    int intermediateImageExtents[4];    
+    int intermediateImageBB[4];         
+
+    int fullImageExtents[4];            // Extents of the whole projected image for bounding box
+
+
     avtImgCommunicator();
     ~avtImgCommunicator();
 
@@ -139,8 +150,9 @@ public:
     void allGather2DExtents(int rankExtents[4]);
 
     void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
-    void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int tag, int width, int height);
-    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int width, int height);
+
+    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int fullImageExtents[4]);
+    void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4]);
 };
 
 
