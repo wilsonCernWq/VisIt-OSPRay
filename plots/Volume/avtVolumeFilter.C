@@ -381,6 +381,8 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     range[0] = (artificialMin ? atts.GetColorVarMin() : actualRange[0]);
     range[1] = (artificialMax ? atts.GetColorVarMax() : actualRange[1]);
 
+    //std::cout << "atts.GetColorVarMin(): " << atts.GetColorVarMin() << ",  actualRange[0]: " << actualRange[0] << "   atts.GetColorVarMax(): " << atts.GetColorVarMax() << "   actualRange[1]: " << actualRange[1] << std::endl;
+
     if (atts.GetScaling() == VolumeAttributes::Log)
     {
         if (artificialMin)
@@ -407,6 +409,10 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     }
     om.SetMin(range[0]);
     om.SetMax(range[1]);
+    om.computeVisibleRange();
+
+    debug5 << "Min visible scalar range:" << om.GetMinVisibleScalar() << "  Max visible scalar range: "  <<  om.GetMaxVisibleScalar() << std::endl;
+ 
     
    
 
@@ -566,6 +572,18 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     vtkCamera *camera = vtkCamera::New();
     vi.SetCameraFromView(camera);
     vtkMatrix4x4 *cameraMatrix = camera->GetViewTransformMatrix();
+
+
+    debug5 << "VF View settings: " << endl;
+    debug5 << "pos: "       << vi.camera[0]         << ", " << vi.camera[1]     << ", " << vi.camera[2] << std::endl;
+    debug5 << "focus: "     << vi.focus[0]          << ", " << vi.focus[1]      << ", " << vi.focus[2] << std::endl;
+    //debug5 << "view_dir: "  << vi.view_dir[0]       << ", " << vi.view_dir[1]   << ", " << vi.view_dir[2] << std::endl;
+    debug5 << "viewUp: "    << vi.viewUp[0]         << ", " << vi.viewUp[1]     << ", " << vi.viewUp[2] << std::endl;
+    debug5 << "eyeAngle: "  << vi.eyeAngle << std::endl;
+    debug5 << "nearPlane: " << vi.nearPlane << std::endl;
+    debug5 << "nearPlane: " << vi.farPlane << std::endl;
+    debug5 << "imagePan: "  << vi.imagePan[0]        << ", " << vi.imagePan[1] << std::endl << std::endl;
+
 
     double modelViewMatrix[16];
     modelViewMatrix[0] = cameraMatrix->GetElement(0,0);

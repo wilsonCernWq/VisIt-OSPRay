@@ -361,6 +361,9 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int bl
 
     widthDst  = dstExtents[1] - dstExtents[0];
 
+    #if defined(VISIT_THREADS)
+    #endif
+
     for (int _y=blendExtents[2]; _y<blendExtents[3]; _y++)
         for (int _x=blendExtents[0]; _x<blendExtents[1]; _x++)
         {
@@ -739,8 +742,6 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 }
 
 
-
-// numInRegion / numRegions
 void 
 avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int fullImageExtents[4])
 {
@@ -1058,18 +1059,20 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
 }
 
 
-//imgBuffer
-void avtImgCommunicator::gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4])
+void 
+avtImgCommunicator::gatherImages(int regionGather[], int numRanksWithData, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4])
 {
   #ifdef PARALLEL
+    //debug5 << "gatherImages starting... numRanksWithData: " << numRanksWithData << "  imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
+
+
     if (my_id == 0)
     {
-        int originalNumtoRecv = numToRecv;
-        debug5 << "gatherImages starting..." << std::endl;
+        int numToRecv = numRanksWithData;
         int width =  fullImageExtents[1]-fullImageExtents[0];
         int height = fullImageExtents[3]-fullImageExtents[2];
         
-        debug5 << "gatherImages 0... " << fullImageExtents[1]-fullImageExtents[0] << " x " << fullImageExtents[3]-fullImageExtents[2] << std::endl;
+        //debug5 << "gatherImages 0... " << fullImageExtents[1]-fullImageExtents[0] << " x " << fullImageExtents[3]-fullImageExtents[2] << std::endl;
 
         //
         // Receive at root/display node!
@@ -1079,18 +1082,17 @@ void avtImgCommunicator::gatherImages(int regionGather[], int numToRecv, float *
         finalImageExtents[2] = fullImageExtents[2];
         finalImageExtents[3] = fullImageExtents[3];
 
-        debug5 << "gatherImages 1... " << std::endl;
-
-        int regionHeight      = height / numToRecv;
-        int lastRegionHeight  = height - regionHeight*(numToRecv-1);
+        
+        int regionHeight      = height / numRanksWithData;
+        int lastRegionHeight  = height - regionHeight*(numRanksWithData-1);
         int lastBufferSize    = lastRegionHeight * width * 4; 
         int regularBufferSize = regionHeight * width * 4;  
 
-        debug5 << "numToRecv: " << numToRecv << std::endl;
-        for (int i=0; i<numToRecv; i++)
+        //debug5 << "regionHeight: " << regionHeight << "  lastRegionHeight: " << lastRegionHeight << "  width: " << width << "  height: " << height << std::endl;
+        //debug5 << "numToRecv: " << numToRecv << std::endl;
+        for (int i=0; i<numRanksWithData; i++)
             if (regionGather[i] == my_id){
                 numToRecv--;
-                debug5 << "numToRecv: " << numToRecv << std::endl;
                 break;
             }
         
@@ -1099,39 +1101,28 @@ void avtImgCommunicator::gatherImages(int regionGather[], int numToRecv, float *
         MPI_Request *recvImageRq = new MPI_Request[ numToRecv ];
         MPI_Status  *recvImageSt = new MPI_Status[ numToRecv ];
 
-        debug5 << "gatherImages 2... " << std::endl;
+        debug5 << "gatherImages 2... numRanksWithData: " << numRanksWithData << "  numToRecv: " << numToRecv << std::endl;
 
         // Async Recv
         int recvCount=0;
-        for (int i=0; i<originalNumtoRecv; i++)
+        for (int i=0; i<numRanksWithData; i++)
         {
             int src = regionGather[i];
-            
 
             if (src == my_id)
                 continue;
 
-            debug5 << "i: " << i << "  src: " << src << std::endl;
-
-            if (i == numToRecv-1)
+            if (i == numRanksWithData-1)
                 MPI_Irecv(&imgBuffer[i*regularBufferSize], lastBufferSize,     MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] ); 
             else
                 MPI_Irecv(&imgBuffer[i*regularBufferSize], regularBufferSize,  MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
             recvCount++;
         }
 
-        debug5 << "gatherImages 3... " << std::endl;
-
         if (compositingDone == false)   // If root has data for the final image
             placeInImage(inputImg, imgExtents, imgBuffer, finalImageExtents);
 
-        writeArrayToPPM("/home/pascal/Desktop/debugImages/_imgBuffer_", inputImg, imgExtents[1]-imgExtents[0], imgExtents[3]-imgExtents[2]);
-        writeArrayToPPM("/home/pascal/Desktop/debugImages/Finalmg__", imgBuffer, width, height);
-        debug5 << "gatherImages 4... " << std::endl;
-
         MPI_Waitall(numToRecv, recvImageRq, recvImageSt);
-
-        debug5 << "gatherImages 5... " << std::endl;
 
         delete []recvImageRq;
         recvImageRq = NULL;
@@ -1139,20 +1130,16 @@ void avtImgCommunicator::gatherImages(int regionGather[], int numToRecv, float *
         recvImageSt = NULL;
 
         writeArrayToPPM("/home/pascal/Desktop/debugImages/Finalmg_", imgBuffer, width, height);
-
     }
     else
     {
         if (compositingDone == false)   // If root has data for the final image
         {
-            debug5 << "gatherImages ..." << (imgExtents[1]-imgExtents[0]) << " x " << (imgExtents[3]-imgExtents[2]) << std::endl;
-
+            //debug5 << "gatherImages ..." << (imgExtents[1]-imgExtents[0]) << " x " << (imgExtents[3]-imgExtents[2]) << std::endl;
             int imgSize = (imgExtents[1]-imgExtents[0]) * (imgExtents[3]-imgExtents[2]) * 4;
             MPI_Send(inputImg, imgSize, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);    
-          
+    
             compositingDone = true;
-
-            debug5 << "gatherImages done!" << std::endl;
         }
     }
 

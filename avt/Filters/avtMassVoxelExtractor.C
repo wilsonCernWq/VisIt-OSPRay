@@ -682,6 +682,19 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
 
     imgWidth = imgHeight = 0;
 
+
+    debug5 << "MVE View settings: " << endl;
+    debug5 << "normal: "       << view.camera[0]         << ", " << view.camera[1]     << ", " << view.camera[2] << std::endl;
+    debug5 << "focus: "     << view.focus[0]          << ", " << view.focus[1]      << ", " << view.focus[2] << std::endl;
+    //debug5 << "view_dir: "  << view.view_dir[0]       << ", " << view.view_dir[1]   << ", " << view.view_dir[2] << std::endl;
+    debug5 << "viewUp: "    << view.viewUp[0]         << ", " << view.viewUp[1]     << ", " << view.viewUp[2] << std::endl;
+    debug5 << "eyeAngle: "  << view.eyeAngle << std::endl;
+    debug5 << "nearPlane: " << view.nearPlane << std::endl;
+    debug5 << "nearPlane: " << view.farPlane << std::endl;
+    debug5 << "cur_clip_range: " << cur_clip_range[0] << ", " << cur_clip_range[1] << std::endl;
+    debug5 << "imagePan: "  << view.imagePan[0]        << ", " << view.imagePan[1] << std::endl << std::endl;
+
+
     //
     // Let's find out if this range can even intersect the dataset.
     // If not, just skip it.
@@ -717,6 +730,62 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     eyeSpaceDepth = __depth;
 
 
+    double testWorld1[4] = {0,0,0,1};
+    double testWorld2[4] = {0.7,0.22,0.22,1};
+    double interimView[4], interimClip[4];
+
+
+    world_to_view_transform->MultiplyPoint(testWorld1, interimView);
+    debug5 << " testWorld1: " <<  testWorld1[0] << ", " << testWorld1[1] << ", " << testWorld1[2] << "  fullImgWidth: " << fullImgWidth << "  fullImgHeight: " << fullImgHeight <<std::endl;
+    debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
+
+    if (interimView[3] != 0.){
+        interimView[0] /= interimView[3];
+        interimView[1] /= interimView[3];
+        interimView[2] /= interimView[3];
+        interimView[3] /= interimView[3];
+    }
+    debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
+
+    projection_transform->MultiplyPoint(interimView, interimClip);
+
+    debug5 << " interimClip: " <<  interimClip[0] << ", " << interimClip[1] << ", " << interimClip[2] << ", " << interimClip[3] << std::endl;
+    interimClip[0] /= interimClip[3];
+    interimClip[1] /= interimClip[3];
+    interimClip[2] /= interimClip[3];
+    interimClip[3] /= interimClip[3];
+
+    debug5 << " interimClip: " <<  interimClip[0] << ", " << interimClip[1] << ", " << interimClip[2] << std::endl;
+
+
+
+    world_to_view_transform->MultiplyPoint(testWorld2, interimView);
+    debug5 << " testWorld2: " <<  testWorld2[0] << ", " << testWorld2[1] << ", " << testWorld2[2] << "  fullImgWidth: " << fullImgWidth << "  fullImgHeight: " << fullImgHeight <<std::endl;
+    debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
+
+    if (interimView[3] != 0.){
+        interimView[0] /= interimView[3];
+        interimView[1] /= interimView[3];
+        interimView[2] /= interimView[3];
+        interimView[3] /= interimView[3];
+    }
+    debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
+
+    projection_transform->MultiplyPoint(interimView, interimClip);
+
+    debug5 << " interimClip: " <<  interimClip[0] << ", " << interimClip[1] << ", " << interimClip[2] << ", " << interimClip[3] << std::endl;
+    interimClip[0] /= interimClip[3];
+    interimClip[1] /= interimClip[3];
+    interimClip[2] /= interimClip[3];
+    interimClip[3] /= interimClip[3];
+
+    debug5 << " interimClip: " <<  interimClip[0] << ", " << interimClip[1] << ", " << interimClip[2] << std::endl;
+
+
+
+
+
+
     //double _imgDepth = 0;
     double _clipSpaceZ = 0;
     double _world[4], _view[4], _clip[4];
@@ -727,7 +796,8 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
         debug5 << "Mass Voxel Matrix: " << *world_to_view_transform << std::endl;
     thisCount++;
 
-
+    static int patchCount = 0;
+    debug5 << "patchCount: " << patchCount << std::endl;
 
     for (int i=0; i<8; i++)
     {
@@ -735,15 +805,37 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
         _world[1] = coordinates[i][1];
         _world[2] = coordinates[i][2];
 
+        //debug5 << i << " _world: " <<  _world[0] << ", " << _world[1] << ", " << _world[2] << "  fullImgWidth: " << fullImgWidth << "  fullImgHeight: " << fullImgHeight <<std::endl;
+
         world_to_view_transform->MultiplyPoint(_world, _view);
+
+        //debug5 << i << " _view: " <<  _view[0] << ", " << _view[1] << ", " << _view[2] << ", " << _view[3] << std::endl;
 
         if (_view[3] != 0.){
             _view[0] /= _view[3];
             _view[1] /= _view[3];
             _view[2] /= _view[3];
+            _view[3] /= _view[3];
         }
 
-        _view[0] = _view[0]*(fullImgWidth/2.) + (fullImgWidth/2.);
+        debug5 << i << " _view: " <<  _view[0] << ", " << _view[1] << ", " << _view[2] << ", " << _view[3] << std::endl;
+
+        
+
+        projection_transform->MultiplyPoint(_view, _clip);
+        _clip[0] /= _clip[3];
+        _clip[1] /= _clip[3];
+        _clip[2] /= _clip[3];
+        _clip[3] /= _clip[3];
+
+        //debug5 << i << " _clip: " <<  _clip[0] << ", " << _clip[1] << ", " << _clip[2] << ", " << _clip[3] << std::endl;
+
+        _clip[2] = (_clip[2] + 1)/2.0;  // set the range to 0 - 1
+
+        //debug5 << i << " _clip: " <<  _clip[0] << ", " << _clip[1] << ", " << _clip[2] << std::endl;
+
+
+        _view[0] = _view[0]*(fullImgWidth/2.)  + (fullImgWidth/2.);
         _view[1] = _view[1]*(fullImgHeight/2.) + (fullImgHeight/2.);
 
         if (xMin > _view[0]+0.5)
@@ -758,24 +850,24 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
         if (yMax < _view[1]+0.5)
             yMax = _view[1]+0.5;
 
-        projection_transform->MultiplyPoint(_view, _clip);
-        _clip[0] /= _clip[3];
-        _clip[1] /= _clip[3];
-        _clip[2] /= _clip[3];
-
 
         if (i == 0)
         {
             //_imgDepth = _view[2];
-            _clipSpaceZ = (_clip[2] + 1)/2.0;        // set the range to 0 - 1
+            _clipSpaceZ = _clip[2];        // set the range to 0 - 1
         }
         else
-            if ( _clipSpaceZ > (_clip[2] + 1)/2.0 )
+            if ( _clipSpaceZ > _clip[2] )
             {
-                //_imgDepth = _view[2];
-                _clipSpaceZ = (_clip[2] + 1)/2.0;    // set the range to 0 - 1
+                _clipSpaceZ = _clip[2];    // set the range to 0 - 1
             }
+
+        debug5 << i << " _clipSpaceZ: " <<  _clip[2] << std::endl;
     }
+
+    patchCount++;
+    debug5  << "\n";
+
     //eyeSpaceDepth = _imgDepth;
     clipSpaceDepth = _clipSpaceZ;   
 

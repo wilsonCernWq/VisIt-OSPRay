@@ -718,6 +718,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
         return;
 
 
+    //
     // Get Extents
     std::stack<datatree_childindex*> tempNodes;
 
@@ -873,8 +874,15 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
                 _tfRange[0] = transferFn1D->GetMin();
                 _tfRange[1] = transferFn1D->GetMax();
 
+                double _tfVisibleRange[2];
+                _tfVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
+                _tfVisibleRange[1] = transferFn1D->GetMaxVisibleScalar();
+
+                //debug5 << "_scalarRange[0]: " << _scalarRange[0] << "  _scalarRange[1]: " << _scalarRange[1] << "   _tfRange[0]: " << _tfRange[0] << "  _tfRange[1]: " << _tfRange[1] << "  _tfVisibleRange[0]: " << _tfVisibleRange[0] << "  _tfVisibleRange[1]: " << _tfVisibleRange[1] << std::endl;
+
                 if ( !((_scalarRange[1] < _tfRange[0]) || (_scalarRange[0] > _tfRange[1])) )
-                    RasterBasedSample(ds,ci->idx);
+                    if ( !((_scalarRange[1] < _tfVisibleRange[0]) || (_scalarRange[0] > _tfVisibleRange[1])) )
+                        RasterBasedSample(ds,ci->idx);
             }
             else
                 RasterBasedSample(ds,ci->idx);

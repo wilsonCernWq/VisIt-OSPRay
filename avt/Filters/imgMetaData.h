@@ -120,6 +120,50 @@ struct iotaMeta
 };
 
 
+// ****************************************************************************
+//  Struct:  convexHull
+//
+//  Purpose:
+//    Holds the image data generated
+//
+//  Programmer:  
+//  Creation:    
+//
+// ****************************************************************************
+struct convexHull
+{
+    int numPatches;
+    int arrangement[3];     // [0] rows along x axis, [1] rows along y axis, [2] rows along z axis
+
+    float extents[6];       // minX, maxX   minY, maxY   minZ, maxZ
+    float cellDims[3];      // x, y, z
+    float tolerance;        // amount of overlap that is considered ok - typically 2 cells for cell centered data
+
+
+    // 0: no overlap    1: overlpa in Z    2: overlap in Y    3: overlap in Z
+    int overlap(convexHull _hull)
+    {
+
+        if ( (_hull.extents[1] < extents[0]) || (_hull.extents[0] > extents[1]) )   // No overlap in X
+        {
+            if ( (_hull.extents[3] < extents[2]) || (_hull.extents[2] > extents[3]) )   // No overlap in Y
+            {
+                if ( (_hull.extents[5] < extents[4]) || (_hull.extents[4] > extents[5]) )   // No overlap in Z
+                {
+                    return 0;
+                }
+                else
+                    return 3;
+            }
+            else
+                return 2;
+        }
+        else
+            return 1;
+    }
+};
+
+
 template <class T> 
 inline std::string toStr(T x){
     std::ostringstream ss;
@@ -128,9 +172,9 @@ inline std::string toStr(T x){
 }
 
 
-inline void createColorPPM(unsigned char *data, int width, int height, const char *filename){
-    std::ofstream outputFile(filename, std::ios::out | std::ios::binary);
-    outputFile <<  "P6\n" << width << "\n" << height << "\n" << 255 << "\n";
+inline void createColorPPM(std::string filename, unsigned char *data, int width, int height){
+    std::ofstream outputFile( (filename+ ".ppm").c_str(), std::ios::out | std::ios::binary);
+    outputFile << "P6\n" << width << "\n" << height << "\n" << 255 << "\n";
     
     for (int y=0; y<height; ++y){
         for (int x=0; x<width; ++x){
@@ -144,6 +188,25 @@ inline void createColorPPM(unsigned char *data, int width, int height, const cha
         }
     }
     
+    outputFile.close();
+}
+
+
+inline void writeOutputToFile( std::string filename, float * data, int dimX, int dimY )
+{
+    std::ofstream outputFile( (filename+ ".txt").c_str(), std::ios::out);
+    outputFile << "Dims: " << dimX << ", " << dimY << "\n";
+ 
+    for (int y=0; y<dimY; ++y)
+    {
+        for (int x=0; x<dimX; ++x)
+        {
+            int index = (y * dimX + x);
+            outputFile << data[index] << ", ";
+        }
+        outputFile  << "\n";
+    }
+ 
     outputFile.close();
 }
 

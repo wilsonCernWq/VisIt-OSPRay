@@ -480,10 +480,47 @@ avtRayTracer::Execute(void)
     oldFarPlane  = view.farPlane;
     view.nearPlane = newNearPlane;
     view.farPlane  = newFarPlane;
+
+
+
+
+    double testWorld1[4] = {0,0,0,1};
+    double testWorld2[4] = {0.7,0.22,0.22,1};
+    double interimView[4], interimClip[4];
+
+    transform->MultiplyPoint(testWorld1, interimView);
+    debug5 << " testWorld1: " <<  testWorld1[0] << ", " << testWorld1[1] << ", " << testWorld1[2] <<std::endl;
+    debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
+
+    interimView[2] =interimView[2]/interimView[3];
+    interimView[2] = (interimView[2] + 1)/2.0;  // set the range to 0 - 1
+    debug5  << " interimView[2]: " <<  interimView[2] << std::endl;
+
+
+
+    transform->MultiplyPoint(testWorld2, interimView);
+    debug5 << " testWorld2: " <<  testWorld2[0] << ", " << testWorld2[1] << ", " << testWorld2[2] <<std::endl;
+    debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
+
+    interimView[2] =interimView[2]/interimView[3];
+    interimView[2] = (interimView[2] + 1)/2.0;  // set the range to 0 - 1
+    debug5  << " interimView[2]: " <<  interimView[2] << std::endl;
+
     transform->Delete();
 
     avtWorldSpaceToImageSpaceTransform trans(view, aspect);
     trans.SetInput(GetInput());
+
+    debug5 << "RT View settings: " << endl;
+    debug5 << "normal: "       << view.camera[0]         << ", " << view.camera[1]     << ", " << view.camera[2] << std::endl;
+    debug5 << "focus: "     << view.focus[0]          << ", " << view.focus[1]      << ", " << view.focus[2] << std::endl;
+    //debug5 << "view_dir: "  << view.view_dir[0]       << ", " << view.view_dir[1]   << ", " << view.view_dir[2] << std::endl;
+    debug5 << "viewUp: "    << view.viewUp[0]         << ", " << view.viewUp[1]     << ", " << view.viewUp[2] << std::endl;
+    debug5 << "eyeAngle: "  << view.eyeAngle << std::endl;
+    debug5 << "nearPlane: " << view.nearPlane << std::endl;
+    debug5 << "nearPlane: " << view.farPlane << std::endl;
+    debug5 << "imagePan: "  << view.imagePan[0]        << ", " << view.imagePan[1] << std::endl << std::endl;
+
 
     //
     // Extract all of the samples from the dataset.
@@ -528,18 +565,21 @@ avtRayTracer::Execute(void)
 
     avtDataObject_p samples = extractor.GetOutput();
 
+
+
     //
     // Ray casting: SLIVR
     //
     if (rayCastingSLIVR == true)
     {
-        avtRayCompositer rc(rayfoo);                // only required to force an update - Need to find a way to get rid of that!!!!
+        avtRayCompositer rc(rayfoo);                            // only required to force an update - Need to find a way to get rid of that!!!!
         rc.SetInput(samples);
         avtImage_p image  = rc.GetTypedOutput();
         image->Update(GetGeneralContract());
 
+
         //
-        // Single Processor
+        // SERIAL : Single Processor
         //
         if (parallelOn == false)
         {
@@ -561,15 +601,10 @@ avtRayTracer::Execute(void)
             // Sort with the largest z first
             std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
 
-
-            //
-            // Composite the images
-            //
             
             //
             // Creates a buffer to store the composited image
             float *composedData = new float[screen[0] * screen[1] * 4];
-
             for (int i=0; i<(screen[0] * screen[1] * 4); i+=4)
             {
                 composedData[i+0] = background[0]/255.0;   
@@ -725,6 +760,7 @@ avtRayTracer::Execute(void)
         debug5 << "Number of patches: " << numPatches << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
 
         imgComm.barrier();
+        int  timingCompositinig = visitTimer->StartTimer();
 
         //
         // Creates a buffer to store the composited image - initilized to 0
@@ -739,7 +775,6 @@ avtRayTracer::Execute(void)
 
         //
         // Blend images
-        //   
         for (int i=0; i<numPatches; i++)
         {
             imgMetaData currentPatch = allImgMetaData[i];
@@ -775,13 +810,13 @@ avtRayTracer::Execute(void)
 
         
 
-
         //
         // Do image compositing 
         // Temporary
         int _numPatches = 1; 
         if (numPatches  == 0)
             _numPatches = 0;
+
         float backgroundColor[4];
         backgroundColor[0] = background[0]/255.0; 
         backgroundColor[1] = background[1]/255.0; 
@@ -791,38 +826,48 @@ avtRayTracer::Execute(void)
         debug5 << "Compositing Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  Extents: " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  bkg color: " 
                                         << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
 
-        imgComm.barrier();
         debug5 << "Local composing done" << std::endl;
         imgComm.barrier();
 
 
+        // Capture background
+        vtkImageData  *_opaqueImageVTK = opaqueImage->GetImage().GetImageVTK();
+        unsigned char *_opaqueImageData = (unsigned char *)_opaqueImageVTK->GetScalarPointer(0, 0, 0);
+        float         *_opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
+
+        createColorPPM("/home/pascal/Desktop/debugImages/backback", _opaqueImageData, screen[0], screen[1]);   //background bounding box
+        writeOutputToFile("/home/pascal/Desktop/debugImages/depth", _opaqueImageZB, screen[0], screen[1]);
+
+
+
+        // 
+        // Serial Direct Send
         //imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgExtents, composedData, backgroundColor, screen[0], screen[1]);
+
+
+        //
+        // Parallel Direct Send
         int rankExtents[4];
         int fullImageExtents[4];
         extractor.getProjectedExents(rankExtents);
         imgComm.allGather2DExtents(rankExtents);
         imgComm.getFullImageExtents(fullImageExtents);
-        debug5 << "Full image extents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "   " << fullImageExtents[2] << ", " << fullImageExtents[3] << std::endl;
-
-
+        debug5 << "Full image extents: " << imgComm.fullImageExtents[0] << ", " << imgComm.fullImageExtents[1] << "   " << imgComm.fullImageExtents[2] << ", " << imgComm.fullImageExtents[3] << std::endl;
 
         int tags[3] = {1081, 1681, 2681};
         int numMPIRanks = imgComm.GetNumProcs();
         int *regions = new int[numMPIRanks]();
         
-
         imgComm.regionAllocation(numMPIRanks, regions);
-
-        for (int i=0; i<numMPIRanks; i++)
-            debug5 << regions[i] << std::endl;
-
         imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, backgroundColor, fullImageExtents);
-        debug5 << "PDS done!" << std::endl;
         imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tags[2], fullImageExtents);
 
-        debug5 << "Gather done!" << std::endl;
+
+
+
         //
         // Move final composited image to visit structures
+        //
         avtImage_p whole_image, tempImage;
     
         tempImage = new avtImage(this);     // for processors other than proc 0 ; a dummy
@@ -867,12 +912,16 @@ avtRayTracer::Execute(void)
             tempImage->Copy(*whole_image);
         SetOutput(tempImage);
 
-        imgComm.barrier();
-        debug5 << "All done" << std::endl;
-        imgComm.barrier();
+        debug5 << "RC SLIVR: Done!" << std::endl;
+
+
+        visitTimer->StopTimer(timingCompositinig, "Compositing");
+        visitTimer->DumpTimings();
 
         visitTimer->StopTimer(timingIndex, "Ray Tracing");
         visitTimer->DumpTimings();
+
+        return;
     }
 
 #ifdef PARALLEL
