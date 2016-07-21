@@ -55,6 +55,7 @@ class     vtkMatrix4x4;
 
 #include <vtkMatrix3x3.h>
 #include <vtkMatrix4x4.h>
+#include <vtkCamera.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <algorithm>    // std::max
@@ -123,11 +124,12 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 
     void             SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
 
-    void             SetModelViewMatrix(double _modelViewMatrix[16]) { for (int i=0;i<16;i++) modelViewMatrix[i]=_modelViewMatrix[i]; }
-    void             SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
-    void             SetViewUp(double *vu){ for (int i=0; i<3; i++) view_up[i] = vu[i]; }
 
-    void             get_world_to_view_transform(vtkMatrix4x4 *_world_to_view_transform){ _world_to_view_transform->DeepCopy(world_to_view_transform); }
+    void             SetViewDirection(double *vd){ for (int i=0; i<3; i++) viewDirection=view_direction[i] = vd[i]; }
+    void             SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[0]=_camClip[0]; }
+    void             SetMVPMatrix(vtkMatrix4x4 _mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
+
+
 
     // Getting the image
     void             getImageDimensions(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth);
@@ -136,6 +138,13 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             setProcIdPatchID(int _proc, int _patch){ proc = _proc; patch = _patch; }
 
     void             project3Dto2D(double _3Dextents[6], int height, int width, int _2DExtents[4]);
+
+    // TODO: Make that just a pointer instead of copy!!!
+    void             setDepthBuffer(float *_zBuffer, int size){ depthBuffer=new float[size]; for (int i=0; i<size; i++) depthBuffer[i]=_zBuffer[i]; }
+    void             setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
+    void             setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
+
+ 
 
   protected:
     bool             gridsAreInWorldSpace;
@@ -146,7 +155,17 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     vtkMatrix4x4    *view_to_world_transform;
     vtkMatrix4x4    *world_to_view_transform;
     vtkMatrix4x4    *projection_transform;
-    double           modelViewMatrix[16];
+
+
+    vtkMatrix4x4    *modelViewProj;
+    vtkMatrix4x4    *invModelViewProj;
+    double           clipPlanes[2];
+    double           viewDirection[3];
+
+    double           view_direction[3];
+
+
+    
 
     double           *X;
     double           *Y;
@@ -184,12 +203,20 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     avtOpacityMap    *transferFn1D;
     float            gradient[3];
 
-    double           view_direction[3];
-    double           view_up[3];
+    
+
 
     int debugOn;
     int countt;
 
+    // Background + other plots
+    float           *depthBuffer;           // depth buffer for the background and other plots
+    unsigned char   *rgbColorBuffer;        // bounding box + pseudo color + ...      
+    int              bufferExtents[4];      // extents of the buffer( minX, maxX, minY, maxY)    
+
+    // Rendering
+    int renderingAreaExtents[4];
+    float renderingDepthsExtents[2];
 
     // Patch details for one image
     int              patchDrawn;            // whether the patch is drawn or not

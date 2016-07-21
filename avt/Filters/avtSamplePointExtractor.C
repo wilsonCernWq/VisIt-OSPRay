@@ -175,6 +175,7 @@ avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
     modeIs3D = true;
     SetKernelBasedSampling(false);
     SetTrilinear(false);
+    vtkCamera *sceneCam = vtkCamera::New();
 
     shouldSetUpArbitrator    = false;
     arbitratorPrefersMinimum = false;
@@ -187,6 +188,9 @@ avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
     lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;   lightPosition[3] = 1.0;
     lightDirection[0] = 0; lightDirection[1] = 0; lightDirection[2] = -1;
     materialProperties[0] = 0.4; materialProperties[1] = 0.75; materialProperties[3] = 0.0; materialProperties[3] = 15.0;
+
+    depthBuffer = NULL;
+    rgbColorBuffer = NULL;
 }
 
 
@@ -254,6 +258,19 @@ avtSamplePointExtractor::~avtSamplePointExtractor()
         delete arbitrator;
         arbitrator = NULL;
     }
+
+
+    if (depthBuffer != NULL){
+        delete []depthBuffer;
+        depthBuffer = NULL;
+    }
+    
+
+    if (rgbColorBuffer != NULL){
+        delete []rgbColorBuffer;
+        rgbColorBuffer = NULL;
+    }
+    
 
     delImgPatches();
 }
@@ -1160,17 +1177,28 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             varnames.push_back(samples->GetVariableName(i));
             varsizes.push_back(samples->GetVariableSize(i));
         }
+
+
+        if (rayCastingSLIVR == true){
+            massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
+            massVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
+            massVoxelExtractor->setBufferExtents(bufferExtents);
+
+            //massVoxelExtractor->setCamera(sceneCam);
+            massVoxelExtractor->setCamClipPlanes(clipPlanes);
+        }
+
         massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
         massVoxelExtractor->SetLighting(lighting);
         massVoxelExtractor->SetLightDirection(lightDirection);
         massVoxelExtractor->SetMatProperties(materialProperties);
-        massVoxelExtractor->SetModelViewMatrix(modelViewMatrix);
         massVoxelExtractor->SetTransferFn(transferFn1D);
         massVoxelExtractor->SetViewDirection(view_direction);
         massVoxelExtractor->SetViewUp(view_up);
         massVoxelExtractor->Extract((vtkRectilinearGrid *) ds,
                                     varnames, varsizes);
         
+
         if (rayCastingSLIVR == true)
         {
             imgMetaData tmpImageMetaPatch;

@@ -51,6 +51,8 @@
 #include <map>
 #include <avtImgCommunicator.h>
 
+#include <vtkCamera.h>
+
 class   avtRayFunction;
 class   vtkMatrix4x4;
 
@@ -135,7 +137,6 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
     void                  SetLightDirection(double _lightDir[3]) { for (int i=0;i<3;i++) lightDirection[i]=_lightDir[i]; }
     void                  SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
-    void                  SetModelViewMatrix(double _modelViewMatrix[16]) { for (int i=0;i<16;i++) modelViewMatrix[i]=_modelViewMatrix[i]; }
     void                  SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
     void                  SetViewUp(double *vu){ for (int i=0; i<3; i++) view_up[i] = vu[i]; }
     void                  SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };

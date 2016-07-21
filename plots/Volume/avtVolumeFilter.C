@@ -41,6 +41,7 @@
 // ************************************************************************* //
 
 #include <avtVolumeFilter.h>
+#include <vtkImageData.h>
 
 #include <WindowAttributes.h>
 #include <Expression.h>
@@ -577,35 +578,14 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     debug5 << "VF View settings: " << endl;
     debug5 << "pos: "       << vi.camera[0]         << ", " << vi.camera[1]     << ", " << vi.camera[2] << std::endl;
     debug5 << "focus: "     << vi.focus[0]          << ", " << vi.focus[1]      << ", " << vi.focus[2] << std::endl;
-    //debug5 << "view_dir: "  << vi.view_dir[0]       << ", " << vi.view_dir[1]   << ", " << vi.view_dir[2] << std::endl;
     debug5 << "viewUp: "    << vi.viewUp[0]         << ", " << vi.viewUp[1]     << ", " << vi.viewUp[2] << std::endl;
-    debug5 << "eyeAngle: "  << vi.eyeAngle << std::endl;
+    debug5 << "eyeAngle: "  << vi.viewAngle << std::endl;
     debug5 << "nearPlane: " << vi.nearPlane << std::endl;
     debug5 << "nearPlane: " << vi.farPlane << std::endl;
     debug5 << "imagePan: "  << vi.imagePan[0]        << ", " << vi.imagePan[1] << std::endl << std::endl;
 
 
-    double modelViewMatrix[16];
-    modelViewMatrix[0] = cameraMatrix->GetElement(0,0);
-    modelViewMatrix[1] = cameraMatrix->GetElement(0,1);
-    modelViewMatrix[2] = cameraMatrix->GetElement(0,2);
-    modelViewMatrix[3] = cameraMatrix->GetElement(0,3);
 
-    modelViewMatrix[4] = cameraMatrix->GetElement(1,0);
-    modelViewMatrix[5] = cameraMatrix->GetElement(1,1);
-    modelViewMatrix[6] = cameraMatrix->GetElement(1,2);
-    modelViewMatrix[7] = cameraMatrix->GetElement(1,3);
-
-    modelViewMatrix[8]  = cameraMatrix->GetElement(2,0);
-    modelViewMatrix[9]  = cameraMatrix->GetElement(2,1);
-    modelViewMatrix[10] = cameraMatrix->GetElement(2,2);
-    modelViewMatrix[11] = cameraMatrix->GetElement(2,3);
-
-    modelViewMatrix[12] = cameraMatrix->GetElement(3,0);
-    modelViewMatrix[13] = cameraMatrix->GetElement(3,1);
-    modelViewMatrix[14] = cameraMatrix->GetElement(3,2);
-    modelViewMatrix[15] = cameraMatrix->GetElement(3,3);
-    software->SetModelViewMatrix(modelViewMatrix);
 
     //
     // Set the volume renderer's background color and mode from the
@@ -644,9 +624,18 @@ avtImage_p
 avtVolumeFilter::RenderImage(avtImage_p opaque_image,
                              const WindowAttributes &window)
 {
+     vtkImageData  *_opaqueImageVTK = opaque_image->GetImage().GetImageVTK();
+        unsigned char *_opaqueImageData = (unsigned char *)_opaqueImageVTK->GetScalarPointer(0, 0, 0);
+        
+        const int *ssize = window.GetSize();
+        createColorPPM("/home/pascal/Desktop/debugImages/VFbackback", _opaqueImageData, ssize[0], ssize[1]);   //background bounding box
+
+
   if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
         return RenderImageRaycastingSLIVR(opaque_image,window);
     }
+    
+
     
 
     //

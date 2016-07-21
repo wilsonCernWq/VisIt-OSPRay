@@ -59,6 +59,7 @@
 
 #include <avtImgCommunicator.h>
 #include <imgMetaData.h>
+#include <vtkCamera.h>
 
 class  vtkDataArray;
 class  vtkDataSet;
@@ -181,9 +182,11 @@ class AVTFILTERS_API avtSamplePointExtractor
     void                      SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
     void                      SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
 
-    void                      SetModelViewMatrix(double _modelViewMatrix[16]) { for (int i=0;i<16;i++) modelViewMatrix[i]=_modelViewMatrix[i]; }
     void                      SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
     void                      SetViewUp(double *vu){ for (int i=0; i<3; i++) view_up[i] = vu[i]; }
+
+    //void                      setCamera(vtkCamera *_cam){ sceneCam->DeepCopy(_cam); }
+    void                      setCamClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[0]=_camClip[0]; }
 
     void                      getSpatialExtents(double _spatialExtents[6]){ for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
     void                      getAvgPatchExtents(double _avgPatchExtents[6]){ for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i]; }
@@ -197,6 +200,12 @@ class AVTFILTERS_API avtSamplePointExtractor
     imgMetaData               getImgMetaPatch(int patchId){ return imageMetaPatchVector.at(patchId);} // gets the metadata
     void                      getnDelImgData(int patchId, imgData &tempImgData);                      // gets the image & erase its existence
     void                      delImgPatches();                                                        // deletes patches
+
+
+    // TODO: Make that just a pointer instead of copy!!!
+    void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=new float[size]; for (int i=0; i<size; i++) depthBuffer[i]=_zBuffer[i]; }
+    void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
+    void                      setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
 
 
   protected:
@@ -213,6 +222,11 @@ class AVTFILTERS_API avtSamplePointExtractor
     double                    minMaxSpatialBounds[6];
     double                    avgPatchExtents[3];
     double                    cellDimension[3];
+
+    // Background + other plots
+    float                     *depthBuffer;             // depth buffer for the background and other plots
+    unsigned char             *rgbColorBuffer;          // bounding box + pseudo color + ...      
+    int                       bufferExtents[4];         // extents of the buffer( minX, maxX, minY, maxY) 
 
     bool                      shouldSetUpArbitrator;
     std::string               arbitratorVarName;
@@ -252,7 +266,8 @@ class AVTFILTERS_API avtSamplePointExtractor
     // Camera
     double                    view_direction[3];
     double                    view_up[3];
-    double                    modelViewMatrix[16];
+
+    double                    clipPlanes[2];
 
     // lighting & material
     bool                      lighting;
