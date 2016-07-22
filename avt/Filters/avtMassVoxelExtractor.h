@@ -114,6 +114,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
                                              const double *);
     void             SetVariableInformation(std::vector<std::string> &names,
                                             std::vector<int> varsize);
+
     void             SetRayCastingSLIVR(bool s) {rayCastingSLIVR = s; };
     void             SetTrilinear(bool t) {trilinearInterpolation = t;   };
 
@@ -124,9 +125,8 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 
     void             SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
 
-
-    void             SetViewDirection(double *vd){ for (int i=0; i<3; i++) viewDirection=view_direction[i] = vd[i]; }
-    void             SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[0]=_camClip[0]; }
+    void             SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection=view_direction[i] = vD[i]; }
+    void             SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
     void             SetMVPMatrix(vtkMatrix4x4 _mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
 
 
@@ -154,18 +154,17 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     double           cur_clip_range[2];
     vtkMatrix4x4    *view_to_world_transform;
     vtkMatrix4x4    *world_to_view_transform;
-    vtkMatrix4x4    *projection_transform;
 
+
+    bool            trilinearInterpolation;
+    bool            rayCastingSLIVR;
 
     vtkMatrix4x4    *modelViewProj;
     vtkMatrix4x4    *invModelViewProj;
     double           clipPlanes[2];
     double           viewDirection[3];
-
     double           view_direction[3];
 
-
-    
 
     double           *X;
     double           *Y;
@@ -183,11 +182,10 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     int              pt_index[AVT_VARIABLE_LIMIT];
     int              pt_vartypes[AVT_VARIABLE_LIMIT];
 
+
     double          *prop_buffer;
     int             *ind_buffer;
     bool            *valid_sample;
-    bool            trilinearInterpolation;
-    bool            rayCastingSLIVR;
 
     // We repeatedly divide by the term (X[i+1]-X[i]).  In the interest of
     // performance, cache the term 1./(X[i+1]-X[i]) and use that for faster
@@ -215,8 +213,9 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     int              bufferExtents[4];      // extents of the buffer( minX, maxX, minY, maxY)    
 
     // Rendering
-    int renderingAreaExtents[4];
-    float renderingDepthsExtents[2];
+    int              renderingAreaExtents[4];
+    float            renderingDepthsExtents[2];
+
 
     // Patch details for one image
     int              patchDrawn;            // whether the patch is drawn or not
@@ -240,6 +239,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     
     int              fullImgWidth, fullImgHeight;
     int              xMin, xMax, yMin, yMax;
+
     void             ExtractImageSpaceGrid(vtkRectilinearGrid *,
                              std::vector<std::string> &varnames,
                              std::vector<int> &varsize);
@@ -268,6 +268,11 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             computeIndices(int dims[3], int indices[6], int returnIndices[8]);
     void             computeIndicesVert(int dims[3], int indices[6], int returnIndices[8]);
     void             getIndexandDistFromCenter(float dist, int index,    int &index_before, int &index_after,    float &dist_before, float &dist_after);
+
+    void            normalize(float vec[3]);
+    float           dot(float vecA[3], float vecB[3]);
+    void            unProject(int pos2D[2], float _z, double _worldCoordinates[3], int _width, int _height);
+    double          project(double _worldCoordinates[3], int pos2D[2], int _width, int _height);
 };
 
 #endif

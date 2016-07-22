@@ -175,18 +175,17 @@ class AVTFILTERS_API avtSamplePointExtractor
 
     void                      SetTrilinear(bool t) {trilinearInterpolation = t;  };
     void                      SetRayCastingSLIVR(bool s) {rayCastingSLIVR = s;  };
+
     void                      SetLighting(bool l) {lighting = l; };
     void                      SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
     void                      SetLightDirection(double _lightDir[3]) { for (int i=0;i<3;i++) lightDirection[i]=_lightDir[i]; }
-
     void                      SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
+
     void                      SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
 
-    void                      SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
-    void                      SetViewUp(double *vu){ for (int i=0; i<3; i++) view_up[i] = vu[i]; }
-
-    //void                      setCamera(vtkCamera *_cam){ sceneCam->DeepCopy(_cam); }
-    void                      setCamClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[0]=_camClip[0]; }
+    void                      SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection=view_direction[i] = vD[i]; }
+    void                      SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
+    void                      SetMVPMatrix(vtkMatrix4x4 _mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
 
     void                      getSpatialExtents(double _spatialExtents[6]){ for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
     void                      getAvgPatchExtents(double _avgPatchExtents[6]){ for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i]; }
@@ -263,11 +262,11 @@ class AVTFILTERS_API avtSamplePointExtractor
     bool                      trilinearInterpolation;
     bool                      rayCastingSLIVR;
 
-    // Camera
+    // Camera stuff
     double                    view_direction[3];
-    double                    view_up[3];
-
+    double                    viewDirection[3];
     double                    clipPlanes[2];
+    vtkMatrix4x4              *modelViewProj;
 
     // lighting & material
     bool                      lighting;
@@ -275,6 +274,8 @@ class AVTFILTERS_API avtSamplePointExtractor
     double                    lightDirection[3];
     double                    materialProperties[4];
     avtOpacityMap             *transferFn1D;
+
+
     virtual void              Execute(void);
     virtual void              PreExecute(void);
     virtual void              PostExecute(void);

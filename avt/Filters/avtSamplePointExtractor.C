@@ -900,6 +900,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
                 if ( !((_scalarRange[1] < _tfRange[0]) || (_scalarRange[0] > _tfRange[1])) )
                     if ( !((_scalarRange[1] < _tfVisibleRange[0]) || (_scalarRange[0] > _tfVisibleRange[1])) )
                         RasterBasedSample(ds,ci->idx);
+                        // TODO: 
             }
             else
                 RasterBasedSample(ds,ci->idx);
@@ -1179,22 +1180,24 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         }
 
 
-        if (rayCastingSLIVR == true){
+        if (rayCastingSLIVR == true)
+        {
             massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
             massVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
             massVoxelExtractor->setBufferExtents(bufferExtents);
 
-            //massVoxelExtractor->setCamera(sceneCam);
+            massVoxelExtractor->SetViewDirection(view_direction);
+            massVoxelExtractor->SetMVPMatrix(modelViewProj);
             massVoxelExtractor->setCamClipPlanes(clipPlanes);
         }
 
         massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
+
         massVoxelExtractor->SetLighting(lighting);
         massVoxelExtractor->SetLightDirection(lightDirection);
         massVoxelExtractor->SetMatProperties(materialProperties);
         massVoxelExtractor->SetTransferFn(transferFn1D);
-        massVoxelExtractor->SetViewDirection(view_direction);
-        massVoxelExtractor->SetViewUp(view_up);
+
         massVoxelExtractor->Extract((vtkRectilinearGrid *) ds,
                                     varnames, varsizes);
         
@@ -1226,6 +1229,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         }
         return;
     }
+
 
     int numCells = ds->GetNumberOfCells();
     LoadingInfo li;
