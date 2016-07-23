@@ -47,8 +47,10 @@
 
 #include <avtDatasetToSamplePointsFilter.h>
 #include <avtVolume.h>
-
 #include <avtViewInfo.h>
+#include <avtImgCommunicator.h>
+
+#include <imgMetaData.h>
 
 #include <avtOpacityMap.h>
 #include <fstream>
@@ -57,9 +59,8 @@
 #include <algorithm>
 #include <utility>
 
-#include <avtImgCommunicator.h>
-#include <imgMetaData.h>
 #include <vtkCamera.h>
+#include <vtkMatrix4x4.h>
 
 class  vtkDataArray;
 class  vtkDataSet;
@@ -183,9 +184,9 @@ class AVTFILTERS_API avtSamplePointExtractor
 
     void                      SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
 
-    void                      SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection=view_direction[i] = vD[i]; }
+    void                      SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection[i]=view_direction[i] = vD[i]; }
     void                      SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
-    void                      SetMVPMatrix(vtkMatrix4x4 _mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
+    void                      SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); }
 
     void                      getSpatialExtents(double _spatialExtents[6]){ for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
     void                      getAvgPatchExtents(double _avgPatchExtents[6]){ for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i]; }

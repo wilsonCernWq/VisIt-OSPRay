@@ -175,7 +175,9 @@ avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
     modeIs3D = true;
     SetKernelBasedSampling(false);
     SetTrilinear(false);
-    vtkCamera *sceneCam = vtkCamera::New();
+
+
+    modelViewProj = vtkMatrix4x4::New();
 
     shouldSetUpArbitrator    = false;
     arbitratorPrefersMinimum = false;
@@ -735,104 +737,104 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
         return;
 
 
-    //
-    // Get Extents
-    std::stack<datatree_childindex*> tempNodes;
+    // //
+    // // Get Extents
+    // std::stack<datatree_childindex*> tempNodes;
 
-    minMaxSpatialBounds[0] = minMaxSpatialBounds[2] = minMaxSpatialBounds[4] = std::numeric_limits<float>::max();
-    minMaxSpatialBounds[1] = minMaxSpatialBounds[3] = minMaxSpatialBounds[5] = std::numeric_limits<float>::min();
+    // minMaxSpatialBounds[0] = minMaxSpatialBounds[2] = minMaxSpatialBounds[4] = std::numeric_limits<float>::max();
+    // minMaxSpatialBounds[1] = minMaxSpatialBounds[3] = minMaxSpatialBounds[5] = std::numeric_limits<float>::min();
 
-    avgPatchExtents[0] = avgPatchExtents[1] = avgPatchExtents[2] = 0;
-    cellDimension[0] = cellDimension[1] = cellDimension[2] = 0;
+    // avgPatchExtents[0] = avgPatchExtents[1] = avgPatchExtents[2] = 0;
+    // cellDimension[0] = cellDimension[1] = cellDimension[2] = 0;
 
-    tempNodes.push(new datatree_childindex(dt,0));
-    int patchesProcessed = 0;
-    while (!tempNodes.empty())
-    {
-        datatree_childindex *ci=tempNodes.top();
-        avtDataTree_p ch=ci->dt;
+    // tempNodes.push(new datatree_childindex(dt,0));
+    // int patchesProcessed = 0;
+    // while (!tempNodes.empty())
+    // {
+    //     datatree_childindex *ci=tempNodes.top();
+    //     avtDataTree_p ch=ci->dt;
 
-        if (ch->GetNChildren() != 0)
-        {
-            tempNodes.pop();  // if it has children, it never gets processed below
-            for (int i = 0; i < ch->GetNChildren(); i++)
-            {
-                if (ch->ChildIsPresent(i))
-                {
-                    if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
-                        continue;
-                    tempNodes.push(new datatree_childindex(ch->GetChild(i),i));
-                }
-            }
+    //     if (ch->GetNChildren() != 0)
+    //     {
+    //         tempNodes.pop();  // if it has children, it never gets processed below
+    //         for (int i = 0; i < ch->GetNChildren(); i++)
+    //         {
+    //             if (ch->ChildIsPresent(i))
+    //             {
+    //                 if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
+    //                     continue;
+    //                 tempNodes.push(new datatree_childindex(ch->GetChild(i),i));
+    //             }
+    //         }
 
-            continue;
-        }
+    //         continue;
+    //     }
 
-        //do the work
-        tempNodes.pop();
+    //     //do the work
+    //     tempNodes.pop();
 
-        if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
-            continue;
+    //     if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
+    //         continue;
 
-        //
-        // Get the dataset for this leaf in the tree.
-        //
-        vtkDataSet *ds = ch->GetDataRepresentation().GetDataVTK();
+    //     //
+    //     // Get the dataset for this leaf in the tree.
+    //     //
+    //     vtkDataSet *ds = ch->GetDataRepresentation().GetDataVTK();
 
-        double _minMaxBounds[6];
-        ds->GetBounds(_minMaxBounds);
+    //     double _minMaxBounds[6];
+    //     ds->GetBounds(_minMaxBounds);
 
-        minMaxSpatialBounds[0] = std::min(minMaxSpatialBounds[0], _minMaxBounds[0]);
-        minMaxSpatialBounds[2] = std::min(minMaxSpatialBounds[2], _minMaxBounds[2]);
-        minMaxSpatialBounds[4] = std::min(minMaxSpatialBounds[4], _minMaxBounds[4]);
+    //     minMaxSpatialBounds[0] = std::min(minMaxSpatialBounds[0], _minMaxBounds[0]);
+    //     minMaxSpatialBounds[2] = std::min(minMaxSpatialBounds[2], _minMaxBounds[2]);
+    //     minMaxSpatialBounds[4] = std::min(minMaxSpatialBounds[4], _minMaxBounds[4]);
 
-        minMaxSpatialBounds[1] = std::max(minMaxSpatialBounds[1], _minMaxBounds[1]);
-        minMaxSpatialBounds[3] = std::max(minMaxSpatialBounds[3], _minMaxBounds[3]);
-        minMaxSpatialBounds[5] = std::max(minMaxSpatialBounds[5], _minMaxBounds[5]);
+    //     minMaxSpatialBounds[1] = std::max(minMaxSpatialBounds[1], _minMaxBounds[1]);
+    //     minMaxSpatialBounds[3] = std::max(minMaxSpatialBounds[3], _minMaxBounds[3]);
+    //     minMaxSpatialBounds[5] = std::max(minMaxSpatialBounds[5], _minMaxBounds[5]);
 
-        avgPatchExtents[0] = minMaxSpatialBounds[1]-minMaxSpatialBounds[0];
-        avgPatchExtents[1] = minMaxSpatialBounds[3]-minMaxSpatialBounds[2];
-        avgPatchExtents[2] = minMaxSpatialBounds[5]-minMaxSpatialBounds[4];
+    //     avgPatchExtents[0] = minMaxSpatialBounds[1]-minMaxSpatialBounds[0];
+    //     avgPatchExtents[1] = minMaxSpatialBounds[3]-minMaxSpatialBounds[2];
+    //     avgPatchExtents[2] = minMaxSpatialBounds[5]-minMaxSpatialBounds[4];
 
-        // massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
+    //     // massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
 
-        if (patchesProcessed == 0)
-        {
-            int patchDim[3];
-            vtkRectilinearGrid* rg = vtkRectilinearGrid::SafeDownCast(ds);
-            rg->GetDimensions(patchDim);
-            cellDimension[0] = (minMaxSpatialBounds[1]-minMaxSpatialBounds[0])/patchDim[0];
-            cellDimension[1] = (minMaxSpatialBounds[3]-minMaxSpatialBounds[2])/patchDim[1];
-            cellDimension[2] = (minMaxSpatialBounds[5]-minMaxSpatialBounds[4])/patchDim[2];
-        }
-        patchesProcessed++;
-    }
+    //     if (patchesProcessed == 0)
+    //     {
+    //         int patchDim[3];
+    //         vtkRectilinearGrid* rg = vtkRectilinearGrid::SafeDownCast(ds);
+    //         rg->GetDimensions(patchDim);
+    //         cellDimension[0] = (minMaxSpatialBounds[1]-minMaxSpatialBounds[0])/patchDim[0];
+    //         cellDimension[1] = (minMaxSpatialBounds[3]-minMaxSpatialBounds[2])/patchDim[1];
+    //         cellDimension[2] = (minMaxSpatialBounds[5]-minMaxSpatialBounds[4])/patchDim[2];
+    //     }
+    //     patchesProcessed++;
+    // }
 
-    if (patchesProcessed == 0)
-    {
-        minMaxSpatialBounds[0] = minMaxSpatialBounds[2] = minMaxSpatialBounds[4] = 0;
-        minMaxSpatialBounds[1] = minMaxSpatialBounds[3] = minMaxSpatialBounds[5] = 0;
-    }
-    else
-    {
-        avgPatchExtents[0] = avgPatchExtents[0]/patchesProcessed;
-        avgPatchExtents[1] = avgPatchExtents[1]/patchesProcessed;
-        avgPatchExtents[2] = avgPatchExtents[2]/patchesProcessed;
-    }
-    debug5 << "Spatial Extents: " << minMaxSpatialBounds[0] << ", " << minMaxSpatialBounds[1] << "    "
-                                  << minMaxSpatialBounds[2] << ", " << minMaxSpatialBounds[3] << "    "
-                                  << minMaxSpatialBounds[4] << ", " << minMaxSpatialBounds[5] <<  std::endl;
-    debug5 << "avgPatchExtents: " << avgPatchExtents[0] << ", " << avgPatchExtents[1] << ", " << avgPatchExtents[2] << std::endl;
-    debug5 << "cellDimension: " << cellDimension[0] << ", " << cellDimension[1] << ", " << cellDimension[2] << std::endl;
+    // if (patchesProcessed == 0)
+    // {
+    //     minMaxSpatialBounds[0] = minMaxSpatialBounds[2] = minMaxSpatialBounds[4] = 0;
+    //     minMaxSpatialBounds[1] = minMaxSpatialBounds[3] = minMaxSpatialBounds[5] = 0;
+    // }
+    // else
+    // {
+    //     avgPatchExtents[0] = avgPatchExtents[0]/patchesProcessed;
+    //     avgPatchExtents[1] = avgPatchExtents[1]/patchesProcessed;
+    //     avgPatchExtents[2] = avgPatchExtents[2]/patchesProcessed;
+    // }
+    // debug5 << "Spatial Extents: " << minMaxSpatialBounds[0] << ", " << minMaxSpatialBounds[1] << "    "
+    //                               << minMaxSpatialBounds[2] << ", " << minMaxSpatialBounds[3] << "    "
+    //                               << minMaxSpatialBounds[4] << ", " << minMaxSpatialBounds[5] <<  std::endl;
+    // debug5 << "avgPatchExtents: " << avgPatchExtents[0] << ", " << avgPatchExtents[1] << ", " << avgPatchExtents[2] << std::endl;
+    // debug5 << "cellDimension: " << cellDimension[0] << ", " << cellDimension[1] << ", " << cellDimension[2] << std::endl;
 
-    avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
-    const double *xform = NULL;
-    if (atts.GetRectilinearGridHasTransform())
-        xform = atts.GetRectilinearGridTransform();
+    // avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
+    // const double *xform = NULL;
+    // if (atts.GetRectilinearGridHasTransform())
+    //     xform = atts.GetRectilinearGridTransform();
 
-    massVoxelExtractor->SetGridsAreInWorldSpace( rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
-    massVoxelExtractor->project3Dto2D(minMaxSpatialBounds, height, width, projectedImageExtents);
-    debug5 << "2D extents: " << projectedImageExtents[0] << ", " << projectedImageExtents[1] << "   " << projectedImageExtents[2] << ", " << projectedImageExtents[3] << std::endl;
+    // massVoxelExtractor->SetGridsAreInWorldSpace( rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
+    // massVoxelExtractor->project3Dto2D(minMaxSpatialBounds, height, width, projectedImageExtents);
+    // debug5 << "2D extents: " << projectedImageExtents[0] << ", " << projectedImageExtents[1] << "   " << projectedImageExtents[2] << ", " << projectedImageExtents[3] << std::endl;
 
 
 
@@ -899,8 +901,10 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 
                 if ( !((_scalarRange[1] < _tfRange[0]) || (_scalarRange[0] > _tfRange[1])) )
                     if ( !((_scalarRange[1] < _tfVisibleRange[0]) || (_scalarRange[0] > _tfVisibleRange[1])) )
+                    {
                         RasterBasedSample(ds,ci->idx);
                         // TODO: 
+                    }
             }
             else
                 RasterBasedSample(ds,ci->idx);
@@ -1179,7 +1183,6 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             varsizes.push_back(samples->GetVariableSize(i));
         }
 
-
         if (rayCastingSLIVR == true)
         {
             massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
@@ -1188,19 +1191,19 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 
             massVoxelExtractor->SetViewDirection(view_direction);
             massVoxelExtractor->SetMVPMatrix(modelViewProj);
-            massVoxelExtractor->setCamClipPlanes(clipPlanes);
+            massVoxelExtractor->SetClipPlanes(clipPlanes);
+
+            massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
+
+            massVoxelExtractor->SetLighting(lighting);
+            massVoxelExtractor->SetLightDirection(lightDirection);
+            massVoxelExtractor->SetMatProperties(materialProperties);
+            massVoxelExtractor->SetTransferFn(transferFn1D);
         }
 
-        massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
 
-        massVoxelExtractor->SetLighting(lighting);
-        massVoxelExtractor->SetLightDirection(lightDirection);
-        massVoxelExtractor->SetMatProperties(materialProperties);
-        massVoxelExtractor->SetTransferFn(transferFn1D);
+        massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
 
-        massVoxelExtractor->Extract((vtkRectilinearGrid *) ds,
-                                    varnames, varsizes);
-        
 
         if (rayCastingSLIVR == true)
         {

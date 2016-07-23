@@ -356,17 +356,25 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     //
     avtSourceFromAVTDataset termsrc(GetTypedInput());
 
+
+
     //
     // Set up the volume renderer.
     //
     avtRayTracer *software = new avtRayTracer;
+    software->SetRayCastingSLIVR(true);
+    software->SetTrilinear(false);
     software->SetInput(termsrc.GetOutput());
     software->InsertOpaqueImage(opaque_image);
 
+
+
+    //
+    // Set up the transfer function
+    //
     unsigned char vtf[4*256];
     atts.GetTransferFunction(vtf);
     avtOpacityMap om(256);
-
     om.SetTableFloat(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0, atts.GetRendererSamples());
     
     double actualRange[2];
@@ -382,7 +390,6 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     range[0] = (artificialMin ? atts.GetColorVarMin() : actualRange[0]);
     range[1] = (artificialMax ? atts.GetColorVarMax() : actualRange[1]);
 
-    //std::cout << "atts.GetColorVarMin(): " << atts.GetColorVarMin() << ",  actualRange[0]: " << actualRange[0] << "   atts.GetColorVarMax(): " << atts.GetColorVarMax() << "   actualRange[1]: " << actualRange[1] << std::endl;
 
     if (atts.GetScaling() == VolumeAttributes::Log)
     {
@@ -412,10 +419,15 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     om.SetMax(range[1]);
     om.computeVisibleRange();
 
+    avtFlatLighting fl;
+    avtLightingModel *lm = &fl;
+
+    avtCompositeRF *compositeRF = new avtCompositeRF(lm, &om, &om);
+    software->SetTransferFn(&om);
+
     debug5 << "Min visible scalar range:" << om.GetMinVisibleScalar() << "  Max visible scalar range: "  <<  om.GetMaxVisibleScalar() << std::endl;
  
     
-   
 
     //
     // Determine which variables to use and tell the ray function.
@@ -432,8 +444,7 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     const char *gradvar = atts.GetOpacityVariable().c_str();
     if (strcmp(gradvar, "default") == 0)
         gradvar = primaryVariable;
-    // This name is explicitly sent to the avtGradientExpression in
-    // the avtVolumePlot.
+    // This name is explicitly sent to the avtGradientExpression in avtVolumePlot.
     SNPRINTF(gradName, 128, "_%s_gradient", gradvar);
 
     for (int i = 0 ; i < vl.nvars ; i++)
@@ -491,37 +502,18 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     }
    
 
+
     //
-    // Set up lighting
+    // Unsure about this one??? RayFunction seems important
     //
-    avtFlatLighting fl;
-    avtLightingModel *lm = &fl;
-
-    if (atts.GetLightingFlag())
-        software->SetLighting(true);
-    else
-        software->SetLighting(false);
-
-
-
-    avtCompositeRF *compositeRF = new avtCompositeRF(lm, &om, &om);
-    
-    double *matProp = atts.GetMaterialProperties();
-    double materialPropArray[4];
-    materialPropArray[0] = matProp[0];
-    materialPropArray[1] = matProp[1];
-    materialPropArray[2] = matProp[2];
-    materialPropArray[3] = matProp[3];
-
-    software->SetMatProperties(materialPropArray);
-
-    software->SetRayCastingSLIVR(true);
-    software->SetTrilinear(false);
-
-    software->SetTransferFn(&om);
-    software->SetRayFunction(compositeRF);            // unsure about this one. RayFunction seems important
+    software->SetRayFunction(compositeRF);                 
     software->SetSamplesPerRay(atts.GetSamplesPerRay());
 
+
+
+    //
+    // Set camera parameters
+    //
     const int *size = window.GetSize();
     software->SetScreen(size[0], size[1]);
 
@@ -561,29 +553,30 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
         view_dir[2] /= mag;
     }
     software->SetViewDirection(view_dir);
-    software->SetViewUp(vi.viewUp);
     
+
+
+    //
+    // Set up lighting and material properties
+    //
+    if (atts.GetLightingFlag())
+        software->SetLighting(true);
+    else
+        software->SetLighting(false);
+
     double tempLightDir[3];
     tempLightDir[0] = ((window.GetLights()).GetLight(0)).GetDirection()[0];
     tempLightDir[1] = ((window.GetLights()).GetLight(0)).GetDirection()[1];
     tempLightDir[2] = ((window.GetLights()).GetLight(0)).GetDirection()[2];
     software->SetLightDirection(tempLightDir);
 
-
-    vtkCamera *camera = vtkCamera::New();
-    vi.SetCameraFromView(camera);
-    vtkMatrix4x4 *cameraMatrix = camera->GetViewTransformMatrix();
-
-
-    debug5 << "VF View settings: " << endl;
-    debug5 << "pos: "       << vi.camera[0]         << ", " << vi.camera[1]     << ", " << vi.camera[2] << std::endl;
-    debug5 << "focus: "     << vi.focus[0]          << ", " << vi.focus[1]      << ", " << vi.focus[2] << std::endl;
-    debug5 << "viewUp: "    << vi.viewUp[0]         << ", " << vi.viewUp[1]     << ", " << vi.viewUp[2] << std::endl;
-    debug5 << "eyeAngle: "  << vi.viewAngle << std::endl;
-    debug5 << "nearPlane: " << vi.nearPlane << std::endl;
-    debug5 << "nearPlane: " << vi.farPlane << std::endl;
-    debug5 << "imagePan: "  << vi.imagePan[0]        << ", " << vi.imagePan[1] << std::endl << std::endl;
-
+    double *matProp = atts.GetMaterialProperties();
+    double materialPropArray[4];
+    materialPropArray[0] = matProp[0];
+    materialPropArray[1] = matProp[1];
+    materialPropArray[2] = matProp[2];
+    materialPropArray[3] = matProp[3];
+    software->SetMatProperties(materialPropArray);
 
 
 
@@ -593,8 +586,8 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     //
     software->SetBackgroundMode(window.GetBackgroundMode());
     software->SetBackgroundColor(window.GetBackground());
-    software->SetGradientBackgroundColors(window.GetGradBG1(),
-                                          window.GetGradBG2());
+    software->SetGradientBackgroundColors(window.GetGradBG1(), window.GetGradBG2());
+
 
     //
     // Do the funny business to force an update. ... and called avtDataObject
@@ -624,18 +617,16 @@ avtImage_p
 avtVolumeFilter::RenderImage(avtImage_p opaque_image,
                              const WindowAttributes &window)
 {
-     vtkImageData  *_opaqueImageVTK = opaque_image->GetImage().GetImageVTK();
-        unsigned char *_opaqueImageData = (unsigned char *)_opaqueImageVTK->GetScalarPointer(0, 0, 0);
+    vtkImageData  *_opaqueImageVTK = opaque_image->GetImage().GetImageVTK();
+    unsigned char *_opaqueImageData = (unsigned char *)_opaqueImageVTK->GetScalarPointer(0, 0, 0);
         
-        const int *ssize = window.GetSize();
-        createColorPPM("/home/pascal/Desktop/debugImages/VFbackback", _opaqueImageData, ssize[0], ssize[1]);   //background bounding box
+    const int *ssize = window.GetSize();
+    createColorPPM("/home/pascal/Desktop/debugImages/VFbackback", _opaqueImageData, ssize[0], ssize[1]);   //background bounding box
 
 
-  if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
+    if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
         return RenderImageRaycastingSLIVR(opaque_image,window);
     }
-    
-
     
 
     //

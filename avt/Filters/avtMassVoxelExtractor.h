@@ -125,9 +125,9 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 
     void             SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
 
-    void             SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection=view_direction[i] = vD[i]; }
+    void             SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection[i]=view_direction[i] = vD[i]; }
     void             SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
-    void             SetMVPMatrix(vtkMatrix4x4 _mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
+    void             SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
 
 
 
@@ -271,7 +271,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 
     void            normalize(float vec[3]);
     float           dot(float vecA[3], float vecB[3]);
-    void            unProject(int pos2D[2], float _z, double _worldCoordinates[3], int _width, int _height);
+    void            unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height);
     double          project(double _worldCoordinates[3], int pos2D[2], int _width, int _height);
 };
 

@@ -137,10 +137,10 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
     void                  SetLightDirection(double _lightDir[3]) { for (int i=0;i<3;i++) lightDirection[i]=_lightDir[i]; }
     void                  SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
-    void                  SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
-    void                  SetViewUp(double *vu){ for (int i=0; i<3; i++) view_up[i] = vu[i]; }
     void                  SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
 
+    void                  SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
+    
     void                  SetTrilinear(bool t) {trilinearInterpolation = t; };
     void                  SetRayCastingSLIVR(bool _rayCastingSLIVR){ rayCastingSLIVR = _rayCastingSLIVR; };
 
@@ -160,15 +160,12 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     
     bool                  lighting;
     double                lightPosition[4];
-    
     double                lightDirection[3];
-    double                view_direction[3];
-    double                view_up[3];
-
-    double                modelViewMatrix[16];
-
     double                materialProperties[4];
     avtOpacityMap         *transferFn1D;
+
+    double                view_direction[3];
+
     bool                  rayCastingSLIVR;
     avtImage_p            opaqueImage;
 

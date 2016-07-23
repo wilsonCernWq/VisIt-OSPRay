@@ -635,7 +635,11 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _w
     modelViewProj->MultiplyPoint(worldCoordinates, normDevCoord);
 
     if (normDevCoord[3] == 0)
+    {
         debug5 << "avtMassVoxelExtractor::project division by 0 error!" << endl;
+        debug5 << "worldCoordinates: " << worldCoordinates[0] << ", " << worldCoordinates[1] << ", " << worldCoordinates[2] << "   " << normDevCoord[0] << ", " << normDevCoord[1] << ", " << normDevCoord[2] << endl;
+        debug5 << "Matrix: " << *modelViewProj << endl;
+    }
 
     normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
     normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
@@ -672,7 +676,7 @@ avtMassVoxelExtractor::unProject(int _x, int _y, float _z, double _worldCoordina
 
     invModelViewProj->MultiplyPoint(in, worldCoordinates);
 
-    if (normDevCoord[3] == 0)
+    if (worldCoordinates[3] == 0)
         debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
 
     worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
@@ -717,6 +721,7 @@ avtMassVoxelExtractor::project3Dto2D(double _3Dextents[6], int height, int width
     coordinates[6][0] = _3Dextents[1];   coordinates[6][1] = _3Dextents[3];   coordinates[6][2] = _3Dextents[5];
     coordinates[7][0] = _3Dextents[0];   coordinates[7][1] = _3Dextents[3];   coordinates[7][2] = _3Dextents[5];
 
+    int pos2D[2];
     for (int i=0; i<8; i++)
     {
         _world[0] = coordinates[i][0];
@@ -725,16 +730,18 @@ avtMassVoxelExtractor::project3Dto2D(double _3Dextents[6], int height, int width
         project(_world, pos2D, width, height);
 
         // Get min max
-        _xMin = std::min(xMin, pos2D[0]);
-        _xMax = std::max(xMax, pos2D[0]);
-        _yMin = std::min(yMin, pos2D[1]);
-        _yMax = std::max(yMax, pos2D[1]);
+        _xMin = std::min(_xMin, pos2D[0]);
+        _xMax = std::max(_xMax, pos2D[0]);
+        _yMin = std::min(_yMin, pos2D[1]);
+        _yMax = std::max(_yMax, pos2D[1]);
     }
 
     _2DExtents[0] = _xMin;
     _2DExtents[1] = _xMax;
     _2DExtents[2] = _yMin;
     _2DExtents[3] = _yMax;
+
+    //debug5 << "_2DExtents " << _2DExtents[0] << ", " << _2DExtents[1] << "   "  << _2DExtents[2] << ", "  << _2DExtents[3] << endl;
 }
 
 
@@ -755,9 +762,6 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
                  std::vector<std::string> &varnames, std::vector<int> &varsize)
 {
     patchDrawn = 0;
-    debug5 << "pvm pvm" << std::endl;
-    // vtkMatrix4x4 *pvm = sceneCam->GetCompositeProjectionTransformMatrix(fullImgWidth/fullImgHeight,clipPlanes[0],clipPlanes[1]);
-    // debug5 << "pvm" << *pvm << std::endl;
     //
     // Some of our sampling routines need a chance to pre-process the data.
     // Register the grid here so we can do that.
@@ -775,15 +779,15 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     imgWidth = imgHeight = 0;
 
 
-    debug5 << "MVE View settings: " << endl;
-    debug5 << "normal: "    << view.camera[0]         << ", " << view.camera[1]     << ", " << view.camera[2] << std::endl;
-    debug5 << "focus: "     << view.focus[0]          << ", " << view.focus[1]      << ", " << view.focus[2] << std::endl;
-    debug5 << "viewUp: "    << view.viewUp[0]         << ", " << view.viewUp[1]     << ", " << view.viewUp[2] << std::endl;
-    debug5 << "eyeAngle: "  << view.eyeAngle << std::endl;
-    debug5 << "nearPlane: " << view.nearPlane << std::endl;
-    debug5 << "nearPlane: " << view.farPlane << std::endl;
-    debug5 << "cur_clip_range: " << cur_clip_range[0] << ", "  << cur_clip_range[1] << std::endl;
-    debug5 << "imagePan: "  << view.imagePan[0]        << ", " << view.imagePan[1]  << std::endl << std::endl;
+    // debug5 << "MVE View settings: " << endl;
+    // debug5 << "normal: "    << view.camera[0]         << ", " << view.camera[1]     << ", " << view.camera[2] << std::endl;
+    // debug5 << "focus: "     << view.focus[0]          << ", " << view.focus[1]      << ", " << view.focus[2] << std::endl;
+    // debug5 << "viewUp: "    << view.viewUp[0]         << ", " << view.viewUp[1]     << ", " << view.viewUp[2] << std::endl;
+    // debug5 << "eyeAngle: "  << view.eyeAngle << std::endl;
+    // debug5 << "nearPlane: " << view.nearPlane << std::endl;
+    // debug5 << "nearPlane: " << view.farPlane << std::endl;
+    // debug5 << "cur_clip_range: " << cur_clip_range[0] << ", "  << cur_clip_range[1] << std::endl;
+    // debug5 << "imagePan: "  << view.imagePan[0]        << ", " << view.imagePan[1]  << std::endl << std::endl;
 
 
     //
@@ -821,119 +825,17 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     eyeSpaceDepth = __depth;
 
 
-    // double testWorld1[4] = {0,0,0,1};
-    // double testWorld2[4] = {0.7,0.22,0.22,1};
-    // double interimView[4], interimClip[4];
-
-
-    // world_to_view_transform->MultiplyPoint(testWorld1, interimView);
-    // debug5 << " testWorld1: " <<  testWorld1[0] << ", " << testWorld1[1] << ", " << testWorld1[2] << "  fullImgWidth: " << fullImgWidth << "  fullImgHeight: " << fullImgHeight <<std::endl;
-    // debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
-
-    // if (interimView[3] != 0.){
-    //     interimView[0] /= interimView[3];
-    //     interimView[1] /= interimView[3];
-    //     interimView[2] /= interimView[3];
-    //     interimView[3] /= interimView[3];
-    // }
-    // debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
-
-    // projection_transform->MultiplyPoint(interimView, interimClip);
-
-    // debug5 << " interimClip: " <<  interimClip[0] << ", " << interimClip[1] << ", " << interimClip[2] << ", " << interimClip[3] << std::endl;
-    // interimClip[0] /= interimClip[3];
-    // interimClip[1] /= interimClip[3];
-    // interimClip[2] /= interimClip[3];
-    // interimClip[3] /= interimClip[3];
-
-    // debug5 << " interimClip: " <<  interimClip[0] << ", " << interimClip[1] << ", " << interimClip[2] << std::endl;
-
-
-    // debug5 << "world_to_view_transform: " << *world_to_view_transform << std::endl;
-    // world_to_view_transform->MultiplyPoint(testWorld2, interimView);
-    // debug5 << " testWorld2: " <<  testWorld2[0] << ", " << testWorld2[1] << ", " << testWorld2[2] << "  fullImgWidth: " << fullImgWidth << "  fullImgHeight: " << fullImgHeight <<std::endl;
-    // debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
-
-    // if (interimView[3] != 0.){
-    //     interimView[0] /= interimView[3];
-    //     interimView[1] /= interimView[3];
-    //     interimView[2] /= interimView[3];
-    //     interimView[3] /= interimView[3];
-    // }
-    // debug5 << " interimView: " <<  interimView[0] << ", " << interimView[1] << ", " << interimView[2] << ", " << interimView[3] << std::endl;
-
-    // projection_transform->MultiplyPoint(interimView, interimClip);
-
-    // debug5 << " interimClip: " <<  interimClip[0] << ", " << interimClip[1] << ", " << interimClip[2] << ", " << interimClip[3] << std::endl;
-    // interimClip[0] /= interimClip[3];
-    // interimClip[1] /= interimClip[3];
-    // interimClip[2] /= interimClip[3];
-    // interimClip[3] /= interimClip[3];
-
-    // debug5 << " interimClip: " <<  interimClip[0] << ", " << interimClip[1] << ", " << interimClip[2] << std::endl;
-
-
-
 
     double _clipSpaceZ = 0;
     double _world[3];
-   
-
-    // static int thisCount = 0;
-    // if (thisCount == 0)
-    //     debug5 << "Mass Voxel Matrix: " << *world_to_view_transform << std::endl;
-    // thisCount++;
-
-    // static int patchCount = 0;
-
-    //debug5 << "patchCount: " << patchCount << std::endl;
-
     for (int i=0; i<8; i++)
     {
         int pos2D[2];
         float tempZ;
+
         _world[0] = coordinates[i][0];
         _world[1] = coordinates[i][1];
         _world[2] = coordinates[i][2];
-
-
-        // //debug5 << i << " _world: " <<  _world[0] << ", " << _world[1] << ", " << _world[2] << "  fullImgWidth: " << fullImgWidth << "  fullImgHeight: " << fullImgHeight <<std::endl;
-        // world_to_view_transform->MultiplyPoint(_world, _view);
-
-        // //debug5 << i << " _view: " <<  _view[0] << ", " << _view[1] << ", " << _view[2] << ", " << _view[3] << std::endl;
-
-        // if (_view[3] != 0.){
-        //     _view[0] /= _view[3];
-        //     _view[1] /= _view[3];
-        //     _view[2] /= _view[3];
-        //     _view[3] /= _view[3];
-        // }
-
-        // debug5 << i << " _view: " <<  _view[0] << ", " << _view[1] << ", " << _view[2] << ", " << _view[3] << std::endl;
-
-        // projection_transform->MultiplyPoint(_view, _clip);
-        // _clip[0] /= _clip[3];
-        // _clip[1] /= _clip[3];
-        // _clip[2] /= _clip[3];
-        // _clip[3] /= _clip[3];
-
-        // //_clip[2] = (_clip[2] + 1)/2.0;  // set the range to 0 - 1 from -1 to 1
-       
-        // _view[0] = _view[0]*(fullImgWidth/2.)  + (fullImgWidth/2.);
-        // _view[1] = _view[1]*(fullImgHeight/2.) + (fullImgHeight/2.);
-
-        // if (xMin > _view[0]+0.5)
-        //     xMin = _view[0]+0.5;
-
-        // if (xMax < _view[0]+0.5)
-        //     xMax = _view[0]+0.5;
-
-        // if (yMin > _view[1]+0.5)
-        //     yMin = _view[1]+0.5;
-
-        // if (yMax < _view[1]+0.5)
-        //     yMax = _view[1]+0.5;
-
 
         tempZ = project(_world, pos2D, fullImgWidth, fullImgHeight);
 
@@ -952,7 +854,7 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
 
         if (i == 0)
         {
-            _clipSpaceZ = _clip[2];       
+            _clipSpaceZ = tempZ;       
             renderingDepthsExtents[0] = tempZ;
             renderingDepthsExtents[1] = tempZ;
         }
@@ -978,38 +880,13 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
 
     clipSpaceDepth = _clipSpaceZ;   
 
+    imgWidth  = xMax-xMin;
+    imgHeight = yMax-yMin;
+
     //patchCount++;
 
 
-    // //
-    // // Bounds checking for size of image
-    // if (xMin < 0)
-    //     xMin = 0;
-    // if (xMin >= w_max)
-    //     xMin = w_max-1;
-
-    // if (xMax < 0)
-    //     xMax = 0;
-    // if (xMax >= w_max)
-    //     xMax = w_max-1;
-
-    // if (yMin < 0)
-    //     yMin = 0;
-    // if (yMin >= h_max)
-    //     yMin = h_max-1;
-
-    // if (yMax < 0)
-    //     yMax = 0;
-    // if (yMax >= h_max)
-    //     yMax = h_max-1;
-
-    // //
-    // // Determine sizes of image
-    // xMin = xMin - 1;    xMax = xMax + 1;
-    // yMin = yMin - 1;    yMax = yMax + 1;
-
-    // imgWidth  = xMax - xMin + 1;
-    // imgHeight = yMax - yMin + 1;
+    debug5 << "Extents: " << xMin << ", " << xMax << "   " << yMin << ", " << yMax << endl;
 
 
     //
@@ -1037,12 +914,15 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
             SampleAlongSegment(origin, terminus, i, j);             // Go get the segments along this ray and store them in 
 
             imgDepths[(j-yMin)*imgWidth + (i-xMin)] = _clipSpaceZ;  // TODO: move to first intersection
+
+            //debug5 << "i,j: " << i << ", " << j << endl;
         }
 
 
     //
     // Deallocate memory if not used
-    if (patchDrawn == 0){
+    if (patchDrawn == 0)
+    {
         if (imgArray != NULL)
             delete []imgArray;
 
@@ -1294,6 +1174,7 @@ avtMassVoxelExtractor::GetSegment(int w, int h, double *origin, double *terminus
     const
 {
     double view[4];
+    //debug5 << "avtMassVoxelExtractor::GetSegment" << endl;
 
     //
     // The image is being reflected across a center vertical line.  This is the
@@ -1870,7 +1751,7 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
     bool inrun = false;
     int  count = 0;
     
-
+    //debug5 << w << ", " << h << endl;
 
     avtRay *ray = volume->GetRay(w, h);
     bool calc_cell_index = ((ncell_arrays > 0) || (ghosts != NULL));
@@ -2404,6 +2285,7 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
     //
     if (rayCastingSLIVR)
     {
+        //debug5 << w << ", " << h << "   min extents" << xMin << ", " << yMin << "   imgWidth: " << imgWidth << endl;
         imgArray[(h-yMin)*(imgWidth*4) + (w-xMin)*4 + 0] = std::min(std::max(dest_rgb[0],0.0),1.0);
         imgArray[(h-yMin)*(imgWidth*4) + (w-xMin)*4 + 1] = std::min(std::max(dest_rgb[1],0.0),1.0);
         imgArray[(h-yMin)*(imgWidth*4) + (w-xMin)*4 + 2] = std::min(std::max(dest_rgb[2],0.0),1.0);
@@ -2549,6 +2431,9 @@ void
 avtMassVoxelExtractor::SampleAlongSegment(const double *origin, 
                                           const double *terminus, int w, int h)
 {
+
+    //debug5 << "avtMassVoxelExtractor::SampleAlongSegment" << endl;
+
     int first = 0;
     int last = 0;
     bool hasIntersections = FindSegmentIntersections(origin, terminus,
@@ -2558,31 +2443,31 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
         return;
 
 
-    //
-    // Determine if there is intersection with 
-    bool rcSLIVRBufferMerge = false;
-    double _worldOpaqueCoordinates[3];
+    // //
+    // // Determine if there is intersection with 
+    // bool rcSLIVRBufferMerge = false;
+    // double _worldOpaqueCoordinates[3];
 
 
-    if (rayCastingSLIVR)
-    {
-        int screenX = bufferExtents[1] - bufferExtents[0];
-        int screenY = bufferExtents[3] - bufferExtents[2];
+    // if (rayCastingSLIVR)
+    // {
+    //     int screenX = bufferExtents[1] - bufferExtents[0];
+    //     int screenY = bufferExtents[3] - bufferExtents[2];
 
-        int _index = h*screenY + w;
+    //     int _index = h*screenY + w;
 
-        if (depthBuffer[_index] != -1)  // There is some other things to blend with at this location ... 
-        {
-            float normalizedDepth = depthBuffer[_index]*2 - 1;  // switching from (0 - 1) to (-1 - 1)
-            if ( (normalizedDepth >= renderingDepthsExtents[0]) && (normalizedDepth <= renderingDepthsExtents[1]) )  // ... and it's within this patch
-            {
-                rcSLIVRBufferMerge = true;
-                unProject(w,h, depthBuffer[_index], _worldOpaqueCoordinates, fullImgWidth, fullImgHeight);
+    //     if (depthBuffer[_index] != -1)  // There is some other things to blend with at this location ... 
+    //     {
+    //         float normalizedDepth = depthBuffer[_index]*2 - 1;  // switching from (0 - 1) to (-1 - 1)
+    //         if ( (normalizedDepth >= renderingDepthsExtents[0]) && (normalizedDepth <= renderingDepthsExtents[1]) )  // ... and it's within this patch
+    //         {
+    //             rcSLIVRBufferMerge = true;
+    //             unProject(w,h, depthBuffer[_index], _worldOpaqueCoordinates, fullImgWidth, fullImgHeight);
 
-                // position where it happens
-            }
-        }
-    }
+    //             // position where it happens
+    //         }
+    //     }
+    // }
 
 
 
@@ -2747,8 +2632,8 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
         curZ = ind[2];
     }
 
-    debug5 << "First: " << first << "  last: " << last << std::endl;
-    
+    //debug5 << "First: " << first << "  last: " << last << std::endl;
+
     if (hasSamples)
         SampleVariable(first, last, w, h);
 }
