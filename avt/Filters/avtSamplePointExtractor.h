@@ -176,6 +176,7 @@ class AVTFILTERS_API avtSamplePointExtractor
 
     void                      SetTrilinear(bool t) {trilinearInterpolation = t;  };
     void                      SetRayCastingSLIVR(bool s) {rayCastingSLIVR = s;  };
+    void                      SetRayCastingSLIVRParallel(bool p) {rayCastingSLIVRParallel = p;  };
 
     void                      SetLighting(bool l) {lighting = l; };
     void                      SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
@@ -262,6 +263,7 @@ class AVTFILTERS_API avtSamplePointExtractor
     // triliniear / raycastin SLIVR
     bool                      trilinearInterpolation;
     bool                      rayCastingSLIVR;
+    bool                      rayCastingSLIVRParallel;
 
     // Camera stuff
     double                    view_direction[3];

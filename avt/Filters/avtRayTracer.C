@@ -349,6 +349,78 @@ avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2], float *dst,
 }
 
 
+double 
+avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, vtkMatrix4x4 *modelViewProj)
+{
+    double normDevCoord[4];
+    double worldCoordinates[4] = {0,0,0,1};
+    worldCoordinates[0] = _worldCoordinates[0];
+    worldCoordinates[1] = _worldCoordinates[1];
+    worldCoordinates[2] = _worldCoordinates[2];
+
+    // World to Clip space (-1 - 1)
+    modelViewProj->MultiplyPoint(worldCoordinates, normDevCoord);
+
+    if (normDevCoord[3] == 0)
+    {
+        debug5 << "avtMassVoxelExtractor::project division by 0 error!" << endl;
+        debug5 << "worldCoordinates: " << worldCoordinates[0] << ", " << worldCoordinates[1] << ", " << worldCoordinates[2] << "   " << normDevCoord[0] << ", " << normDevCoord[1] << ", " << normDevCoord[2] << endl;
+        debug5 << "Matrix: " << *modelViewProj << endl;
+    }
+
+    normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
+    normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
+    normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
+    normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
+
+    pos2D[0] = round( normDevCoord[0]*(_width/2.)  + (_width/2.)  );
+    pos2D[1] = round( normDevCoord[1]*(_height/2.) + (_height/2.) );
+
+    return normDevCoord[2];
+}
+
+
+void 
+avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4])
+{
+    double _world[3];
+    int _xMin, _xMax, _yMin, _yMax;
+    _xMin = _yMin = std::numeric_limits<int>::max();
+    _xMax = _yMax = std::numeric_limits<int>::min();
+
+    float coordinates[8][3];
+    coordinates[0][0] = _3Dextents[0];   coordinates[0][1] = _3Dextents[2];   coordinates[0][2] = _3Dextents[4];
+    coordinates[1][0] = _3Dextents[1];   coordinates[1][1] = _3Dextents[2];   coordinates[1][2] = _3Dextents[4];
+    coordinates[2][0] = _3Dextents[1];   coordinates[2][1] = _3Dextents[3];   coordinates[2][2] = _3Dextents[4];
+    coordinates[3][0] = _3Dextents[0];   coordinates[3][1] = _3Dextents[3];   coordinates[3][2] = _3Dextents[4];
+
+    coordinates[4][0] = _3Dextents[0];   coordinates[4][1] = _3Dextents[2];   coordinates[4][2] = _3Dextents[5];
+    coordinates[5][0] = _3Dextents[1];   coordinates[5][1] = _3Dextents[2];   coordinates[5][2] = _3Dextents[5];
+    coordinates[6][0] = _3Dextents[1];   coordinates[6][1] = _3Dextents[3];   coordinates[6][2] = _3Dextents[5];
+    coordinates[7][0] = _3Dextents[0];   coordinates[7][1] = _3Dextents[3];   coordinates[7][2] = _3Dextents[5];
+
+    int pos2D[2];
+    for (int i=0; i<8; i++)
+    {
+        _world[0] = coordinates[i][0];
+        _world[1] = coordinates[i][1];
+        _world[2] = coordinates[i][2];
+        project(_world, pos2D, width, height, modelViewProj);
+
+        // Get min max
+        _xMin = std::min(_xMin, pos2D[0]);
+        _xMax = std::max(_xMax, pos2D[0]);
+        _yMin = std::min(_yMin, pos2D[1]);
+        _yMax = std::max(_yMax, pos2D[1]);
+    }
+
+    _2DExtents[0] = _xMin;
+    _2DExtents[1] = _xMax;
+    _2DExtents[2] = _yMin;
+    _2DExtents[3] = _yMax;
+
+    debug5 << "_2DExtents " << _2DExtents[0] << ", " << _2DExtents[1] << "   "  << _2DExtents[2] << ", "  << _2DExtents[3] << endl;
+}
 
 // ****************************************************************************
 //  Method: avtRayTracer::Execute
@@ -461,15 +533,6 @@ avtRayTracer::Execute(void)
     }
 
 
-
-    //
-        // Camera Settings
-        //
-
-
-        //extractor.SetMVPMatrix();
-
-        
     double scale[3] = {1,1,1};
     vtkMatrix4x4 *transform = vtkMatrix4x4::New();
     avtWorldSpaceToImageSpaceTransform::CalculateTransform(view, transform, 
@@ -480,56 +543,10 @@ avtRayTracer::Execute(void)
     view.nearPlane = newNearPlane;  view.farPlane  = newFarPlane;
     transform->Delete();
 
-
     avtWorldSpaceToImageSpaceTransform trans(view, aspect);
     trans.SetInput(GetInput());
 
 
-
-    vtkCamera *sceneCam = vtkCamera::New();
-    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
-    sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
-    sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
-    sceneCam->SetViewAngle(view.viewAngle);
-    sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
-    //if (view.orthographic)
-    //    sceneCam->ParallelProjectionOn();
-    //else
-        sceneCam->ParallelProjectionOff();
-    //sceneCam->SetParallelScale(view.parallelScale);
-
-
-    debug5 << "RT View settings: " << endl;
-    debug5 << "camera: "       << view.camera[0]         << ", " << view.camera[1]     << ", " << view.camera[2] << std::endl;
-    debug5 << "focus: "     << view.focus[0]          << ", " << view.focus[1]      << ", " << view.focus[2] << std::endl;
-    debug5 << "viewUp: "    << view.viewUp[0]         << ", " << view.viewUp[1]     << ", " << view.viewUp[2] << std::endl;
-    debug5 << "viewAngle: "  << view.viewAngle << std::endl;
-    debug5 << "nearPlane: " << view.nearPlane << std::endl;
-    debug5 << "farPlane: " << view.farPlane << std::endl;
-    debug5 << "oldNearPlane: " << oldNearPlane << std::endl;
-    debug5 << "oldFarPlane: " <<oldFarPlane << std::endl;
-    debug5 << "aspect: " << aspect << std::endl;
-
-    double _clip[2];
-    _clip[0]=oldNearPlane;  _clip[1]=oldFarPlane;
-
-
-    vtkMatrix4x4 *vm = sceneCam->GetModelViewTransformMatrix();
-    vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
-    p->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / (oldFarPlane-oldNearPlane));
-    p->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / (oldFarPlane-oldNearPlane));
-
-    vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
-    vtkMatrix4x4::Multiply4x4(p,vm,pvm);
-
-    //debug5 << "vm" << *vm << std::endl;
-    //debug5 << "p" << *p << std::endl;
-    debug5 << "pvm" << *pvm << std::endl;
-
-    // TODO: Deallocation
-    vtkImageData  *__opaqueImageVTK = NULL;
-    unsigned char *__opaqueImageData = NULL;
-    float         *__opaqueImageZB = NULL;
 
     //
     // Extract all of the samples from the dataset.
@@ -543,38 +560,119 @@ avtRayTracer::Execute(void)
     extractor.RegisterRayFunction(rayfoo);
     extractor.SetJittering(true);
     extractor.SetInput(trans.GetOutput());
-    if (trilinearInterpolation || rayCastingSLIVR)
+
+
+    if (trilinearInterpolation)
+        extractor.SetTrilinear(true);
+
+    
+    //
+    // Ray casting: SLIVR ~ Before Rendering
+    //
+
+    int fullImageExtents[4];
+    if (rayCastingSLIVR)
     {
-        extractor.SetTrilinear(trilinearInterpolation);
-        extractor.SetRayCastingSLIVR(rayCastingSLIVR);
+        extractor.SetRayCastingSLIVR(true);
 
-        if (rayCastingSLIVR)
+        
+
+
+        //
+        // Camera Settings
+        vtkCamera *sceneCam = vtkCamera::New();
+        sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
+        sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
+        sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
+        sceneCam->SetViewAngle(view.viewAngle);
+        sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
+        if (view.orthographic)
+            sceneCam->ParallelProjectionOn();
+        else
+            sceneCam->ParallelProjectionOff();
+        sceneCam->SetParallelScale(view.parallelScale);
+
+
+        debug5 << "RT View settings: " << endl;
+        debug5 << "camera: "       << view.camera[0]      << ", " << view.camera[1]     << ", " << view.camera[2] << std::endl;
+        debug5 << "focus: "     << view.focus[0]          << ", " << view.focus[1]      << ", " << view.focus[2] << std::endl;
+        debug5 << "viewUp: "    << view.viewUp[0]         << ", " << view.viewUp[1]     << ", " << view.viewUp[2] << std::endl;
+        debug5 << "viewAngle: "  << view.viewAngle  << std::endl;
+        debug5 << "nearPlane: " << view.nearPlane   << std::endl;
+        debug5 << "farPlane: " << view.farPlane     << std::endl;
+        debug5 << "oldNearPlane: " << oldNearPlane  << std::endl;
+        debug5 << "oldFarPlane: " <<oldFarPlane     << std::endl;
+        debug5 << "aspect: " << aspect << std::endl;
+
+        double _clip[2];
+        _clip[0]=oldNearPlane;  _clip[1]=oldFarPlane;
+
+
+        vtkMatrix4x4 *vm = sceneCam->GetModelViewTransformMatrix();
+        vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
+        vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
+        if (!view.orthographic)
         {
-            extractor.SetJittering(false);
-            extractor.SetLighting(lighting);
-            extractor.SetLightDirection(lightDirection);
-            extractor.SetMatProperties(materialProperties);
-            extractor.SetViewDirection(view_direction);
-            extractor.SetTransferFn(transferFn1D);
-            extractor.SetClipPlanes(_clip);
-            extractor.SetMVPMatrix(pvm);
-
-            // Capture background
-            __opaqueImageVTK = opaqueImage->GetImage().GetImageVTK();
-            __opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
-            __opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
-
-            writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", __opaqueImageZB, screen[0], screen[1]);
-
-            extractor.setDepthBuffer(__opaqueImageZB, screen[0]*screen[1]);
-            extractor.setRGBBuffer(__opaqueImageData, screen[0], screen[1]);
-
-            int _bufExtents[4] = {0,0,0,0};
-            _bufExtents[1] = screen[0]; _bufExtents[3] = screen[1];
-            extractor.setBufferExtents(_bufExtents);
+            p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
+            p->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / (oldFarPlane-oldNearPlane));
+            p->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / (oldFarPlane-oldNearPlane));
         }
+        else
+        {
+            // TODO
+        }
+
+        vtkMatrix4x4::Multiply4x4(p,vm,pvm);
+        debug5 << "pvm" << *pvm << std::endl;
+
+
+        //
+        // Image extents
+        double dbounds[6];
+        
+        GetSpatialExtents(dbounds);
+        project3Dto2D(dbounds, screen[1], screen[0], pvm, fullImageExtents);
+
+        debug5 << "Full data extents: " << dbounds[0] << ", " << dbounds[1] << ", " << dbounds[2] << ", " << dbounds[3] << ", " << dbounds[4] << ", " << dbounds[5] << std::endl;
+        debug5 << "fullImageExtents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "     " << fullImageExtents[2] << ", " << fullImageExtents[3] << std::endl;
+
+
+        if (parallelOn == false)
+            extractor.SetRayCastingSLIVRParallel(true);
+
+        extractor.SetJittering(false);
+        extractor.SetLighting(lighting);
+        extractor.SetLightDirection(lightDirection);
+        extractor.SetMatProperties(materialProperties);
+        extractor.SetViewDirection(view_direction);
+        extractor.SetTransferFn(transferFn1D);
+        extractor.SetClipPlanes(_clip);
+        extractor.SetMVPMatrix(pvm);
+
+
+        //
+        // Capture background
+
+        // TODO: Deallocation
+        vtkImageData  *__opaqueImageVTK = NULL;
+        unsigned char *__opaqueImageData = NULL;
+        float         *__opaqueImageZB = NULL;
+
+        __opaqueImageVTK = opaqueImage->GetImage().GetImageVTK();
+        __opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
+        __opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
+
+        writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", __opaqueImageZB, screen[0], screen[1]);
+
+        extractor.setDepthBuffer(__opaqueImageZB, screen[0]*screen[1]);
+        extractor.setRGBBuffer(__opaqueImageData, screen[0], screen[1]);
+
+        int _bufExtents[4] = {0,0,0,0};
+        _bufExtents[1] = screen[0]; _bufExtents[3] = screen[1];
+        extractor.setBufferExtents(_bufExtents);
     }
 
+    
 
     //
     // For curvilinear and unstructured meshes, it makes sense to convert the
@@ -587,10 +685,11 @@ avtRayTracer::Execute(void)
         trans.SetPassThruRectilinearGrids(true);
         extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
     }
+
+
     int timingVolToImg = 0;
     if (rayCastingSLIVR == true && parallelOn)
         timingVolToImg = visitTimer->StartTimer();
-
 
     debug5 << "avtRayTracer::Execute : extractor.GetOutput()" << std::endl;
 
@@ -599,7 +698,7 @@ avtRayTracer::Execute(void)
 
 
     //
-    // Ray casting: SLIVR
+    // Ray casting: SLIVR ~ After Rendering
     //
     if (rayCastingSLIVR == true)
     {
@@ -870,14 +969,7 @@ avtRayTracer::Execute(void)
         writeOutputToFile("/home/pascal/Desktop/debugImages/RCSLdepth", _opaqueImageZB, screen[0], screen[1]);
 
 
-        double dbounds[6];
-        GetSpatialExtents(dbounds);
-        debug5 << "Full data extents: " << dbounds[0] << ", " << dbounds[1] << ", " << dbounds[2] << ", " << dbounds[3] << ", " << dbounds[4] << ", " << dbounds[0] << std::endl;
-    
-        // TODO - project for image extents
-        int fullImageExtents[4];
-        //use pvm
-
+       
         // 
         // Serial Direct Send
         //imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgExtents, composedData, backgroundColor, screen[0], screen[1]);
@@ -885,13 +977,6 @@ avtRayTracer::Execute(void)
 
         //
         // Parallel Direct Send
-        int rankExtents[4];
-        
-        // extractor.getProjectedExents(rankExtents);  // Find extents without doing this
-        // imgComm.allGather2DExtents(rankExtents);
-        // imgComm.getFullImageExtents(fullImageExtents);
-        // debug5 << "Full image extents: " << imgComm.fullImageExtents[0] << ", " << imgComm.fullImageExtents[1] << "   " << imgComm.fullImageExtents[2] << ", " << imgComm.fullImageExtents[3] << std::endl;
-
         int tags[3] = {1081, 1681, 2681};
         int numMPIRanks = imgComm.GetNumProcs();
         int *regions = new int[numMPIRanks]();
@@ -962,7 +1047,7 @@ avtRayTracer::Execute(void)
         return;
     }
 
-#ifdef PARALLEL
+  #ifdef PARALLEL
     //
     // Tell the sample point extractor that we would like to send cells
     // instead of sample points when appropriate.
@@ -977,7 +1062,7 @@ avtRayTracer::Execute(void)
     sampleCommunicator.SetJittering(true);
 
     samples = sampleCommunicator.GetOutput();
-#endif
+  #endif
  
     //
     // Perform compositing on the rays to get the final image.
@@ -1045,7 +1130,7 @@ avtRayTracer::Execute(void)
     rc.SetInput(samples);
     avtImage_p image = rc.GetTypedOutput();
 
-#ifdef PARALLEL
+  #ifdef PARALLEL
     //
     // Communicate the screen to the root processor.
     //
@@ -1054,7 +1139,7 @@ avtRayTracer::Execute(void)
     CopyTo(dob, image);
     imageCommunicator.SetInput(dob);
     image = imageCommunicator.GetTypedOutput();
-#endif
+  #endif
 
     //
     // Update the pipeline several times, once for each tile.
@@ -1082,7 +1167,7 @@ avtRayTracer::Execute(void)
             int JStart = j*JStep;
             int JEnd = (j == (numDivisions-1) ? screen[1] : (j+1)*JStep);
     
-#ifdef PARALLEL
+  #ifdef PARALLEL
             //
             // Create an image partition that will be passed around between
             // parallel modules in an effort to minimize communication.
@@ -1091,7 +1176,7 @@ avtRayTracer::Execute(void)
             imagePartition.RestrictToTile(IStart, IEnd, JStart, JEnd);
             sampleCommunicator.SetImagePartition(&imagePartition);
             imageCommunicator.SetImagePartition(&imagePartition);
-#endif
+  #endif
             extractor.RestrictToTile(IStart, IEnd, JStart, JEnd);
             image->Update(GetGeneralContract());
             if (PAR_Rank() == 0)

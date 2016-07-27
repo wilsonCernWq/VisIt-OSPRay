@@ -58,7 +58,7 @@ class     vtkMatrix4x4;
 #include <vtkCamera.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <algorithm>    // std::max
+#include <algorithm> 
 
 // ****************************************************************************
 //  Class: avtMassVoxelExtractor
@@ -137,8 +137,6 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             getImageDepth(float *imageDepth);
     void             setProcIdPatchID(int _proc, int _patch){ proc = _proc; patch = _patch; }
 
-    void             project3Dto2D(double _3Dextents[6], int height, int width, int _2DExtents[4]);
-
     // TODO: Make that just a pointer instead of copy!!!
     void             setDepthBuffer(float *_zBuffer, int size){ depthBuffer=new float[size]; for (int i=0; i<size; i++) depthBuffer[i]=_zBuffer[i]; }
     void             setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
@@ -202,7 +200,8 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     float            gradient[3];
 
     
-
+    bool             activeNow;
+    int              tempCount;
 
     int debugOn;
     int countt;
@@ -246,9 +245,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             ExtractWorldSpaceGrid(vtkRectilinearGrid *,
                              std::vector<std::string> &varnames,
                              std::vector<int> &varsize);
-    void             simpleExtractWorldSpaceGrid(vtkRectilinearGrid *,  // added for raycasting slivr
-                             std::vector<std::string> &varnames,
-                             std::vector<int> &varsize);
+    
 
     void             RegisterGrid(vtkRectilinearGrid*,
                                   std::vector<std::string>&,std::vector<int>&);
@@ -273,6 +270,12 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     float           dot(float vecA[3], float vecB[3]);
     void            unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height);
     double          project(double _worldCoordinates[3], int pos2D[2], int _width, int _height);
+
+    void            GetSegmentRCSLIVR(int x, int y, float depthsExtents[2], double *_origin, double *_terminus);
+    void            SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y);
+    void            simpleExtractWorldSpaceGrid(vtkRectilinearGrid *,  // added for raycasting slivr
+                             std::vector<std::string> &varnames,
+                             std::vector<int> &varsize);
 };
 
 #endif

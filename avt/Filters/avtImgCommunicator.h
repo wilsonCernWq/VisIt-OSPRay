@@ -138,8 +138,6 @@ public:
     int GetNumProcs(){ return num_procs;};
     int GetMyId(){ return my_id;};
 
-    void getFullImageExtents(int _fullImageExtents[4]){ for (int i=0; i<4; i++) _fullImageExtents[i] = fullImageExtents[i];}
-
     float clamp(float x);
     void setBackground(unsigned char _background[3]){ for (int i=0; i<3; i++) background[i] = _background[i]; }
     
@@ -147,7 +145,7 @@ public:
     void initImage(int sizeX, int sizeY, float color[4]);
     void regionAllocation(int numMPIRanks, int *& regions);
 
-    void allGather2DExtents(int rankExtents[4]);
+
 
     void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
 

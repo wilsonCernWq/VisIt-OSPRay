@@ -48,8 +48,10 @@
 #include <avtDatasetToImageFilter.h>
 #include <avtViewInfo.h>
 #include <avtOpacityMap.h>
-#include <map>
 #include <avtImgCommunicator.h>
+
+#include <map>
+#include <limits>
 
 #include <vtkCamera.h>
 
@@ -144,7 +146,11 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  SetTrilinear(bool t) {trilinearInterpolation = t; };
     void                  SetRayCastingSLIVR(bool _rayCastingSLIVR){ rayCastingSLIVR = _rayCastingSLIVR; };
 
+
   protected:
+
+    
+
     avtImgCommunicator    imgComm;
     avtViewInfo           view;
 
@@ -176,6 +182,9 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  TightenClippingPlanes(const avtViewInfo &view,
                                                 vtkMatrix4x4 *,
                                                 double &, double &);
+
+    void project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *_mvp, int _2DExtents[4]);
+    double project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, vtkMatrix4x4 *_mvp);
 };
 
 
