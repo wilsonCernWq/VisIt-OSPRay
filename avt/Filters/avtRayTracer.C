@@ -348,6 +348,28 @@ avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2], float *dst,
         }
 }
 
+void 
+avtRayTracer::blendDepths(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2])
+{
+    for (int _y=0; _y<dimsSrc[1]; _y++)
+        for (int _x=0; _x<dimsSrc[0]; _x++)
+        {
+            int startingX = posSrc[0];
+            int startingY = posSrc[1]; 
+
+            if ((startingX + _x) > (posDst[0]+dimsDst[0]))
+                continue;
+
+            if ((startingY + _y) > (posDst[1]+dimsDst[1]))
+                continue;
+            
+            int subImgIndex = dimsSrc[0]*_y + _x;                                     // index in the subimage 
+            int bufferIndex = ( (startingY+_y - posDst[1])*dimsDst[0]  + (startingX+_x - posDst[0]) );    // index in the big buffer
+
+            dst[bufferIndex] = std::max(dst[bufferIndex], src[subImgIndex]);
+        }
+}
+
 
 double 
 avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, vtkMatrix4x4 *modelViewProj)
@@ -381,12 +403,16 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int
 
 
 void 
-avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4])
+avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
 {
     double _world[3];
     int _xMin, _xMax, _yMin, _yMax;
+    double _zMin, _zMax;
     _xMin = _yMin = std::numeric_limits<int>::max();
     _xMax = _yMax = std::numeric_limits<int>::min();
+
+    _zMin = std::numeric_limits<double>::max();
+    _zMax = std::numeric_limits<double>::min();
 
     float coordinates[8][3];
     coordinates[0][0] = _3Dextents[0];   coordinates[0][1] = _3Dextents[2];   coordinates[0][2] = _3Dextents[4];
@@ -400,26 +426,26 @@ avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatr
     coordinates[7][0] = _3Dextents[0];   coordinates[7][1] = _3Dextents[3];   coordinates[7][2] = _3Dextents[5];
 
     int pos2D[2];
+    double _z;
     for (int i=0; i<8; i++)
     {
         _world[0] = coordinates[i][0];
         _world[1] = coordinates[i][1];
         _world[2] = coordinates[i][2];
-        project(_world, pos2D, width, height, modelViewProj);
+        _z = project(_world, pos2D, width, height, modelViewProj);
 
         // Get min max
-        _xMin = std::min(_xMin, pos2D[0]);
-        _xMax = std::max(_xMax, pos2D[0]);
-        _yMin = std::min(_yMin, pos2D[1]);
-        _yMax = std::max(_yMax, pos2D[1]);
+        _2DExtents[0] = _xMin = std::min(_xMin, pos2D[0]);
+        _2DExtents[1] = _xMax = std::max(_xMax, pos2D[0]);
+        _2DExtents[2] = _yMin = std::min(_yMin, pos2D[1]);
+        _2DExtents[3] = _yMax = std::max(_yMax, pos2D[1]);
+
+        depthExtents[0] = _zMin = std::min(_zMin, _z);
+        depthExtents[1] = _zMax = std::max(_zMax, _z);
     }
 
-    _2DExtents[0] = _xMin;
-    _2DExtents[1] = _xMax;
-    _2DExtents[2] = _yMin;
-    _2DExtents[3] = _yMax;
 
-    debug5 << "_2DExtents " << _2DExtents[0] << ", " << _2DExtents[1] << "   "  << _2DExtents[2] << ", "  << _2DExtents[3] << endl;
+    debug5 << "_2DExtents " << _2DExtents[0] << ", " << _2DExtents[1] << "   "  << _2DExtents[2] << ", "  << _2DExtents[3] << "     z: " << depthExtents[0] << ", " << depthExtents[1] << endl;
 }
 
 // ****************************************************************************
@@ -575,9 +601,6 @@ avtRayTracer::Execute(void)
     {
         extractor.SetRayCastingSLIVR(true);
 
-        
-
-
         //
         // Camera Settings
         vtkCamera *sceneCam = vtkCamera::New();
@@ -629,11 +652,12 @@ avtRayTracer::Execute(void)
         //
         // Image extents
         double dbounds[6];
+        double depthExtents[2];
         
         GetSpatialExtents(dbounds);
-        project3Dto2D(dbounds, screen[1], screen[0], pvm, fullImageExtents);
+        project3Dto2D(dbounds, screen[0], screen[1], pvm,  fullImageExtents, depthExtents);
 
-        debug5 << "Full data extents: " << dbounds[0] << ", " << dbounds[1] << ", " << dbounds[2] << ", " << dbounds[3] << ", " << dbounds[4] << ", " << dbounds[5] << std::endl;
+        debug5 << "Full data extents: " << dbounds[0] << ", " << dbounds[1] << "    " << dbounds[2] << ", " << dbounds[3] << "    " << dbounds[4] << ", " << dbounds[5] << std::endl;
         debug5 << "fullImageExtents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "     " << fullImageExtents[2] << ", " << fullImageExtents[3] << std::endl;
 
 
@@ -647,6 +671,7 @@ avtRayTracer::Execute(void)
         extractor.SetViewDirection(view_direction);
         extractor.SetTransferFn(transferFn1D);
         extractor.SetClipPlanes(_clip);
+        extractor.SetDepthExtents(depthExtents);
         extractor.SetMVPMatrix(pvm);
 
 
@@ -894,8 +919,8 @@ avtRayTracer::Execute(void)
 
         //
         // Creates a buffer to store the composited image - initilized to 0
-        float *composedData = new float[imgSize[0] * imgSize[1] * 4]();
-
+        float *composedData   = new float[imgSize[0] * imgSize[1] * 4]();
+        float *composedDepths = new float[imgSize[0] * imgSize[1]]();
 
 
         //
@@ -919,6 +944,7 @@ avtRayTracer::Execute(void)
             int startPos[2];
             startPos[0] = imgExtents[0];   startPos[1] = imgExtents[2];
             blendImages(tempImgData.imagePatch, currentPatch.dims, currentPatch.screen_ll, composedData, imgSize, startPos);
+            blendDepths(tempImgData.imageDepth, currentPatch.dims, currentPatch.screen_ll, composedDepths, imgSize, startPos);
             
             //
             // Clean up data

@@ -1086,6 +1086,9 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             varsizes.push_back(samples->GetVariableSize(i));
         }
 
+
+        //
+        // Compositing Setup
         if (rayCastingSLIVR == true)
         {
             massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
@@ -1095,6 +1098,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             massVoxelExtractor->SetViewDirection(view_direction);
             massVoxelExtractor->SetMVPMatrix(modelViewProj);
             massVoxelExtractor->SetClipPlanes(clipPlanes);
+            massVoxelExtractor->SetDepthExtents(depthExtents);
 
             massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
 
@@ -1108,9 +1112,11 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
 
 
+        //
+        // Get rendering results
         if (rayCastingSLIVR == true)
         {
-            imgMetaData tmpImageMetaPatch;
+            imgMetaData      tmpImageMetaPatch;
             tmpImageMetaPatch = initMetaPatch(patchCount);
 
             massVoxelExtractor->getImageDimensions(tmpImageMetaPatch.inUse, tmpImageMetaPatch.dims, tmpImageMetaPatch.screen_ll, tmpImageMetaPatch.screen_ur, tmpImageMetaPatch.eye_z, tmpImageMetaPatch.clip_z);

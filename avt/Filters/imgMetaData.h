@@ -63,7 +63,7 @@ struct imgMetaData
     int screen_ll[2]; // position in the final image
     int screen_ur[2];
 
-    float avg_z;        // camera space z = depth of the patch
+    float avg_z;        // camera space z = depth of the patch - used for compositing
     float eye_z;        // camera space z
     float clip_z;       // clip space z
 };

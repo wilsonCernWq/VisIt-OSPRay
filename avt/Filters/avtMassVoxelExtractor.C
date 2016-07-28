@@ -677,7 +677,7 @@ avtMassVoxelExtractor::unProject(int _x, int _y, float _z, double _worldCoordina
     double in[4] = {0,0,0,1};
     in[0] = (_x - _width/2. )/(_width/2.);
     in[1] = (_y - _height/2.)/(_height/2.);
-    in[3] = _z;
+    in[2] = _z;
 
     invModelViewProj->MultiplyPoint(in, worldCoordinates);
 
@@ -833,11 +833,13 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
 
     //
     // Initialize memory
-    imgArray =  new float[((imgWidth)*4) * imgHeight];   // image
-    imgDepths = new float[imgWidth * imgHeight];         // depths - unused for now!!!
+    imgArray =  new float[((imgWidth)*4) * imgHeight]();   // image
+    imgDepths = new float[imgWidth * imgHeight]();         // depths
 
-    for (int i=0; i<imgHeight * imgWidth; i++)
-        imgArray[i*4+0] = imgArray[i*4+1] = imgArray[i*4+2] = imgArray[i*4+3] = imgDepths[i] = 0.0;
+    for (int i=0; i<imgHeight * imgWidth; i++){
+        imgArray[i*4+0] = imgArray[i*4+1] = imgArray[i*4+2] = imgArray[i*4+3] =  0;
+        imgDepths[i] = -1;
+    }
 
 
     //
@@ -852,21 +854,31 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
             double _origin[3], _terminus[3];
             double origin[4]  = {0,0,0,1};      // starting point where we start sampling
             double terminus[4]= {0,0,0,1};      // ending point where we stop sampling
+
+            GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);    // find the starting point & ending point of the ray
+
             
-            GetSegmentRCSLIVR(_x, _y, renderingDepthsExtents, _origin, _terminus);    // find the starting point & ending point of the ray
+
+            //debug5 << _x << ", " << _y << "  origin: " << _origin[0] << ", " << _origin[1] << ", " << _origin[2] << "   terminus: " << _terminus[0] << ", " << _terminus[1] << ", " << _terminus[2] << "   z: " << originZ << ", " << terminusZ <<std::endl;
 
             for (int i=0; i<3; i++){
                 origin[i] = _origin[i];
                 terminus[i] = _terminus[i];
             }
 
-            if (activeNow)
-                tempCount++;
             SampleAlongSegment(origin, terminus, _x, _y);             // Go get the segments along this ray and store them in 
 
-            //imgDepths[(_y-yMin)*imgWidth + (_x-xMin)] = _clipSpaceZ;  // TODO: move to first intersection
 
-            //debug5 << "i,j: " << i << ", " << j << endl;
+            // Set a value of z if 
+            int index = (_y-yMin)*imgWidth + (_x-xMin);
+            if (imgArray[index*4+3] != 0)
+            {
+                int _tempC[2];
+                double originZ   = project(_origin,   _tempC, fullImgWidth, fullImgHeight);
+                double terminusZ = project(_terminus, _tempC, fullImgWidth, fullImgHeight);
+            
+                imgDepths[index] = (std::max(originZ, terminusZ) + 1)/2.0; // to make z between 0 and 1 rather than between -1 and 1
+            }
         }
 
 
@@ -887,8 +899,21 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
 
 
 
+// ****************************************************************************
+//  Method: avtMassVoxelExtractor::GetSegmentRCSLIVR
+//
+//  Purpose:
+//      transfers the metadata of the patch
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+
 void
-avtMassVoxelExtractor::GetSegmentRCSLIVR(int x, int y, float depthsExtents[2], double *_origin, double *_terminus)
+avtMassVoxelExtractor::GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], double *_origin, double *_terminus)
 {
     unProject(x,y, depthsExtents[0], _origin,   fullImgWidth, fullImgHeight);
     unProject(x,y, depthsExtents[1], _terminus, fullImgWidth, fullImgHeight);
@@ -1138,13 +1163,7 @@ void
 avtMassVoxelExtractor::GetSegment(int w, int h, double *origin, double *terminus)
     const
 {
-    // if (activeNow)
-    //     if (tempCount == 0)
-    //         debug5 << "w: " << w << "   h: " << h << "  width: " << width << "   height: " << height <<  "   view_to_world_transform: " << *view_to_world_transform << std::endl;
-
-
     double view[4];
-    //debug5 << "avtMassVoxelExtractor::GetSegment" << endl;
 
     //
     // The image is being reflected across a center vertical line.  This is the
@@ -1169,17 +1188,6 @@ avtMassVoxelExtractor::GetSegment(int w, int h, double *origin, double *terminus
         origin[2] /= origin[3];
     }
 
-    // if (activeNow)
-    //     if (tempCount == 0)
-    //         debug5 << "View: " << view[0] << ", " << view[1] << ", " << view[2] << ", " << view[3] << "   origin: " << origin[0] << ", " << origin[1] << ", " << origin[2] << "   cur_clip_range[0]: " << cur_clip_range[0] << std::endl;
-
-    // if (activeNow)
-    //     if (rayCastingSLIVR && tempCount == 0){
-    //         double org[4];
-    //         view[0] = (w - width/2.)/(width/2.);
-    //         modelViewProj->MultiplyPoint(view, org);
-    //         debug5 << "my origin: " << org[0] << ", " << org[1] << ", " << org[2] << std::endl;
-    //     }
 
     view[0] = (w - width/2.)/(width/2.);
     if (pretendGridsAreInWorldSpace)
@@ -1194,23 +1202,6 @@ avtMassVoxelExtractor::GetSegment(int w, int h, double *origin, double *terminus
         terminus[1] /= terminus[3];
         terminus[2] /= terminus[3];
     }
-
-
-    // if (activeNow)
-    //     if (tempCount == 0)
-    //         debug5 << "View: " << view[0] << ", " << view[1] << ", " << view[2] << ", " << view[3] << "   terminus: " << terminus[0] << ", " << terminus[1] << ", " << terminus[2] << "   cur_clip_range[0]: " << cur_clip_range[1] << std::endl;
-
-    // if (activeNow)
-    //     if (rayCastingSLIVR && tempCount == 0){
-    //         double ter[4];
-    //         view[0] = (w - width/2.)/(width/2.);
-    //         modelViewProj->MultiplyPoint(view, ter);
-    //         debug5 << "my ter: " << ter[0] << ", " << ter[1] << ", " << ter[2] << std::endl;
-    //     }
-
-
-
-    //debug5 << "cur_clip_range: " << cur_clip_range[0] << ", " << cur_clip_range[1] << " world range " << origin[2] << ", " << terminus[2] << std::endl;
 
     if (jitter)
     {
@@ -1443,6 +1434,9 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
 {
     double  t, x, y, z;
 
+    //debug5 << "x,y: " << w << ", " << h << "  origin: " << origin[0] << ", " << origin[1] << ", " << origin[2] << "   " << terminus[0] << ", " << terminus[1] << ", " << terminus[2] << "   first/last: " << first << " / " << last << endl;
+
+
     int num_hits = 0;
     double hits[6]; // Should always be 2 or 0.
 
@@ -1459,6 +1453,7 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
     {
         hits[num_hits++] = 0.0;
     }
+
     if (x_min <= terminus[0] && terminus[0] <= x_max &&
         y_min <= terminus[1] && terminus[1] <= y_max &&
         z_min <= terminus[2] && terminus[2] <= z_max)
@@ -2086,6 +2081,7 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
     int last = 0;
     bool hasIntersections = FindSegmentIntersections(origin, terminus,
                                                      first, last);
+
     
     if (!hasIntersections)
         return;
@@ -2099,9 +2095,6 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
 
     if (rayCastingSLIVR)
     {
-        //debug5 << "x,y: " << w << ", " << h << "   origin:  " << origin[0] << ", " << origin[1] << ", " << origin[2] << "    terminus: " <<  terminus[0] << ", " << terminus[1] << ", " << terminus[2] << "  fisrt: " << first << "  last: " << last << endl;
-
-
         int screenX = bufferExtents[1] - bufferExtents[0];
         int screenY = bufferExtents[3] - bufferExtents[2];
 
@@ -2116,7 +2109,6 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
                 unProject(w,h, depthBuffer[_index], _worldOpaqueCoordinates, fullImgWidth, fullImgHeight);
 
                 // position where it happens
-
                 debug5 << "Pos: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << std::endl;
             }
         }
@@ -2286,6 +2278,8 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
     }
 
     //debug5 << "First: " << first << "  last: " << last << std::endl;
+
+    
 
     if (hasSamples)
         if (rayCastingSLIVR)
@@ -2778,7 +2772,6 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
     imgArray[(y-yMin)*(imgWidth*4) + (x-xMin)*4 + 1] = std::min(std::max(dest_rgb[1],0.0),1.0);
     imgArray[(y-yMin)*(imgWidth*4) + (x-xMin)*4 + 2] = std::min(std::max(dest_rgb[2],0.0),1.0);
     imgArray[(y-yMin)*(imgWidth*4) + (x-xMin)*4 + 3] = std::min(std::max(dest_rgb[3],0.0),1.0);
-   
 }
 
 // ****************************************************************************

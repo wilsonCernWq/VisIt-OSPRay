@@ -131,9 +131,8 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     const int            *GetScreen(void)         { return screen; };
 
     void                  blendImages(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2]);
-    void                  SetKernelBasedSampling(bool v)
-                                    { kernelBasedSampling = v; };
-
+    void                  blendDepths(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2]);
+    void                  SetKernelBasedSampling(bool v) { kernelBasedSampling = v; };
 
     void                  SetLighting(bool l) {lighting = l; };
     void                  SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
@@ -148,9 +147,6 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
 
 
   protected:
-
-    
-
     avtImgCommunicator    imgComm;
     avtViewInfo           view;
 
@@ -183,7 +179,7 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
                                                 vtkMatrix4x4 *,
                                                 double &, double &);
 
-    void project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *_mvp, int _2DExtents[4]);
+    void project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *_mvp, int _2DExtents[4], double depthExtents[2]);
     double project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, vtkMatrix4x4 *_mvp);
 };
 

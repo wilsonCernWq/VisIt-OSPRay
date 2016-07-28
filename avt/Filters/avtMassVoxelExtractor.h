@@ -127,6 +127,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 
     void             SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection[i]=view_direction[i] = vD[i]; }
     void             SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
+    void             SetDepthExtents(double _depthExtents[2]){ fullVolumeDepthExtents[0]=_depthExtents[0]; fullVolumeDepthExtents[1]=_depthExtents[1]; }
     void             SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
 
 
@@ -160,6 +161,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     vtkMatrix4x4    *modelViewProj;
     vtkMatrix4x4    *invModelViewProj;
     double           clipPlanes[2];
+    double           fullVolumeDepthExtents[2];
     double           viewDirection[3];
     double           view_direction[3];
 
@@ -213,7 +215,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 
     // Rendering
     int              renderingAreaExtents[4];
-    float            renderingDepthsExtents[2];
+    double           renderingDepthsExtents[2];
 
 
     // Patch details for one image
@@ -271,7 +273,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void            unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height);
     double          project(double _worldCoordinates[3], int pos2D[2], int _width, int _height);
 
-    void            GetSegmentRCSLIVR(int x, int y, float depthsExtents[2], double *_origin, double *_terminus);
+    void            GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], double *_origin, double *_terminus);
     void            SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y);
     void            simpleExtractWorldSpaceGrid(vtkRectilinearGrid *,  // added for raycasting slivr
                              std::vector<std::string> &varnames,

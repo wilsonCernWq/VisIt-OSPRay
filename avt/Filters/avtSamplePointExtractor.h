@@ -187,6 +187,7 @@ class AVTFILTERS_API avtSamplePointExtractor
 
     void                      SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection[i]=view_direction[i] = vD[i]; }
     void                      SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
+    void                      SetDepthExtents(double _depthExtents[2]){ depthExtents[0]=_depthExtents[0]; depthExtents[1]=_depthExtents[1]; }
     void                      SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); }
 
     void                      getSpatialExtents(double _spatialExtents[6]){ for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
@@ -268,6 +269,7 @@ class AVTFILTERS_API avtSamplePointExtractor
     // Camera stuff
     double                    view_direction[3];
     double                    viewDirection[3];
+    double                    depthExtents[2];
     double                    clipPlanes[2];
     vtkMatrix4x4              *modelViewProj;
 

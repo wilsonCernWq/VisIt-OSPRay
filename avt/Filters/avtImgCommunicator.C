@@ -751,6 +751,8 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
     int width =  fullImageExtents[1]-fullImageExtents[0];
     int height = fullImageExtents[3]-fullImageExtents[2];
 
+    debug5 << "fullImageExtents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "   " << fullImageExtents[2] << ", " << fullImageExtents[3] << endl;
+
     compositingDone = false;
     int myPositionInRegion = -1;
     bool inRegion = true;
