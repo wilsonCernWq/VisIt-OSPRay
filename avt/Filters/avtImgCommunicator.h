@@ -86,12 +86,6 @@ class avtImgCommunicator
     int my_id;
     bool compositingDone;
 
-    float *imgBuffer;                   // Final image is here
-    int finalImageExtents[4];
-    int finalBB[4];
-
-    
-
     unsigned char background[3];
 
 
@@ -116,6 +110,12 @@ class avtImgCommunicator
 
     
 public:
+    float *imgBuffer;                   // Final image is here
+    int finalImageExtents[4];
+    int finalBB[4];
+
+
+
     float *intermediateImage;           // Intermediate image, e.g. in parallel direct send
     int intermediateImageExtents[4];    
     int intermediateImageBB[4];         

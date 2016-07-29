@@ -371,6 +371,55 @@ avtRayTracer::blendDepths(float *src, int dimsSrc[2], int posSrc[2], float *dst,
 }
 
 
+// ****************************************************************************
+//  Method: avtRayTracer::unProject
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+void 
+avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height, vtkMatrix4x4 *invModelViewProj)
+{
+    double worldCoordinates[4] = {0,0,0,1};
+    double in[4] = {0,0,0,1};
+    in[0] = (_x - _width/2. )/(_width/2.);
+    in[1] = (_y - _height/2.)/(_height/2.);
+    in[2] = _z;
+
+    invModelViewProj->MultiplyPoint(in, worldCoordinates);
+
+    if (worldCoordinates[3] == 0)
+        debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
+
+    worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
+    worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
+    worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
+    worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
+
+    _worldCoordinates[0] = worldCoordinates[0];
+    _worldCoordinates[1] = worldCoordinates[1];
+    _worldCoordinates[2] = worldCoordinates[2];
+}
+
+
+     
+// ****************************************************************************
+//  Method: avtRayTracer::project
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
 double 
 avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, vtkMatrix4x4 *modelViewProj)
 {
@@ -402,6 +451,18 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int
 }
 
 
+
+// ****************************************************************************
+//  Method: avtRayTracer::project3Dto2D
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
 void 
 avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
 {
@@ -447,6 +508,33 @@ avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatr
 
     debug5 << "_2DExtents " << _2DExtents[0] << ", " << _2DExtents[1] << "   "  << _2DExtents[2] << ", "  << _2DExtents[3] << "     z: " << depthExtents[0] << ", " << depthExtents[1] << endl;
 }
+
+
+
+// ****************************************************************************
+//  Method: avtRayTracer::checkInBounds
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+bool 
+avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
+{
+    if (coord[0] > volBounds[0] && coord[0] < volBounds[1])
+        if (coord[1] > volBounds[2] && coord[1] < volBounds[3])
+            if (coord[2] > volBounds[4] && coord[2] < volBounds[5])
+                return true;
+
+    return false;
+}
+
+
+
 
 // ****************************************************************************
 //  Method: avtRayTracer::Execute
@@ -596,6 +684,15 @@ avtRayTracer::Execute(void)
     // Ray casting: SLIVR ~ Before Rendering
     //
 
+    double dbounds[6];  // Extents of the volume in world coordinates
+    vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
+
+
+    // TODO: Deallocation
+    vtkImageData  *__opaqueImageVTK = NULL;
+    unsigned char *__opaqueImageData = NULL;
+    float         *__opaqueImageZB = NULL;
+
     int fullImageExtents[4];
     if (rayCastingSLIVR)
     {
@@ -633,7 +730,7 @@ avtRayTracer::Execute(void)
 
         vtkMatrix4x4 *vm = sceneCam->GetModelViewTransformMatrix();
         vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
-        vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
+        
         if (!view.orthographic)
         {
             p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
@@ -651,7 +748,7 @@ avtRayTracer::Execute(void)
 
         //
         // Image extents
-        double dbounds[6];
+        
         double depthExtents[2];
         
         GetSpatialExtents(dbounds);
@@ -677,12 +774,6 @@ avtRayTracer::Execute(void)
 
         //
         // Capture background
-
-        // TODO: Deallocation
-        vtkImageData  *__opaqueImageVTK = NULL;
-        unsigned char *__opaqueImageData = NULL;
-        float         *__opaqueImageZB = NULL;
-
         __opaqueImageVTK = opaqueImage->GetImage().GetImageVTK();
         __opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
         __opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
@@ -1012,54 +1103,91 @@ avtRayTracer::Execute(void)
         imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tags[2], fullImageExtents);
 
 
-
-
         //
-        // Move final composited image to visit structures
-        //
-        avtImage_p whole_image, tempImage;
-    
-        tempImage = new avtImage(this);     // for processors other than proc 0 ; a dummy
-        
-        // Processor 0 does a special compositing
-        if (PAR_Rank() == 0)
-        {
-            // TEMPORARY - To have some output 
-            //float _color[4] = {0,1,0, 1};
-            //imgComm.initImage(screen[0],screen[1], _color);
+        // Blend in with bounding box
+        vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
+        vtkMatrix4x4::Invert(pvm,Inversepvm);
 
+        unsigned char *imgFinal = NULL;
+        imgFinal = new unsigned char[screen[0] * screen[1] * 3];
+        imgFinal = whole_image->GetImage().GetRGBBuffer();
+        for (int _y=0; _y<screen[1]; _y++)
+            for (int _x=0; _x<screen[0]; _x++)
+            {
+
+                int index = _y*screen[0] + _x;
+                if (__opaqueImageZB[index] != 1)
+                {
+                    double worldCoordinates[3];
+                    float _tempZ = __opaqueImageZB[index] * 2 - 1;
+                    unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], Inversepvm);
+
+
+                    debug5 << "x,y,z: " << _x << ", " << _y << ", " << _tempZ << "   wordld: " << worldCoordinates[0] << ", " << worldCoordinates[1] << ", " << worldCoordinates[2];
+                    if ( checkInBounds(dbounds, worldCoordinates) )
+                    {
+                        debug5 << " inside!" << endl;
+                    }
+                    else
+                    {
+                        debug5 << " outside!";
+
+                        double ray[3], tMin, tMax;
+                        computeRay( view.camera, worldCoordinates, ray);
+                        if ( intersect(dbounds, ray, view.camera, tMin, tMax) )
+                        {
+                            double tIntersect = std::min( (worldCoordinates[0]-view.camera[0])/ray[0], 
+                                                std::min( (worldCoordinates[1]-view.camera[1])/ray[1], (worldCoordinates[2]-view.camera[2])/ray[2] ) );
+
+                            if (tMin < tIntersect)
+                            {
+                                debug5 << "  intersection - vol infront!" << endl;
+                            }
+                            else
+                            {
+                                debug5 << "  intersection - box infront!" << endl;
+                            }
+                        }
+                        else
+                        {
+                            debug5 << "  No intersection - box infront!" << endl;
+                        }
+                    }
+                }
+                else
+                {
+                    imgFinal[index*3 + 0] = 0;
+                    imgFinal[index*3 + 1] = 0;
+                    imgFinal[index*3 + 2] = 0;
+                }
+            }
+
+
+        ///////////////////////////////////////
+        //
+            // Creates an image structure to hold the image
+            avtImage_p whole_image;
             whole_image = new avtImage(this);
 
-            float *zbuffer = new float[screen[0] * screen[1]];
-            unsigned char *imgTest = NULL;
+            
 
-            // creates input for the
             vtkImageData *img = avtImageRepresentation::NewImage(screen[0], screen[1]);
             whole_image->GetImage() = img;
 
+            // unsigned char *imgFinal = NULL;
+            // imgFinal = new unsigned char[screen[0] * screen[1] * 3];
+            // imgFinal = whole_image->GetImage().GetRGBBuffer();
 
-            imgTest = new unsigned char[screen[0] * screen[1] * 3];
-            imgTest = whole_image->GetImage().GetRGBBuffer();
+    
+            // // Get the composited image
+            // for (int i=0; i< screen[1]*screen[1]*3; i++)
+            //     imgFinal[i] = _opaqueImageData[i];
 
-            zbuffer = new float[screen[0] * screen[1]]();
-            for (int s=0; s<screen[0] * screen[1]; s++)
-                zbuffer[s] = 20.0;
-            zbuffer = whole_image->GetImage().GetZBuffer();
-
-            // Get the composited image
-            imgComm.getcompositedImage(screen[0], screen[1], imgTest); 
             img->Delete();
 
-            debug5 << PAR_Rank() << " ~ final: " << endl;
+            SetOutput(whole_image);
 
-            if (zbuffer != NULL)
-                delete []zbuffer;
-        }
-        imgComm.barrier();
-
-        if (PAR_Rank() == 0)
-            tempImage->Copy(*whole_image);
-        SetOutput(tempImage);
+        ///////////////////////////////////////
 
         debug5 << "RC SLIVR: Done!" << std::endl;
 
@@ -1561,3 +1689,88 @@ avtRayTracer::TightenClippingPlanes(const avtViewInfo &view,
 }
 
 
+
+// ****************************************************************************
+//  Method: avtRayTracer::computeRay
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+void 
+avtRayTracer::computeRay(double camera[3], double position[3], double ray[3])
+{
+    for (int i=0; i<3; i++)
+        ray[i] = position[i] - camera[i];
+
+    double mag = sqrt( ray[0]*ray[0] + ray[1]*ray[1] + ray[2]*ray[2] );
+
+    for (int i=0; i<3; i++)
+        ray[i] = ray[i]/mag;
+}
+
+
+// ****************************************************************************
+//  Method: avtRayTracer::intersect
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+bool 
+avtRayTracer::intersect(double bounds[6], double ray[3], double cameraPos[3], double &tMin, double &tMax)
+{
+    double t1, t2, tXMin, tXMax, tYMin, tYMax, tZMin, tZMax;
+    double invRay[3];
+
+    for (int i=0; i<3; i++)
+        invRay[i] = 1.0 / ray[i];
+
+    // X
+    t1 = (bounds[0] - cameraPos[0]) * invRay[0];
+    t2 = (bounds[1] - cameraPos[0]) * invRay[0];
+
+    tXMin = std::min(t1, t2);
+    tXMax = std::max(t1, t2);
+
+
+    // Y
+    t1 = (bounds[2] - cameraPos[1]) * invRay[1];
+    t2 = (bounds[3] - cameraPos[1]) * invRay[1];
+
+    tYMin = std::min(t1, t2);
+    tYMax = std::max(t1, t2);
+
+
+    // Z
+    t1 = (bounds[4] - cameraPos[2]) * invRay[2];
+    t2 = (bounds[5] - cameraPos[2]) * invRay[2];
+
+    tZMin = std::min(t1, t2);
+    tZMax = std::max(t1, t2);
+
+
+    // Comparing
+    if ((tXMin > tYMax) || (tYMin > tXMax))
+        return false;
+
+    tMin = t1 = std::max(tXMin, tYMin);
+    tMax = t2 = std::min(tXMax, tYMax);
+
+
+    if ((t1 > tZMax) || (tZMin > t2))
+        return false;
+
+    tMin = std::max(t1, tZMin);
+    tMax = std::min(t2, tYMax);
+
+    return true;
+}

@@ -1061,6 +1061,7 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
 }
 
 
+
 void 
 avtImgCommunicator::gatherImages(int regionGather[], int numRanksWithData, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4])
 {

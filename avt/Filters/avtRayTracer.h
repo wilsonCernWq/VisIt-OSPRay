@@ -181,6 +181,11 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
 
     void project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *_mvp, int _2DExtents[4], double depthExtents[2]);
     double project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, vtkMatrix4x4 *_mvp);
+    void unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height, vtkMatrix4x4 *invModelViewProj);
+    bool checkInBounds(double volBounds[6], double coord[3]);
+
+    void computeRay(double camera[3], double position[3], double ray[3]);
+    bool intersect(double bounds[6], double ray[3], double cameraPos[3], double &tMin, double &tMax);
 };
 
 

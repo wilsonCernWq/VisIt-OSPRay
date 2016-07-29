@@ -695,236 +695,6 @@ avtMassVoxelExtractor::unProject(int _x, int _y, float _z, double _worldCoordina
 }
 
 
-
-// ****************************************************************************
-//  Method: avtMassVoxelExtractor::simpleExtractWorldSpaceGrid
-//
-//  Purpose:
-//
-//  Programmer: 
-//  Creation:   
-//
-//  Modifications:
-//
-// ****************************************************************************
-
-void
-avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
-                 std::vector<std::string> &varnames, std::vector<int> &varsize)
-{
-    patchDrawn = 0;
-    //
-    // Some of our sampling routines need a chance to pre-process the data.
-    // Register the grid here so we can do that.
-    //
-    RegisterGrid(rgrid, varnames, varsize);   // stores the values in a structure so that it can be used
-
-    //
-    // Determine what range we are dealing with on this iteration.
-    //
-    int w_min = restrictedMinWidth;
-    int w_max = restrictedMaxWidth+1;
-    int h_min = restrictedMinHeight;
-    int h_max = restrictedMaxHeight+1;
-
-    imgWidth = imgHeight = 0;
-
-
-    //
-    // Let's find out if this range can even intersect the dataset.
-    // If not, just skip it.
-    //
-    if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max))
-       return;
-    
-    //
-    // Determine the screen size of the patch being processed
-    //
-    xMin = yMin = std::numeric_limits<int>::max();
-    xMax = yMax = std::numeric_limits<int>::min();
-
-    float coordinates[8][3];
-    coordinates[0][0] = X[0];           coordinates[0][1] = Y[0];           coordinates[0][2] = Z[0];
-    coordinates[1][0] = X[dims[0]-1];   coordinates[1][1] = Y[0];           coordinates[1][2] = Z[0];
-    coordinates[2][0] = X[dims[0]-1];   coordinates[2][1] = Y[dims[1]-1];   coordinates[2][2] = Z[0];
-    coordinates[3][0] = X[0];           coordinates[3][1] = Y[dims[1]-1];   coordinates[3][2] = Z[0];
-
-    coordinates[4][0] = X[0];           coordinates[4][1] = Y[0];           coordinates[4][2] = Z[dims[2]-1];
-    coordinates[5][0] = X[dims[0]-1];   coordinates[5][1] = Y[0];           coordinates[5][2] = Z[dims[2]-1];
-    coordinates[6][0] = X[dims[0]-1];   coordinates[6][1] = Y[dims[1]-1];   coordinates[6][2] = Z[dims[2]-1];
-    coordinates[7][0] = X[0];           coordinates[7][1] = Y[dims[1]-1];   coordinates[7][2] = Z[dims[2]-1];
-
-    debug5 << "Extents - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] << "   Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << std::endl;
-
-
-    //
-    // Compute z order for blending patches
-    double _center[3];
-    _center[0] = (X[0] + X[dims[0]-1])/2.0;
-    _center[1] = (Y[0] + Y[dims[1]-1])/2.0;
-    _center[2] = (Z[0] + Z[dims[2]-1])/2.0;
-    double __depth = sqrt( (_center[0]-view.camera[0])*(_center[0]-view.camera[0]) +  (_center[1]-view.camera[1])*(_center[1]-view.camera[1]) + (_center[2]-view.camera[2])*(_center[2]-view.camera[2]) );
-    eyeSpaceDepth = __depth;
-
-
-
-    double _clipSpaceZ = 0;
-    double _world[3];
-    for (int i=0; i<8; i++)
-    {
-        int pos2D[2];
-        float tempZ;
-
-        _world[0] = coordinates[i][0];
-        _world[1] = coordinates[i][1];
-        _world[2] = coordinates[i][2];
-
-        tempZ = project(_world, pos2D, fullImgWidth, fullImgHeight);
-
-        // Clamp values
-        pos2D[0] = std::min( std::max(pos2D[0], 0), w_max-1);
-        pos2D[0] = std::min( std::max(pos2D[0], 0), w_max-1);
-        pos2D[1] = std::min( std::max(pos2D[1], 0), h_max-1);
-        pos2D[1] = std::min( std::max(pos2D[1], 0), h_max-1);
-
-        // Get min max
-        xMin = std::min(xMin, pos2D[0]);
-        xMax = std::max(xMax, pos2D[0]);
-        yMin = std::min(yMin, pos2D[1]);
-        yMax = std::max(yMax, pos2D[1]);
-
-
-        if (i == 0)
-        {
-            _clipSpaceZ = tempZ;       
-            renderingDepthsExtents[0] = tempZ;
-            renderingDepthsExtents[1] = tempZ;
-        }
-        else
-        {
-            if ( _clipSpaceZ > tempZ )
-                _clipSpaceZ = tempZ;   
-
-            if (renderingDepthsExtents[0] > tempZ)      // min z
-                renderingDepthsExtents[0] = tempZ;  
-
-            if (renderingDepthsExtents[1] < tempZ)      // max z
-                renderingDepthsExtents[1] = tempZ;
-        }
-
-        debug5 << i << " _clipSpaceZ: " <<  tempZ << std::endl;
-    }
-
-    renderingAreaExtents[0] = xMin;
-    renderingAreaExtents[1] = xMax;
-    renderingAreaExtents[2] = yMin;
-    renderingAreaExtents[3] = yMax;
-
-    clipSpaceDepth = _clipSpaceZ;   
-
-    imgWidth  = xMax-xMin;
-    imgHeight = yMax-yMin;
-
-    //patchCount++;
-
-
-    debug5 << "Extents: " << xMin << ", " << xMax << "   " << yMin << ", " << yMax << "  renderingDepthsExtents: " << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] << endl;
-    activeNow = true;
-
-    //
-    // Initialize memory
-    imgArray =  new float[((imgWidth)*4) * imgHeight]();   // image
-    imgDepths = new float[imgWidth * imgHeight]();         // depths
-
-    for (int i=0; i<imgHeight * imgWidth; i++){
-        imgArray[i*4+0] = imgArray[i*4+1] = imgArray[i*4+2] = imgArray[i*4+3] =  0;
-        imgDepths[i] = -1;
-    }
-
-
-    //
-    // Send rays
-    imgDims[0] = imgWidth;       imgDims[1] = imgHeight;
-    imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
-    imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
-
-    for (int _x = xMin ; _x < xMax ; _x++)
-        for (int _y = yMin ; _y < yMax ; _y++)
-        {
-            double _origin[3], _terminus[3];
-            double origin[4]  = {0,0,0,1};      // starting point where we start sampling
-            double terminus[4]= {0,0,0,1};      // ending point where we stop sampling
-
-            GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);    // find the starting point & ending point of the ray
-
-            
-
-            //debug5 << _x << ", " << _y << "  origin: " << _origin[0] << ", " << _origin[1] << ", " << _origin[2] << "   terminus: " << _terminus[0] << ", " << _terminus[1] << ", " << _terminus[2] << "   z: " << originZ << ", " << terminusZ <<std::endl;
-
-            for (int i=0; i<3; i++){
-                origin[i] = _origin[i];
-                terminus[i] = _terminus[i];
-            }
-
-            SampleAlongSegment(origin, terminus, _x, _y);             // Go get the segments along this ray and store them in 
-
-
-            // Set a value of z if 
-            int index = (_y-yMin)*imgWidth + (_x-xMin);
-            if (imgArray[index*4+3] != 0)
-            {
-                int _tempC[2];
-                double originZ   = project(_origin,   _tempC, fullImgWidth, fullImgHeight);
-                double terminusZ = project(_terminus, _tempC, fullImgWidth, fullImgHeight);
-            
-                imgDepths[index] = (std::max(originZ, terminusZ) + 1)/2.0; // to make z between 0 and 1 rather than between -1 and 1
-            }
-        }
-
-
-    //
-    // Deallocate memory if not used
-    if (patchDrawn == 0)
-    {
-        if (imgArray != NULL)
-            delete []imgArray;
-
-        if (imgDepths != NULL)
-            delete []imgDepths;
-
-        imgArray = NULL;
-        imgDepths = NULL;
-    }
-}
-
-
-
-// ****************************************************************************
-//  Method: avtMassVoxelExtractor::GetSegmentRCSLIVR
-//
-//  Purpose:
-//      transfers the metadata of the patch
-//
-//  Programmer: 
-//  Creation:   
-//
-//  Modifications:
-//
-// ****************************************************************************
-
-void
-avtMassVoxelExtractor::GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], double *_origin, double *_terminus)
-{
-    unProject(x,y, depthsExtents[0], _origin,   fullImgWidth, fullImgHeight);
-    unProject(x,y, depthsExtents[1], _terminus, fullImgWidth, fullImgHeight);
-
-    if (activeNow)
-        if (tempCount == 0)
-            debug5 << "origin: " << _origin[0] << ", " << _origin[1] << ", " << _origin[2] <<  "    terminus: " << _terminus[0] << ", " << _terminus[1] << ", " << _terminus[2] << std::endl;
-}
-
-
-
 // ****************************************************************************
 //  Method: avtMassVoxelExtractor::getImageDimensions
 //
@@ -1219,8 +989,6 @@ avtMassVoxelExtractor::GetSegment(int w, int h, double *origin, double *terminus
         terminus[2] += dir[2];
     }
 }
-
-
 
 
 
@@ -1578,6 +1346,7 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
     if (hits[0] < 0 && hits[1] < 0)
         // Dataset on back side of camera -- no intersection.
         return false;
+    
     if (hits[0] > 1. && hits[1] > 1.)
         // Dataset past far clipping plane -- no intersection.
         return false;
@@ -1695,7 +1464,8 @@ avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int retur
 // ****************************************************************************
 
 double 
-avtMassVoxelExtractor::trilinearInterpolate(double vals[8], float distRight, float distTop, float distBack){
+avtMassVoxelExtractor::trilinearInterpolate(double vals[8], float distRight, float distTop, float distBack)
+{
     float dist_from_right = 1.0 - distRight;
     float dist_from_left = distRight;
 
@@ -1706,7 +1476,7 @@ avtMassVoxelExtractor::trilinearInterpolate(double vals[8], float distRight, flo
     float dist_from_front = distBack;
     
     
-    double val =   dist_from_right     * dist_from_top         * dist_from_back * vals[0] + 
+    double val =    dist_from_right     * dist_from_top         * dist_from_back * vals[0] + 
                     dist_from_left      * dist_from_top         * dist_from_back * vals[1] +
                     dist_from_right     * dist_from_bottom      * dist_from_back * vals[2] +
                     dist_from_left      * dist_from_bottom      * dist_from_back * vals[3] +
@@ -2044,6 +1814,568 @@ static inline int FindMatch(const double *A, const double &a, const int &nA)
 
     return low;
 }
+
+
+
+// ****************************************************************************
+//  Method: avtMassVoxelExtractor::FindIndex
+//
+//  Purpose:
+//      Finds the index that corresponds to a point.
+//
+//  Programmer:   Hank Childs
+//  Creation:     December 14, 2003
+//
+//  Modifications:
+//    Kathleen Biagas, Fri Jul 13 07:44:46 PDT 2012
+//    Templatized to handle coordinates of various types.
+//
+// ****************************************************************************
+
+template <class T> inline int
+FindIndex(const double &pt, const int &last_hit, const int &n,
+          T *vals)
+{
+    for (int i = last_hit ; i < n-1 ; ++i)
+    {
+        if (pt >= (double)vals[i] && (pt <= (double)vals[i+1]))
+            return i;
+    }
+
+    for (int i = 0 ; i < last_hit ; ++i)
+    {
+        if (pt >= (double)vals[i] && (pt <= (double)vals[i+1]))
+            return i;
+    }
+
+    return -1;
+}
+
+inline int
+FindIndex(vtkDataArray *coordArray,const double &pt, const int &last_hit, 
+          const int &n)
+{
+    switch(coordArray->GetDataType())
+    {
+        vtkTemplateAliasMacro(return FindIndex(pt, last_hit, n,
+            static_cast<VTK_TT *>(coordArray->GetVoidPointer(0))));
+        default:    return -1;
+    }
+}
+
+
+// ****************************************************************************
+//  Function:  FindRange
+//
+//  Purpose:
+//      A templated function to find a range.
+//
+//  Programmer: Kathleen Biagas 
+//  Creation:   July 12, 2012
+//
+// ****************************************************************************
+
+template <class T> inline void
+FindRange(int ind, double c, double &min, double &max, T *coord)
+{
+    double range = (double)coord[ind+1] - (double)coord[ind];
+    min = 1. - (c - (double)coord[ind])/range;
+    max = 1. - min;
+}
+
+
+inline void
+FindRange(vtkDataArray *coordArray, int ind, double c, double &min, double &max)
+{
+    switch(coordArray->GetDataType())
+    {
+        vtkTemplateAliasMacro(FindRange(ind, c, min, max,
+            static_cast<VTK_TT *>(coordArray->GetVoidPointer(0))));
+        default:
+            EXCEPTION1(VisItException, "Unknown Coordinate type");
+    }
+}
+
+
+// ****************************************************************************
+//  Method: avtMassVoxelExtractor::ExtractImageSpaceGrid
+//
+//  Purpose:
+//      Extracts a grid that has already been put into image space.  This case
+//      typically corresponds to resampling.
+//
+//  Programmer: Hank Childs
+//  Creation:   December 14, 2003
+//
+//  Modifications:
+//
+//    Hank Childs, Fri Aug 27 16:00:57 PDT 2004
+//    Rename ghost data array.
+//
+//    Hank Childs, Fri Nov 19 14:50:58 PST 2004
+//    Renamed from Extract.
+//
+//    Hank Childs, Mon Jul 11 14:01:28 PDT 2005
+//    Fix indexing issue with ghost zones ['5712].
+//
+//    Hank Childs, Mon Feb  6 12:36:51 PST 2006
+//    Fix another issue with ghost zones that only comes up with AMR grids
+//    ['6940].
+//
+//    Hank Childs, Fri Jun  1 15:45:58 PDT 2007
+//    Add support for non-scalars.
+//
+//    Hank Childs, Wed Aug 27 11:07:04 PDT 2008
+//    Add support for non-floats.
+//
+//    Hank Childs, Thu Aug 28 10:52:32 PDT 2008
+//    Make sure we only sample the variables that were requested.
+//
+//    Hank Childs, Sun Nov  1 14:32:46 CST 2009
+//    Fix bug where ghost data could cause an extra sample to be put in the
+//    avtVolume, with that sample's data be uninitialized memory.
+//
+//    Kathleen Biagas, Fri Jul 13 09:30:53 PDT 2012
+//    Handle Coordinates as their native type. Use double internally.
+//
+// ****************************************************************************
+
+void
+avtMassVoxelExtractor::ExtractImageSpaceGrid(vtkRectilinearGrid *rgrid,
+                std::vector<std::string> &varnames, std::vector<int> &varsizes)
+{
+    int  i, j, k, l, m;
+
+    int dims[3];
+    rgrid->GetDimensions(dims);
+    const int nX = dims[0];
+    const int nY = dims[1];
+    const int nZ = dims[2];
+
+
+    int last_x_hit = 0;
+    int last_y_hit = 0;
+    int last_z_hit = 0;
+
+    vtkUnsignedCharArray *ghosts = (vtkUnsignedCharArray *)rgrid->GetCellData()
+                                                   ->GetArray("avtGhostZones");
+    std::vector<void *>  cell_arrays;
+    std::vector<int>     cell_vartypes;
+    std::vector<int>     cell_size;
+    std::vector<int>     cell_index;
+    for (i = 0 ; i < rgrid->GetCellData()->GetNumberOfArrays() ; i++)
+    {
+        vtkDataArray *arr = rgrid->GetCellData()->GetArray(i);
+        const char *name = arr->GetName();
+        int idx = -1;
+        for (j = 0 ; j < (int)varnames.size() ; j++)
+        {
+            if (varnames[j] == name)
+            {
+                idx = 0;
+                for (k = 0 ; k < j ; k++)
+                    idx += varsizes[k];
+                break;
+            }
+        }
+        if (idx < 0)
+            continue;
+        cell_index.push_back(idx);
+        cell_size.push_back(arr->GetNumberOfComponents());
+        cell_vartypes.push_back(arr->GetDataType());
+        cell_arrays.push_back(arr->GetVoidPointer(0));
+    }
+
+    std::vector<void *>  pt_arrays;
+    std::vector<int>     pt_vartypes;
+    std::vector<int>     pt_size;
+    std::vector<int>     pt_index;
+    for (i = 0 ; i < rgrid->GetPointData()->GetNumberOfArrays() ; i++)
+    {
+        vtkDataArray *arr = rgrid->GetPointData()->GetArray(i);
+        const char *name = arr->GetName();
+        int idx = -1;
+        for (j = 0 ; j < (int)varnames.size() ; j++)
+        {
+            if (varnames[j] == name)
+            {
+                idx = 0;
+                for (k = 0 ; k < j ; k++)
+                    idx += varsizes[k];
+                break;
+            }
+        }
+        if (idx < 0)
+            continue;
+        pt_index.push_back(idx);
+        pt_size.push_back(arr->GetNumberOfComponents());
+        pt_vartypes.push_back(arr->GetDataType());
+        pt_arrays.push_back(arr->GetVoidPointer(0));
+    }
+
+
+    vtkDataArray *xarray = rgrid->GetXCoordinates();
+    vtkDataArray *yarray = rgrid->GetYCoordinates();
+    vtkDataArray *zarray = rgrid->GetZCoordinates();
+
+    int startX = SnapXLeft(xarray->GetTuple1(0));
+    int stopX  = SnapXRight(xarray->GetTuple1(nX-1));
+    int startY = SnapYBottom(yarray->GetTuple1(0));
+    int stopY  = SnapYTop(yarray->GetTuple1(nY-1));
+    int startZ = SnapZFront(zarray->GetTuple1(0));
+    int stopZ  = SnapZBack(zarray->GetTuple1(nZ-1));
+
+    for (j = startY ; j <= stopY ; j++)
+    {
+        double yc = YFromIndex(j);
+        int yind = FindIndex(yarray, yc, last_y_hit, nY);
+        if (yind == -1)
+            continue;
+        last_y_hit = yind;
+
+        double y_bottom  = 0.;
+        double y_top = 1.;
+        if (pt_arrays.size() > 0)
+        {
+            FindRange(yarray, yind, yc, y_bottom, y_top);
+        }
+        for (i = startX ; i <= stopX ; i++)
+        {
+            double xc = XFromIndex(i);
+            int xind = FindIndex(xarray, xc, last_x_hit, nX);
+            if (xind == -1)
+                continue;
+            last_x_hit = xind;
+
+            double x_left  = 0.;
+            double x_right = 1.;
+            if (pt_arrays.size() > 0)
+            {
+                FindRange(xarray, xind, xc, x_left, x_right);
+            }
+
+            last_z_hit = 0;
+            int count = 0;
+            int firstZ = -1;
+            int lastZ  = stopZ;
+            for (k = startZ ; k <= stopZ ; k++)
+            {
+                double zc = ZFromIndex(k);
+                int zind = FindIndex(zarray, zc, last_z_hit, nZ);
+                if (zind == -1)
+                {
+                    if (firstZ == -1)
+                        continue;
+                    else
+                    {
+                        lastZ = k-1;
+                        break;
+                    }
+                }
+                if ((count == 0) && (firstZ == -1))
+                    firstZ = k;
+                last_z_hit = zind;
+
+                //
+                // Don't sample from ghost zones.
+                //
+                if (ghosts != NULL)
+                {
+                    int index = zind*((nX-1)*(nY-1)) + yind*(nX-1) + xind;
+                    if (ghosts->GetValue(index) != 0)
+                    {
+                        if (count > 0)
+                        {
+                            avtRay *ray = volume->GetRay(i, j);
+                            ray->SetSamples(firstZ, k-1, tmpSampleList);
+                        }
+                        firstZ = -1;
+                        count = 0;
+                        continue;
+                    }
+                }
+
+                double z_front  = 0.;
+                double z_back = 1.;
+                if (pt_arrays.size() > 0)
+                {
+                    FindRange(zarray, zind, zc, z_front, z_back);
+                }
+
+                for (l = 0 ; l < (int)cell_arrays.size() ; l++)
+                {
+                    int index = zind*((nX-1)*(nY-1)) + yind*(nX-1) + xind;
+                    for (m = 0 ; m < cell_size[l] ; m++)
+                        tmpSampleList[count][cell_index[l]+m] = 
+                                  ConvertToDouble(cell_vartypes[l],index,
+                                              cell_size[l], m, cell_arrays[l]);
+                }
+                if (pt_arrays.size() > 0)
+                {
+                    int index[8];
+                    index[0] = (zind)*nX*nY + (yind)*nX + (xind);
+                    index[1] = (zind)*nX*nY + (yind)*nX + (xind+1);
+                    index[2] = (zind)*nX*nY + (yind+1)*nX + (xind);
+                    index[3] = (zind)*nX*nY + (yind+1)*nX + (xind+1);
+                    index[4] = (zind+1)*nX*nY + (yind)*nX + (xind);
+                    index[5] = (zind+1)*nX*nY + (yind)*nX + (xind+1);
+                    index[6] = (zind+1)*nX*nY + (yind+1)*nX + (xind);
+                    index[7] = (zind+1)*nX*nY + (yind+1)*nX + (xind+1);
+                    for (l = 0 ; l < (int)pt_arrays.size() ; l++)
+                    {
+                        void  *pt_array = pt_arrays[l];
+                        int    s        = pt_size[l];
+                        for (m = 0 ; m < s ; m++)
+                        {
+                            double vals[8];
+                            AssignEight(pt_vartypes[l], vals, index, 
+                                        s, m, pt_array);
+                            double val = 
+                                  x_left*y_bottom*z_front*vals[0] +
+                                  x_right*y_bottom*z_front*vals[1] +
+                                  x_left*y_top*z_front*vals[2] +
+                                  x_right*y_top*z_front*vals[3] +
+                                  x_left*y_bottom*z_back*vals[4] +
+                                  x_right*y_bottom*z_back*vals[5] +
+                                  x_left*y_top*z_back*vals[6] +
+                                  x_right*y_top*z_back*vals[7];
+                            tmpSampleList[count][pt_index[l]+m] = val;
+                        }
+                    }    
+                }
+                count++;
+            }
+
+            if (count > 0)
+            {
+                avtRay *ray = volume->GetRay(i, j);
+                ray->SetSamples(firstZ, lastZ, tmpSampleList);
+            }
+        }
+    }
+}
+
+
+
+// ****************************************************************************
+//  Method: avtMassVoxelExtractor::simpleExtractWorldSpaceGrid
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+void
+avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
+                 std::vector<std::string> &varnames, std::vector<int> &varsize)
+{
+    patchDrawn = 0;
+    //
+    // Some of our sampling routines need a chance to pre-process the data.
+    // Register the grid here so we can do that.
+    //
+    RegisterGrid(rgrid, varnames, varsize);   // stores the values in a structure so that it can be used
+
+    //
+    // Determine what range we are dealing with on this iteration.
+    //
+    int w_min = restrictedMinWidth;
+    int w_max = restrictedMaxWidth+1;
+    int h_min = restrictedMinHeight;
+    int h_max = restrictedMaxHeight+1;
+
+    imgWidth = imgHeight = 0;
+
+
+    //
+    // Let's find out if this range can even intersect the dataset.
+    // If not, just skip it.
+    //
+    if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max))
+       return;
+    
+    //
+    // Determine the screen size of the patch being processed
+    //
+    xMin = yMin = std::numeric_limits<int>::max();
+    xMax = yMax = std::numeric_limits<int>::min();
+
+    float coordinates[8][3];
+    coordinates[0][0] = X[0];           coordinates[0][1] = Y[0];           coordinates[0][2] = Z[0];
+    coordinates[1][0] = X[dims[0]-1];   coordinates[1][1] = Y[0];           coordinates[1][2] = Z[0];
+    coordinates[2][0] = X[dims[0]-1];   coordinates[2][1] = Y[dims[1]-1];   coordinates[2][2] = Z[0];
+    coordinates[3][0] = X[0];           coordinates[3][1] = Y[dims[1]-1];   coordinates[3][2] = Z[0];
+
+    coordinates[4][0] = X[0];           coordinates[4][1] = Y[0];           coordinates[4][2] = Z[dims[2]-1];
+    coordinates[5][0] = X[dims[0]-1];   coordinates[5][1] = Y[0];           coordinates[5][2] = Z[dims[2]-1];
+    coordinates[6][0] = X[dims[0]-1];   coordinates[6][1] = Y[dims[1]-1];   coordinates[6][2] = Z[dims[2]-1];
+    coordinates[7][0] = X[0];           coordinates[7][1] = Y[dims[1]-1];   coordinates[7][2] = Z[dims[2]-1];
+
+    debug5 << "Extents - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] << "   Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << std::endl;
+
+
+    //
+    // Compute z order for blending patches
+    double _center[3];
+    _center[0] = (X[0] + X[dims[0]-1])/2.0;
+    _center[1] = (Y[0] + Y[dims[1]-1])/2.0;
+    _center[2] = (Z[0] + Z[dims[2]-1])/2.0;
+    double __depth = sqrt( (_center[0]-view.camera[0])*(_center[0]-view.camera[0]) +  (_center[1]-view.camera[1])*(_center[1]-view.camera[1]) + (_center[2]-view.camera[2])*(_center[2]-view.camera[2]) );
+    eyeSpaceDepth = __depth;
+
+
+
+    double _clipSpaceZ = 0;
+    double _world[3];
+    for (int i=0; i<8; i++)
+    {
+        int pos2D[2];
+        float tempZ;
+
+        _world[0] = coordinates[i][0];
+        _world[1] = coordinates[i][1];
+        _world[2] = coordinates[i][2];
+
+        tempZ = project(_world, pos2D, fullImgWidth, fullImgHeight);
+
+        // Clamp values
+        pos2D[0] = std::min( std::max(pos2D[0], 0), w_max-1);
+        pos2D[0] = std::min( std::max(pos2D[0], 0), w_max-1);
+        pos2D[1] = std::min( std::max(pos2D[1], 0), h_max-1);
+        pos2D[1] = std::min( std::max(pos2D[1], 0), h_max-1);
+
+        // Get min max
+        xMin = std::min(xMin, pos2D[0]);
+        xMax = std::max(xMax, pos2D[0]);
+        yMin = std::min(yMin, pos2D[1]);
+        yMax = std::max(yMax, pos2D[1]);
+
+
+        if (i == 0)
+        {
+            _clipSpaceZ = tempZ;       
+            renderingDepthsExtents[0] = tempZ;
+            renderingDepthsExtents[1] = tempZ;
+        }
+        else
+        {
+            if ( _clipSpaceZ > tempZ )
+                _clipSpaceZ = tempZ;   
+
+            if (renderingDepthsExtents[0] > tempZ)      // min z
+                renderingDepthsExtents[0] = tempZ;  
+
+            if (renderingDepthsExtents[1] < tempZ)      // max z
+                renderingDepthsExtents[1] = tempZ;
+        }
+
+        debug5 << i << " _clipSpaceZ: " <<  tempZ << std::endl;
+    }
+
+    renderingAreaExtents[0] = xMin;
+    renderingAreaExtents[1] = xMax;
+    renderingAreaExtents[2] = yMin;
+    renderingAreaExtents[3] = yMax;
+
+    clipSpaceDepth = _clipSpaceZ;   
+
+    imgWidth  = xMax-xMin;
+    imgHeight = yMax-yMin;
+
+    //patchCount++;
+
+
+    debug5 << "Extents: " << xMin << ", " << xMax << "   " << yMin << ", " << yMax << "  renderingDepthsExtents: " << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] << endl;
+    activeNow = true;
+
+    //
+    // Initialize memory
+    imgArray =  new float[((imgWidth)*4) * imgHeight]();   // image
+    imgDepths = new float[imgWidth * imgHeight]();         // depths
+
+    for (int i=0; i<imgHeight * imgWidth; i++){
+        imgArray[i*4+0] = imgArray[i*4+1] = imgArray[i*4+2] = imgArray[i*4+3] =  0;
+        imgDepths[i] = 0;
+    }
+
+
+    //
+    // Send rays
+    imgDims[0] = imgWidth;       imgDims[1] = imgHeight;
+    imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
+    imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
+
+    for (int _x = xMin ; _x < xMax ; _x++)
+        for (int _y = yMin ; _y < yMax ; _y++)
+        {
+            double _origin[3], _terminus[3];
+            double origin[4]  = {0,0,0,1};      // starting point where we start sampling
+            double terminus[4]= {0,0,0,1};      // ending point where we stop sampling
+
+            GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);    // find the starting point & ending point of the ray
+
+            for (int i=0; i<3; i++){
+                origin[i] = _origin[i];
+                terminus[i] = _terminus[i];
+            }
+
+            SampleAlongSegment(origin, terminus, _x, _y);             // Go get the segments along this ray and store them in 
+
+
+            // Set a value of z if 
+            int index = (_y-yMin)*imgWidth + (_x-xMin);
+            if (imgArray[index*4+3] != 0)
+            {
+                int _tempC[2];
+                double originZ   = project(_origin,   _tempC, fullImgWidth, fullImgHeight);
+                double terminusZ = project(_terminus, _tempC, fullImgWidth, fullImgHeight);
+            
+                imgDepths[index] = (std::max(originZ, terminusZ) + 1)/2.0; // to make z between 0 and 1 rather than between -1 and 1
+            }
+        }
+
+
+    //
+    // Deallocate memory if not used
+    if (patchDrawn == 0)
+    {
+        if (imgArray != NULL)
+            delete []imgArray;
+
+        if (imgDepths != NULL)
+            delete []imgDepths;
+
+        imgArray = NULL;
+        imgDepths = NULL;
+    }
+}
+
+
+
+// ****************************************************************************
+//  Method: avtMassVoxelExtractor::GetSegmentRCSLIVR
+//
+//  Purpose:
+//      transfers the metadata of the patch
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+void
+avtMassVoxelExtractor::GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], double *_origin, double *_terminus)
+{
+    unProject(x,y, depthsExtents[0], _origin,   fullImgWidth, fullImgHeight);
+    unProject(x,y, depthsExtents[1], _terminus, fullImgWidth, fullImgHeight);
+}
+
 
 
 // ****************************************************************************
@@ -2772,340 +3104,4 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
     imgArray[(y-yMin)*(imgWidth*4) + (x-xMin)*4 + 1] = std::min(std::max(dest_rgb[1],0.0),1.0);
     imgArray[(y-yMin)*(imgWidth*4) + (x-xMin)*4 + 2] = std::min(std::max(dest_rgb[2],0.0),1.0);
     imgArray[(y-yMin)*(imgWidth*4) + (x-xMin)*4 + 3] = std::min(std::max(dest_rgb[3],0.0),1.0);
-}
-
-// ****************************************************************************
-//  Method: avtMassVoxelExtractor::FindIndex
-//
-//  Purpose:
-//      Finds the index that corresponds to a point.
-//
-//  Programmer:   Hank Childs
-//  Creation:     December 14, 2003
-//
-//  Modifications:
-//    Kathleen Biagas, Fri Jul 13 07:44:46 PDT 2012
-//    Templatized to handle coordinates of various types.
-//
-// ****************************************************************************
-
-template <class T> inline int
-FindIndex(const double &pt, const int &last_hit, const int &n,
-          T *vals)
-{
-    for (int i = last_hit ; i < n-1 ; ++i)
-    {
-        if (pt >= (double)vals[i] && (pt <= (double)vals[i+1]))
-            return i;
-    }
-
-    for (int i = 0 ; i < last_hit ; ++i)
-    {
-        if (pt >= (double)vals[i] && (pt <= (double)vals[i+1]))
-            return i;
-    }
-
-    return -1;
-}
-
-inline int
-FindIndex(vtkDataArray *coordArray,const double &pt, const int &last_hit, 
-          const int &n)
-{
-    switch(coordArray->GetDataType())
-    {
-        vtkTemplateAliasMacro(return FindIndex(pt, last_hit, n,
-            static_cast<VTK_TT *>(coordArray->GetVoidPointer(0))));
-        default:    return -1;
-    }
-}
-
-
-// ****************************************************************************
-//  Function:  FindRange
-//
-//  Purpose:
-//      A templated function to find a range.
-//
-//  Programmer: Kathleen Biagas 
-//  Creation:   July 12, 2012
-//
-// ****************************************************************************
-
-template <class T> inline void
-FindRange(int ind, double c, double &min, double &max, T *coord)
-{
-    double range = (double)coord[ind+1] - (double)coord[ind];
-    min = 1. - (c - (double)coord[ind])/range;
-    max = 1. - min;
-}
-
-inline void
-FindRange(vtkDataArray *coordArray, int ind, double c, double &min, double &max)
-{
-    switch(coordArray->GetDataType())
-    {
-        vtkTemplateAliasMacro(FindRange(ind, c, min, max,
-            static_cast<VTK_TT *>(coordArray->GetVoidPointer(0))));
-        default:
-            EXCEPTION1(VisItException, "Unknown Coordinate type");
-    }
-}
-
-// ****************************************************************************
-//  Method: avtMassVoxelExtractor::ExtractImageSpaceGrid
-//
-//  Purpose:
-//      Extracts a grid that has already been put into image space.  This case
-//      typically corresponds to resampling.
-//
-//  Programmer: Hank Childs
-//  Creation:   December 14, 2003
-//
-//  Modifications:
-//
-//    Hank Childs, Fri Aug 27 16:00:57 PDT 2004
-//    Rename ghost data array.
-//
-//    Hank Childs, Fri Nov 19 14:50:58 PST 2004
-//    Renamed from Extract.
-//
-//    Hank Childs, Mon Jul 11 14:01:28 PDT 2005
-//    Fix indexing issue with ghost zones ['5712].
-//
-//    Hank Childs, Mon Feb  6 12:36:51 PST 2006
-//    Fix another issue with ghost zones that only comes up with AMR grids
-//    ['6940].
-//
-//    Hank Childs, Fri Jun  1 15:45:58 PDT 2007
-//    Add support for non-scalars.
-//
-//    Hank Childs, Wed Aug 27 11:07:04 PDT 2008
-//    Add support for non-floats.
-//
-//    Hank Childs, Thu Aug 28 10:52:32 PDT 2008
-//    Make sure we only sample the variables that were requested.
-//
-//    Hank Childs, Sun Nov  1 14:32:46 CST 2009
-//    Fix bug where ghost data could cause an extra sample to be put in the
-//    avtVolume, with that sample's data be uninitialized memory.
-//
-//    Kathleen Biagas, Fri Jul 13 09:30:53 PDT 2012
-//    Handle Coordinates as their native type. Use double internally.
-//
-// ****************************************************************************
-
-void
-avtMassVoxelExtractor::ExtractImageSpaceGrid(vtkRectilinearGrid *rgrid,
-                std::vector<std::string> &varnames, std::vector<int> &varsizes)
-{
-    int  i, j, k, l, m;
-
-    int dims[3];
-    rgrid->GetDimensions(dims);
-    const int nX = dims[0];
-    const int nY = dims[1];
-    const int nZ = dims[2];
-
-
-    int last_x_hit = 0;
-    int last_y_hit = 0;
-    int last_z_hit = 0;
-
-    vtkUnsignedCharArray *ghosts = (vtkUnsignedCharArray *)rgrid->GetCellData()
-                                                   ->GetArray("avtGhostZones");
-    std::vector<void *>  cell_arrays;
-    std::vector<int>     cell_vartypes;
-    std::vector<int>     cell_size;
-    std::vector<int>     cell_index;
-    for (i = 0 ; i < rgrid->GetCellData()->GetNumberOfArrays() ; i++)
-    {
-        vtkDataArray *arr = rgrid->GetCellData()->GetArray(i);
-        const char *name = arr->GetName();
-        int idx = -1;
-        for (j = 0 ; j < (int)varnames.size() ; j++)
-        {
-            if (varnames[j] == name)
-            {
-                idx = 0;
-                for (k = 0 ; k < j ; k++)
-                    idx += varsizes[k];
-                break;
-            }
-        }
-        if (idx < 0)
-            continue;
-        cell_index.push_back(idx);
-        cell_size.push_back(arr->GetNumberOfComponents());
-        cell_vartypes.push_back(arr->GetDataType());
-        cell_arrays.push_back(arr->GetVoidPointer(0));
-    }
-
-    std::vector<void *>  pt_arrays;
-    std::vector<int>     pt_vartypes;
-    std::vector<int>     pt_size;
-    std::vector<int>     pt_index;
-    for (i = 0 ; i < rgrid->GetPointData()->GetNumberOfArrays() ; i++)
-    {
-        vtkDataArray *arr = rgrid->GetPointData()->GetArray(i);
-        const char *name = arr->GetName();
-        int idx = -1;
-        for (j = 0 ; j < (int)varnames.size() ; j++)
-        {
-            if (varnames[j] == name)
-            {
-                idx = 0;
-                for (k = 0 ; k < j ; k++)
-                    idx += varsizes[k];
-                break;
-            }
-        }
-        if (idx < 0)
-            continue;
-        pt_index.push_back(idx);
-        pt_size.push_back(arr->GetNumberOfComponents());
-        pt_vartypes.push_back(arr->GetDataType());
-        pt_arrays.push_back(arr->GetVoidPointer(0));
-    }
-
-
-    vtkDataArray *xarray = rgrid->GetXCoordinates();
-    vtkDataArray *yarray = rgrid->GetYCoordinates();
-    vtkDataArray *zarray = rgrid->GetZCoordinates();
-
-    int startX = SnapXLeft(xarray->GetTuple1(0));
-    int stopX  = SnapXRight(xarray->GetTuple1(nX-1));
-    int startY = SnapYBottom(yarray->GetTuple1(0));
-    int stopY  = SnapYTop(yarray->GetTuple1(nY-1));
-    int startZ = SnapZFront(zarray->GetTuple1(0));
-    int stopZ  = SnapZBack(zarray->GetTuple1(nZ-1));
-
-    for (j = startY ; j <= stopY ; j++)
-    {
-        double yc = YFromIndex(j);
-        int yind = FindIndex(yarray, yc, last_y_hit, nY);
-        if (yind == -1)
-            continue;
-        last_y_hit = yind;
-
-        double y_bottom  = 0.;
-        double y_top = 1.;
-        if (pt_arrays.size() > 0)
-        {
-            FindRange(yarray, yind, yc, y_bottom, y_top);
-        }
-        for (i = startX ; i <= stopX ; i++)
-        {
-            double xc = XFromIndex(i);
-            int xind = FindIndex(xarray, xc, last_x_hit, nX);
-            if (xind == -1)
-                continue;
-            last_x_hit = xind;
-
-            double x_left  = 0.;
-            double x_right = 1.;
-            if (pt_arrays.size() > 0)
-            {
-                FindRange(xarray, xind, xc, x_left, x_right);
-            }
-
-            last_z_hit = 0;
-            int count = 0;
-            int firstZ = -1;
-            int lastZ  = stopZ;
-            for (k = startZ ; k <= stopZ ; k++)
-            {
-                double zc = ZFromIndex(k);
-                int zind = FindIndex(zarray, zc, last_z_hit, nZ);
-                if (zind == -1)
-                {
-                    if (firstZ == -1)
-                        continue;
-                    else
-                    {
-                        lastZ = k-1;
-                        break;
-                    }
-                }
-                if ((count == 0) && (firstZ == -1))
-                    firstZ = k;
-                last_z_hit = zind;
-
-                //
-                // Don't sample from ghost zones.
-                //
-                if (ghosts != NULL)
-                {
-                    int index = zind*((nX-1)*(nY-1)) + yind*(nX-1) + xind;
-                    if (ghosts->GetValue(index) != 0)
-                    {
-                        if (count > 0)
-                        {
-                            avtRay *ray = volume->GetRay(i, j);
-                            ray->SetSamples(firstZ, k-1, tmpSampleList);
-                        }
-                        firstZ = -1;
-                        count = 0;
-                        continue;
-                    }
-                }
-
-                double z_front  = 0.;
-                double z_back = 1.;
-                if (pt_arrays.size() > 0)
-                {
-                    FindRange(zarray, zind, zc, z_front, z_back);
-                }
-
-                for (l = 0 ; l < (int)cell_arrays.size() ; l++)
-                {
-                    int index = zind*((nX-1)*(nY-1)) + yind*(nX-1) + xind;
-                    for (m = 0 ; m < cell_size[l] ; m++)
-                        tmpSampleList[count][cell_index[l]+m] = 
-                                  ConvertToDouble(cell_vartypes[l],index,
-                                              cell_size[l], m, cell_arrays[l]);
-                }
-                if (pt_arrays.size() > 0)
-                {
-                    int index[8];
-                    index[0] = (zind)*nX*nY + (yind)*nX + (xind);
-                    index[1] = (zind)*nX*nY + (yind)*nX + (xind+1);
-                    index[2] = (zind)*nX*nY + (yind+1)*nX + (xind);
-                    index[3] = (zind)*nX*nY + (yind+1)*nX + (xind+1);
-                    index[4] = (zind+1)*nX*nY + (yind)*nX + (xind);
-                    index[5] = (zind+1)*nX*nY + (yind)*nX + (xind+1);
-                    index[6] = (zind+1)*nX*nY + (yind+1)*nX + (xind);
-                    index[7] = (zind+1)*nX*nY + (yind+1)*nX + (xind+1);
-                    for (l = 0 ; l < (int)pt_arrays.size() ; l++)
-                    {
-                        void  *pt_array = pt_arrays[l];
-                        int    s        = pt_size[l];
-                        for (m = 0 ; m < s ; m++)
-                        {
-                            double vals[8];
-                            AssignEight(pt_vartypes[l], vals, index, 
-                                        s, m, pt_array);
-                            double val = 
-                                  x_left*y_bottom*z_front*vals[0] +
-                                  x_right*y_bottom*z_front*vals[1] +
-                                  x_left*y_top*z_front*vals[2] +
-                                  x_right*y_top*z_front*vals[3] +
-                                  x_left*y_bottom*z_back*vals[4] +
-                                  x_right*y_bottom*z_back*vals[5] +
-                                  x_left*y_top*z_back*vals[6] +
-                                  x_right*y_top*z_back*vals[7];
-                            tmpSampleList[count][pt_index[l]+m] = val;
-                        }
-                    }    
-                }
-                count++;
-            }
-
-            if (count > 0)
-            {
-                avtRay *ray = volume->GetRay(i, j);
-                ray->SetSamples(firstZ, lastZ, tmpSampleList);
-            }
-        }
-    }
 }
