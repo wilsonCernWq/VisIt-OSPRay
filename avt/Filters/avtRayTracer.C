@@ -778,7 +778,7 @@ avtRayTracer::Execute(void)
         __opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
         __opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
 
-        writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", __opaqueImageZB, screen[0], screen[1]);
+        //writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", __opaqueImageZB, screen[0], screen[1]);
 
         extractor.setDepthBuffer(__opaqueImageZB, screen[0]*screen[1]);
         extractor.setRGBBuffer(__opaqueImageData, screen[0], screen[1]);
@@ -1052,8 +1052,8 @@ avtRayTracer::Execute(void)
         }
         allImgMetaData.clear();
 
-        if (imgSize[0] * imgSize[1] > 0)
-            writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);   
+        //if (imgSize[0] * imgSize[1] > 0)
+        //    writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);   
 
         
 
@@ -1070,10 +1070,10 @@ avtRayTracer::Execute(void)
         backgroundColor[2] = background[2]/255.0; 
         backgroundColor[3] = 1.0;
 
-        debug5 << "Compositing Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  Extents: " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  bkg color: " 
-                                        << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
+        //debug5 << "Compositing Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  Extents: " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  bkg color: " 
+        //                               << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
 
-        debug5 << "Local composing done" << std::endl;
+        //debug5 << "Local composing done" << std::endl;
         imgComm.barrier();
 
 
@@ -1082,8 +1082,8 @@ avtRayTracer::Execute(void)
         unsigned char *_opaqueImageData = (unsigned char *)_opaqueImageVTK->GetScalarPointer(0, 0, 0);
         float         *_opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
 
-        createColorPPM("/home/pascal/Desktop/debugImages/RCSLbackback", _opaqueImageData, screen[0], screen[1]);   //background bounding box
-        writeOutputToFile("/home/pascal/Desktop/debugImages/RCSLdepth", _opaqueImageZB, screen[0], screen[1]);
+        //createColorPPM("/home/pascal/Desktop/debugImages/RCSLbackback", _opaqueImageData, screen[0], screen[1]);   //background bounding box
+        //writeOutputToFile("/home/pascal/Desktop/debugImages/RCSLdepth", _opaqueImageZB, screen[0], screen[1]);
 
 
        
@@ -1104,92 +1104,116 @@ avtRayTracer::Execute(void)
 
 
         //
-        // Blend in with bounding box
-        vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
-        vtkMatrix4x4::Invert(pvm,Inversepvm);
-
-        unsigned char *imgFinal = NULL;
-        imgFinal = new unsigned char[screen[0] * screen[1] * 3];
-        imgFinal = whole_image->GetImage().GetRGBBuffer();
-        for (int _y=0; _y<screen[1]; _y++)
-            for (int _x=0; _x<screen[0]; _x++)
-            {
-
-                int index = _y*screen[0] + _x;
-                if (__opaqueImageZB[index] != 1)
-                {
-                    double worldCoordinates[3];
-                    float _tempZ = __opaqueImageZB[index] * 2 - 1;
-                    unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], Inversepvm);
-
-
-                    debug5 << "x,y,z: " << _x << ", " << _y << ", " << _tempZ << "   wordld: " << worldCoordinates[0] << ", " << worldCoordinates[1] << ", " << worldCoordinates[2];
-                    if ( checkInBounds(dbounds, worldCoordinates) )
-                    {
-                        debug5 << " inside!" << endl;
-                    }
-                    else
-                    {
-                        debug5 << " outside!";
-
-                        double ray[3], tMin, tMax;
-                        computeRay( view.camera, worldCoordinates, ray);
-                        if ( intersect(dbounds, ray, view.camera, tMin, tMax) )
-                        {
-                            double tIntersect = std::min( (worldCoordinates[0]-view.camera[0])/ray[0], 
-                                                std::min( (worldCoordinates[1]-view.camera[1])/ray[1], (worldCoordinates[2]-view.camera[2])/ray[2] ) );
-
-                            if (tMin < tIntersect)
-                            {
-                                debug5 << "  intersection - vol infront!" << endl;
-                            }
-                            else
-                            {
-                                debug5 << "  intersection - box infront!" << endl;
-                            }
-                        }
-                        else
-                        {
-                            debug5 << "  No intersection - box infront!" << endl;
-                        }
-                    }
-                }
-                else
-                {
-                    imgFinal[index*3 + 0] = 0;
-                    imgFinal[index*3 + 1] = 0;
-                    imgFinal[index*3 + 2] = 0;
-                }
-            }
-
-
-        ///////////////////////////////////////
-        //
-            // Creates an image structure to hold the image
+        // At root
+        if (PAR_Rank() == 0)
+        {
+            // 
+            // Create image for visit to display
             avtImage_p whole_image;
             whole_image = new avtImage(this);
-
-            
 
             vtkImageData *img = avtImageRepresentation::NewImage(screen[0], screen[1]);
             whole_image->GetImage() = img;
 
-            // unsigned char *imgFinal = NULL;
-            // imgFinal = new unsigned char[screen[0] * screen[1] * 3];
-            // imgFinal = whole_image->GetImage().GetRGBBuffer();
+            unsigned char *imgFinal = NULL;
+            imgFinal = new unsigned char[screen[0] * screen[1] * 3];
+            imgFinal = whole_image->GetImage().GetRGBBuffer();
 
-    
-            // // Get the composited image
-            // for (int i=0; i< screen[1]*screen[1]*3; i++)
-            //     imgFinal[i] = _opaqueImageData[i];
 
-            img->Delete();
+            //
+            // Blend in with bounding box
+            vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
+            vtkMatrix4x4::Invert(pvm,Inversepvm);
 
+            int compositedImageWidth  = imgComm.finalImageExtents[1] - imgComm.finalImageExtents[0];
+            int compositedImageHeight = imgComm.finalImageExtents[3] - imgComm.finalImageExtents[2];
+
+            for (int _y=0; _y<screen[1]; _y++)
+                for (int _x=0; _x<screen[0]; _x++)
+                {
+
+                    int index = _y*screen[0] + _x;
+                    int indexComposited = (_y-imgComm.finalImageExtents[2])*compositedImageWidth + (_x-imgComm.finalImageExtents[0]);
+
+                    bool insideComposited = false;
+                    if (_x >= imgComm.finalImageExtents[0] && _x < imgComm.finalImageExtents[1])
+                         if (_y >= imgComm.finalImageExtents[2] && _y < imgComm.finalImageExtents[3])
+                            insideComposited = true;
+
+                    if ( insideComposited )
+                    {
+                        if (__opaqueImageZB[index] != 1)
+                        {
+                            // Might need to do some blending
+
+                            double worldCoordinates[3];
+                            float _tempZ = __opaqueImageZB[index] * 2 - 1;
+                            unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], Inversepvm);
+
+
+                            //debug5 << "x,y,z: " << _x << ", " << _y << ", " << _tempZ << "   wordld: " << worldCoordinates[0] << ", " << worldCoordinates[1] << ", " << worldCoordinates[2];
+                            if ( checkInBounds(dbounds, worldCoordinates) )
+                            {
+                                //debug5 << " inside!" << endl;
+                            }
+                            else
+                            {
+                                //debug5 << " outside!";
+
+                                double ray[3], tMin, tMax;
+                                computeRay( view.camera, worldCoordinates, ray);
+                                if ( intersect(dbounds, ray, view.camera, tMin, tMax) )
+                                {
+                                    double tIntersect = std::min( (worldCoordinates[0]-view.camera[0])/ray[0], 
+                                                        std::min( (worldCoordinates[1]-view.camera[1])/ray[1], (worldCoordinates[2]-view.camera[2])/ray[2] ) );
+
+                                    if (tMin < tIntersect)
+                                    {
+                                        float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
+                                        imgFinal[index*3 + 0] = ( ((float)_opaqueImageData[index*3 + 0]/255.0) * alpha  +  imgComm.imgBuffer[indexComposited*4 + 0] ) * 255;
+                                        imgFinal[index*3 + 1] = ( ((float)_opaqueImageData[index*3 + 1]/255.0) * alpha  +  imgComm.imgBuffer[indexComposited*4 + 1] ) * 255;
+                                        imgFinal[index*3 + 2] = ( ((float)_opaqueImageData[index*3 + 2]/255.0) * alpha  +  imgComm.imgBuffer[indexComposited*4 + 2] ) * 255;
+                                        //debug5 << "  intersection - vol infront!" << endl;
+                                    }
+                                    else
+                                    {
+                                        imgFinal[index*3 + 0] = _opaqueImageData[index*3 + 0];
+                                        imgFinal[index*3 + 1] = _opaqueImageData[index*3 + 1];
+                                        imgFinal[index*3 + 2] = _opaqueImageData[index*3 + 2];
+                                        //debug5 << "  intersection - box infront!" << endl;
+                                    }
+                                }
+                                else
+                                {
+                                    imgFinal[index*3 + 0] = _opaqueImageData[index*3 + 0];
+                                    imgFinal[index*3 + 1] = _opaqueImageData[index*3 + 1];
+                                    imgFinal[index*3 + 2] = _opaqueImageData[index*3 + 2];
+                                    //debug5 << "  No intersection - box infront!" << endl;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
+                            imgFinal[index*3 + 0] = ( ((float)_opaqueImageData[index*3 + 0]/255.0) * alpha  +  imgComm.imgBuffer[indexComposited*4 + 0] ) * 255;
+                            imgFinal[index*3 + 1] = ( ((float)_opaqueImageData[index*3 + 1]/255.0) * alpha  +  imgComm.imgBuffer[indexComposited*4 + 1] ) * 255;
+                            imgFinal[index*3 + 2] = ( ((float)_opaqueImageData[index*3 + 2]/255.0) * alpha  +  imgComm.imgBuffer[indexComposited*4 + 2] ) * 255;
+                        }
+                    }
+                    else
+                    {
+                        imgFinal[index*3 + 0] = _opaqueImageData[index*3 + 0];
+                        imgFinal[index*3 + 1] = _opaqueImageData[index*3 + 1];
+                        imgFinal[index*3 + 2] = _opaqueImageData[index*3 + 2];
+                    }  
+                }
+
+            img->Delete();            
             SetOutput(whole_image);
+        }
 
-        ///////////////////////////////////////
 
-        debug5 << "RC SLIVR: Done!" << std::endl;
+       // debug5 << "RC SLIVR: Done!" << std::endl;
 
 
         visitTimer->StopTimer(timingCompositinig, "Compositing");
@@ -1240,8 +1264,8 @@ avtRayTracer::Execute(void)
             unsigned char *_opaqueImageData = (unsigned char *)_opaqueImageVTK->GetScalarPointer(0, 0, 0);
           
 
-            createColorPPM("/home/pascal/Desktop/debugImages/RCTRbackback", _opaqueImageData, screen[0], screen[1]);   //background bounding box
-            writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", opaqueImageZB, screen[0], screen[1]);
+            //createColorPPM("/home/pascal/Desktop/debugImages/RCTRbackback", _opaqueImageData, screen[0], screen[1]);   //background bounding box
+            //writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", opaqueImageZB, screen[0], screen[1]);
 
             for (int p = 0 ; p < numpixels ; p++)
             {
@@ -1266,7 +1290,7 @@ avtRayTracer::Execute(void)
                 
             }
 
-            writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_2_", opaqueImageZB, screen[0], screen[1]);
+            //writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_2_", opaqueImageZB, screen[0], screen[1]);
         }
         else // orthographic and need to adjust for tightened clipping planes
         {

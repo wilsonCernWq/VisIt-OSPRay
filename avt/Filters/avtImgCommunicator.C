@@ -1023,8 +1023,8 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
     else
         compositingDone = true;
 
-    debug5 << "PDS blending done" << std::endl;
-    writeArrayToPPM("/home/pascal/Desktop/debugImages/pds_" + toStr(my_id), intermediateImage, intermediateImageExtents[1]-intermediateImageExtents[0], intermediateImageExtents[3]-intermediateImageExtents[2]);
+    //debug5 << "PDS blending done" << std::endl;
+    //writeArrayToPPM("/home/pascal/Desktop/debugImages/pds_" + toStr(my_id), intermediateImage, intermediateImageExtents[1]-intermediateImageExtents[0], intermediateImageExtents[3]-intermediateImageExtents[2]);
 
 
     msgBuffer.clear();
@@ -1132,7 +1132,7 @@ avtImgCommunicator::gatherImages(int regionGather[], int numRanksWithData, float
         delete []recvImageSt;
         recvImageSt = NULL;
 
-        writeArrayToPPM("/home/pascal/Desktop/debugImages/Finalmg_", imgBuffer, width, height);
+        //writeArrayToPPM("/home/pascal/Desktop/debugImages/Finalmg_", imgBuffer, width, height);
     }
     else
     {

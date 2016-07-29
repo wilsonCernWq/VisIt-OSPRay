@@ -621,7 +621,7 @@ avtVolumeFilter::RenderImage(avtImage_p opaque_image,
     unsigned char *_opaqueImageData = (unsigned char *)_opaqueImageVTK->GetScalarPointer(0, 0, 0);
         
     const int *ssize = window.GetSize();
-    createColorPPM("/home/pascal/Desktop/debugImages/VFbackback", _opaqueImageData, ssize[0], ssize[1]);   //background bounding box
+    //createColorPPM("/home/pascal/Desktop/debugImages/VFbackback", _opaqueImageData, ssize[0], ssize[1]);   //background bounding box
 
 
     if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
