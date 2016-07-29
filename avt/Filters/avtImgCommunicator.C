@@ -202,30 +202,6 @@ void avtImgCommunicator::barrier(){
 
 
 
-
-// ****************************************************************************
-//  Method: avtImgCommunicator::
-//
-//  Purpose:
-//
-//  Programmer: Pascal Grosset
-//  Creation: July 2013  
-//
-//  Modifications:
-//
-// ****************************************************************************
-float avtImgCommunicator::clamp(float x)
-{
-    if (x > 1.0)
-        x = 1.0;
-
-    if (x < 0.0)
-        x = 0.0;
-
-    return x;
-}
-
-
 // ****************************************************************************
 //  Method: avtImgCommunicator::
 //

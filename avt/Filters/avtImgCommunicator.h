@@ -138,7 +138,7 @@ public:
     int GetNumProcs(){ return num_procs;};
     int GetMyId(){ return my_id;};
 
-    float clamp(float x);
+    float clamp(float x){ return std::min( std::max(x, 0.0f), 1.0f); }
     void setBackground(unsigned char _background[3]){ for (int i=0; i<3; i++) background[i] = _background[i]; }
     
 

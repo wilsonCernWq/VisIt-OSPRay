@@ -1346,7 +1346,7 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
     if (hits[0] < 0 && hits[1] < 0)
         // Dataset on back side of camera -- no intersection.
         return false;
-    
+
     if (hits[0] > 1. && hits[1] > 1.)
         // Dataset past far clipping plane -- no intersection.
         return false;
@@ -2215,7 +2215,7 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     coordinates[6][0] = X[dims[0]-1];   coordinates[6][1] = Y[dims[1]-1];   coordinates[6][2] = Z[dims[2]-1];
     coordinates[7][0] = X[0];           coordinates[7][1] = Y[dims[1]-1];   coordinates[7][2] = Z[dims[2]-1];
 
-    debug5 << "Extents - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] << "   Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << std::endl;
+    //debug5 << "Extents - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] << "   Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << std::endl;
 
 
     //
@@ -2273,7 +2273,7 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
                 renderingDepthsExtents[1] = tempZ;
         }
 
-        debug5 << i << " _clipSpaceZ: " <<  tempZ << std::endl;
+        //debug5 << i << " _clipSpaceZ: " <<  tempZ << std::endl;
     }
 
     renderingAreaExtents[0] = xMin;
@@ -2289,7 +2289,7 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     //patchCount++;
 
 
-    debug5 << "Extents: " << xMin << ", " << xMax << "   " << yMin << ", " << yMax << "  renderingDepthsExtents: " << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] << endl;
+    //debug5 << "Extents: " << xMin << ", " << xMax << "   " << yMin << ", " << yMax << "  renderingDepthsExtents: " << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] << endl;
     activeNow = true;
 
     //
