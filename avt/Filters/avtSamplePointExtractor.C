@@ -723,7 +723,7 @@ avtSamplePointExtractor::PostExecute(void)
 void
 avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 {
-    debug5<<"got here!"<<endl;
+    //debug5<<"got here!"<<endl;
 
     //check memory
     unsigned long m_size, m_rss;
@@ -1159,10 +1159,10 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
                 tmpImageDataHash.procId = tmpImageMetaPatch.procId;           
                 tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;         
                 tmpImageDataHash.imagePatch = new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] * 4 ];
-                tmpImageDataHash.imageDepth = new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] ];
+                //tmpImageDataHash.imageDepth = new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] ];
 
                 massVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
-                massVoxelExtractor->getImageDepth(tmpImageDataHash.imageDepth);
+                //massVoxelExtractor->getImageDepth(tmpImageDataHash.imageDepth);
                 imgDataHashMap.insert( std::pair<int, imgData> (tmpImageDataHash.patchNumber , tmpImageDataHash) );
 
                 patchCount++;

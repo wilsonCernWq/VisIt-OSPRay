@@ -859,11 +859,16 @@ avtRayTracer::Execute(void)
     avtDataObject_p samples = extractor.GetOutput();
 
 
+    debug5 << "Raytracing rendering done! " << std::endl;
+
     //
     // Ray casting: SLIVR ~ After Rendering
     //
     if (rayCastingSLIVR == true)
     {
+        debug5 << "Start compositing" << std::endl;
+
+
         avtRayCompositer rc(rayfoo);                            // only required to force an update - Need to find a way to get rid of that!!!!
         rc.SetInput(samples);
         avtImage_p image  = rc.GetTypedOutput();
@@ -1069,6 +1074,8 @@ avtRayTracer::Execute(void)
         }
 
 
+        debug5 << "Parallel compositing" << std::endl;
+
         //
         // Parallel
         //
@@ -1078,6 +1085,8 @@ avtRayTracer::Execute(void)
         std::vector<imgMetaData> allImgMetaData;          // contains the metadata to composite the image
         int numPatches = extractor.getImgPatchSize();     // get the number of patches
 
+
+        debug5 << "Computing image size ... " << std::endl;
 
         int imgExtents[4] = {0,0,0,0}; //minX, maxX,  minY, maxY 
         int imgSize[2];             // x, y
@@ -1127,7 +1136,7 @@ avtRayTracer::Execute(void)
         //
         // Creates a buffer to store the composited image - initilized to 0
         float *composedData   = new float[imgSize[0] * imgSize[1] * 4]();
-        float *composedDepths = new float[imgSize[0] * imgSize[1]]();
+        //float *composedDepths = new float[imgSize[0] * imgSize[1]]();
 
 
         //
@@ -1151,7 +1160,7 @@ avtRayTracer::Execute(void)
             int startPos[2];
             startPos[0] = imgExtents[0];   startPos[1] = imgExtents[2];
             blendImages(tempImgData.imagePatch, currentPatch.dims, currentPatch.screen_ll, composedData, imgSize, startPos);
-            blendDepths(tempImgData.imageDepth, currentPatch.dims, currentPatch.screen_ll, composedDepths, imgSize, startPos);
+            //blendDepths(tempImgData.imageDepth, currentPatch.dims, currentPatch.screen_ll, composedDepths, imgSize, startPos);
             
             //
             // Clean up data
