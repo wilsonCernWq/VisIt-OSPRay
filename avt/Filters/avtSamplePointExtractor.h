@@ -210,6 +210,10 @@ class AVTFILTERS_API avtSamplePointExtractor
     void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
     void                      setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
 
+    // Output data for RC SLIVR
+    std::vector<imgMetaData>    imageMetaPatchVector;
+    std::multimap<int, imgData> imgDataHashMap;
+    typedef std::multimap<int, imgData>::iterator iter_t;
 
   protected:
     int                       width, height, depth;
@@ -257,9 +261,7 @@ class AVTFILTERS_API avtSamplePointExtractor
     int                       patchCount;
     int                       totalAssignedPatches;
 
-    std::vector<imgMetaData>    imageMetaPatchVector;
-    std::multimap<int, imgData> imgDataHashMap;
-    typedef std::multimap<int, imgData>::iterator iter_t;
+    
 
 
     // triliniear / raycastin SLIVR

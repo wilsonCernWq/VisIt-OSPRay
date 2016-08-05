@@ -169,6 +169,7 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     double                view_direction[3];
 
     bool                  rayCastingSLIVR;
+    bool                  convexHullOnRCSLIVR;
     avtImage_p            opaqueImage;
 
     virtual void          Execute(void);

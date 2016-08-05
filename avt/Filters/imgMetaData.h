@@ -93,31 +93,7 @@ struct imgData
 };
 
 
-// ****************************************************************************
-//  Struct:  iotaMeta
-//
-//  Purpose:
-//    Holds the image data generated
-//
-//  Programmer:  
-//  Creation:    
-//
-// ****************************************************************************
-struct iotaMeta
-{
-    int procId;  
-    int patchNumber; 
-  
-    int dims[2];      // height, width
-    int screen_ll[2]; // position in the final image
-    float avg_z;   
-    float eye_z;   // same as avg_z
-    float clip_z;   
 
-    bool operator==(const iotaMeta &a){
-        return (patchNumber == a.patchNumber) && (procId == a.procId);
-    }
-};
 
 
 // ****************************************************************************

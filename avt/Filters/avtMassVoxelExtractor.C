@@ -628,7 +628,7 @@ avtMassVoxelExtractor::dot(float vecA[3], float vecB[3])
 // ****************************************************************************
 
 double 
-avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _width, int _height)
+avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _screenWidth, int _screenHeight)
 {
     double normDevCoord[4];
     double worldCoordinates[4] = {0,0,0,1};
@@ -646,13 +646,15 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _w
         debug5 << "Matrix: " << *modelViewProj << endl;
     }
 
+    // NDC
     normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
     normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
     normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
     normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
 
-    pos2D[0] = round( normDevCoord[0]*(_width/2.)  + (_width/2.)  );
-    pos2D[1] = round( normDevCoord[1]*(_height/2.) + (_height/2.) );
+    // Screen coordinates
+    pos2D[0] = round( normDevCoord[0]*(_screenWidth/2.)  + (_screenWidth/2.)  );
+    pos2D[1] = round( normDevCoord[1]*(_screenHeight/2.) + (_screenHeight/2.) );
 
     return normDevCoord[2];
 }

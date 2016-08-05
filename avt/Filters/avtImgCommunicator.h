@@ -47,6 +47,7 @@
 #include <pipeline_exports.h>
 #include <imgMetaData.h>
 #include <avtSamplePointExtractor.h>
+
 #include <algorithm>
 #include <string>
 
@@ -145,12 +146,13 @@ public:
     void initImage(int sizeX, int sizeY, float color[4]);
     void regionAllocation(int numMPIRanks, int *& regions);
 
-
+    int findRegionsForPatch(int patchExtents[4], int regionHeight, int &from, int &to);
 
     void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
 
-    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int fullImageExtents[4]);
+    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);
     void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4]);
+    void parallelDirectSendII(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4]);
 };
 
 

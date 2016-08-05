@@ -53,38 +53,10 @@
 #include <DebugStream.h>
 #include <limits>
 #include <algorithm>
+#include <set>
 
 
-#ifdef PARALLEL
 
-MPI_Datatype createImgDataType(){ 
-  MPI_Datatype _img_mpi;
-  const int numItems = 8;
-  int blockLengths[numItems] = {1, 1,   1, 1,   2, 2, 2, 1};
-  MPI_Datatype type[numItems] = { MPI_INT, MPI_INT,    MPI_INT, MPI_INT,   MPI_INT, MPI_INT, MPI_INT,   MPI_FLOAT};
-  MPI_Aint offsets[numItems] = {0, sizeof(int), sizeof(int)*2, sizeof(int)*3, sizeof(int)*4, sizeof(int)*6, sizeof(int)*8, sizeof(int)*10};
-  MPI_Type_struct(numItems, blockLengths,  offsets, type, &_img_mpi);
-  
-  return _img_mpi;
-}
-
-#endif
-
-
-bool value_comparer(const std::pair<int,int> &before, const std::pair<int,int> &after){ return before.second < after.second; }
-bool sortByVecSize(const std::vector<iotaMeta> &before, const std::vector<iotaMeta> &after){return before.size() > after.size();}
-bool sortImgByCoordinatesIota(iotaMeta const& before, iotaMeta const& after){
-  if(before.screen_ll[0] != after.screen_ll[0]) 
-    return before.screen_ll[0] < after.screen_ll[0];
-  else 
-    return before.screen_ll[1] < after.screen_ll[1];
-}
-bool sortImgByDepthIota(iotaMeta const& before, iotaMeta const& after){ 
-  if(before.avg_z != after.avg_z) 
-    return (before.avg_z < after.avg_z);
-  else 
-    return (before.procId < after.procId); 
-}
 
 enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 
@@ -574,7 +546,6 @@ avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDe
 
 //
 // Serial Direct Send
-//
 void 
 avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height)
 {
@@ -718,8 +689,12 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 }
 
 
+
+
+//
+// Parallel Direct Send
 void 
-avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[3], float backgroundColor[4], int fullImageExtents[4])
+avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
   #ifdef PARALLEL
     // 
@@ -1035,6 +1010,402 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
     sendImageSt = NULL;
   #endif
 }
+
+
+int 
+avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int regionHeight, int &from, int &to)
+{
+    from = patchExtents[2]/regionHeight;
+    to = patchExtents[3]/regionHeight;
+    if (patchExtents[3]%regionHeight == 0)
+        to = to-1;
+
+    if (patchExtents[1]-patchExtents[0] <=0 || patchExtents[3]-patchExtents[2] <=0)
+        return 0;
+    else
+        return (from - to + 1);
+}
+
+
+//
+// Parallel Direct Send 
+void 
+avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4])
+{
+  #ifdef PARALLEL
+
+    // 
+    // Determine position in region (myPositionInRegion)
+    int width =  fullImageExtents[1]-fullImageExtents[0];
+    int height = fullImageExtents[3]-fullImageExtents[2];
+
+    //debug5 << "fullImageExtents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "   " << fullImageExtents[2] << ", " << fullImageExtents[3] << endl;
+
+
+    //
+    // Find my position in region
+    compositingDone = false;
+    int myPositionInRegion = -1;
+    bool inRegion = true;
+    std::vector<int> regionVector(region, region+numRegions);
+    std::vector<int>::iterator it = std::find(regionVector.begin(), regionVector.end(), my_id);
+
+
+    if (it == regionVector.end())
+    {
+        inRegion = false;
+        debug5 << my_id << " ~ SHOULD NOT HAPPEN: Not found " << my_id <<  " !!!" << std::endl;
+    }
+    else
+        myPositionInRegion = it - regionVector.begin();
+    
+
+    //
+    // Region boundaries
+    int regionHeight = height/numRegions;
+    int lastRegionHeight = height - regionHeight*(numRegions-1);
+
+    // Extents of my region
+    int myStartingHeight = fullImageExtents[2] + myPositionInRegion * regionHeight;   
+    int myEndingHeight = myStartingHeight + regionHeight;       
+    if (myPositionInRegion == numRegions-1) 
+        myEndingHeight = fullImageExtents[3];
+
+    int myRegionHeight = myEndingHeight-myStartingHeight;
+
+    // Size of one buffer
+    int sizeOneBuffer = std::max(regionHeight,lastRegionHeight) * width * 4;
+
+    //debug5 << "myPositionInRegion: " << myPositionInRegion << std::endl; 
+    //debug5 << "My extents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
+    //debug5 << "myRegionHeight: " << myRegionHeight << "  lastRegionHeight: " << lastRegionHeight << " regionHeight: " << regionHeight << "  myStartingHeight: " << myStartingHeight << "  myEndingHeight: " << myEndingHeight << std::endl;
+
+
+
+    //
+    // Determine how many patches and pixel to send to each region
+    std::vector<int> numPatchesPerRegion;
+    std::vector<int> areaPerRegion;
+    std::set<int> numOfRegions;
+
+    numPatchesPerRegion.resize(numRegions);
+    areaPerRegion.resize(numRegions);
+
+    // 2D array: extents for each partition
+    std::vector < std::vector<float> > extentsPerPartiton;
+    for (int i=0; i<numRegions; i++)
+        extentsPerPartiton.push_back( std::vector<float>() );
+    
+
+    int totalSendBufferSize = 0;
+    for (int i=0; i<numPatches; i++)
+    {
+        int _patchExtents[4];
+        imgMetaData temp;
+        temp = imageMetaPatchVector.at(i);
+
+        _patchExtents[0]=temp.screen_ll[0];   // minX
+        _patchExtents[1]=temp.screen_ur[0];   // maxX
+        _patchExtents[2]=temp.screen_ll[1];   // minY
+        _patchExtents[3]=temp.screen_ur[1];   // maxY
+
+
+        int from, to;
+        int numRegionIntescection = findRegionsForPatch(_patchExtents, regionHeight, from, to);
+        for (int j=from; j<=to; j++)
+            numPatchesPerRegion[j]++;
+
+
+        for (int partition=from; partition<=to; partition++)
+        {
+            int _partitionYStart = fullImageExtents[2] + partition*regionHeight;
+            int _partitionYEnd   = std::min(fullImageExtents[2] + _partitionYStart + regionHeight, fullImageExtents[3]);
+
+            int _extentsYStart = std::max(_patchExtents[2], _partitionYStart);
+            int _extentsYEnd   = std::min(_patchExtents[3], _partitionYEnd);
+            int _area = (_extentsYEnd-_extentsYStart)*(_patchExtents[1]-_patchExtents[0]);
+            areaPerRegion[partition] += _area;
+            totalSendBufferSize += _area;
+
+            extentsPerPartiton[partition].push_back(i);
+            extentsPerPartiton[partition].push_back(_patchExtents[0]);
+            extentsPerPartiton[partition].push_back(_patchExtents[1]);
+            extentsPerPartiton[partition].push_back(_extentsYStart);
+            extentsPerPartiton[partition].push_back(_extentsYEnd);
+            extentsPerPartiton[partition].push_back(temp.eye_z);
+
+            numOfRegions.insert(partition);
+        }
+    }
+    totalSendBufferSize *= 4; // to account for RGBA
+    int numRegionsWithData = numOfRegions.size();
+
+
+
+    // 
+    // Copy the data for each region for each patch
+
+    // Create buffer
+    float *sendDataBuffer = new float[totalSendBufferSize];     // contains all the data arranged by region
+    int *sendDataBufferSize = new int[numRegionsWithData]();
+     int *sendDataBufferOffsets = new int[numRegionsWithData]();
+
+    int *sendBuffer = new int[numRegions*2]();
+    int regionWithDataCount = 0;
+    int numRegionsToSend = 0;
+
+    
+    // Populate the buffer with data
+    int dataSendBufferOffset = 0;
+    for (int i=0; i<numRegions; i++)
+    {
+        int _dataSize = 0;
+        for (int j=0; j<extentsPerPartiton[i].size(); j++)
+        {
+            int _width = (extentsPerPartiton[i][j*6+2] - extentsPerPartiton[i][j*6+1]);
+            int bufferSize = _width * (extentsPerPartiton[i][j*6+4] - extentsPerPartiton[i][j*6+3]) * 4;
+            std::multimap<int, imgData>::iterator it = imgDataHashMap.find( extentsPerPartiton[i][j*6] );
+
+            memcpy(&sendDataBuffer[dataSendBufferOffset], &(((*it).second).imagePatch[_width * (int)extentsPerPartiton[i][j*6+3] * 4]), bufferSize*sizeof(float) );
+
+            dataSendBufferOffset += bufferSize;
+            _dataSize += bufferSize;
+            
+        }
+
+        if (_dataSize != 0){
+            sendDataBufferSize[regionWithDataCount] = _dataSize;
+
+            regionWithDataCount ++;
+            if (regionWithDataCount != numRegionsWithData)
+                sendDataBufferOffsets[regionWithDataCount] = sendDataBufferOffsets[regionWithDataCount-1] + sendDataBufferSize[regionWithDataCount-1];
+
+            if (i != myPositionInRegion)
+                numRegionsToSend++;
+        }
+
+        sendBuffer[i*2+0] = numPatchesPerRegion[i];
+        sendBuffer[i*2+1] = areaPerRegion[i];   
+    }
+
+
+    //
+    // Exchange information about size to recv
+    int *recvInfoATABuffer = new int[numRegions*2]();
+    MPI_Alltoall(sendBuffer, 2, MPI_INT,  recvInfoATABuffer, 2, MPI_INT, MPI_COMM_WORLD);
+    delete []sendBuffer;
+
+
+
+    //
+    // Calculate buffer size needed
+    int infoBufferSize = 0;
+    int dataBufferSize = 0;
+    int numRegionsToRecvFrom = 0;
+    for (int i=0; i<numRegions; i++)
+    {
+        infoBufferSize += recvInfoATABuffer[i*2 + 0];   // number of patches per region
+        dataBufferSize += recvInfoATABuffer[i*2 + 1];   // area per region
+
+        if (recvInfoATABuffer[i*2 + 0] != 0)
+            numRegionsToRecvFrom++;
+    }
+   
+
+
+
+    //
+    // Create structure for MPI Async send/recv
+
+    // Recv
+    MPI_Request *recvMetaRq = new MPI_Request[ numRegionsToRecvFrom ];
+    MPI_Status *recvMetaSt = new MPI_Status[ numRegionsToRecvFrom ];
+
+
+    MPI_Request *recvImageRq = new MPI_Request[ numRegionsToRecvFrom  ];
+    MPI_Status *recvImageSt = new MPI_Status[ numRegionsToRecvFrom  ];
+
+
+    // Send
+    MPI_Request *sendMetaRq = new MPI_Request[ numRegionsToSend ];
+    MPI_Status *sendMetaSt = new MPI_Status[ numRegionsToSend ];
+
+    MPI_Request *sendImageRq = new MPI_Request[ numRegionsToSend  ];
+    MPI_Status *sendImageSt = new MPI_Status[ numRegionsToSend  ];
+
+    
+    //
+    // Create recv buffers
+    float *recvInfoBuffer = new float[infoBufferSize*6];  // 6 - passing 6 parameters for each patch
+    float *recvDataBuffer =  new float[dataBufferSize*4]; // 4 - to account for RGBA
+
+
+    //
+    // Async Recv for info
+    int recvInfoCount=0;
+    int offsetMeta = 0;
+    int offsetData = 0;
+    for (int i=0; i<numRegions; i++)
+    {
+        if ( regionVector[i] == my_id )
+            continue;
+
+        if (recvInfoBuffer[i*2 + 0] == 0)
+            continue;
+
+        int src = regionVector[i];
+        MPI_Irecv(&recvInfoBuffer[offsetMeta], recvInfoBuffer[i*2 + 0]*6, MPI_FLOAT, src, tags[0], MPI_COMM_WORLD,  &recvMetaRq[recvInfoCount] );
+        MPI_Irecv(&recvDataBuffer[offsetData], recvInfoBuffer[i*2 + 1]*4, MPI_FLOAT, src, tags[1], MPI_COMM_WORLD,  &recvImageRq[recvInfoCount] );
+
+        offsetMeta += recvInfoBuffer[i*2 + 0]*6;
+        offsetData += recvInfoBuffer[i*2 + 1]*4;
+        recvInfoCount++;
+    }
+
+
+
+    // Sending
+    int sendCount = 0;
+    int offset = 0;
+    for (int i=0; i<numRegions; i++)
+    {
+        if ( extentsPerPartiton[i].size() != 0 ){
+            if ( regionVector[i] == my_id )
+            {
+                memcpy( &recvInfoBuffer[offsetMeta], &extentsPerPartiton[myPositionInRegion], extentsPerPartiton[myPositionInRegion].size()*sizeof(float) );
+
+                memcpy( &recvDataBuffer[offsetData], &sendDataBuffer[ sendDataBufferOffsets[sendCount] ] , extentsPerPartiton[myPositionInRegion].size() );
+                offset += sendDataBufferSize[sendCount];
+                sendCount++;
+            }
+            else
+            {
+                MPI_Isend(&extentsPerPartiton[i],  extentsPerPartiton[i].size(),  MPI_FLOAT, region[i], tags[0], MPI_COMM_WORLD, &sendMetaRq[i]);
+
+                MPI_Isend(&sendDataBuffer[offset], sendDataBufferSize[ sendCount ], MPI_FLOAT, region[i], tags[0], MPI_COMM_WORLD, &sendImageRq[i]);
+                offset += sendDataBufferSize[sendCount];
+                sendCount++;
+            }
+        }
+    }
+
+    
+
+
+
+
+   
+    //
+    // Create buffer for current region
+
+    intermediateImageExtents[0] = fullImageExtents[0];  intermediateImageExtents[1] = fullImageExtents[1];
+    intermediateImageExtents[2] = myStartingHeight;     intermediateImageExtents[3] = myEndingHeight;
+
+    intermediateImage = new float[width * (myEndingHeight-myStartingHeight) * 4]();
+
+    //writeArrayToPPM("/home/pascal/Desktop/debugImages/initialImg_" + toStr(my_id), intermediateImage, width, (myEndingHeight-myStartingHeight));
+
+   
+
+    MPI_Waitall(recvInfoCount, recvImageRq, recvImageSt);   // Means that we have reveived everything!
+    
+
+
+    // Sort the data
+    std::multimap<float,int> patchData;
+    std::vector<int> patchOffset;
+    patchOffset.push_back(0);
+    for (int i=0; i<infoBufferSize; i++)
+    {
+        patchData.insert( std::pair<float,int> (recvInfoBuffer[i*6 + 5],i));
+        int _patchSize = (recvInfoBuffer[i*6 + 4]-recvInfoBuffer[i*6 + 3]) * (recvInfoBuffer[i*6 + 2]-recvInfoBuffer[i*6 + 1]) * 4;
+        int _offset = patchOffset[i-1] + _patchSize;
+
+        if (i != infoBufferSize-1)
+            patchOffset.push_back(_offset);
+    }
+
+
+
+
+    //debug5 << "Recv now!" << std::endl;
+
+    int recvImageExtents[4];
+    float *recvImageData;
+    
+
+    //
+    // Blend
+    int numBlends = 0;
+    int countBlend = 0;
+
+    intermediateImageBB[0] = intermediateImageBB[2] = 0;
+    intermediateImageBB[1] = intermediateImageBB[3] = 0;
+
+
+    for (std::multimap<float,int>::iterator it=patchData.begin(); it!=patchData.end(); ++it)
+    {
+        int _id = (*it).second;
+        int _extents[4];
+        _extents[0] = recvInfoBuffer[_id*6 + 1];
+        _extents[1] = recvInfoBuffer[_id*6 + 2];
+        _extents[2] = recvInfoBuffer[_id*6 + 3];
+        _extents[3] = recvInfoBuffer[_id*6 + 4];
+
+        blendFrontToBack(&recvDataBuffer[ patchOffset[_id] ], _extents, _extents, intermediateImage, intermediateImageExtents);
+    }
+
+
+  
+    compositingDone = true;
+
+    //debug5 << "PDS blending done" << std::endl;
+    //writeArrayToPPM("/home/pascal/Desktop/debugImages/pds_" + toStr(my_id), intermediateImage, intermediateImageExtents[1]-intermediateImageExtents[0], intermediateImageExtents[3]-intermediateImageExtents[2]);
+
+
+
+
+    if (recvDataBuffer != NULL)
+        delete []recvDataBuffer;
+    recvDataBuffer = NULL;
+
+
+    if (numBlends == 0)
+        intermediateImageBB[0]=intermediateImageBB[1]=intermediateImageBB[2]=intermediateImageBB[3] = 0;
+
+    //
+    // Cleanup
+    MPI_Waitall(numRegionsToSend, sendImageRq, sendImageSt);   // Means that we have sent everything!
+
+    delete []sendDataBuffer;
+    delete []sendDataBufferSize;
+    delete []sendDataBufferOffsets;
+    delete []sendBuffer;
+
+    delete []recvInfoATABuffer;
+
+    delete []recvMetaRq;
+    delete []recvImageRq;
+    delete []recvMetaSt;
+    delete []recvImageSt;
+
+    delete []sendMetaRq;
+    delete []sendImageRq;
+    delete []sendMetaSt;
+    delete []sendImageSt;
+
+    recvMetaRq = NULL;
+    recvImageRq = NULL;
+    recvMetaSt = NULL;
+    recvImageSt = NULL;
+
+    sendMetaRq = NULL;
+    sendImageRq = NULL;
+    sendMetaSt = NULL;
+    sendImageSt = NULL;
+  #endif
+}
+
 
 
 

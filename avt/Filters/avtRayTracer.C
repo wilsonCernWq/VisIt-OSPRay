@@ -134,6 +134,7 @@ avtRayTracer::avtRayTracer()
     kernelBasedSampling = false;
     trilinearInterpolation = false;
     rayCastingSLIVR = false;
+    convexHullOnRCSLIVR = false;
 
     lighting = false;
     lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;   lightPosition[3] = 1.0;
@@ -1080,129 +1081,116 @@ avtRayTracer::Execute(void)
         // Parallel
         //
 
+        int  timingCompositinig = visitTimer->StartTimer();
+
         //
         // Get the metadata for all patches
         std::vector<imgMetaData> allImgMetaData;          // contains the metadata to composite the image
         int numPatches = extractor.getImgPatchSize();     // get the number of patches
 
 
-        debug5 << "Computing image size ... " << std::endl;
-
         int imgExtents[4] = {0,0,0,0}; //minX, maxX,  minY, maxY 
         int imgSize[2];             // x, y
-        for (int i=0; i<numPatches; i++)
+        float *composedData = NULL;
+        float *localPatchesDepth = NULL;
+
+        convexHullOnRCSLIVR = true;     // TEMP
+        if (convexHullOnRCSLIVR)
         {
-            imgMetaData temp;
-            temp = extractor.getImgMetaPatch(i);
+            debug5 << "Blend images for convex data... " << std::endl;
 
-            // Set image size
-            if (i==0)
+            for (int i=0; i<numPatches; i++)
             {
-                imgExtents[0]=temp.screen_ll[0];   // minX
-                imgExtents[1]=temp.screen_ur[0];   // maxX
+                imgMetaData temp;
+                temp = extractor.getImgMetaPatch(i);
 
-                imgExtents[2]=temp.screen_ll[1];   // minY
-                imgExtents[3]=temp.screen_ur[1];   // maxY
+                // Set image size
+                if (i==0)
+                {
+                    imgExtents[0]=temp.screen_ll[0];   // minX
+                    imgExtents[1]=temp.screen_ur[0];   // maxX
+
+                    imgExtents[2]=temp.screen_ll[1];   // minY
+                    imgExtents[3]=temp.screen_ur[1];   // maxY
+                }
+                else
+                {
+                    if (temp.screen_ll[0] < imgExtents[0])
+                        imgExtents[0]=temp.screen_ll[0];
+
+                    if (temp.screen_ur[0] > imgExtents[1])
+                        imgExtents[1]=temp.screen_ur[0];
+
+                    if (temp.screen_ll[1] < imgExtents[2])
+                        imgExtents[2]=temp.screen_ll[1];
+
+                    if (temp.screen_ur[1] > imgExtents[3])
+                        imgExtents[3]=temp.screen_ur[1];
+                }
+
+                allImgMetaData.push_back(temp);
             }
-            else
-            {
-                if (temp.screen_ll[0] < imgExtents[0])
-                    imgExtents[0]=temp.screen_ll[0];
 
-                if (temp.screen_ur[0] > imgExtents[1])
-                    imgExtents[1]=temp.screen_ur[0];
-
-                if (temp.screen_ll[1] < imgExtents[2])
-                    imgExtents[2]=temp.screen_ll[1];
-
-                if (temp.screen_ur[1] > imgExtents[3])
-                    imgExtents[3]=temp.screen_ur[1];
-            }
-
-            allImgMetaData.push_back(temp);
-        }
-
-        //
-        // Set the image size
-        imgSize[0] = imgExtents[1]-imgExtents[0];
-        imgSize[1] = imgExtents[3]-imgExtents[2];
-
-
-        //debug5 << "Number of patches: " << numPatches << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
-
-        //imgComm.barrier();
-        int  timingCompositinig = visitTimer->StartTimer();
-
-        //
-        // Creates a buffer to store the composited image - initilized to 0
-        float *composedData   = new float[imgSize[0] * imgSize[1] * 4]();
-        //float *composedDepths = new float[imgSize[0] * imgSize[1]]();
-
-
-        //
-        // Sort with the largest z first
-        std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
-        float *localPatchesDepth = new float[1]();
-
-        //
-        // Blend images
-        for (int i=0; i<numPatches; i++)
-        {
-            imgMetaData currentPatch = allImgMetaData[i];
-
-            imgData tempImgData;
-            tempImgData.imagePatch = NULL;
-            tempImgData.imageDepth = NULL;
-            tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
-            //tempImgData.imageDepth = new float[currentPatch.dims[0] * currentPatch.dims[1] ];
-            extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
-
-            int startPos[2];
-            startPos[0] = imgExtents[0];   startPos[1] = imgExtents[2];
-            blendImages(tempImgData.imagePatch, currentPatch.dims, currentPatch.screen_ll, composedData, imgSize, startPos);
-            //blendDepths(tempImgData.imageDepth, currentPatch.dims, currentPatch.screen_ll, composedDepths, imgSize, startPos);
-            
             //
-            // Clean up data
-            if (tempImgData.imagePatch != NULL)
-                delete []tempImgData.imagePatch;
-            tempImgData.imagePatch = NULL;
+            // Set the image size
+            imgSize[0] = imgExtents[1]-imgExtents[0];
+            imgSize[1] = imgExtents[3]-imgExtents[2];
 
-            //if (tempImgData.imageDepth != NULL)
-            //    delete []tempImgData.imageDepth;
-            //tempImgData.imageDepth = NULL;
 
-            if (i == numPatches-1)
-                localPatchesDepth[0] = currentPatch.eye_z;
+            //debug5 << "Number of patches: " << numPatches << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << 
+            //                     "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
+            
+
+            //
+            // Creates a buffer to store the composited image - initilized to 0
+            composedData  = new float[imgSize[0] * imgSize[1] * 4]();
+
+            //
+            // Sort with the largest z first
+            std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
+            localPatchesDepth = new float[1]();
+
+            //
+            // Blend images
+            for (int i=0; i<numPatches; i++)
+            {
+                imgMetaData currentPatch = allImgMetaData[i];
+
+                imgData tempImgData;
+                tempImgData.imagePatch = NULL;
+                tempImgData.imageDepth = NULL;
+                tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
+                extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
+
+                int startPos[2];
+                startPos[0] = imgExtents[0];   startPos[1] = imgExtents[2];
+                blendImages(tempImgData.imagePatch, currentPatch.dims, currentPatch.screen_ll, composedData, imgSize, startPos);
+                
+                //
+                // Clean up data
+                if (tempImgData.imagePatch != NULL)
+                    delete []tempImgData.imagePatch;
+                tempImgData.imagePatch = NULL;
+
+
+                if (i == numPatches-1)
+                    localPatchesDepth[0] = currentPatch.eye_z;
+            }
+            allImgMetaData.clear();
+
+
+            //if (imgSize[0] * imgSize[1] > 0)
+            //    writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);           
+
+
+            //debug5 << "Compositing Input: 1 "  - " << localPatchesDepth[0] << "  Extents: " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  bkg color: " 
+            //                                << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
+
+            debug5 << "Local composing done" << std::endl;
+
+            //createColorPPM("/home/pascal/Desktop/debugImages/RCSLbackback", _opaqueImageData, screen[0], screen[1]);   //background bounding box
+            //writeOutputToFile("/home/pascal/Desktop/debugImages/RCSLdepth", _opaqueImageZB, screen[0], screen[1]);
         }
-        allImgMetaData.clear();
-
-
-
-        //if (imgSize[0] * imgSize[1] > 0)
-        //    writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(PAR_Rank()), composedData, imgSize[0], imgSize[1]);           
-
-        //
-        // Do image compositing 
-        // Temporary
-        int _numPatches = 1; 
-        if (numPatches  == 0)
-            _numPatches = 0;
-
-        float backgroundColor[4];
-        backgroundColor[0] = background[0]/255.0; 
-        backgroundColor[1] = background[1]/255.0; 
-        backgroundColor[2] = background[2]/255.0; 
-        backgroundColor[3] = 1.0;
-
-        //debug5 << "Compositing Input: " << _numPatches << "  - " << localPatchesDepth[0] << "  Extents: " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << "  bkg color: " 
-        //                                << backgroundColor[0] << ", " << backgroundColor[1] << ", " << backgroundColor[2] << ", " << backgroundColor[3] << "  -  " << screen[0] << "," << screen[1] << std::endl;
-
-        debug5 << "Local composing done" << std::endl;
-
-        //createColorPPM("/home/pascal/Desktop/debugImages/RCSLbackback", _opaqueImageData, screen[0], screen[1]);   //background bounding box
-        //writeOutputToFile("/home/pascal/Desktop/debugImages/RCSLdepth", _opaqueImageZB, screen[0], screen[1]);
-
 
 
 
@@ -1210,29 +1198,40 @@ avtRayTracer::Execute(void)
         // Compositing
         //
 
-
         // 
         // Serial Direct Send
-        //imgComm.serialDirectSend(_numPatches, localPatchesDepth, imgExtents, composedData, backgroundColor, screen[0], screen[1]);
+        //imgComm.serialDirectSend(1, localPatchesDepth, imgExtents, composedData, backgroundColor, screen[0], screen[1]);
 
 
         //
         // Parallel Direct Send
-        int tags[3] = {1081, 1681, 2681};
+        int tags[2] = {1081, 1681};
+        int tagGather = 2681;
         int numMPIRanks = imgComm.GetNumProcs();
-        int *regions = new int[numMPIRanks]();
+        int *regions =  new int[numMPIRanks]();
         
         imgComm.regionAllocation(numMPIRanks, regions);
-        imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, backgroundColor, fullImageExtents);
-        imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tags[2], fullImageExtents);
+        if (convexHullOnRCSLIVR)
+            imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, fullImageExtents);
+        else
+            imgComm.parallelDirectSendII(extractor.imgDataHashMap, extractor.imageMetaPatchVector, numPatches, regions, numMPIRanks, tags, fullImageExtents);
 
-        
+        imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tagGather, fullImageExtents);
+
+        delete []regions;
+
+
+
+
         debug5 << "Global compositing done!" << std::endl;
+
+
 
 
         //
         // Blend with VisIt background at root!
         //
+
         if (PAR_Rank() == 0)
         {
             // 
@@ -1351,8 +1350,14 @@ avtRayTracer::Execute(void)
 
         //
         // Cleanup
+        if (composedData != NULL)
+            delete []composedData;
+
+        if (localPatchesDepth != NULL)
+            delete []localPatchesDepth;
+
         pvm->Delete();
-        delete []regions;
+        
 
         visitTimer->StopTimer(timingCompositinig, "Compositing");
         visitTimer->DumpTimings();
@@ -1362,6 +1367,7 @@ avtRayTracer::Execute(void)
 
         return;
     }
+
 
   #ifdef PARALLEL
     //
