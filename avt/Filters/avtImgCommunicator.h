@@ -146,7 +146,7 @@ public:
     void initImage(int sizeX, int sizeY, float color[4]);
     void regionAllocation(int numMPIRanks, int *& regions);
 
-    int findRegionsForPatch(int patchExtents[4], int regionHeight, int &from, int &to);
+    int findRegionsForPatch(int patchExtents[4], int yOffset, int regionHeight, int &from, int &to);
 
     void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
 

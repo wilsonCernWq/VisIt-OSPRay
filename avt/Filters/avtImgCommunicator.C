@@ -1013,17 +1013,19 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
 
 
 int 
-avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int regionHeight, int &from, int &to)
+avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int regionHeight, int &from, int &to)
 {
-    from = patchExtents[2]/regionHeight;
-    to = patchExtents[3]/regionHeight;
+    from = (patchExtents[2]-yOffset)/regionHeight;
+    to = (patchExtents[3]-yOffset)/regionHeight;
+    debug5 << "From: " << from << "  to: " << to << std::endl;
+
     if (patchExtents[3]%regionHeight == 0)
         to = to-1;
 
     if (patchExtents[1]-patchExtents[0] <=0 || patchExtents[3]-patchExtents[2] <=0)
         return 0;
     else
-        return (from - to + 1);
+        return ((to - from)+ 1);
 }
 
 
@@ -1039,7 +1041,7 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     int width =  fullImageExtents[1]-fullImageExtents[0];
     int height = fullImageExtents[3]-fullImageExtents[2];
 
-    //debug5 << "fullImageExtents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "   " << fullImageExtents[2] << ", " << fullImageExtents[3] << endl;
+    debug5 << "fullImageExtents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "   " << fullImageExtents[2] << ", " << fullImageExtents[3] << endl;
 
 
     //
@@ -1076,9 +1078,9 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     // Size of one buffer
     int sizeOneBuffer = std::max(regionHeight,lastRegionHeight) * width * 4;
 
-    //debug5 << "myPositionInRegion: " << myPositionInRegion << std::endl; 
-    //debug5 << "My extents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
-    //debug5 << "myRegionHeight: " << myRegionHeight << "  lastRegionHeight: " << lastRegionHeight << " regionHeight: " << regionHeight << "  myStartingHeight: " << myStartingHeight << "  myEndingHeight: " << myEndingHeight << std::endl;
+
+    debug5 << "myPositionInRegion: " << myPositionInRegion << std::endl; 
+    debug5 << "myRegionHeight: " << myRegionHeight << "  lastRegionHeight: " << lastRegionHeight << " regionHeight: " << regionHeight << "  myStartingHeight: " << myStartingHeight << "  myEndingHeight: " << myEndingHeight << std::endl;
 
 
 
@@ -1097,6 +1099,9 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
         extentsPerPartiton.push_back( std::vector<float>() );
     
 
+    debug5 << "Computing region patches! " << std::endl;
+    barrier();
+
     int totalSendBufferSize = 0;
     for (int i=0; i<numPatches; i++)
     {
@@ -1109,12 +1114,15 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
         _patchExtents[2]=temp.screen_ll[1];   // minY
         _patchExtents[3]=temp.screen_ur[1];   // maxY
 
+        debug5 << i << "   image (minX, maxX   minY , maxY): " << _patchExtents[0] << ", " << _patchExtents[1] << "    " << _patchExtents[2] << ", " << _patchExtents[3] << std::endl;
+
 
         int from, to;
-        int numRegionIntescection = findRegionsForPatch(_patchExtents, regionHeight, from, to);
+        int numRegionIntescection = findRegionsForPatch(_patchExtents, fullImageExtents[2], regionHeight, from, to);
         for (int j=from; j<=to; j++)
             numPatchesPerRegion[j]++;
 
+        debug5 << i << "   numRegionIntescection: " << numRegionIntescection << std::endl;
 
         for (int partition=from; partition<=to; partition++)
         {
@@ -1141,6 +1149,16 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     int numRegionsWithData = numOfRegions.size();
 
 
+    debug5 << "numRegionsWithData: " << numRegionsWithData << std::endl; 
+    for (int i=0; i<numRegions; i++)
+    {
+        debug5 << "region: " << i << " #patches: " << extentsPerPartiton[i].size()/6 << std::endl;
+        for (int j=0; j<extentsPerPartiton[i].size(); j+=6)
+            debug5 << "patch: " << extentsPerPartiton[i][j+0] << "  extents: " << extentsPerPartiton[i][j+1] << ", " << extentsPerPartiton[i][j+2] << ", " << extentsPerPartiton[i][j+3] << ", " << extentsPerPartiton[i][j+4] << "  z: "  << extentsPerPartiton[i][j+5] << std::endl;
+    }
+
+
+    
 
     // 
     // Copy the data for each region for each patch
@@ -1187,6 +1205,15 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
         sendBuffer[i*2+0] = numPatchesPerRegion[i];
         sendBuffer[i*2+1] = areaPerRegion[i];   
     }
+
+
+
+    for (int i=0; i<numRegions; i+=2)
+    {
+        debug5 << i << "   patches: " << sendBuffer[i*2+0] << "  area: " << sendBuffer[i*2+1] << std::endl;
+    }
+
+    return;
 
 
     //

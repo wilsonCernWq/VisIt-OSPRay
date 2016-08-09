@@ -1094,7 +1094,27 @@ avtRayTracer::Execute(void)
         float *composedData = NULL;
         float *localPatchesDepth = NULL;
 
-        convexHullOnRCSLIVR = true;     // TEMP
+
+        for (int i=0; i<numPatches; i++)
+        {
+            imgMetaData temp;
+            temp = extractor.getImgMetaPatch(i);
+
+            imgExtents[0]=temp.screen_ll[0];   // minX
+            imgExtents[1]=temp.screen_ur[0];   // maxX
+
+            imgExtents[2]=temp.screen_ll[1];   // minY
+            imgExtents[3]=temp.screen_ur[1];   // maxY
+
+            imgSize[0] = imgExtents[1]-imgExtents[0];
+            imgSize[1] = imgExtents[3]-imgExtents[2];
+
+            debug5 << "Number of patches: " << numPatches << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << 
+                                 "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
+        }
+
+
+        convexHullOnRCSLIVR = false;     // TEMP
         if (convexHullOnRCSLIVR)
         {
             debug5 << "Blend images for convex data... " << std::endl;
@@ -1211,9 +1231,9 @@ avtRayTracer::Execute(void)
         int *regions =  new int[numMPIRanks]();
         
         imgComm.regionAllocation(numMPIRanks, regions);
-        if (convexHullOnRCSLIVR)
-            imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, fullImageExtents);
-        else
+       // if (convexHullOnRCSLIVR)
+        //    imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, fullImageExtents);
+        //else
             imgComm.parallelDirectSendII(extractor.imgDataHashMap, extractor.imageMetaPatchVector, numPatches, regions, numMPIRanks, tags, fullImageExtents);
 
         imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tagGather, fullImageExtents);
