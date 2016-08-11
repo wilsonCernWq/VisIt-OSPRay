@@ -1095,6 +1095,7 @@ avtRayTracer::Execute(void)
         float *localPatchesDepth = NULL;
 
 
+         debug5 << "Number of patches: " << numPatches << std::endl;
         for (int i=0; i<numPatches; i++)
         {
             imgMetaData temp;
@@ -1109,7 +1110,7 @@ avtRayTracer::Execute(void)
             imgSize[0] = imgExtents[1]-imgExtents[0];
             imgSize[1] = imgExtents[3]-imgExtents[2];
 
-            debug5 << "Number of patches: " << numPatches << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << 
+            debug5 << "i: " << i << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << 
                                  "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
         }
 
