@@ -1237,7 +1237,8 @@ avtRayTracer::Execute(void)
         //else
             imgComm.parallelDirectSendII(extractor.imgDataHashMap, extractor.imageMetaPatchVector, numPatches, regions, numMPIRanks, tags, fullImageExtents);
 
-        imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tagGather, fullImageExtents);
+        //imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tagGather, fullImageExtents);
+        imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageExtents, tagGather, fullImageExtents);
 
         delete []regions;
 

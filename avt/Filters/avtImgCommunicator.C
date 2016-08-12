@@ -1116,6 +1116,10 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
 
         debug5 << i << "   image (minX, maxX   minY , maxY): " << _patchExtents[0] << ", " << _patchExtents[1] << "    " << _patchExtents[2] << ", " << _patchExtents[3] << std::endl;
 
+        std::multimap<int, imgData>::iterator it = imgDataHashMap.find( i );
+
+        writeArrayToPPM("/home/pascal/Desktop/debugImages/patches/" + toStr(my_id) + "_patch_" + toStr(i),  ((*it).second).imagePatch, _patchExtents[1]-_patchExtents[0], _patchExtents[3]-_patchExtents[2]);
+
 
         int from, to;
         int numRegionIntescection = findRegionsForPatch(_patchExtents, fullImageExtents[2], regionHeight, from, to);
@@ -1153,7 +1157,7 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     int numRegionsWithData = numOfRegions.size();
 
 
-    debug5 << "numRegionsWithData: " << numRegionsWithData << std::endl; 
+    debug5 << "\n\nnumRegionsWithData: " << numRegionsWithData << std::endl; 
     for (int i=0; i<numRegions; i++)
     {
         debug5 << "region: " << i << " #patches: " << extentsPerPartiton[i].size()/6 << std::endl;
@@ -1199,6 +1203,8 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
 
             memcpy(&sendDataBuffer[dataSendBufferOffset], &(((*it).second).imagePatch[_width * _dataOffset * 4]), _bufferSize*sizeof(float) );
 
+
+
             dataSendBufferOffset += _bufferSize;
             _dataSize += _bufferSize;
             
@@ -1223,11 +1229,8 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
 
     debug5 << "\nSending: " << std::endl;
     for (int i=0; i<numRegions; i++)
-        debug5 << i << "   patches: " << sendBuffer[i*2+0] << "  area: " << sendBuffer[i*2+1] << std::endl;
+        debug5 << "Region: " << i << "  # patches: " << sendBuffer[i*2+0] << "  area: " << sendBuffer[i*2+1] << std::endl;
 
-    
-
-    
 
 
     //
@@ -1253,12 +1256,11 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     }
    
 
-    debug5 << "\nReceiving: " << std::endl;
-    debug5 << "   infoBufferSize: " << infoBufferSize << "   dataBufferSize: " << dataBufferSize << std::endl;
+    debug5 << "\nReceiving ~ infoBufferSize: " << infoBufferSize << "   dataBufferSize: " << dataBufferSize << std::endl;
     for (int i=0; i<numRegions; i++)
         debug5 << "From region: "<<  i << " , receiving " << recvInfoATABuffer[i*2+0] << " patches with  area: " << recvInfoATABuffer[i*2+1] << std::endl;
 
-    debug5 << "numRegionsToRecvFrom: " << numRegionsToRecvFrom << std::endl;
+    debug5 << "\nnumRegionsToRecvFrom: " << numRegionsToRecvFrom << std::endl;
     debug5 << "numRegionsToSend: " << numRegionsToSend << std::endl;
     barrier();
     
@@ -1272,7 +1274,6 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     MPI_Request *recvMetaRq = new MPI_Request[ numRegionsToRecvFrom ];
     MPI_Status *recvMetaSt = new MPI_Status[ numRegionsToRecvFrom ];
 
-
     MPI_Request *recvImageRq = new MPI_Request[ numRegionsToRecvFrom  ];
     MPI_Status *recvImageSt = new MPI_Status[ numRegionsToRecvFrom  ];
 
@@ -1285,7 +1286,7 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     MPI_Status *sendImageSt = new MPI_Status[ numRegionsToSend  ];
 
     
-    debug5 << "Creating recv buffers ...  " << std::endl;
+    debug5 << "\nCreating recv buffers ...  " << std::endl;
 
     //
     // Create recv buffers
@@ -1303,16 +1304,20 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     int offsetData = 0;
     for (int i=0; i<numRegions; i++)
     {
-        if ( regionVector[i] == my_id )
-            continue;
-
         if (recvInfoATABuffer[i*2 + 0] == 0)
             continue;
+
+        if ( regionVector[i] == my_id )
+        {
+           // offsetMeta += recvInfoATABuffer[i*2 + 0]*6;
+            //offsetData += recvInfoATABuffer[i*2 + 1]*4;
+            continue;
+        }
 
 
         int src = regionVector[i];
 
-        debug5 << i << " :  src " << src << "   recvInfoATABuffer[i*2 + 0]:" << recvInfoATABuffer[i*2 + 0] << "   recvInfoATABuffer[i*2 + 1]: " << recvInfoATABuffer[i*2 + 1] << "   recvInfoCount: " << recvInfoCount << std::endl;
+        debug5 << i << " :  src " << src << "   recvInfoATABuffer[i*2 + 0]:" << recvInfoATABuffer[i*2 + 0] << "   recvInfoATABuffer[i*2 + 1]: " << recvInfoATABuffer[i*2 + 1] << "   recvInfoCount: " << recvInfoCount << "   offsetMeta: " << offsetMeta << std::endl;
         MPI_Irecv(&recvInfoBuffer[offsetMeta], recvInfoATABuffer[i*2 + 0]*6, MPI_FLOAT, src, tags[0], MPI_COMM_WORLD,  &recvMetaRq[recvInfoCount] );
         MPI_Irecv(&recvDataBuffer[offsetData], recvInfoATABuffer[i*2 + 1]*4, MPI_FLOAT, src, tags[1], MPI_COMM_WORLD,  &recvImageRq[recvInfoCount] );
 
@@ -1322,32 +1327,47 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     }
 
 
-    debug5 << "Sending ...  " << std::endl;
+    debug5 << "\nSending ...  " << std::endl;
     barrier();
 
     // Sending
     int sendCount = 0;
     int mpiSendCount = 0;
     int offset = 0;
+    int _offset = 0;
     for (int i=0; i<numRegions; i++)
     {
         if ( extentsPerPartiton[i].size() != 0 ){
             if ( regionVector[i] == my_id )
             {
-                memcpy( &recvInfoBuffer[offsetMeta], &extentsPerPartiton[myPositionInRegion], extentsPerPartiton[myPositionInRegion].size()*sizeof(float) );
-                memcpy( &recvDataBuffer[offsetData], &sendDataBuffer[ sendDataBufferOffsets[sendCount] ] , extentsPerPartiton[myPositionInRegion].size() );
+                //memcpy( &recvInfoBuffer[offsetMeta], &extentsPerPartiton[myPositionInRegion], extentsPerPartiton[myPositionInRegion].size()*sizeof(float) );
+                //memcpy( &recvDataBuffer[offsetData], &sendDataBuffer[ sendDataBufferOffsets[sendCount] ] , extentsPerPartiton[myPositionInRegion].size() );
+
+                memcpy( &recvInfoBuffer[offsetMeta], &extentsPerPartiton[i][0], extentsPerPartiton[i].size()*sizeof(float) );
+                memcpy( &recvDataBuffer[offsetData], &sendDataBuffer[offset] , sendDataBufferSize[ sendCount ]*sizeof(float) );
+                
+
                 offset += sendDataBufferSize[sendCount];
                 sendCount++;
             }
             else
             {
-                debug5 << i << " Sending to: " << region[i] << "  extentsPerPartiton[i].size(): " << extentsPerPartiton[i].size() << std::endl;
-                for (int j=0; j<extentsPerPartiton[i].size(); j++)
-                    debug5 << extentsPerPartiton[i][j] << ", ";
+
+                debug5 << "Region: " << i << " Sending to: " << region[i] << "  extentsPerPartiton[i].size(): " << extentsPerPartiton[i].size()  << std::endl;
+                
+                for (int j=0; j<extentsPerPartiton[i].size()/6; j++){
+                    debug5 << extentsPerPartiton[i][j*6+1] << ", " << extentsPerPartiton[i][j*6+2] << "   " << extentsPerPartiton[i][j*6+3] << ", " << extentsPerPartiton[i][j*6+4] << std::endl;;
+
+                    int _width = extentsPerPartiton[i][j*6+2] - extentsPerPartiton[i][j*6+1];
+                    int _height = extentsPerPartiton[i][j*6+4] - extentsPerPartiton[i][j*6+3];
+                    
+                    writeArrayToPPM("/home/pascal/Desktop/debugImages/partials/" + toStr(my_id) + "_sending_to_" + toStr(region[i]) + "_data_" + toStr(j), &sendDataBuffer[_offset], _width, _height);
+                    _offset += _width * (extentsPerPartiton[i][j*6+4] - extentsPerPartiton[i][j*6+3]) * 4;
+                }
                 debug5 << "\n" << std::endl;
 
-                MPI_Isend(&extentsPerPartiton[i],  extentsPerPartiton[i].size(),  MPI_FLOAT, region[i], tags[0], MPI_COMM_WORLD, &sendMetaRq[mpiSendCount]);
 
+                MPI_Isend(&extentsPerPartiton[i][0],  extentsPerPartiton[i].size(),  MPI_FLOAT, region[i], tags[0], MPI_COMM_WORLD, &sendMetaRq[mpiSendCount]);
                 MPI_Isend(&sendDataBuffer[offset], sendDataBufferSize[ sendCount ], MPI_FLOAT, region[i], tags[1], MPI_COMM_WORLD, &sendImageRq[mpiSendCount]);
                 offset += sendDataBufferSize[sendCount];
                 sendCount++;
@@ -1357,7 +1377,7 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     }
 
     
-
+ 
     
     barrier();
     debug5 << "Creating intermediate buffer ...  " << std::endl;
@@ -1373,20 +1393,27 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     //writeArrayToPPM("/home/pascal/Desktop/debugImages/initialImg_" + toStr(my_id), intermediateImage, width, (myEndingHeight-myStartingHeight));
 
    
-
+    //MPI_Waitall(recvInfoCount, recvMetaRq, recvMetaSt);   // Means that we have reveived everything!
     MPI_Waitall(recvInfoCount, recvImageRq, recvImageSt);   // Means that we have reveived everything!
     
      debug5 << "All receiving done" << std::endl;
 
      debug5 << "\nInfo buffer received" << std::endl;
+    int __offset = 0;
     for (int i=0; i<infoBufferSize; i++)
-        debug5 << i << " :  " << recvInfoBuffer[i*6 + 0] << ", " << recvInfoBuffer[i*6 + 1] << ", " << recvInfoBuffer[i*6 + 2] << ", " << recvInfoBuffer[i*6 + 3] << ", " << recvInfoBuffer[i*6 + 4] << ", " << recvInfoBuffer[i*6 + 5] << std::endl;
+    {
+        debug5 << i << " :  " << recvInfoBuffer[i*6 + 0] << ", " << recvInfoBuffer[i*6 + 1] << ", " << recvInfoBuffer[i*6 + 2] << ", " << recvInfoBuffer[i*6 + 3] << ", " << recvInfoBuffer[i*6 + 4] << ", " << recvInfoBuffer[i*6 + 5] << "  __offset: " << __offset << std::endl;
+        writeArrayToPPM("/home/pascal/Desktop/debugImages/recvPartials/" + toStr(my_id) + "_patch_" + toStr(i),  &recvDataBuffer[__offset], recvInfoBuffer[i*6 + 2] - recvInfoBuffer[i*6 + 1], recvInfoBuffer[i*6 + 4] - recvInfoBuffer[i*6 + 3]);
+        __offset += (recvInfoBuffer[i*6 + 2] - recvInfoBuffer[i*6 + 1]) * (recvInfoBuffer[i*6 + 4] - recvInfoBuffer[i*6 + 3]) * 4;
+    }
 
 
-
+ //<< ", " << 
+   // memcpy( &recvDataBuffer[offsetData], &sendDataBuffer[ sendDataBufferOffsets[sendCount] ] , extentsPerPartiton[myPositionInRegion].size() );
+    //writeArrayToPPM("/home/pascal/Desktop/debugImages/recvPartials/" + toStr(my_id) + "_patch_" + toStr(i),  ((*it).second).imagePatch, recvInfoBuffer[i*6 + 2] - recvInfoBuffer[i*6 + 1], recvInfoBuffer[i*6 + 4] - recvInfoBuffer[i*6 + 3]);
     
 
-      debug5 << "Sorting by z" << std::endl;
+    debug5 << "Sorting by z" << std::endl;
     // Sort the data
     std::multimap<float,int> patchData;
     std::vector<int> patchOffset;
@@ -1395,14 +1422,22 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     {
         patchData.insert( std::pair<float,int> (recvInfoBuffer[i*6 + 5],i));
         int _patchSize = (recvInfoBuffer[i*6 + 4]-recvInfoBuffer[i*6 + 3]) * (recvInfoBuffer[i*6 + 2]-recvInfoBuffer[i*6 + 1]) * 4;
-        int _offset = patchOffset[i-1] + _patchSize;
+        int _offset = patchOffset[i] + _patchSize;
 
         if (i != infoBufferSize-1)
             patchOffset.push_back(_offset);
     }
 
 
-    
+    //int __offset = 0;
+    for (int i=0; i<infoBufferSize; i++)
+    {
+        debug5 << i << " :  " << recvInfoBuffer[i*6 + 0] << ", " << recvInfoBuffer[i*6 + 1] << ", " << recvInfoBuffer[i*6 + 2] << ", " << recvInfoBuffer[i*6 + 3] << ", " << recvInfoBuffer[i*6 + 4] << ", " << recvInfoBuffer[i*6 + 5] << "   patchOffset[i]: " << patchOffset[i] << std::endl;
+        writeArrayToPPM("/home/pascal/Desktop/debugImages/recvPatchOffset/" + toStr(my_id) + "_patch_" + toStr(i),  &recvDataBuffer[ patchOffset[i] ], recvInfoBuffer[i*6 + 2] - recvInfoBuffer[i*6 + 1], recvInfoBuffer[i*6 + 4] - recvInfoBuffer[i*6 + 3]);
+        //__offset += (recvInfoBuffer[i*6 + 2] - recvInfoBuffer[i*6 + 1]) * (recvInfoBuffer[i*6 + 4] - recvInfoBuffer[i*6 + 3]) * 4;
+    }
+
+
     //debug5 << "Recv now!" << std::endl;
 
     int recvImageExtents[4];
@@ -1418,7 +1453,7 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
     intermediateImageBB[1] = intermediateImageBB[3] = 0;
 
     debug5 << "Starting blending..." << std::endl;
-    barrier();
+    barrier();  
 
     int thisCount = 0;
     for (std::multimap<float,int>::iterator it=patchData.begin(); it!=patchData.end(); ++it)
@@ -1430,7 +1465,7 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
         _extents[2] = recvInfoBuffer[_id*6 + 3];
         _extents[3] = recvInfoBuffer[_id*6 + 4];
 
-        debug5 << thisCount << " ~ extents: " << _extents[0] << ", " << _extents[1] << "   " << _extents[2] << ", " << _extents[3] << std::endl;
+        debug5 << thisCount << " ~ extents: " << _extents[0] << ", " << _extents[1] << "   " << _extents[2] << ", " << _extents[3] << "   z: " << recvInfoBuffer[_id*6 + 5] << std::endl;
 
         blendFrontToBack(&recvDataBuffer[ patchOffset[_id] ], _extents, _extents, intermediateImage, intermediateImageExtents);
         thisCount++;
@@ -1459,7 +1494,11 @@ debug5 << "All output done" << std::endl;
 
     //
     // Cleanup
+    //MPI_Waitall(numRegionsToSend, sendMetaRq, sendMetaSt);   // Means that we have sent everything!
     MPI_Waitall(numRegionsToSend, sendImageRq, sendImageSt);   // Means that we have sent everything!
+
+
+
 
     delete []sendDataBuffer;
     delete []sendDataBufferSize;
@@ -1501,7 +1540,7 @@ void
 avtImgCommunicator::gatherImages(int regionGather[], int numRanksWithData, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4])
 {
   #ifdef PARALLEL
-    //debug5 << "gatherImages starting... numRanksWithData: " << numRanksWithData << "  imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
+    debug5 << "gatherImages starting... numRanksWithData: " << numRanksWithData << "  imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
 
 
     if (my_id == 0)
@@ -1526,7 +1565,7 @@ avtImgCommunicator::gatherImages(int regionGather[], int numRanksWithData, float
         int lastBufferSize    = lastRegionHeight * width * 4; 
         int regularBufferSize = regionHeight * width * 4;  
 
-        //debug5 << "regionHeight: " << regionHeight << "  lastRegionHeight: " << lastRegionHeight << "  width: " << width << "  height: " << height << std::endl;
+        debug5 << "regionHeight: " << regionHeight << "  lastRegionHeight: " << lastRegionHeight << "  width: " << width << "  height: " << height << std::endl;
         //debug5 << "numToRecv: " << numToRecv << std::endl;
         for (int i=0; i<numRanksWithData; i++)
             if (regionGather[i] == my_id){
@@ -1573,7 +1612,7 @@ avtImgCommunicator::gatherImages(int regionGather[], int numRanksWithData, float
     {
         if (compositingDone == false)   // If root has data for the final image
         {
-            //debug5 << "gatherImages ..." << (imgExtents[1]-imgExtents[0]) << " x " << (imgExtents[3]-imgExtents[2]) << std::endl;
+            debug5 << "gatherImages ..." << (imgExtents[1]-imgExtents[0]) << " x " << (imgExtents[3]-imgExtents[2]) << std::endl;
             int imgSize = (imgExtents[1]-imgExtents[0]) * (imgExtents[3]-imgExtents[2]) * 4;
             MPI_Send(inputImg, imgSize, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);    
     
