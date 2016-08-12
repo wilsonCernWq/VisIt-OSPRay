@@ -158,7 +158,7 @@ inline void createColorPPM(std::string filename, unsigned char *data, int width,
             
             char color[3];
             color[0] = data[index+0];  // red
-            color[1] = data[index+1];  // green 
+            color[1] = data[index+1];  // green   
             color[2] = data[index+2];  // blue
             outputFile.write(color,3);
         }

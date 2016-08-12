@@ -115,13 +115,21 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             SetVariableInformation(std::vector<std::string> &names,
                                             std::vector<int> varsize);
 
-    void             SetRayCastingSLIVR(bool s) {rayCastingSLIVR = s; };
     void             SetTrilinear(bool t) {trilinearInterpolation = t;   };
+
+
+    //
+    // RC SLIVR Specific
+    //
+
+    void             SetRayCastingSLIVR(bool s) {rayCastingSLIVR = s; };
 
     void             SetLighting(bool l) {lighting = l; };
     void             SetLightDirection(double _lightDir[3]) { for (int i=0;i<3;i++) lightDirection[i]=_lightDir[i]; }
     void             SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
     void             SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
+    void             SetScalarRange(double _range[2]){ scalarRange[0]=_range[0]; scalarRange[1]=_range[1];}
+    void             SetTFVisibleRange(double _tfRange[2]){ tFVisibleRange[0]=_tfRange[0]; tFVisibleRange[1]=_tfRange[1];}
 
     void             SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
 
@@ -129,7 +137,6 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
     void             SetDepthExtents(double _depthExtents[2]){ fullVolumeDepthExtents[0]=_depthExtents[0]; fullVolumeDepthExtents[1]=_depthExtents[1]; }
     void             SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
-
 
 
     // Getting the image
@@ -194,47 +201,6 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     double           *divisors_Y;
     double           *divisors_Z;
 
-    bool             lighting;
-    double           lightPosition[4];
-    float            lightDirection[3];
-    double           materialProperties[4];
-    avtOpacityMap    *transferFn1D;
-    float            gradient[3];
-
-    
-
-
-    // Background + other plots
-    float           *depthBuffer;           // depth buffer for the background and other plots
-    unsigned char   *rgbColorBuffer;        // bounding box + pseudo color + ...      
-    int              bufferExtents[4];      // extents of the buffer( minX, maxX, minY, maxY)    
-
-    // Rendering
-    int              renderingAreaExtents[4];
-    double           renderingDepthsExtents[2];
-
-
-    // Patch details for one image
-    int              patchDrawn;            // whether the patch is drawn or not
-
-    int              imgWidth, imgHeight;   
-    int              imgDims[2];            // size of the patch
-
-    int              imgLowerLeft[2];       // coordinates in the whole image
-    int              imgUpperRight[2];      //
-
-
-    float            eyeSpaceDepth;         // for blending patches
-    float            clipSpaceDepth;        // clip space depth for blending with other visit stuff
-
-    float            *imgArray;             // the image data
-
-    int              proc;                  // id of the processor
-    int              patch;                 // id of the patch
-
-    
-    int              fullImgWidth, fullImgHeight;
-    int              xMin, xMax, yMin, yMax;
 
     void             ExtractImageSpaceGrid(vtkRectilinearGrid *,
                              std::vector<std::string> &varnames,
@@ -257,20 +223,72 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     bool             FindSegmentIntersections(const double *, const double *, 
                                               int &, int &);
 
-    void             computePixelColor(double source_rgb[4], double dest_rgb[4]);
+    // Trilinear and RC SLIVR    
     double           trilinearInterpolate(double vals[8], float distRight, float distTop, float distBack);
     void             computeIndices(int dims[3], int indices[6], int returnIndices[8]);
     void             computeIndicesVert(int dims[3], int indices[6], int returnIndices[8]);
     void             getIndexandDistFromCenter(float dist, int index,    int &index_before, int &index_after,    float &dist_before, float &dist_after);
 
+
+
+
+    //
+    // RC SLIVR Specific
+    //
+
+    // Color computation
+    bool             lighting;
+    double           lightPosition[4];
+    float            lightDirection[3];
+    double           materialProperties[4];
+    avtOpacityMap    *transferFn1D;
+    float            gradient[3];
+    double           scalarRange[2];
+    double           tFVisibleRange[2];
+
+    
+    // Background + other plots
+    float           *depthBuffer;           // depth buffer for the background and other plots
+    unsigned char   *rgbColorBuffer;        // bounding box + pseudo color + ...      
+    int              bufferExtents[4];      // extents of the buffer( minX, maxX, minY, maxY)    
+
+    // Rendering
+    int              renderingAreaExtents[4];
+    double           renderingDepthsExtents[2];
+
+
+    // Patch details for one image
+    int              patchDrawn;            // whether the patch is drawn or not
+
+    int              imgWidth, imgHeight;   
+    int              imgDims[2];            // size of the patch
+
+    int              imgLowerLeft[2];       // coordinates in the whole image
+    int              imgUpperRight[2];      //
+
+    float            eyeSpaceDepth;         // for blending patches
+    float            clipSpaceDepth;        // clip space depth for blending with other visit stuff
+
+    float            *imgArray;             // the image data
+
+    int              proc;                  // id of the processor
+    int              patch;                 // id of the patch
+
+    int              fullImgWidth, fullImgHeight;
+    int              xMin, xMax, yMin, yMax;
+
+
+    // RC SLIVR Only
     void             normalize(float vec[3]);
     float            dot(float vecA[3], float vecB[3]){ return ((vecA[0]*vecB[0]) + (vecA[1]*vecB[1]) + (vecA[2]*vecB[2])); }
     void             unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height);
     double           project(double _worldCoordinates[3], int pos2D[2], int _width, int _height);
 
+    void             computePixelColor(double source_rgb[4], double dest_rgb[4]);
+
     void             GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], double *_origin, double *_terminus);
     void             SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y);
-    void             simpleExtractWorldSpaceGrid(vtkRectilinearGrid *,  // added for raycasting slivr
+    void             ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *,  // added for raycasting slivr
                              std::vector<std::string> &varnames,
                              std::vector<int> &varsize);
 };

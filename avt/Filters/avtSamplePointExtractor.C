@@ -800,17 +800,20 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
                 _tfVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
                 _tfVisibleRange[1] = transferFn1D->GetMaxVisibleScalar();
 
+
+                massVoxelExtractor->SetScalarRange(_scalarRange);
+                massVoxelExtractor->SetTFVisibleRange(_tfVisibleRange);
+
                 //debug5 << "_scalarRange[0]: " << _scalarRange[0] << "  _scalarRange[1]: " << _scalarRange[1] << "   _tfRange[0]: " << _tfRange[0] << "  _tfRange[1]: " << _tfRange[1] << "  _tfVisibleRange[0]: " << _tfVisibleRange[0] << "  _tfVisibleRange[1]: " << _tfVisibleRange[1] << std::endl;
 
-                if ( !((_scalarRange[1] < _tfRange[0]) || (_scalarRange[0] > _tfRange[1])) )
-                    if ( !((_scalarRange[1] < _tfVisibleRange[0]) || (_scalarRange[0] > _tfVisibleRange[1])) )
-                    {
-                        RasterBasedSample(ds,ci->idx);
-                        // TODO: 
-                    }
+                // if ( !((_scalarRange[1] < _tfRange[0]) || (_scalarRange[0] > _tfRange[1])) )
+                //     if ( !((_scalarRange[1] < _tfVisibleRange[0]) || (_scalarRange[0] > _tfVisibleRange[1])) )
+                //     {
+                //     }
+
             }
-            else
-                RasterBasedSample(ds,ci->idx);
+            
+            RasterBasedSample(ds,ci->idx);
         }
 
         UpdateProgress(10*currentNode+9, 10*totalNodes);
@@ -888,33 +891,7 @@ avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
 
 
 
-// ****************************************************************************
-//  Method: avtSamplePointExtractor::getImgData
-//
-//  Purpose:
-//      copies a patchover
-//
-//  Programmer: 
-//  Creation:   
-//
-//  Modifications:
-//
-// ****************************************************************************
 
-void 
-avtSamplePointExtractor::getnDelImgDepthData(int patchId, imgData &tempImgData){
-    iter_t it = imgDataHashMap.find(patchId);
-
-    tempImgData.procId = it->second.procId;
-    tempImgData.patchNumber = it->second.patchNumber;
-    memcpy(tempImgData.imagePatch,it->second.imagePatch,imageMetaPatchVector[patchId].dims[0] * 4 * imageMetaPatchVector[patchId].dims[1] * sizeof(float));
-    memcpy(tempImgData.imageDepth,it->second.imageDepth,imageMetaPatchVector[patchId].dims[0] *     imageMetaPatchVector[patchId].dims[1] * sizeof(float));
-
-    delete [](*it).second.imagePatch;
-    delete [](*it).second.imageDepth;
-    it->second.imagePatch = NULL;
-    it->second.imageDepth = NULL;
-}
 
 
 

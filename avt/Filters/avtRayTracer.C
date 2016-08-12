@@ -767,7 +767,7 @@ avtRayTracer::Execute(void)
         vtkMatrix4x4::Multiply4x4(tmp, imageZoomAndPan, vm);
         vm->Transpose();
         
-        // Projection
+        // Projection: http://www.codinglabs.net/article_world_view_projection_matrix.aspx
         vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
         if (!view.orthographic)
         {
@@ -777,7 +777,9 @@ avtRayTracer::Execute(void)
         }
         else
         {
-            // TODO
+            p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
+            p->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
+            p->SetElement(2, 3, -(oldFarPlane + oldNearPlane) / (oldFarPlane-oldNearPlane));
         }
 
         vtkMatrix4x4::Multiply4x4(p,vm,pvm);

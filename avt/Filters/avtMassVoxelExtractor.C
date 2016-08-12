@@ -354,7 +354,7 @@ avtMassVoxelExtractor::Extract(vtkRectilinearGrid *rgrid,
 {
     if (gridsAreInWorldSpace || pretendGridsAreInWorldSpace)
         if (rayCastingSLIVR)
-            simpleExtractWorldSpaceGrid(rgrid, varnames, varsizes);
+            ExtractWorldSpaceGridRCSLIVR(rgrid, varnames, varsizes);
         else
           ExtractWorldSpaceGrid(rgrid, varnames, varsizes);
     else
@@ -1932,10 +1932,12 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
         return;
 
     //
-    // Determine if there is intersection with 
+    // Determine if there is intersection with buffer
     bool rcSLIVRBufferMerge = false;
     double _worldOpaqueCoordinates[3];
-    int intersect = 0;
+    bool intesecting = false;
+    int intersect = -1;
+    float posAlongVector = 0;
 
     if (rayCastingSLIVR)
     {
@@ -1944,13 +1946,21 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
 
         int _index = h*screenY + w;
 
-        if (depthBuffer[_index] != -1)  // There is some other things to blend with at this location ... 
+        if (depthBuffer[_index] != 1)  // There is some other things to blend with at this location ... 
         {
             float normalizedDepth = depthBuffer[_index]*2 - 1;  // switching from (0 - 1) to (-1 - 1)
             if ( (normalizedDepth >= renderingDepthsExtents[0]) && (normalizedDepth <= renderingDepthsExtents[1]) )  // ... and it's within this patch
             {
                 rcSLIVRBufferMerge = true;
                 unProject(w,h, depthBuffer[_index], _worldOpaqueCoordinates, fullImgWidth, fullImgHeight);
+
+                float distOriginTerminus_Squared = (origin[0]-terminus[0])*(origin[0]-terminus[0]) + (origin[1]-terminus[1])*(origin[1]-terminus[1]) + (origin[2]-terminus[2])*(origin[2]-terminus[2]);
+                float distCoordOrigin_Squared = (_worldOpaqueCoordinates[0]-origin[0])*(_worldOpaqueCoordinates[0]-origin[0]) + (_worldOpaqueCoordinates[1]-origin[1])*(_worldOpaqueCoordinates[1]-origin[1]) + (_worldOpaqueCoordinates[2]-origin[2])*(_worldOpaqueCoordinates[2]-origin[2]);
+
+                if (distCoordOrigin_Squared < distOriginTerminus_Squared){     // lies along the vector
+                    intesecting = true;
+                    posAlongVector = distCoordOrigin_Squared/distOriginTerminus_Squared;
+                }
 
                 // // position where it happens
                 //debug5 << "Pos: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << std::endl;
@@ -2122,7 +2132,8 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
 
     //debug5 << "First: " << first << "  last: " << last << std::endl;
 
-    
+    if (intesecting)
+        intersect = posAlongVector * (last-first) + first;
 
     if (hasSamples)
         if (rayCastingSLIVR)
@@ -2135,8 +2146,10 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
 
 
 
+
+
 // ****************************************************************************
-//  Method: avtMassVoxelExtractor::simpleExtractWorldSpaceGrid
+//  Method: avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 //
 //  Purpose:
 //
@@ -2148,7 +2161,7 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
+avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
                  std::vector<std::string> &varnames, std::vector<int> &varsize)
 {
     patchDrawn = 0;
@@ -2264,19 +2277,10 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     imgWidth  = xMax-xMin;
     imgHeight = yMax-yMin;
 
-    //patchCount++;
-
-
 
     //
     // Initialize memory
     imgArray =  new float[((imgWidth)*4) * imgHeight]();   // image
-
-
-    for (int i=0; i<imgHeight * imgWidth; i++)
-        imgArray[i*4+0] = imgArray[i*4+1] = imgArray[i*4+2] = imgArray[i*4+3] =  0;
-    
-
 
     //
     // Send rays
@@ -2287,30 +2291,44 @@ avtMassVoxelExtractor::simpleExtractWorldSpaceGrid(vtkRectilinearGrid *rgrid,
     for (int _x = xMin ; _x < xMax ; _x++)
         for (int _y = yMin ; _y < yMax ; _y++)
         {
-            double _origin[3], _terminus[3];
-            double origin[4]  = {0,0,0,1};      // starting point where we start sampling
-            double terminus[4]= {0,0,0,1};      // ending point where we stop sampling
-
-            GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);    // find the starting point & ending point of the ray
-
-            for (int i=0; i<3; i++){
-                origin[i] = _origin[i];
-                terminus[i] = _terminus[i];
-            }
-
-            SampleAlongSegment(origin, terminus, _x, _y);             // Go get the segments along this ray and store them in 
-
-
-            // Set a value of z if 
             int index = (_y-yMin)*imgWidth + (_x-xMin);
-            if (imgArray[index*4+3] != 0)
+
+
+            if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
             {
-                int _tempC[2];
-                double originZ   = project(_origin,   _tempC, fullImgWidth, fullImgHeight);
-                double terminusZ = project(_terminus, _tempC, fullImgWidth, fullImgHeight);
+                int fullIndex = (_y * (bufferExtents[3]-bufferExtents[2]) + _x) * 3.0;
+                if ( depthBuffer[fullIndex] != 1)  
+                {
+                    float _minZ = std::min(renderingDepthsExtents[0], renderingDepthsExtents[1]);
+                    float _maxZ = std::min(renderingDepthsExtents[0], renderingDepthsExtents[1]);
+
+                    if ( depthBuffer[fullIndex] >= _minZ && depthBuffer[fullIndex] < _maxZ)     // within the range
+                    {
+                        patchDrawn = 1;  
+                        
+                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex + 0] / 255.0;
+                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex + 1] / 255.0;
+                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex + 2] / 255.0;
+                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 3] = 1.0;  
+                    }
+                }
+            }
+            else
+            {
+                double _origin[3], _terminus[3];
+                double origin[4]  = {0,0,0,1};      // starting point where we start sampling
+                double terminus[4]= {0,0,0,1};      // ending point where we stop sampling
+
+                GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);    // find the starting point & ending point of the ray
+
+                for (int i=0; i<3; i++){
+                    origin[i] = _origin[i];
+                    terminus[i] = _terminus[i];
+                }
+
+                SampleAlongSegment(origin, terminus, _x, _y);             // Go get the segments along this ray and store them in 
             }
         }
-
 
     //
     // Deallocate memory if not used
@@ -2369,6 +2387,23 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
     double dest_rgb[4] = {0.0,0.0,0.0, 0.0};     // to store the computed color
     for (int i = first ; i < last ; i++)
     {
+        // If we intersect a value in the z buffer
+        if (i == intersect) 
+        {
+            int fullIndex = (y * (bufferExtents[3]-bufferExtents[2]) + x) * 3.0;
+
+            float bufferColor[3];
+            bufferColor[0] = rgbColorBuffer[fullIndex + 0] / 255.0;
+            bufferColor[1] = rgbColorBuffer[fullIndex + 1] / 255.0;
+            bufferColor[2] = rgbColorBuffer[fullIndex + 2] / 255.0;
+            bufferColor[3] = 1.0;
+
+            for (int j=0; j<4; j++)
+                dest_rgb[i] = bufferColor[i] * (1.0 - dest_rgb[3]) + dest_rgb[i];
+
+            break;
+        }
+
         const int *ind = ind_buffer + 3*i;
         const double *prop = prop_buffer + 3*i;
 
@@ -2440,7 +2475,6 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
             
             for (int l = 0 ; l < ncell_arrays ; l++)            // ncell_arrays: usually 1
             {
-
                 void  *cell_array = cell_arrays[l];
                 double values[8];
                 for (int m = 0 ; m < cell_size[l] ; m++)        // cell_size[l] usually 1
