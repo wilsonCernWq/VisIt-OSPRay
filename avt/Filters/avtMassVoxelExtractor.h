@@ -135,10 +135,10 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     // Getting the image
     void             getImageDimensions(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth);
     void             getComputedImage(float *image);
-    void             getImageDepth(float *imageDepth);
     void             setProcIdPatchID(int _proc, int _patch){ proc = _proc; patch = _patch; }
 
     // TODO: Make that just a pointer instead of copy!!!
+    // Background information being passed to this
     void             setDepthBuffer(float *_zBuffer, int size){ depthBuffer=new float[size]; for (int i=0; i<size; i++) depthBuffer[i]=_zBuffer[i]; }
     void             setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
     void             setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
@@ -202,11 +202,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     float            gradient[3];
 
     
-    bool             activeNow;
-    int              tempCount;
 
-    int debugOn;
-    int countt;
 
     // Background + other plots
     float           *depthBuffer;           // depth buffer for the background and other plots
@@ -232,7 +228,6 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     float            clipSpaceDepth;        // clip space depth for blending with other visit stuff
 
     float            *imgArray;             // the image data
-    float            *imgDepths;            // z depth
 
     int              proc;                  // id of the processor
     int              patch;                 // id of the patch
@@ -268,14 +263,14 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             computeIndicesVert(int dims[3], int indices[6], int returnIndices[8]);
     void             getIndexandDistFromCenter(float dist, int index,    int &index_before, int &index_after,    float &dist_before, float &dist_after);
 
-    void            normalize(float vec[3]);
-    float           dot(float vecA[3], float vecB[3]);
-    void            unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height);
-    double          project(double _worldCoordinates[3], int pos2D[2], int _width, int _height);
+    void             normalize(float vec[3]);
+    float            dot(float vecA[3], float vecB[3]){ return ((vecA[0]*vecB[0]) + (vecA[1]*vecB[1]) + (vecA[2]*vecB[2])); }
+    void             unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height);
+    double           project(double _worldCoordinates[3], int pos2D[2], int _width, int _height);
 
-    void            GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], double *_origin, double *_terminus);
-    void            SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y);
-    void            simpleExtractWorldSpaceGrid(vtkRectilinearGrid *,  // added for raycasting slivr
+    void             GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], double *_origin, double *_terminus);
+    void             SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y);
+    void             simpleExtractWorldSpaceGrid(vtkRectilinearGrid *,  // added for raycasting slivr
                              std::vector<std::string> &varnames,
                              std::vector<int> &varsize);
 };
