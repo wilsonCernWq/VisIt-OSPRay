@@ -1232,21 +1232,18 @@ avtRayTracer::Execute(void)
         int *regions =  new int[numMPIRanks]();
         
         imgComm.regionAllocation(numMPIRanks, regions);
-       // if (convexHullOnRCSLIVR)
+        // if (convexHullOnRCSLIVR)
         //    imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, fullImageExtents);
         //else
             imgComm.parallelDirectSendII(extractor.imgDataHashMap, extractor.imageMetaPatchVector, numPatches, regions, numMPIRanks, tags, fullImageExtents);
 
-        //imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageBB, tagGather, fullImageExtents);
         imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageExtents, tagGather, fullImageExtents);
 
-        delete []regions;
-
-
-
+        if (regions != NULL)
+            delete []regions;
+        regions = NULL;
 
         debug5 << "Global compositing done!" << std::endl;
-
 
 
 
