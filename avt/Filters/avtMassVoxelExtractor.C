@@ -1171,23 +1171,28 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
 //  Method: avtMassVoxelExtractor::getIndexandDistFromCenter
 //
 //  Purpose:
+//      Compute distance
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   June 10, 2013
 //
 //  Modifications:
 //
 // ****************************************************************************
 
 void 
-avtMassVoxelExtractor::getIndexandDistFromCenter(float dist, int index,    int &index_before, int &index_after,    float &dist_before, float &dist_after){
+avtMassVoxelExtractor::getIndexandDistFromCenter(float dist, int index,    int &index_before, int &index_after,    float &dist_before, float &dist_after)
+{
     float center = 0.5;
-    if (dist < center){
+    if (dist < center)
+    {
         index_before = index-1;
         index_after = index;
         dist_before = dist + center;
         dist_after = 1.0 - dist_before;
-    }else{
+    }
+    else
+    {
         index_before = index;
         index_after = index+1;
         dist_before = dist - center;
@@ -1200,17 +1205,19 @@ avtMassVoxelExtractor::getIndexandDistFromCenter(float dist, int index,    int &
 //  Method: avtImgCommunicator::computeIndices
 //
 //  Purpose:
-//              back: 5, front: 4,  top:3, bottom:2,  ;right: 1, left:0
+//      computing indices
+//      back: 5, front: 4,  top:3, bottom:2,  ;right: 1, left:0
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   June 10, 2013
 //
 //  Modifications:
 //
 // ****************************************************************************
 
 void 
-avtMassVoxelExtractor::computeIndices(int dims[3], int indices[6], int returnIndices[8]){
+avtMassVoxelExtractor::computeIndices(int dims[3], int indices[6], int returnIndices[8])
+{
     returnIndices[0] = (indices[4])*((dims[0]-1)*(dims[1]-1)) + (indices[2])*(dims[0]-1) + (indices[0]);
     returnIndices[1] = (indices[4])*((dims[0]-1)*(dims[1]-1)) + (indices[2])*(dims[0]-1) + (indices[1]);
 
@@ -1229,16 +1236,18 @@ avtMassVoxelExtractor::computeIndices(int dims[3], int indices[6], int returnInd
 //  Method: avtImgCommunicator::computeIndicesVert
 //
 //  Purpose:
+//      Compute indices for vertices
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   June 10, 2013
 //
 //  Modifications:
 //
 // ****************************************************************************
 
 void 
-avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int returnIndices[8]){
+avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int returnIndices[8])
+{
     returnIndices[0] = (indices[4])*((dims[0])*(dims[1])) + (indices[2])*(dims[0]) + (indices[0]);
     returnIndices[1] = (indices[4])*((dims[0])*(dims[1])) + (indices[2])*(dims[0]) + (indices[1]);
 
@@ -1257,9 +1266,10 @@ avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int retur
 //  Method: avtImgCommunicator::trilinearInterpolate
 //
 //  Purpose:
+//      Trilinear interpolation
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   June 10, 2013
 //
 //  Modifications:
 //
@@ -2152,9 +2162,10 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
 //  Method: avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 //
 //  Purpose:
+//      Compute region that patch covers
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //
@@ -2347,10 +2358,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
 //  Method: avtMassVoxelExtractor::GetSegmentRCSLIVR
 //
 //  Purpose:
-//      transfers the metadata of the patch
+//      Determine ray start and end
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //
@@ -2370,10 +2381,10 @@ avtMassVoxelExtractor::GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], 
 //  Method: avtMassVoxelExtractor::SampleVariableRCSLIVR
 //
 //  Purpose:
-//      
+//      Sample each ray
 //
 //  Programmer: Pascal Grosset
-//  Creation:   
+//  Creation:   August 14, 2016 
 //
 //
 // ****************************************************************************
@@ -2859,9 +2870,10 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 //  Method: avtMassVoxelExtractor::normalize
 //
 //  Purpose:
+//      Normalize vector
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //
@@ -2883,9 +2895,10 @@ avtMassVoxelExtractor::normalize(float vec[3])
 //  Method: avtMassVoxelExtractor::project
 //
 //  Purpose:
+//      Convert from world coordinates to screen coordinates
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //
@@ -2928,9 +2941,10 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _s
 //  Method: avtMassVoxelExtractor::unProject
 //
 //  Purpose:
+//      Convert from screen coordinates to world coordinates
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016 
 //
 //  Modifications:
 //
@@ -2965,10 +2979,10 @@ avtMassVoxelExtractor::unProject(int _x, int _y, float _z, double _worldCoordina
 //  Method: avtMassVoxelExtractor::getImageDimensions
 //
 //  Purpose:
-//      transfers the metadata of the patch
+//      Transfers the metadata of the patch
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //
@@ -2993,10 +3007,10 @@ avtMassVoxelExtractor::getImageDimensions(int &inUse, int dims[2], int screen_ll
 //  Method: avtMassVoxelExtractor::getComputedImage
 //
 //  Purpose:
-//      allocates space to the pointer address and copy the image generated to it
+//      Allocates space to the pointer address and copy the image generated to it
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //

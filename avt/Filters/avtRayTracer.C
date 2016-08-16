@@ -312,14 +312,12 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 //  Function: 
 //
 //  Purpose:
+//      Blend images
 //
-//
-//  Programmer:
-//  Creation:  
+//  Programmer: August 14, 2016
+//  Creation:   Pascal Grosset
 //
 //  Modifications:
-//
-//
 //
 // ****************************************************************************
 
@@ -377,8 +375,8 @@ avtRayTracer::blendDepths(float *src, int dimsSrc[2], int posSrc[2], float *dst,
 //
 //  Purpose:
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //
@@ -415,8 +413,8 @@ avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3], i
 //
 //  Purpose:
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //
@@ -458,8 +456,8 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int
 //
 //  Purpose:
 //
-//  Programmer: 
-//  Creation:   
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
 //
 //  Modifications:
 //
