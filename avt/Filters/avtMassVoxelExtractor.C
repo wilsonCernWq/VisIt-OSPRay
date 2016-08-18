@@ -2217,7 +2217,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
     coordinates[6][0] = X[dims[0]-1];   coordinates[6][1] = Y[dims[1]-1];   coordinates[6][2] = Z[dims[2]-1];
     coordinates[7][0] = X[0];           coordinates[7][1] = Y[dims[1]-1];   coordinates[7][2] = Z[dims[2]-1];
 
-    //debug5 << "Extents - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] << "   Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << std::endl;
+    debug5 << "Extents - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] << "   Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << "    ";
 
 
     //
@@ -2289,6 +2289,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
     imgHeight = yMax-yMin;
 
 
+    //debug5 << "Initialize memory" << std::endl;
+
     //
     // Initialize memory
     imgArray =  new float[((imgWidth)*4) * imgHeight]();   // image
@@ -2299,6 +2301,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
     imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
     imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
 
+    debug5 << "Send rays ~ screen:" << xMin << ", " << xMax << "    "  << yMin << ", " << yMax <<  "   Buffer extents: " << bufferExtents[0] << ", " << bufferExtents[1] << "   " << bufferExtents[2] << ", " << bufferExtents[3] << std::endl;
+
     for (int _x = xMin ; _x < xMax ; _x++)
         for (int _y = yMin ; _y < yMax ; _y++)
         {
@@ -2307,19 +2311,19 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
 
             if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
             {
-                int fullIndex = (_y * (bufferExtents[3]-bufferExtents[2]) + _x) * 3.0;
+                int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[3]-bufferExtents[2]) + (_x-bufferExtents[0]) );
                 if ( depthBuffer[fullIndex] != 1)  
                 {
                     float _minZ = std::min(renderingDepthsExtents[0], renderingDepthsExtents[1]);
-                    float _maxZ = std::min(renderingDepthsExtents[0], renderingDepthsExtents[1]);
+                    float _maxZ = std::max(renderingDepthsExtents[0], renderingDepthsExtents[1]);
 
                     if ( depthBuffer[fullIndex] >= _minZ && depthBuffer[fullIndex] < _maxZ)     // within the range
                     {
                         patchDrawn = 1;  
                         
-                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex + 0] / 255.0;
-                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex + 1] / 255.0;
-                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex + 2] / 255.0;
+                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
+                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1] / 255.0;
+                        imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2] / 255.0;
                         imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 3] = 1.0;  
                     }
                 }
@@ -2340,6 +2344,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
                 SampleAlongSegment(origin, terminus, _x, _y);             // Go get the segments along this ray and store them in 
             }
         }
+
+    //debug5 << "Deallocate memory" << std::endl;
 
     //
     // Deallocate memory if not used

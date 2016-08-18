@@ -741,6 +741,8 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
         return;
 
 
+    debug5 << " ~ avtSamplePointExtractor::dt->GetNChildren()  "  << dt->GetNChildren() << endl;
+
     //
     // Process tree
     std::stack<datatree_childindex*> nodes;
@@ -1074,6 +1076,7 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
 void
 avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 {
+    //debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample  " << num << std::endl; 
     if (modeIs3D && ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
         avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
@@ -1115,8 +1118,11 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         }
 
 
+        debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample extract ...  " << num << std::endl; 
+
         massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
 
+        debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample extract done!" << num << std::endl; 
 
         //
         // Get rendering results

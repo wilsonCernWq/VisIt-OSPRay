@@ -824,6 +824,7 @@ avtRayTracer::Execute(void)
         __opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
         __opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
 
+        //createColorPPM("/home/pascal/Desktop/background", __opaqueImageData, screen[0], screen[1]);
         //writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", __opaqueImageZB, screen[0], screen[1]);
 
         extractor.setDepthBuffer(__opaqueImageZB, screen[0]*screen[1]);
@@ -869,18 +870,18 @@ avtRayTracer::Execute(void)
     {
         debug5 << "Start compositing" << std::endl;
 
-
         avtRayCompositer rc(rayfoo);                            // only required to force an update - Need to find a way to get rid of that!!!!
         rc.SetInput(samples);
         avtImage_p image  = rc.GetTypedOutput();
         image->Update(GetGeneralContract());
-
 
         //
         // SERIAL : Single Processor
         //
         if (parallelOn == false)
         {
+            debug5 << "Serial compositing!" << std::endl;
+
             //
             // Get the metadata for all patches
             std::vector<imgMetaData> allImgMetaData;          // contains the metadata to composite the image
@@ -976,6 +977,9 @@ avtRayTracer::Execute(void)
 
             int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
             int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
+
+            // Having to adjust the dataset bounds by a arbitrary magic number here. Needs to be sorted out at some point!
+            dbounds[5] = dbounds[5]-0.025;
 
             for (int _y=0; _y<screen[1]; _y++)
                 for (int _x=0; _x<screen[0]; _x++)
@@ -1232,19 +1236,24 @@ avtRayTracer::Execute(void)
         int *regions =  new int[numMPIRanks]();
         
         imgComm.regionAllocation(numMPIRanks, regions);
+        debug5 << "regionAllocation done!" << std::endl;
+
         // if (convexHullOnRCSLIVR)
         //    imgComm.parallelDirectSend(composedData, imgExtents, regions, numMPIRanks, tags, fullImageExtents);
         //else
-            imgComm.parallelDirectSendII(extractor.imgDataHashMap, extractor.imageMetaPatchVector, numPatches, regions, numMPIRanks, tags, fullImageExtents);
 
+        debug5 << "Starting parallel compositing!" << std::endl;
+        imgComm.parallelDirectSendII(extractor.imgDataHashMap, extractor.imageMetaPatchVector, numPatches, regions, numMPIRanks, tags, fullImageExtents);
+
+        debug5 << "Gather Images" << std::endl;
         imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageExtents, tagGather, fullImageExtents);
 
         if (regions != NULL)
             delete []regions;
         regions = NULL;
 
-        debug5 << "Global compositing done!" << std::endl;
 
+        debug5 << "Global compositing done!" << std::endl;
 
 
         //
@@ -1265,7 +1274,7 @@ avtRayTracer::Execute(void)
             imgFinal = new unsigned char[screen[0] * screen[1] * 3];
             imgFinal = whole_image->GetImage().GetRGBBuffer();
 
-
+            
             //
             // Blend in with bounding box
             vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
@@ -1273,6 +1282,9 @@ avtRayTracer::Execute(void)
 
             int compositedImageWidth  = imgComm.finalImageExtents[1] - imgComm.finalImageExtents[0];
             int compositedImageHeight = imgComm.finalImageExtents[3] - imgComm.finalImageExtents[2];
+
+            // Having to adjust the dataset bounds by a arbitrary (magic) number here. Needs to be sorted out at some point!
+            dbounds[5] = dbounds[5]-0.025;
 
             for (int _y=0; _y<screen[1]; _y++)
                 for (int _x=0; _x<screen[0]; _x++)
@@ -1317,7 +1329,7 @@ avtRayTracer::Execute(void)
                                     double tIntersect = std::min( (worldCoordinates[0]-view.camera[0])/ray[0], 
                                                         std::min( (worldCoordinates[1]-view.camera[1])/ray[1], (worldCoordinates[2]-view.camera[2])/ray[2] ) );
 
-                                    if (tMin < tIntersect)
+                                    if (tMin <= tIntersect)
                                     {
                                         float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
                                         imgFinal[index*3 + 0] = ( ((float)__opaqueImageData[index*3 + 0]/255.0) * alpha  +  imgComm.imgBuffer[indexComposited*4 + 0] ) * 255;
