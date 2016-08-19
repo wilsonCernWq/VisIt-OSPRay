@@ -205,19 +205,6 @@ avtMassVoxelExtractor::~avtMassVoxelExtractor()
     if (imgArray != NULL)
         delete []imgArray;
 
-
-    // if (depthBuffer != NULL){
-    //     delete []depthBuffer;
-    //     depthBuffer = NULL;
-    // }
-    
-
-    // if (rgbColorBuffer != NULL){
-    //     delete []rgbColorBuffer;
-    //     rgbColorBuffer = NULL;
-    // }
-
-
     imgArray = NULL;
 }
 
@@ -1930,9 +1917,6 @@ void
 avtMassVoxelExtractor::SampleAlongSegment(const double *origin, 
                                           const double *terminus, int w, int h)
 {
-
-    //debug5 << "avtMassVoxelExtractor::SampleAlongSegment" << endl;
-
     int first = 0;
     int last = 0;
     bool hasIntersections = FindSegmentIntersections(origin, terminus,
@@ -2008,7 +1992,6 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
                 {
                     intesecting = true;
                     posAlongVector = sqrt(distCoordStart_Squared)/sqrt(distOriginTerminus_Squared);
-                    //debug5 << "Pos1: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << "   posAlongVector: " << posAlongVector << std::endl;
                 }
             }
         }
@@ -2333,9 +2316,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
 
             if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
             {
-               
                 int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + (_x-bufferExtents[0]) );
-                // debug5 << _x << ", " << _y <<  ", " << depthBuffer[fullIndex] << "  outside visible range" << std::endl;
 
                 if ( depthBuffer[fullIndex] != 1)  
                 {
@@ -2343,7 +2324,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
                     
                     if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
                     {
-                        //debug5 << _x << ", " << _y << "_worldCoord[2] >= _minZ && _worldCoord[2] < _maxZ" << std::endl;
                         patchDrawn = 1;  
                         
                         imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
@@ -2441,7 +2421,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
             for (int j=0; j<4; j++)
                 dest_rgb[j] = bufferColor[j] * (1.0 - dest_rgb[3]) + dest_rgb[j];
 
-            debug5 << x << ", " << y << "   ~ First: " << first << "  i:  " << i << "   intersect: " << intersect << "  bufferColor: " << bufferColor[0] << ", " << bufferColor[1] << ", " << bufferColor[2] << "   dest_rgb: " << dest_rgb[0] << ", " << dest_rgb[1] << ", " << dest_rgb[2] << ", " << dest_rgb[3] << std::endl;
+            //debug5 << x << ", " << y << "   ~ First: " << first << "  i:  " << i << "   intersect: " << intersect << "  bufferColor: " << bufferColor[0] << ", " << bufferColor[1] << ", " << bufferColor[2] << "   dest_rgb: " << dest_rgb[0] << ", " << dest_rgb[1] << ", " << dest_rgb[2] << ", " << dest_rgb[3] << std::endl;
             break;
         }
 

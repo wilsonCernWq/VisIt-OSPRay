@@ -131,7 +131,6 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     const int            *GetScreen(void)         { return screen; };
 
     void                  blendImages(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2]);
-    void                  blendDepths(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2]);
     void                  SetKernelBasedSampling(bool v) { kernelBasedSampling = v; };
 
     void                  SetLighting(bool l) {lighting = l; };

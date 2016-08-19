@@ -205,10 +205,7 @@ class AVTFILTERS_API avtSamplePointExtractor
     void                      delImgPatches();                                                        // deletes patches
 
 
-    // TODO: Make that just a pointer instead of copy!!!
-    //void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=new float[size]; for (int i=0; i<size; i++) depthBuffer[i]=_zBuffer[i]; }
-    //void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
-
+    // Set background buffer
     void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=_zBuffer; }
     void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=_colorBuffer; };
     void                      setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }

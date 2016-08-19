@@ -328,6 +328,18 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int bl
         }
 }
 
+
+// ****************************************************************************
+//  Method: avtImgCommunicator::
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
 void 
 avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4])
 {
@@ -354,6 +366,18 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int bl
 }
 
 
+
+// ****************************************************************************
+//  Method: avtImgCommunicator::
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
 void 
 avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
@@ -387,6 +411,19 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float 
         }
 }
 
+
+
+// ****************************************************************************
+//  Method: avtImgCommunicator::
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
 void 
 avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
@@ -544,8 +581,18 @@ avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDe
 
 
 
+
+// ****************************************************************************
+//  Method: avtImgCommunicator::
 //
-// Serial Direct Send
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
 void 
 avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height)
 {
@@ -691,8 +738,17 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 
 
 
+// ****************************************************************************
+//  Method: avtImgCommunicator::
 //
-// Parallel Direct Send
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
 void 
 avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
@@ -1013,7 +1069,17 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
 
 
 
-
+// ****************************************************************************
+//  Method: avtImgCommunicator::
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
 int 
 avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int regionHeight, int &from, int &to)
 {
@@ -1031,8 +1097,19 @@ avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int re
 }
 
 
+
+
+// ****************************************************************************
+//  Method: avtImgCommunicator::
 //
-// Parallel Direct Send 
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
 void 
 avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
@@ -1210,7 +1287,7 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
         infoBufferSize += recvInfoATABuffer[i*2 + 0];   // number of patches per region
         dataBufferSize += recvInfoATABuffer[i*2 + 1];   // area per region
 
-        debug5 << "From: " << i << " # patches: " << recvInfoATABuffer[i*2 + 0] << std::endl;
+        //debug5 << "From: " << i << " # patches: " << recvInfoATABuffer[i*2 + 0] << std::endl;
 
         if (i == my_id)
             continue;
@@ -1438,7 +1515,17 @@ avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHash
 }
 
 
-
+// ****************************************************************************
+//  Method: avtImgCommunicator::
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
 void 
 avtImgCommunicator::gatherImages(int regionGather[], int numRanksWithData, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4])
 {

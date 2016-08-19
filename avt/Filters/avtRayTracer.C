@@ -347,33 +347,13 @@ avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2], float *dst,
         }
 }
 
-void 
-avtRayTracer::blendDepths(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2])
-{
-    for (int _y=0; _y<dimsSrc[1]; _y++)
-        for (int _x=0; _x<dimsSrc[0]; _x++)
-        {
-            int startingX = posSrc[0];
-            int startingY = posSrc[1]; 
-
-            if ((startingX + _x) > (posDst[0]+dimsDst[0]))
-                continue;
-
-            if ((startingY + _y) > (posDst[1]+dimsDst[1]))
-                continue;
-            
-            int subImgIndex = dimsSrc[0]*_y + _x;                                     // index in the subimage 
-            int bufferIndex = ( (startingY+_y - posDst[1])*dimsDst[0]  + (startingX+_x - posDst[0]) );    // index in the big buffer
-
-            dst[bufferIndex] = std::max(dst[bufferIndex], src[subImgIndex]);
-        }
-}
 
 
 // ****************************************************************************
 //  Method: avtRayTracer::unProject
 //
 //  Purpose:
+//      Convert from screen coordinates to world coordinates
 //
 //  Programmer: Pascal Grosset
 //  Creation:   August 14, 2016
@@ -412,6 +392,7 @@ avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3], i
 //  Method: avtRayTracer::project
 //
 //  Purpose:
+//      Convert world coordinates to screen coordinates
 //
 //  Programmer: Pascal Grosset
 //  Creation:   August 14, 2016
@@ -455,6 +436,7 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int
 //  Method: avtRayTracer::project3Dto2D
 //
 //  Purpose:
+//          Compute the extents of a volume
 //
 //  Programmer: Pascal Grosset
 //  Creation:   August 14, 2016
@@ -514,6 +496,7 @@ avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatr
 //  Method: avtRayTracer::checkInBounds
 //
 //  Purpose:
+//       Checks whether a coordinate value (coord) falls into a volume (volBounds)  
 //
 //  Programmer: 
 //  Creation:   
@@ -682,12 +665,9 @@ avtRayTracer::Execute(void)
     //
     // Ray casting: SLIVR ~ Before Rendering
     //
-
     double dbounds[6];  // Extents of the volume in world coordinates
     vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
 
-
-    // TODO: Deallocations!!!
     vtkImageData  *__opaqueImageVTK = NULL;
     unsigned char *__opaqueImageData = NULL;
     float         *__opaqueImageZB = NULL;
@@ -773,7 +753,12 @@ avtRayTracer::Execute(void)
         // Projection: http://www.codinglabs.net/article_world_view_projection_matrix.aspx
         vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
 
-        // Because I want the clip space z coordinates to be between -1 and 1 instead of what VTK gives (nearz, farz)
+
+        // The Z buffer that is passed from visit is in clip scape with z limits of -1 and 1 
+        // (http://www.codinglabs.net/article_world_view_projection_matrix.aspx). However, using VTK, the
+        // z limits are withing nearz and farz. 
+        // (https://fossies.org/dox/VTK-7.0.0/classvtkCamera.html#a77e5d3a6e753ae4068f9a3d91267d0eb)
+        //  So, the projection matrix from VTK is hijacked here and adjusted to be within -1 and 1 too
         if (!view.orthographic)
         {
             p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
@@ -800,17 +785,16 @@ avtRayTracer::Execute(void)
         p->Delete();
 
 
+
         //
-        // Image extents
+        // Get the full image extents of the volume
         double depthExtents[2];
         
         GetSpatialExtents(dbounds);
-        // TODO comment
         project3Dto2D(dbounds, screen[0], screen[1], pvm,  fullImageExtents, depthExtents);
 
-        debug5 << "Full data extents: " << dbounds[0] << ", " << dbounds[1] << "    " << dbounds[2] << ", " << dbounds[3] << "    " << dbounds[4] << ", " << dbounds[5] << std::endl;
+        //debug5 << "Full data extents: " << dbounds[0] << ", " << dbounds[1] << "    " << dbounds[2] << ", " << dbounds[3] << "    " << dbounds[4] << ", " << dbounds[5] << std::endl;
         //debug5 << "fullImageExtents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "     " << fullImageExtents[2] << ", " << fullImageExtents[3] << std::endl;
-
 
         if (parallelOn == false)
             extractor.SetRayCastingSLIVRParallel(true);
@@ -865,10 +849,8 @@ avtRayTracer::Execute(void)
 
     debug5 << "Raytracing setup done! " << std::endl;
 
-
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
-
 
     debug5 << "Raytracing rendering done! " << std::endl;
 
@@ -910,7 +892,6 @@ avtRayTracer::Execute(void)
             // Sort with the largest z first
             std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
 
-            //debug5 << "Sorting done" << endl;
 
 
             //
@@ -928,8 +909,6 @@ avtRayTracer::Execute(void)
                 tempImgData.imagePatch = NULL;
                 tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
                 extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
-
-                //writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(i), tempImgData.imagePatch, currentPatch.dims[0], currentPatch.dims[1]);
 
                 for (int _y=0; _y<currentPatch.dims[1]; _y++)
                     for (int _x=0; _x<currentPatch.dims[0]; _x++)
@@ -962,9 +941,7 @@ avtRayTracer::Execute(void)
             }
             allImgMetaData.clear();
 
-            //debug5 << "Images blended" << endl;
-            //writeArrayToPPM("/home/pascal/Desktop/debugImages/localBlended_", composedData, renderedWidth, renderedHeight);
-            
+
 
             // 
             // Create image for visit to display
@@ -980,7 +957,7 @@ avtRayTracer::Execute(void)
 
 
             //
-            // Blend in with bounding box
+            // Blend in with bounding box and other visit plots
             vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
             vtkMatrix4x4::Invert(pvm,Inversepvm);
 
@@ -1098,12 +1075,11 @@ avtRayTracer::Execute(void)
         }
 
 
-        debug5 << "Parallel compositing" << std::endl;
-
         //
         // Parallel
         //
 
+        debug5 << "Parallel compositing" << std::endl;
         int  timingCompositinig = visitTimer->StartTimer();
 
         //
@@ -1113,7 +1089,7 @@ avtRayTracer::Execute(void)
 
 
         int imgExtents[4] = {0,0,0,0}; //minX, maxX,  minY, maxY 
-        int imgSize[2];             // x, y
+        int imgSize[2];                 // x, y
         float *composedData = NULL;
         float *localPatchesDepth = NULL;
 
@@ -1133,11 +1109,11 @@ avtRayTracer::Execute(void)
             imgSize[0] = imgExtents[1]-imgExtents[0];
             imgSize[1] = imgExtents[3]-imgExtents[2];
 
-            debug5 << "i: " << i << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << 
-                                 "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
+            //debug5 << "i: " << i << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << 
+            //                     "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
         }
 
-
+        // Not ready yet!
         convexHullOnRCSLIVR = false;     // TEMP
         if (convexHullOnRCSLIVR)
         {
@@ -1181,7 +1157,7 @@ avtRayTracer::Execute(void)
             imgSize[1] = imgExtents[3]-imgExtents[2];
 
 
-            //debug5 << "Number of patches: " << numPatches << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << 
+            // debug5 << "Number of patches: " << numPatches << " image (minX, maxX   minY , maxY): " << imgExtents[0] << ", " << imgExtents[1] << "    " << imgExtents[2] << ", " << imgExtents[3] << 
             //                     "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
             
 
@@ -1267,8 +1243,6 @@ avtRayTracer::Execute(void)
         imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageExtents, tagGather, fullImageExtents);
 
 
-        //
-
 
         //
         // Some cleanup
@@ -1305,14 +1279,12 @@ avtRayTracer::Execute(void)
 
             
             //
-            // Blend in with bounding box
+            // Blend in with bounding box and other visit plots
             vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
             vtkMatrix4x4::Invert(pvm,Inversepvm);
 
             int compositedImageWidth  = imgComm.finalImageExtents[1] - imgComm.finalImageExtents[0];
             int compositedImageHeight = imgComm.finalImageExtents[3] - imgComm.finalImageExtents[2];
-
-            //writeArrayToPPM("/home/pascal/Desktop/compositedImage", imgComm.imgBuffer, compositedImageWidth, compositedImageHeight);
 
             // Having to adjust the dataset bounds by a arbitrary (magic) number here. Needs to be sorted out at some point!
             dbounds[5] = dbounds[5]-0.025;
