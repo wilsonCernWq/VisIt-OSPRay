@@ -1043,14 +1043,18 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
 //
 // **************************************************************************
 int 
-avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int regionHeight, int &from, int &to)
+avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int regionHeight, int numRegions, int &from, int &to)
 {
+    debug5 << "regionHeight: " << regionHeight << "  yOffset: " << yOffset << "   patchExtents[2]: " << patchExtents[2] << " patchExtents[3]" << patchExtents[3] << std::endl;
     from = (patchExtents[2]-yOffset)/regionHeight;
     to = (patchExtents[3]-yOffset)/regionHeight;
     //debug5 << "From: " << from << "  to: " << to << std::endl;
 
     if ( (patchExtents[3]-yOffset)%regionHeight == 0)
         to = to-1;
+
+    if (to >= numRegions)
+        to = numRegions-1;
 
     if (patchExtents[1]-patchExtents[0] <=0 || patchExtents[3]-patchExtents[2] <=0)
         return 0;
@@ -1099,6 +1103,7 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
     int width =  fullImageExtents[1]-fullImageExtents[0];
     int height = fullImageExtents[3]-fullImageExtents[2];
 
+    debug5 << "Computing regions" << std::endl;
 
     //
     // Region boundaries
@@ -1117,6 +1122,7 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
     int sizeOneBuffer = std::max(regionHeight,lastRegionHeight) * width * 4;
 
 
+    debug5 << "Determining patches" << std::endl;
 
     //
     // Determine how many patches and pixel to send to each region
@@ -1136,6 +1142,7 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
     int totalSendBufferSize = 0;
     for (int i=0; i<numPatches; i++)
     {
+        debug5 << i << std::endl;
         int _patchExtents[4];
         imgMetaData temp;
         temp = imageMetaPatchVector.at(i);
@@ -1148,10 +1155,11 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
         std::multimap<int, imgData>::iterator it = imgDataHashMap.find( i );
 
         int from, to;
-        int numRegionIntescection = findRegionsForPatch(_patchExtents, fullImageExtents[2], regionHeight, from, to);
+        int numRegionIntescection = findRegionsForPatch(_patchExtents, fullImageExtents[2], regionHeight, numRegions, from, to);
         for (int j=from; j<=to; j++)
             numPatchesPerRegion[j]++;
 
+        debug5 << from << ", " << to << std::endl;
 
         for (int partition=from; partition<=to; partition++)
         {
@@ -1178,7 +1186,7 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
     int numRegionsWithData = numOfRegions.size();
 
 
-
+    debug5 << "Create buffers" << std::endl;
 
     // 
     // Copy the data for each region for each patch
