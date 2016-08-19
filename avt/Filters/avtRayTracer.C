@@ -1237,7 +1237,7 @@ avtRayTracer::Execute(void)
         //else
 
         debug5 << "Starting parallel compositing!" << std::endl;
-        imgComm.parallelDirectSendII(extractor.imgDataHashMap, extractor.imageMetaPatchVector, numPatches, regions, numMPIRanks, tags, fullImageExtents);
+        imgComm.parallelDirectSendManyPatches(extractor.imgDataHashMap, extractor.imageMetaPatchVector, numPatches, regions, numMPIRanks, tags, fullImageExtents);
 
         debug5 << "Gather Images" << std::endl;
         imgComm.gatherImages(regions, numMPIRanks, imgComm.intermediateImage, imgComm.intermediateImageExtents, imgComm.intermediateImageExtents, tagGather, fullImageExtents);
@@ -1454,7 +1454,8 @@ avtRayTracer::Execute(void)
           
             for (int p = 0 ; p < numpixels ; p++)
             {
-                // We want the value to be between -1 and 1.
+                // The z value in clip space in the depth buifer is between 0 and 1 while it is normal for that
+                // value to be between -1 and 1 instead. This is corrected here.
                 double val = 2*opaqueImageZB[p]-1.0;
 
                 // Map to actual distance from camera.

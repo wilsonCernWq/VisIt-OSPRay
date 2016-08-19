@@ -87,11 +87,6 @@ class avtImgCommunicator
     int my_id;
     bool compositingDone;
 
-    unsigned char background[3];
-
-
-
-    int getDataPatchID(int procID, int patchID);
    
     void placeInImage(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
     void colorImage(float *& srcImage, int widthSrc, int heightSrc, float _color[4]);
@@ -140,7 +135,7 @@ public:
     int GetMyId(){ return my_id;};
 
     float clamp(float x){ return std::min( std::max(x, 0.0f), 1.0f); }
-    void setBackground(unsigned char _background[3]){ for (int i=0; i<3; i++) background[i] = _background[i]; }
+
     
 
     void initImage(int sizeX, int sizeY, float color[4]);
@@ -151,8 +146,9 @@ public:
     void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
 
     void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);
+    void parallelDirectSendManyPatches(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4]);
+
     void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4]);
-    void parallelDirectSendII(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4]);
 };
 
 
