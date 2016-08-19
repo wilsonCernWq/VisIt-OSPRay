@@ -852,11 +852,8 @@ avtSamplePointExtractor::delImgPatches(){
         if ((*it).second.imagePatch != NULL)
             delete [](*it).second.imagePatch;
 
-        if ((*it).second.imageDepth != NULL)
-            delete [](*it).second.imageDepth;
-
         (*it).second.imagePatch = NULL;
-        (*it).second.imageDepth = NULL;
+;
     }
 
     imgDataHashMap.clear();
@@ -886,9 +883,7 @@ avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
     memcpy(tempImgData.imagePatch,it->second.imagePatch,imageMetaPatchVector[patchId].dims[0] * 4 * imageMetaPatchVector[patchId].dims[1] * sizeof(float));
 
     delete [](*it).second.imagePatch;
-    delete [](*it).second.imageDepth;
     it->second.imagePatch = NULL;
-    it->second.imageDepth = NULL;
 }
 
 
@@ -1118,11 +1113,11 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         }
 
 
-        debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample extract ...  " << num << std::endl; 
+        //debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample extract ...  " << num << std::endl; 
 
         massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
 
-        debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample extract done!" << num << std::endl; 
+        //debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample extract done!" << num << std::endl; 
 
         //
         // Get rendering results

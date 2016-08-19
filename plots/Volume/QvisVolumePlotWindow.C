@@ -1267,7 +1267,6 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
         resampleGroup->setEnabled(false);
         raycastingGroup->setVisible(true);
         UpdateLowGradientGroup(true);
-        //materialProperties->setEnabled(volumeAtts->GetSampling()==VolumeAttributes::Trilinear && volumeAtts->GetLightingFlag());
         materialProperties->setEnabled(volumeAtts->GetSampling()==VolumeAttributes::Trilinear);
         EnableSamplingMethods(true);
         samplesPerRayWidget->setEnabled(volumeAtts->GetSampling()!=VolumeAttributes::Trilinear);
@@ -1293,7 +1292,6 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
     case VolumeAttributes::SLIVR:
         EnableSLIVRGroup();
         UpdateLowGradientGroup(false);
-        //materialProperties->setEnabled(volumeAtts->GetLightingFlag());
         materialProperties->setEnabled(true);
         // Enable selected transfer function widget.
         tfTabs->setTabEnabled(1, volumeAtts->GetTransferFunctionDim()==1);
@@ -1305,7 +1303,6 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
         resampleGroup->setEnabled(false);
         raycastingGroup->setVisible(false);
         UpdateLowGradientGroup(false);
-        //materialProperties->setEnabled(volumeAtts->GetRendererType()==VolumeAttributes::RayCastingSLIVR && volumeAtts->GetLightingFlag());
         materialProperties->setEnabled(volumeAtts->GetRendererType()==VolumeAttributes::RayCastingSLIVR);
         EnableSamplingMethods(true);
         samplesPerRayWidget->setEnabled(volumeAtts->GetRendererType()!=VolumeAttributes::RayCastingSLIVR);

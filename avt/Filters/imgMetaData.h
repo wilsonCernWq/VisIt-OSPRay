@@ -85,7 +85,6 @@ struct imgData
     int patchNumber;    // id of the patch on that processor  - with procId, acts as a key
 
     float *imagePatch;  // the image data - RGBA
-    float *imageDepth;  // depth
 
     bool operator==(const imgData &a){
         return (patchNumber == a.patchNumber);

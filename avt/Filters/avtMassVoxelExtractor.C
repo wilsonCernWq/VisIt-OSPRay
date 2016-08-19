@@ -1949,34 +1949,7 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
     int intersect = -1;
     float posAlongVector = 0;
 
-    if (rayCastingSLIVR)
-    {
-        int screenX = bufferExtents[1] - bufferExtents[0];
-        int screenY = bufferExtents[3] - bufferExtents[2];
-
-        int _index = h*screenY + w;
-
-        if (depthBuffer[_index] != 1)  // There is some other things to blend with at this location ... 
-        {
-            float normalizedDepth = depthBuffer[_index]*2 - 1;  // switching from (0 - 1) to (-1 - 1)
-            if ( (normalizedDepth >= renderingDepthsExtents[0]) && (normalizedDepth <= renderingDepthsExtents[1]) )  // ... and it's within this patch
-            {
-                rcSLIVRBufferMerge = true;
-                unProject(w,h, depthBuffer[_index], _worldOpaqueCoordinates, fullImgWidth, fullImgHeight);
-
-                float distOriginTerminus_Squared = (origin[0]-terminus[0])*(origin[0]-terminus[0]) + (origin[1]-terminus[1])*(origin[1]-terminus[1]) + (origin[2]-terminus[2])*(origin[2]-terminus[2]);
-                float distCoordOrigin_Squared = (_worldOpaqueCoordinates[0]-origin[0])*(_worldOpaqueCoordinates[0]-origin[0]) + (_worldOpaqueCoordinates[1]-origin[1])*(_worldOpaqueCoordinates[1]-origin[1]) + (_worldOpaqueCoordinates[2]-origin[2])*(_worldOpaqueCoordinates[2]-origin[2]);
-
-                if (distCoordOrigin_Squared < distOriginTerminus_Squared){     // lies along the vector
-                    intesecting = true;
-                    posAlongVector = distCoordOrigin_Squared/distOriginTerminus_Squared;
-                }
-
-                // // position where it happens
-                //debug5 << "Pos: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << std::endl;
-            }
-        }
-    }
+    
 
 
     bool foundHit = false;
@@ -1993,6 +1966,55 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
 
     double pt[3];
     bool hasSamples = false;
+
+
+
+    if (rayCastingSLIVR)
+    {
+        int screenX = bufferExtents[1] - bufferExtents[0];
+        int screenY = bufferExtents[3] - bufferExtents[2];
+
+        int _index = h*screenY + w;
+
+        if (depthBuffer[_index] != 1)  // There is some other things to blend with at this location ... 
+        {
+            float normalizedDepth = depthBuffer[_index]*2 - 1;  // switching from (0 - 1) to (-1 - 1)
+            if ( (normalizedDepth >= renderingDepthsExtents[0]) && (normalizedDepth <= renderingDepthsExtents[1]) )  // ... and it's within this patch
+            {
+                rcSLIVRBufferMerge = true;
+                unProject(w,h, depthBuffer[_index], _worldOpaqueCoordinates, fullImgWidth, fullImgHeight);
+
+               
+
+                double start[3];
+                start[0] = terminus[0];
+                start[1] = terminus[1];
+                start[2] = terminus[2];
+                if (xGoingUp)
+                    start[0] = origin[0];
+
+                if (yGoingUp)
+                    start[1] = origin[1];
+
+                if (zGoingUp)
+                    start[1] = origin[2];
+
+                float distOriginTerminus_Squared = (origin[0]-terminus[0])*(origin[0]-terminus[0]) + (origin[1]-terminus[1])*(origin[1]-terminus[1]) + (origin[2]-terminus[2])*(origin[2]-terminus[2]);
+                float distCoordStart_Squared = (_worldOpaqueCoordinates[0]-start[0])*(_worldOpaqueCoordinates[0]-start[0]) + (_worldOpaqueCoordinates[1]-start[1])*(_worldOpaqueCoordinates[1]-start[1]) + (_worldOpaqueCoordinates[2]-start[2])*(_worldOpaqueCoordinates[2]-start[2]);
+
+
+                if (distCoordStart_Squared < distOriginTerminus_Squared){     // lies along the vector
+                    intesecting = true;
+                    posAlongVector = sqrt(distCoordStart_Squared)/sqrt(distOriginTerminus_Squared);
+                    debug5 << "Pos1: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << "   posAlongVector: " << posAlongVector << std::endl;
+                }
+
+                // position where it happens
+                //debug5 << "Pos2: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << std::endl;
+            }
+        }
+    }
+
 
 
  
@@ -2142,8 +2164,10 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
 
     //debug5 << "First: " << first << "  last: " << last << std::endl;
 
-    if (intesecting)
+    if (intesecting){
         intersect = posAlongVector * (last-first) + first;
+        debug5 << "intersect: " << intersect << "   First: " << first << "  last: " << last << std::endl;
+    }
 
     if (hasSamples)
         if (rayCastingSLIVR)
@@ -2151,6 +2175,7 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
         else
             SampleVariable(first, last, w, h);
 }
+
 
 
 
@@ -2217,7 +2242,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
     coordinates[6][0] = X[dims[0]-1];   coordinates[6][1] = Y[dims[1]-1];   coordinates[6][2] = Z[dims[2]-1];
     coordinates[7][0] = X[0];           coordinates[7][1] = Y[dims[1]-1];   coordinates[7][2] = Z[dims[2]-1];
 
-    debug5 << "Extents - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] << "   Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << "    ";
+    //debug5 << "Extents - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] << "   Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << "    ";
 
 
     //
@@ -2273,9 +2298,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
 
             if (renderingDepthsExtents[1] < tempZ)      // max z
                 renderingDepthsExtents[1] = tempZ;
-        }
-
-        //debug5 << i << " _clipSpaceZ: " <<  tempZ << std::endl;
+        };
     }
 
     renderingAreaExtents[0] = xMin;
@@ -2311,13 +2334,15 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
 
             if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
             {
-                int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[3]-bufferExtents[2]) + (_x-bufferExtents[0]) );
+                int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + (_x-bufferExtents[0]) );
                 if ( depthBuffer[fullIndex] != 1)  
                 {
-                    float _minZ = std::min(renderingDepthsExtents[0], renderingDepthsExtents[1]);
-                    float _maxZ = std::max(renderingDepthsExtents[0], renderingDepthsExtents[1]);
-
-                    if ( depthBuffer[fullIndex] >= _minZ && depthBuffer[fullIndex] < _maxZ)     // within the range
+                    double _minZ = std::min(Z[0], Z[dims[2]-1]);
+                    double _maxZ = std::max(Z[0], Z[dims[2]-1]);
+                    double _worldCoord[3];
+                    unProject(_x,_y, depthBuffer[fullIndex]*2 - 1, _worldCoord,   fullImgWidth, fullImgHeight);
+                    
+                    if ( _worldCoord[2] >= _minZ && _worldCoord[2] < _maxZ)
                     {
                         patchDrawn = 1;  
                         
@@ -2344,8 +2369,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
                 SampleAlongSegment(origin, terminus, _x, _y);             // Go get the segments along this ray and store them in 
             }
         }
-
-    //debug5 << "Deallocate memory" << std::endl;
 
     //
     // Deallocate memory if not used
@@ -2407,17 +2430,18 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
         // If we intersect a value in the z buffer
         if (i == intersect) 
         {
-            int fullIndex = (y * (bufferExtents[3]-bufferExtents[2]) + x) * 3.0;
+            int fullIndex = (y * (bufferExtents[1]-bufferExtents[0]) + x) * 3.0;
 
-            float bufferColor[3];
+            float bufferColor[4];
             bufferColor[0] = rgbColorBuffer[fullIndex + 0] / 255.0;
             bufferColor[1] = rgbColorBuffer[fullIndex + 1] / 255.0;
             bufferColor[2] = rgbColorBuffer[fullIndex + 2] / 255.0;
             bufferColor[3] = 1.0;
 
             for (int j=0; j<4; j++)
-                dest_rgb[i] = bufferColor[i] * (1.0 - dest_rgb[3]) + dest_rgb[i];
+                dest_rgb[j] = bufferColor[j] * (1.0 - dest_rgb[3]) + dest_rgb[j];
 
+            debug5 << "First: " << first << "  i:  " << i << "   intersect: " << intersect << "  bufferColor: " << bufferColor[0] << ", " << bufferColor[1] << ", " << bufferColor[2] << "   dest_rgb: " << dest_rgb[0] << ", " << dest_rgb[1] << ", " << dest_rgb[2] << ", " << dest_rgb[3] << std::endl;
             break;
         }
 
