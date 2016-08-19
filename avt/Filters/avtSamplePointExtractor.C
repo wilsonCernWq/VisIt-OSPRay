@@ -266,16 +266,16 @@ avtSamplePointExtractor::~avtSamplePointExtractor()
     }
 
 
-    if (depthBuffer != NULL){
-        delete []depthBuffer;
-        depthBuffer = NULL;
-    }
+    // if (depthBuffer != NULL){
+    //     delete []depthBuffer;
+    //     depthBuffer = NULL;
+    // }
     
 
-    if (rgbColorBuffer != NULL){
-        delete []rgbColorBuffer;
-        rgbColorBuffer = NULL;
-    }
+    // if (rgbColorBuffer != NULL){
+    //     delete []rgbColorBuffer;
+    //     rgbColorBuffer = NULL;
+    // }
     
 
     delImgPatches();

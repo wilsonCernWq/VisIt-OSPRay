@@ -204,6 +204,28 @@ inline void writeOutputToFileByLine(std::string filename, float * data, int dimX
     outputFile.close();
 }
 
+inline void writeDepthBufferToPPM( std::string filename , float * data, int dimX, int dimY )
+{
+    std::ofstream outputFile( (filename+ ".ppm").c_str(), std::ios::out | std::ios::binary);
+    outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n";
+ 
+    for (int y=0; y<dimY; ++y)
+    {
+        for (int x=0; x<dimX; ++x)
+        {
+            int index = (y * dimX + x);
+ 
+            char color[3];
+            color[0] = data[index] * 255;  // red
+            color[1] = data[index] * 255;  // green
+            color[2] = data[index] * 255;  // blue
+            outputFile.write(color,3);
+        }
+    }
+ 
+    outputFile.close();
+}
+
 
 inline void writeArrayToPPM( std::string filename , float * image, int dimX, int dimY )
 {

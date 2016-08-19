@@ -206,16 +206,16 @@ avtMassVoxelExtractor::~avtMassVoxelExtractor()
         delete []imgArray;
 
 
-    if (depthBuffer != NULL){
-        delete []depthBuffer;
-        depthBuffer = NULL;
-    }
+    // if (depthBuffer != NULL){
+    //     delete []depthBuffer;
+    //     depthBuffer = NULL;
+    // }
     
 
-    if (rgbColorBuffer != NULL){
-        delete []rgbColorBuffer;
-        rgbColorBuffer = NULL;
-    }
+    // if (rgbColorBuffer != NULL){
+    //     delete []rgbColorBuffer;
+    //     rgbColorBuffer = NULL;
+    // }
 
 
     imgArray = NULL;
@@ -1974,18 +1974,19 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
         int screenX = bufferExtents[1] - bufferExtents[0];
         int screenY = bufferExtents[3] - bufferExtents[2];
 
-        int _index = h*screenY + w;
+        int _index = h*screenX + w;
 
         if (depthBuffer[_index] != 1)  // There is some other things to blend with at this location ... 
         {
             float normalizedDepth = depthBuffer[_index]*2 - 1;  // switching from (0 - 1) to (-1 - 1)
+
+            //debug5 << "normalizedDepth: " <<normalizedDepth << "  renderingDepthsExtents[0]: " << renderingDepthsExtents[0] << "   renderingDepthsExtents[1]:" << renderingDepthsExtents[1] << std::endl;
             if ( (normalizedDepth >= renderingDepthsExtents[0]) && (normalizedDepth <= renderingDepthsExtents[1]) )  // ... and it's within this patch
             {
                 rcSLIVRBufferMerge = true;
                 unProject(w,h, depthBuffer[_index], _worldOpaqueCoordinates, fullImgWidth, fullImgHeight);
-
+                //debug5 << "Location: " << w << ", " << h << std::endl;
                
-
                 double start[3];
                 start[0] = terminus[0];
                 start[1] = terminus[1];
@@ -2003,14 +2004,12 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
                 float distCoordStart_Squared = (_worldOpaqueCoordinates[0]-start[0])*(_worldOpaqueCoordinates[0]-start[0]) + (_worldOpaqueCoordinates[1]-start[1])*(_worldOpaqueCoordinates[1]-start[1]) + (_worldOpaqueCoordinates[2]-start[2])*(_worldOpaqueCoordinates[2]-start[2]);
 
 
-                if (distCoordStart_Squared < distOriginTerminus_Squared){     // lies along the vector
+                if (distCoordStart_Squared < distOriginTerminus_Squared)     // lies along the vector
+                {
                     intesecting = true;
                     posAlongVector = sqrt(distCoordStart_Squared)/sqrt(distOriginTerminus_Squared);
-                    debug5 << "Pos1: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << "   posAlongVector: " << posAlongVector << std::endl;
+                    //debug5 << "Pos1: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << "   posAlongVector: " << posAlongVector << std::endl;
                 }
-
-                // position where it happens
-                //debug5 << "Pos2: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << std::endl;
             }
         }
     }
@@ -2324,7 +2323,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
     imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
     imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
 
-    debug5 << "Send rays ~ screen:" << xMin << ", " << xMax << "    "  << yMin << ", " << yMax <<  "   Buffer extents: " << bufferExtents[0] << ", " << bufferExtents[1] << "   " << bufferExtents[2] << ", " << bufferExtents[3] << std::endl;
+    //debug5 << "Send rays ~ screen:" << xMin << ", " << xMax << "    "  << yMin << ", " << yMax <<  "    " << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] <<  "   Buffer extents: " << bufferExtents[0] << ", " << bufferExtents[1] << "   " << bufferExtents[2] << ", " << bufferExtents[3] << std::endl;
 
     for (int _x = xMin ; _x < xMax ; _x++)
         for (int _y = yMin ; _y < yMax ; _y++)
@@ -2334,16 +2333,17 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
 
             if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
             {
+               
                 int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + (_x-bufferExtents[0]) );
+                // debug5 << _x << ", " << _y <<  ", " << depthBuffer[fullIndex] << "  outside visible range" << std::endl;
+
                 if ( depthBuffer[fullIndex] != 1)  
                 {
-                    double _minZ = std::min(Z[0], Z[dims[2]-1]);
-                    double _maxZ = std::max(Z[0], Z[dims[2]-1]);
-                    double _worldCoord[3];
-                    unProject(_x,_y, depthBuffer[fullIndex]*2 - 1, _worldCoord,   fullImgWidth, fullImgHeight);
+                    double clipDepth = depthBuffer[fullIndex]*2 - 1;
                     
-                    if ( _worldCoord[2] >= _minZ && _worldCoord[2] < _maxZ)
+                    if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
                     {
+                        //debug5 << _x << ", " << _y << "_worldCoord[2] >= _minZ && _worldCoord[2] < _maxZ" << std::endl;
                         patchDrawn = 1;  
                         
                         imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
@@ -2441,7 +2441,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
             for (int j=0; j<4; j++)
                 dest_rgb[j] = bufferColor[j] * (1.0 - dest_rgb[3]) + dest_rgb[j];
 
-            debug5 << "First: " << first << "  i:  " << i << "   intersect: " << intersect << "  bufferColor: " << bufferColor[0] << ", " << bufferColor[1] << ", " << bufferColor[2] << "   dest_rgb: " << dest_rgb[0] << ", " << dest_rgb[1] << ", " << dest_rgb[2] << ", " << dest_rgb[3] << std::endl;
+            debug5 << x << ", " << y << "   ~ First: " << first << "  i:  " << i << "   intersect: " << intersect << "  bufferColor: " << bufferColor[0] << ", " << bufferColor[1] << ", " << bufferColor[2] << "   dest_rgb: " << dest_rgb[0] << ", " << dest_rgb[1] << ", " << dest_rgb[2] << ", " << dest_rgb[3] << std::endl;
             break;
         }
 
