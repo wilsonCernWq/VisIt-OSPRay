@@ -61,12 +61,12 @@
 enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::avtImgCommunicator
+//  Method: avtImgCommunicator::
 //
-//  Purpose: Constructor
+//  Purpose:
 //
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
@@ -92,12 +92,12 @@ avtImgCommunicator::avtImgCommunicator()
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::~avtImgCommunicator
+//  Method: avtImgCommunicator::
 //
 //  Purpose:
 //
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
@@ -117,10 +117,30 @@ avtImgCommunicator::~avtImgCommunicator()
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::init
+//  Method: avtImgCommunicator::
 //
 //  Purpose:
-//    initializations go here if needed. Nothing right now. 
+//
+//  Programmer: 
+//  Creation:   
+//
+//  Modifications:
+//
+// ****************************************************************************
+int avtImgCommunicator::getDataPatchID(int procID, int patchID){
+    int sumPatches = 0;
+    for (int i=0; i<procID; i++)
+        sumPatches += processorPatchesCount[i];
+  
+    return (sumPatches+patchID);
+}
+
+
+// ****************************************************************************
+//  Method: avtImgCommunicator::
+//
+//  Purpose:
+//    initialize 
 //
 //  Programmer: Pascal Grosset
 //  Creation: July 2013  
@@ -137,7 +157,7 @@ void avtImgCommunicator::init(){
 //  Method: avtImgCommunicator::
 //
 //  Purpose:
-//    Barrier, useful for debugging 
+//    initialize 
 //
 //  Programmer: Pascal Grosset
 //  Creation: July 2013  
@@ -155,10 +175,9 @@ void avtImgCommunicator::barrier(){
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::getcompositedImage
+//  Method: avtImgCommunicator::
 //
 //  Purpose:
-//      Returns the whole image if needed
 //
 //  Programmer: Pascal Grosset
 //  Creation: July 2013  
@@ -189,14 +208,14 @@ void avtImgCommunicator::getcompositedImage(int imgBufferWidth, int imgBufferHei
 //  Method: avtImgCommunicator::
 //
 //  Purpose:
-//       Fills an image with a specific color
 //
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016 
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
 // ****************************************************************************
+
 
 void 
 avtImgCommunicator::colorImage(float *& srcImage, int widthSrc, int heightSrc, float _color[4])
@@ -213,19 +232,6 @@ avtImgCommunicator::colorImage(float *& srcImage, int widthSrc, int heightSrc, f
         }
 }
 
-
-// ****************************************************************************
-//  Method: avtImgCommunicator::placeInImage
-//
-//  Purpose:
-//      Puts srcImage into dstImage
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016 
-//
-//  Modifications:
-//
-// ****************************************************************************
 
 void 
 avtImgCommunicator::placeInImage(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
@@ -255,13 +261,12 @@ avtImgCommunicator::placeInImage(float * srcImage, int srcExtents[4], float *& d
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::blendWithBackground
+//  Method: avtImgCommunicator::
 //
 //  Purpose:
-//      Blends _image with the backgroundColor
 //
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
@@ -288,10 +293,9 @@ avtImgCommunicator::blendWithBackground(float *_image, int extents[4], float bac
 //  Method: avtImgCommunicator::
 //
 //  Purpose:
-//      Blends tow patches in a front to back manner
 //
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
@@ -324,19 +328,6 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int bl
         }
 }
 
-
-// ****************************************************************************
-//  Method: avtImgCommunicator::
-//
-//  Purpose:
-//      Blends tow patches in a back to front manner
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016 
-//
-//  Modifications:
-//
-// **************************************************************************
 void 
 avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4])
 {
@@ -363,19 +354,6 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int bl
 }
 
 
-
-// ****************************************************************************
-//  Method: avtImgCommunicator::
-//
-//  Purpose:
-//      Blends tow patches in a front to back manner
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016 
-//
-//  Modifications:
-//
-// **************************************************************************
 void 
 avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
@@ -409,20 +387,6 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float 
         }
 }
 
-
-
-// ****************************************************************************
-//  Method: avtImgCommunicator::
-//
-//  Purpose:
-//      Blends tow patches in a back to front manner
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016  
-//
-//  Modifications:
-//
-// **************************************************************************
 void 
 avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
@@ -458,13 +422,12 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float 
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::regionAllocation
+//  Method: avtImgCommunicator::
 //
 //  Purpose:
-//      Arbitrarily allocates regions to MPI ranks
 //
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016 
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
@@ -485,8 +448,8 @@ avtImgCommunicator::regionAllocation(int numMPIRanks, int *& regions)
 //
 //  Purpose:
 //
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
@@ -521,13 +484,12 @@ avtImgCommunicator::updateBoundingBox(int currentBoundingBox[4], int imageExtent
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::gatherDepthAtRoot
+//  Method: avtImgCommunicator::
 //
 //  Purpose:
-//      Used by Serial Direct Send
 //
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016 
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
@@ -581,19 +543,9 @@ avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDe
 } 
 
 
-// ****************************************************************************
-//  Method: avtImgCommunicator::serialDirectSend
+
 //
-//  Purpose:
-//      A very simple compositing that we can fall back to if Parallel direct send is buggy.
-//      Works with convex patches though
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
-//
-//  Modifications:
-//
-// **************************************************************************
+// Serial Direct Send
 void 
 avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height)
 {
@@ -608,6 +560,11 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
     int *patchCountPerRank = NULL;
     float *patchesDepth = NULL;
     gatherDepthAtRoot(numPatches, localPatchesDepth, totalPatches, patchCountPerRank, patchesDepth);
+
+    // debug5 << "Gather done!  totalPatches: " << totalPatches << std::endl;
+    // if (my_id == 0)
+    //     for (int i=0; i<totalPatches; i++)
+    //         debug5 << "patchesDepth[" << i << "]: " << patchesDepth[i] << std::endl; 
 
 
     if (my_id == 0)
@@ -645,6 +602,7 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 
         //
         // Compositing
+        int __index = 0;
         for (std::multimap<float,int>::iterator it=depthRankPatches.begin(); it!=depthRankPatches.end(); ++it)
         {
             int rank = (*it).second;
@@ -658,6 +616,8 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 
                 dstPos[0]  = dstPos[0];                      dstPos[1]  = dstPos[1];
                 dstSize[0] = recvParams[2]-recvParams[0];    dstSize[1] = recvParams[3]-recvParams[1];
+
+                //writeArrayToPPM("/home/pascal/Desktop/debugImages/recv_from_" + toStr(rank), recvImage, recvParams[1]-recvParams[0], recvParams[3]-recvParams[2]);
             }
             else
             {
@@ -671,11 +631,22 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
                 localIndex++;
             }
 
+            //debug5 << "Original extents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
+            //debug5 << "recvParams extents: " << recvParams[0] << ", " << recvParams[1] << ", " << recvParams[2] << ", " << recvParams[3] << std::endl;
+
             blendFrontToBack(recvImage, recvParams, imgBuffer, imgExtents);
+
+            //writeArrayToPPM("/home/pascal/Desktop/debugImages/blended_with_" + toStr(__index), imgBuffer, width, height);
+            //__index++;
         }
+
+
+        //writeArrayToPPM("/home/pascal/Desktop/debugImages/full_" + toStr(__index), imgBuffer, imgExtents[1]-imgExtents[0], imgExtents[3]-imgExtents[2]);
+
         blendWithBackground(imgBuffer, imgExtents, backgroundColor);
 
-        //writeArrayToPPM("/home/pascal/Desktop/debugImages/full_with back_" + toStr(__index), imgBuffer, imgExtents[1]-imgExtents[0], imgExtents[3]-imgExtents[2]);
+        writeArrayToPPM("/home/pascal/Desktop/debugImages/full_with back_" + toStr(__index), imgBuffer, imgExtents[1]-imgExtents[0], imgExtents[3]-imgExtents[2]);
+
     }
     else
     {
@@ -713,25 +684,15 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
     patchCountPerRank = NULL;
     patchesDepth = NULL;
 
+
   #endif
 }
 
 
 
 
-// ****************************************************************************
-//  Method: avtImgCommunicator::parallelDirectSend
 //
-//  Purpose:
-//      Parallel Direct Send rendering that can blend convex patches from each MPI rank.
-//      However, since we are not guaranteed to have convex patches. It's not used.
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016  
-//
-//  Modifications:
-//
-// **************************************************************************
+// Parallel Direct Send
 void 
 avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
@@ -899,10 +860,22 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
 
     //
     // Create buffer for region
+    // int myCompositedRegionExtents[4];
+    // myCompositedRegionExtents[0] = fullImageExtents[0];  myCompositedRegionExtents[1] = fullImageExtents[1];
+    // myCompositedRegionExtents[2] = myStartingHeight;  myCompositedRegionExtents[3] = myEndingHeight;
+
+    // float *myCompositedRegionImg = new float[width * (myEndingHeight-myStartingHeight) * 4]();
+
+
     intermediateImageExtents[0] = fullImageExtents[0];  intermediateImageExtents[1] = fullImageExtents[1];
     intermediateImageExtents[2] = myStartingHeight;     intermediateImageExtents[3] = myEndingHeight;
 
     intermediateImage = new float[width * (myEndingHeight-myStartingHeight) * 4]();
+
+    //writeArrayToPPM("/home/pascal/Desktop/debugImages/initialImg_" + toStr(my_id), intermediateImage, width, (myEndingHeight-myStartingHeight));
+
+   
+    //debug5 << "Recv now!" << std::endl;
 
     int recvImageExtents[4];
     float *recvImageData;
@@ -982,10 +955,18 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
                     
                     blendFrontToBack(recvImageData, recvImageExtents, intermediateImage, intermediateImageExtents);
 
+                    //writeArrayToPPM("/home/pascal/Desktop/debugImages/recv_from_" + toStr(regionVector[index]) + "_at_" + toStr(my_id), recvImageData, recvImageExtents[1]-recvImageExtents[0], recvImageExtents[3]-recvImageExtents[2]);
+                    //writeArrayToPPM("/home/pascal/Desktop/debugImages/composited_AFTER_recv_from_" + toStr(regionVector[index]) + "_at_" + toStr(my_id), intermediateImage, intermediateImageExtents[1]-intermediateImageExtents[0], intermediateImageExtents[3]-intermediateImageExtents[2]);
+
+
+                    //debug5 << "Blend with: " << regionVector[index]  << "   recvImageExtents: " << recvImageExtents[0] << ", " << recvImageExtents[1] << "    " << recvImageExtents[2] << ", " << recvImageExtents[3] << ", "  << std::endl;
+
                     updateBoundingBox(intermediateImageBB, recvImageExtents);
                     numBlends++;
                 }
 
+
+                //debug5 << "intermediateImageBB: " << intermediateImageBB[0] << ", " << intermediateImageBB[1] << "    " << intermediateImageBB[2] << ", " << intermediateImageBB[3] << ", "  << std::endl;
                 countBlend++;
             }
         }
@@ -994,6 +975,8 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
         compositingDone = true;
 
     //debug5 << "PDS blending done" << std::endl;
+    //writeArrayToPPM("/home/pascal/Desktop/debugImages/pds_" + toStr(my_id), intermediateImage, intermediateImageExtents[1]-intermediateImageExtents[0], intermediateImageExtents[3]-intermediateImageExtents[2]);
+
 
     msgBuffer.clear();
 
@@ -1028,24 +1011,32 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
   #endif
 }
 
-
-
-// ****************************************************************************
-//  Method: avtImgCommunicator::findRegionsForPatch
-//
-//  Purpose:
-//      Needed by Parallel Direct Send to determine the regions a patch will overlap
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016  
-//
-//  Modifications:
-//
-// **************************************************************************
-int 
-avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int regionHeight, int numRegions, int &from, int &to)
+int
+avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int regionHeight, int numTotalRegions, int &from, int &to)
 {
-    debug5 << "regionHeight: " << regionHeight << "  yOffset: " << yOffset << "   patchExtents[2]: " << patchExtents[2] << " patchExtents[3]" << patchExtents[3] << std::endl;
+	from = (patchExtents[2]-yOffset)/regionHeight;
+	to = (patchExtents[3]-yOffset)/regionHeight;
+	
+
+	if ( (patchExtents[3]-yOffset)%regionHeight == 0)
+		to = to-1;
+
+	if (from < 0)
+		from = 0;
+
+	if (to >= numTotalRegions)
+		to = to-1;
+
+	if (patchExtents[1]-patchExtents[0] <=0 || patchExtents[3]-patchExtents[2] <=0)
+		return 0;
+	else
+		return ((to - from)+ 1);
+}
+
+/*
+int 
+avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int regionHeight, int &from, int &to)
+{
     from = (patchExtents[2]-yOffset)/regionHeight;
     to = (patchExtents[3]-yOffset)/regionHeight;
     //debug5 << "From: " << from << "  to: " << to << std::endl;
@@ -1053,34 +1044,20 @@ avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int yOffset, int re
     if ( (patchExtents[3]-yOffset)%regionHeight == 0)
         to = to-1;
 
-    if (to >= numRegions)
-        to = numRegions-1;
-
     if (patchExtents[1]-patchExtents[0] <=0 || patchExtents[3]-patchExtents[2] <=0)
         return 0;
     else
         return ((to - from)+ 1);
 }
+*/
 
-
-
-
-// ****************************************************************************
-//  Method: avtImgCommunicator::parallelDirectSendManyPatches
 //
-//  Purpose:
-//      Parallel Direct Send rendering that can blend individual patches
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016 
-//
-//  Modifications:
-//
-// **************************************************************************
+// Parallel Direct Send 
 void 
-avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4])
+avtImgCommunicator::parallelDirectSendII(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
   #ifdef PARALLEL
+    //barrier();
     debug5 << "Parallel Direct Send" << endl;
 
     //
@@ -1103,7 +1080,6 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
     int width =  fullImageExtents[1]-fullImageExtents[0];
     int height = fullImageExtents[3]-fullImageExtents[2];
 
-    debug5 << "Computing regions" << std::endl;
 
     //
     // Region boundaries
@@ -1122,7 +1098,6 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
     int sizeOneBuffer = std::max(regionHeight,lastRegionHeight) * width * 4;
 
 
-    debug5 << "Determining patches" << std::endl;
 
     //
     // Determine how many patches and pixel to send to each region
@@ -1142,7 +1117,6 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
     int totalSendBufferSize = 0;
     for (int i=0; i<numPatches; i++)
     {
-        debug5 << i << std::endl;
         int _patchExtents[4];
         imgMetaData temp;
         temp = imageMetaPatchVector.at(i);
@@ -1159,7 +1133,6 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
         for (int j=from; j<=to; j++)
             numPatchesPerRegion[j]++;
 
-        debug5 << from << ", " << to << std::endl;
 
         for (int partition=from; partition<=to; partition++)
         {
@@ -1186,7 +1159,7 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
     int numRegionsWithData = numOfRegions.size();
 
 
-    debug5 << "Create buffers" << std::endl;
+
 
     // 
     // Copy the data for each region for each patch
@@ -1318,7 +1291,7 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
         recvInfoCount++;
     }
 
-    debug5 << "Async recv setup - numRegionsToRecvFrom: " << numRegionsToRecvFrom << "   recvInfoCount: " << recvInfoCount << endl;
+     debug5 << "Async recv setup - numRegionsToRecvFrom: " << numRegionsToRecvFrom << "   recvInfoCount: " << recvInfoCount << endl;
     debug5 << "SAsync Recv setup" << std::endl;
     //barrier();
     debug5 << "Send setup..." << std::endl;
@@ -1363,7 +1336,7 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
         delete []recvInfoATABuffer;
     recvInfoATABuffer = NULL;
 
-    debug5 << "Buffer deleted" << std::endl;
+    //debug5 << "Buffer deleted" << std::endl;
     //barrier();
     debug5 << "Sorting..." << std::endl;
 
@@ -1485,18 +1458,7 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
 }
 
 
-// ****************************************************************************
-//  Method: avtImgCommunicator::gatherImages
-//
-//  Purpose:
-//      Gather images from Parallel Direct Send
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
-//
-//  Modifications:
-//
-// **************************************************************************
+
 void 
 avtImgCommunicator::gatherImages(int regionGather[], int numRanksWithData, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4])
 {

@@ -265,6 +265,19 @@ avtSamplePointExtractor::~avtSamplePointExtractor()
         arbitrator = NULL;
     }
 
+
+    // if (depthBuffer != NULL){
+    //     delete []depthBuffer;
+    //     depthBuffer = NULL;
+    // }
+    
+
+    // if (rgbColorBuffer != NULL){
+    //     delete []rgbColorBuffer;
+    //     rgbColorBuffer = NULL;
+    // }
+    
+
     delImgPatches();
 }
 
@@ -792,6 +805,14 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 
                 massVoxelExtractor->SetScalarRange(_scalarRange);
                 massVoxelExtractor->SetTFVisibleRange(_tfVisibleRange);
+
+                //debug5 << "_scalarRange[0]: " << _scalarRange[0] << "  _scalarRange[1]: " << _scalarRange[1] << "   _tfRange[0]: " << _tfRange[0] << "  _tfRange[1]: " << _tfRange[1] << "  _tfVisibleRange[0]: " << _tfVisibleRange[0] << "  _tfVisibleRange[1]: " << _tfVisibleRange[1] << std::endl;
+
+                // if ( !((_scalarRange[1] < _tfRange[0]) || (_scalarRange[0] > _tfRange[1])) )
+                //     if ( !((_scalarRange[1] < _tfVisibleRange[0]) || (_scalarRange[0] > _tfVisibleRange[1])) )
+                //     {
+                //     }
+
             }
             
             RasterBasedSample(ds,ci->idx);

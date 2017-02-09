@@ -136,6 +136,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 
     void             SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection[i]=view_direction[i] = vD[i]; }
     void             SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
+    void             SetPanPercentages(double _pan[2]){ panPercentage[0]=_pan[0]; panPercentage[1]=_pan[1]; }
     void             SetDepthExtents(double _depthExtents[2]){ fullVolumeDepthExtents[0]=_depthExtents[0]; fullVolumeDepthExtents[1]=_depthExtents[1]; }
     void             SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
 
@@ -145,12 +146,16 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     void             getComputedImage(float *image);
     void             setProcIdPatchID(int _proc, int _patch){ proc = _proc; patch = _patch; }
 
-    // Set the background information
-    void             setDepthBuffer(float *_zBuffer, int size){ depthBuffer=_zBuffer; }
-    void             setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=_colorBuffer; };
+    // TODO: Make that just a pointer instead of copy!!!
+    // Background information being passed to this
+    // void             setDepthBuffer(float *_zBuffer, int size){ depthBuffer=new float[size]; for (int i=0; i<size; i++) depthBuffer[i]=_zBuffer[i]; }
+    // void             setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
+
+    void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=_zBuffer; }
+    void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=_colorBuffer; };
     void             setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
 
-
+ 
 
   protected:
     bool             gridsAreInWorldSpace;
@@ -158,6 +163,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
     avtViewInfo      view;
     double           aspect;
     double           cur_clip_range[2];
+    double 			 panPercentage[2];
     vtkMatrix4x4    *view_to_world_transform;
     vtkMatrix4x4    *world_to_view_transform;
 

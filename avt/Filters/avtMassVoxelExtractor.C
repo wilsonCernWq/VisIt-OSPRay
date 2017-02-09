@@ -205,6 +205,19 @@ avtMassVoxelExtractor::~avtMassVoxelExtractor()
     if (imgArray != NULL)
         delete []imgArray;
 
+
+    // if (depthBuffer != NULL){
+    //     delete []depthBuffer;
+    //     depthBuffer = NULL;
+    // }
+    
+
+    // if (rgbColorBuffer != NULL){
+    //     delete []rgbColorBuffer;
+    //     rgbColorBuffer = NULL;
+    // }
+
+
     imgArray = NULL;
 }
 
@@ -1917,6 +1930,9 @@ void
 avtMassVoxelExtractor::SampleAlongSegment(const double *origin, 
                                           const double *terminus, int w, int h)
 {
+
+    //debug5 << "avtMassVoxelExtractor::SampleAlongSegment" << endl;
+
     int first = 0;
     int last = 0;
     bool hasIntersections = FindSegmentIntersections(origin, terminus,
@@ -1992,6 +2008,7 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin,
                 {
                     intesecting = true;
                     posAlongVector = sqrt(distCoordStart_Squared)/sqrt(distOriginTerminus_Squared);
+                    //debug5 << "Pos1: " << w << ", " << h << ", " << depthBuffer[_index] << "   world: " << _worldOpaqueCoordinates[0] << ", " << _worldOpaqueCoordinates[1] << ", " << _worldOpaqueCoordinates[2] << "   posAlongVector: " << posAlongVector << std::endl;
                 }
             }
         }
@@ -2316,7 +2333,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
 
             if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
             {
+               
                 int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + (_x-bufferExtents[0]) );
+                // debug5 << _x << ", " << _y <<  ", " << depthBuffer[fullIndex] << "  outside visible range" << std::endl;
 
                 if ( depthBuffer[fullIndex] != 1)  
                 {
@@ -2324,6 +2343,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *rgrid,
                     
                     if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
                     {
+                        //debug5 << _x << ", " << _y << "_worldCoord[2] >= _minZ && _worldCoord[2] < _maxZ" << std::endl;
                         patchDrawn = 1;  
                         
                         imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
@@ -2421,7 +2441,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
             for (int j=0; j<4; j++)
                 dest_rgb[j] = bufferColor[j] * (1.0 - dest_rgb[3]) + dest_rgb[j];
 
-            //debug5 << x << ", " << y << "   ~ First: " << first << "  i:  " << i << "   intersect: " << intersect << "  bufferColor: " << bufferColor[0] << ", " << bufferColor[1] << ", " << bufferColor[2] << "   dest_rgb: " << dest_rgb[0] << ", " << dest_rgb[1] << ", " << dest_rgb[2] << ", " << dest_rgb[3] << std::endl;
+            debug5 << x << ", " << y << "   ~ First: " << first << "  i:  " << i << "   intersect: " << intersect << "  bufferColor: " << bufferColor[0] << ", " << bufferColor[1] << ", " << bufferColor[2] << "   dest_rgb: " << dest_rgb[0] << ", " << dest_rgb[1] << ", " << dest_rgb[2] << ", " << dest_rgb[3] << std::endl;
             break;
         }
 
@@ -2943,6 +2963,10 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _s
     pos2D[0] = round( normDevCoord[0]*(_screenWidth/2.)  + (_screenWidth/2.)  );
     pos2D[1] = round( normDevCoord[1]*(_screenHeight/2.) + (_screenHeight/2.) );
 
+	// add panning
+	pos2D[0] += round(_screenWidth * panPercentage[0]);
+	pos2D[1] += round(_screenHeight * panPercentage[1]);
+
     return normDevCoord[2];
 }
 
@@ -2963,6 +2987,10 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _s
 void 
 avtMassVoxelExtractor::unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height)
 {
+	// remove panning
+	_x -= round(_width * panPercentage[0]);
+	_y -= round(_height * panPercentage[1]);
+
     double worldCoordinates[4] = {0,0,0,1};
     double in[4] = {0,0,0,1};
     in[0] = (_x - _width/2. )/(_width/2.);
@@ -3060,6 +3088,14 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
     //float alpha = 1.0 - pow((1.0-source_rgb[3]),opacityCorrectiong);
     //source_rgb[3] = alpha;
 
+
+	if (dest_rgb[3] >= 0.99)
+	{
+		patchDrawn = 1;
+		return;
+	}
+
+
     // Phong Shading
     if (lighting == true){
         float dir[3];           // The view "right" vector.
@@ -3067,34 +3103,29 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
         dir[0] = -view_direction[0];
         dir[1] = -view_direction[1];
         dir[2] = -view_direction[2];
+
+	normalize(gradient);
+		normalize(dir);
         
         // cos(angle) = a.b;  angle between normal and light
         float normal_dot_light = dot(gradient,dir);   // angle between light and normal;
-        normal_dot_light = std::max(0.0, std::min((double)fabs(normal_dot_light),1.0) );
+	if (normal_dot_light < 0)
+			normal_dot_light = -normal_dot_light;
 
-        // opacity correction
-        float opacityCorrectiong = 0.7;
-        float alpha = 1.0 - pow((1.0-source_rgb[3]),(double)opacityCorrectiong);
-        source_rgb[3] = alpha;
 
         // Calculate color using phong shading
         // I = (I  * ka) + [ (I_i  * kd * (L.N)) + (Ia_i * ks * (R.V)^ns) ]_for each light source i
         // I = (I  * ka) +   (I  * kd*abs(cos(angle))) + (Ia * ks*abs(cos(angle))^ns)
         for (int i=0; i<3; i++)
-            source_rgb[i] = source_rgb[i] * materialProperties[0];                          // I  * ka
+	{
+		source_rgb[i] =  ( (materialProperties[0] + materialProperties[1] * normal_dot_light) * source_rgb[i] ) +
+				( materialProperties[2] * pow((double)normal_dot_light,materialProperties[3]) * source_rgb[3] );
+	}
 
-        for (int i=0; i<3; i++)
-            source_rgb[i] += source_rgb[i] * materialProperties[1] * normal_dot_light;      // I  * kd*abs(cos(angle))
-
-        for (int i=0; i<3; i++)
-            source_rgb[i] += materialProperties[2] * pow((double)normal_dot_light,materialProperties[3]) * source_rgb[3];   // I  * kd*abs(cos(angle))
     }
 
     // front to back compositing
     for (int i=0; i<4; i++){
-        if (source_rgb[i] > 1.0)
-            source_rgb[i] = 1.0;
-        
         dest_rgb[i] = source_rgb[i] * (1.0 - dest_rgb[3]) + dest_rgb[i];
     }
 

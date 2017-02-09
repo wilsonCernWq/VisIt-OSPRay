@@ -187,6 +187,7 @@ class AVTFILTERS_API avtSamplePointExtractor
 
     void                      SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection[i]=view_direction[i] = vD[i]; }
     void                      SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
+void                      SetPanPercentages(double _pan[2]){ panPercentage[0]=_pan[0]; panPercentage[1]=_pan[1]; }
     void                      SetDepthExtents(double _depthExtents[2]){ depthExtents[0]=_depthExtents[0]; depthExtents[1]=_depthExtents[1]; }
     void                      SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); }
 
@@ -205,7 +206,10 @@ class AVTFILTERS_API avtSamplePointExtractor
     void                      delImgPatches();                                                        // deletes patches
 
 
-    // Set background buffer
+    // TODO: Make that just a pointer instead of copy!!!
+    //void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=new float[size]; for (int i=0; i<size; i++) depthBuffer[i]=_zBuffer[i]; }
+    //void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
+
     void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=_zBuffer; }
     void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=_colorBuffer; };
     void                      setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
@@ -274,6 +278,7 @@ class AVTFILTERS_API avtSamplePointExtractor
     double                    viewDirection[3];
     double                    depthExtents[2];
     double                    clipPlanes[2];
+    double                    panPercentage[2];
     vtkMatrix4x4              *modelViewProj;
 
     // lighting & material
