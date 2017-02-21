@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2016, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -332,10 +332,7 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
 
     tableEntries = te;
     transferFn1D = new _RGBA[tableEntries]();
-
-
     minVisibleScalarIndex =  maxVisibleScalarIndex = -1;
-
     for (int i = 0 ; i < tableEntries ; i++)
     {
         double bp = tan(1.570796327 * (0.5 - attenuation*0.49999));
@@ -346,7 +343,6 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
         transferFn1D[i].G = (float)arr[i*4+1]/255.*alpha;
         transferFn1D[i].B = (float)arr[i*4+2]/255.*alpha;
         transferFn1D[i].A = alpha;
-
         if (alpha != 0 && minVisibleScalarIndex == -1){
             minVisibleScalarIndex = i;
             //debug5 << "starting alpha = 0 at i= " << i << std::endl;
@@ -354,9 +350,6 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
 
         //debug5 << i << " : " << transferFn1D[i].R << ", " << transferFn1D[i].G << ", " << transferFn1D[i].B <<  ", " << transferFn1D[i].A << std::endl;
     }
-
-
-
     for (int i=tableEntries-1; i>=0; i--)
     {
         if (transferFn1D[i].A != 0 && maxVisibleScalarIndex == -1){
@@ -368,16 +361,12 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
 
     //debug5 << "minVisibleScalarIndex: " << minVisibleScalarIndex << "   maxVisibleScalarIndex: " << maxVisibleScalarIndex << std::endl;
 
-
     //
     // We need to set the intermediate vars again since the table size has
     // potentially changed.
     //
     SetIntermediateVars();
 }
-
-
-
 // ****************************************************************************
 //  Method: avtOpacityMap::GetMinVisibleScalar
 //
@@ -440,7 +429,6 @@ void avtOpacityMap::computeVisibleRange()
              "  maxVisibleScalarIndex: " << maxVisibleScalarIndex << "   tableEntries: " << tableEntries << 
              "  maxVisibleScalar: " << maxVisibleScalar << "   minVisibleScalar: " << minVisibleScalar << std::endl;
 }
-
 
 // ****************************************************************************
 //  Method: avtOpacityMap::SetTable

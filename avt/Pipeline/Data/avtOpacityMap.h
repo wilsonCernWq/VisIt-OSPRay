@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2016, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -91,7 +91,7 @@ struct _RGBA
 
 class PIPELINE_API avtOpacityMap
 {
-  public:
+public:
                                  avtOpacityMap(int = 1024);
     virtual                     ~avtOpacityMap();
 
@@ -114,26 +114,24 @@ class PIPELINE_API avtOpacityMap
     void                         computeVisibleRange();
 
     inline int                   Quantize(const double &);
-    int                          GetNumberOfTableEntries(void)
-                                                      { return tableEntries; };
+    int                          GetNumberOfTableEntries(void) { return tableEntries; };
 
     float                        QuantizeValF(const double &val);
     int                          QueryTF(double scalarValue, double color[4]);
 
-  protected:
+protected:
     RGBA                        *table;
     _RGBA                       *transferFn1D;
     int                          tableEntries;
 
     double                       max, min;
     double                       range, inverseRange, multiplier;
-
     int                          minVisibleScalarIndex, maxVisibleScalarIndex;
     double                       minVisibleScalar, maxVisibleScalar;    
 
     void                         SetIntermediateVars(void);
 
-  private:
+private:
     // These methods are defined to prevent accidental use of bitwise copy
     // implementations.  If you want to re-define them to do something
     // meaningful, that's fine.

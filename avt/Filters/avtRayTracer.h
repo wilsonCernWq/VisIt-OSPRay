@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2016, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -48,13 +48,13 @@
 #include <avtDatasetToImageFilter.h>
 #include <avtViewInfo.h>
 #include <avtOpacityMap.h>
+
 #include <avtImgCommunicator.h>
 
 #include <map>
 #include <limits>
 
 #include <vtkCamera.h>
-
 class   avtRayFunction;
 class   vtkMatrix4x4;
 
@@ -99,7 +99,6 @@ class   vtkMatrix4x4;
 //    Add method TightenClippingPlanes.
 //
 //    Pascal Grosset, Fri Sep 20 2013
-
 //    Added ray casting slivr & trilinear interpolation
 //
 // ****************************************************************************
@@ -131,8 +130,8 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     const int            *GetScreen(void)         { return screen; };
 
     void                  blendImages(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2]);
-    void                  blendDepths(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2]);
     void                  SetKernelBasedSampling(bool v) { kernelBasedSampling = v; };
+
 
     void                  SetLighting(bool l) {lighting = l; };
     void                  SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
@@ -141,10 +140,8 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
 
     void                  SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
-    
     void                  SetTrilinear(bool t) {trilinearInterpolation = t; };
     void                  SetRayCastingSLIVR(bool _rayCastingSLIVR){ rayCastingSLIVR = _rayCastingSLIVR; };
-
 
   protected:
     avtImgCommunicator    imgComm;
@@ -162,12 +159,13 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     
     bool                  lighting;
     double                lightPosition[4];
+    
     double                lightDirection[3];
     double                materialProperties[4];
     avtOpacityMap         *transferFn1D;
-
     double                view_direction[3];
     double                panPercentage[2];
+
 
     bool                  rayCastingSLIVR;
     bool                  convexHullOnRCSLIVR;
@@ -180,7 +178,6 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  TightenClippingPlanes(const avtViewInfo &view,
                                                 vtkMatrix4x4 *,
                                                 double &, double &);
-
     void project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *_mvp, int _2DExtents[4], double depthExtents[2]);
     double project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, vtkMatrix4x4 *_mvp);
     void unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height, vtkMatrix4x4 *invModelViewProj);

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2016, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -49,10 +49,9 @@
 #include <avtVolume.h>
 #include <avtViewInfo.h>
 #include <avtImgCommunicator.h>
-
+#include <avtOpacityMap.h>
 #include <imgMetaData.h>
 
-#include <avtOpacityMap.h>
 #include <fstream>
 #include <vector>
 #include <map>
@@ -146,104 +145,128 @@ class  avtRayFunction;
 //    Kevin Griffin, Fri Apr 22 16:31:57 PDT 2016
 //    Added support for polygons.
 //
+//    Qi Wu, to be determined
+//    *) unified coding style
+//
 // ****************************************************************************
 
 class AVTFILTERS_API avtSamplePointExtractor 
     : public avtDatasetToSamplePointsFilter
 {
-  public:
+public:
+    // ---
+    // constructor & destructors
+    //
                               avtSamplePointExtractor(int, int, int);
     virtual                  ~avtSamplePointExtractor();
-
+    // ---
+    // inherited functions 
+    //
     virtual const char       *GetType(void)
-                                         { return "avtSamplePointExtractor"; };
+    { return "avtSamplePointExtractor"; };
     virtual const char       *GetDescription(void)
-                                         { return "Extracting sample points";};
-
-    void                      RegisterRayFunction(avtRayFunction *rf)
-                                         { rayfoo = rf; };
-    void                      SendCellsMode(bool);
-    void                      SetRectilinearGridsAreInWorldSpace(bool, 
-                                                   const avtViewInfo &,double);
+    { return "Extracting sample points";};
+    // ---
+    // functions defined locally for this class
+    //
+    // coding style:
+    //   _xx = local variables
+    //    xx = class fields
+    void                      RegisterRayFunction(avtRayFunction *_rf) { rayfoo = _rf; };
     void                      RestrictToTile(int, int, int, int);
+    void                      StartTiling(void) { shouldDoTiling = true; }; // added by Qi: pair with StopTiling
     void                      StopTiling(void) { shouldDoTiling = false; };
-
-    void                      Set3DMode(bool m) { modeIs3D = m; };
+    void                      SendCellsMode(bool);
+    void                      SetRectilinearGridsAreInWorldSpace(bool, const avtViewInfo &,double);
+    void                      Set3DMode(bool _m) { modeIs3D = _m; };
     void                      SetKernelBasedSampling(bool);
     void                      SetJittering(bool);
-
-    void                      SetUpArbitrator(std::string &name, bool min);
-
-    void                      SetTrilinear(bool t) {trilinearInterpolation = t;  };
-    void                      SetRayCastingSLIVR(bool s) {rayCastingSLIVR = s;  };
-    void                      SetRayCastingSLIVRParallel(bool p) {rayCastingSLIVRParallel = p;  };
-
-    void                      SetLighting(bool l) {lighting = l; };
-    void                      SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
-    void                      SetLightDirection(double _lightDir[3]) { for (int i=0;i<3;i++) lightDirection[i]=_lightDir[i]; }
-    void                      SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
-
-    void                      SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
-
-    void                      SetViewDirection(double *vD){ for (int i=0; i<3; i++) viewDirection[i]=view_direction[i] = vD[i]; }
-    void                      SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
-void                      SetPanPercentages(double _pan[2]){ panPercentage[0]=_pan[0]; panPercentage[1]=_pan[1]; }
-    void                      SetDepthExtents(double _depthExtents[2]){ depthExtents[0]=_depthExtents[0]; depthExtents[1]=_depthExtents[1]; }
-    void                      SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); }
-
-    void                      getSpatialExtents(double _spatialExtents[6]){ for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
-    void                      getAvgPatchExtents(double _avgPatchExtents[6]){ for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i]; }
-    void                      getCellDimension(double _cellDimension[6]){ for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i]; }
-
-    void                      getProjectedExents(int _projectedExtents[4]){ for (int i=0; i<4; i++) _projectedExtents[i]=projectedImageExtents[i]; }
-
+    void                      SetUpArbitrator(std::string &, bool);
+    void                      SetTrilinear(bool _t) { trilinearInterpolation = _t; };
+    void                      SetRayCastingSLIVR(bool _s) { rayCastingSLIVR = _s; };
+    void                      SetRayCastingSLIVRParallel(bool _p) { rayCastingSLIVRParallel = _p; };
+    void                      SetLighting(bool _l) { lighting = _l; };
+    void                      SetLightPosition(double _lp[4])
+    { for (int i=0;i<4;i++) { lightPosition[i] = _lp[i]; } }
+    void                      SetLightDirection(double _ld[3])
+    { for (int i=0;i<3;i++) { lightDirection[i] = _ld[i]; } }
+    void                      SetMatProperties(double _matProp[4])
+    { for (int i=0;i<4;i++) { materialProperties[i] = _matProp[i]; } }
+    void                      SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
+    void                      SetViewDirection(double *_vD) 
+    { std::copy(_vD, _vD + 3, viewDirection); }
+	//{ for (int i=0; i<3; i++) { viewDirection[i] = _vD[i]; } }
+    void                      SetCameraPosition(double *_cp) 
+    { std::copy(_cp, _cp + 3, cameraPosition); }
+    void                      SetCameraUpVector(double *_cu) 
+    { std::copy(_cu, _cu + 3, cameraUpVector); }
+    void                      SetClipPlanes(double _camClip[2])
+    { clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
+    void                      SetPanPercentages(double _pan[2])
+    { panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1]; }
+    void                      SetDepthExtents(double _depthExtents[2])
+    { depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1]; }
+    void                      SetMVPMatrix(vtkMatrix4x4 *_mvp)
+    { modelViewProj->DeepCopy(_mvp); }
+    // get functions (Qi) although it works, it is a wrong way of using array/pointer
+    void                      getSpatialExtents(double _spatialExtents[6])
+    { for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
+    void                      getAvgPatchExtents(double _avgPatchExtents[6])
+    { for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i]; }
+    void                      getCellDimension(double _cellDimension[6])
+    { for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i]; }
+    void                      getProjectedExents(int _projectedExtents[4])
+    { for (int i=0; i<4; i++) _projectedExtents[i]=projectedImageExtents[i]; }
+    //
     // Getting image information
-    int                       getTotalAssignedPatches() { return totalAssignedPatches; }              // gets the max number of patches it could have
-    int                       getImgPatchSize(){ return patchCount;};                                 // gets the number of patches
-    imgMetaData               getImgMetaPatch(int patchId){ return imageMetaPatchVector.at(patchId);} // gets the metadata
-    void                      getnDelImgData(int patchId, imgData &tempImgData);                      // gets the image & erase its existence
+    //
+    // gets the max number of patches it could have
+    int                       getTotalAssignedPatches() { return totalAssignedPatches; } 
+    // gets the number of patches
+    int                       getImgPatchSize(){ return patchCount;};
+    // gets the metadata
+    imgMetaData               getImgMetaPatch(int patchId){ return imageMetaPatchVector.at(patchId);}
+    // gets the image & erase its existence
+    void                      getnDelImgData(int patchId, imgData &tempImgData);
+    // deletes patches
+    void                      delImgPatches();
+    // Set background buffer
+    void                      setDepthBuffer(float *_zBuffer, int _size) { depthBuffer = _zBuffer; }
+    void                      setRGBBuffer(unsigned char  *_colorBuffer, int _width, int _height)
+    { rgbColorBuffer = _colorBuffer; };
+    void                      setBufferExtents(int _extents[4])
+    { for (int i=0;i<4; i++) bufferExtents[i] = _extents[i]; }
 
-    void                      delImgPatches();                                                        // deletes patches
+public:
+    typedef std::multimap<int, imgData>::iterator iter_t;
 
-
-    // TODO: Make that just a pointer instead of copy!!!
-    //void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=new float[size]; for (int i=0; i<size; i++) depthBuffer[i]=_zBuffer[i]; }
-    //void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=new unsigned char[width*height*3]; for (int i=0; i<width*height*3; i++) rgbColorBuffer[i]=_colorBuffer[i]; };
-
-    void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=_zBuffer; }
-    void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=_colorBuffer; };
-    void                      setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
-
+public:
     // Output data for RC SLIVR
     std::vector<imgMetaData>    imageMetaPatchVector;
     std::multimap<int, imgData> imgDataHashMap;
-    typedef std::multimap<int, imgData>::iterator iter_t;
 
-  protected:
-    int                       width, height, depth;
+protected:
+    int                       width,       height,       depth;
     int                       currentNode, totalNodes;
-
+    int                       widthMin,    widthMax;
+    int                       heightMin,   heightMax;
     bool                      shouldDoTiling;
-    int                       width_min, width_max;
-    int                       height_min, height_max;
     bool                      modeIs3D;
     bool                      kernelBasedSampling;
-    double                    point_radius;
-
+    double                    pointRadius;
     double                    minMaxSpatialBounds[6];
     double                    avgPatchExtents[3];
     double                    cellDimension[3];
-
-    // Background + other plots
+    // background + other plots
     float                     *depthBuffer;             // depth buffer for the background and other plots
-    unsigned char             *rgbColorBuffer;          // bounding box + pseudo color + ...      
-    int                       bufferExtents[4];         // extents of the buffer( minX, maxX, minY, maxY) 
-
+    unsigned char             *rgbColorBuffer;          // bounding box + pseudo color + ...
+    int                       bufferExtents[4];         // extents of the buffer( minX, maxX, minY, maxY)
+    // attributor
     bool                      shouldSetUpArbitrator;
     std::string               arbitratorVarName;
     bool                      arbitratorPrefersMinimum;
     avtSamplePointArbitrator *arbitrator;
-
+    // different extractors
     avtHexahedronExtractor   *hexExtractor;
     avtHexahedron20Extractor *hex20Extractor;
     avtMassVoxelExtractor    *massVoxelExtractor;
@@ -251,51 +274,44 @@ void                      SetPanPercentages(double _pan[2]){ panPercentage[0]=_p
     avtPyramidExtractor      *pyramidExtractor;
     avtTetrahedronExtractor  *tetExtractor;
     avtWedgeExtractor        *wedgeExtractor;
-
+    // miscellaneous
     bool                      sendCells;
     bool                      jitter;
     avtRayFunction           *rayfoo;
-
     bool                      rectilinearGridsAreInWorldSpace;
     avtViewInfo               viewInfo;
     double                    aspect;
-
     int                       projectedImageExtents[4];
-
     int                       patchCount;
     int                       totalAssignedPatches;
-
-    
-
-
     // triliniear / raycastin SLIVR
     bool                      trilinearInterpolation;
     bool                      rayCastingSLIVR;
     bool                      rayCastingSLIVRParallel;
-
     // Camera stuff
-    double                    view_direction[3];
-    double                    viewDirection[3];
+    double                    viewDirection[3];  // this is camera direction also
+    double                    cameraPosition[3]; // (Qi) camera location in world coordinate
+    double                    cameraUpVector[3]; // (Qi) camera up vector direction
     double                    depthExtents[2];
     double                    clipPlanes[2];
     double                    panPercentage[2];
     vtkMatrix4x4              *modelViewProj;
-
     // lighting & material
     bool                      lighting;
     double                    lightPosition[4];
     double                    lightDirection[3];
     double                    materialProperties[4];
     avtOpacityMap             *transferFn1D;
-
-
     virtual void              Execute(void);
     virtual void              PreExecute(void);
     virtual void              PostExecute(void);
     virtual void              ExecuteTree(avtDataTree_p);
     void                      SetUpExtractors(void);
     imgMetaData               initMetaPatch(int id);    // initialize a patch
+    // Qi modification
+    // ...
 
+protected:
     typedef struct 
     {
       std::vector<int>                  cellDataIndex;
@@ -307,33 +323,22 @@ void                      SetPanPercentages(double _pan[2]){ panPercentage[0]=_p
       int                               nVars;
     } LoadingInfo;
 
-    inline void               ExtractHex(vtkHexahedron*,vtkDataSet*, int,
-                                           LoadingInfo &);
-    inline void               ExtractHex20(vtkQuadraticHexahedron*,vtkDataSet*, int,
-                                           LoadingInfo &);
-    inline void               ExtractVoxel(vtkVoxel *, vtkDataSet *, int,
-                                           LoadingInfo &);
-    inline void               ExtractTet(vtkTetra *, vtkDataSet *, int,
-                                           LoadingInfo &);
-    inline void               ExtractPyramid(vtkPyramid *, vtkDataSet *, int,
-                                           LoadingInfo &);
-    inline void               ExtractWedge(vtkWedge *, vtkDataSet *, int,
-                                           LoadingInfo &);
-    inline void               ExtractTriangle(vtkTriangle *, vtkDataSet *, int,
-                                           LoadingInfo &);
-    inline void               ExtractQuad(vtkQuad *, vtkDataSet *, int,
-                                           LoadingInfo &);
-    inline void               ExtractPixel(vtkPixel *, vtkDataSet *, int, 
-                                           LoadingInfo &);
-    inline void               ExtractPolygon(vtkPolygon *, vtkDataSet *, int,
-                                             LoadingInfo &);
-
+    inline void               ExtractHex(vtkHexahedron*,vtkDataSet*, int, LoadingInfo &);
+    inline void               ExtractHex20(vtkQuadraticHexahedron*,vtkDataSet*, int, LoadingInfo &);
+    inline void               ExtractVoxel(vtkVoxel *, vtkDataSet *, int, LoadingInfo &);
+    inline void               ExtractTet(vtkTetra *, vtkDataSet *, int, LoadingInfo &);
+    inline void               ExtractPyramid(vtkPyramid *, vtkDataSet *, int, LoadingInfo &);
+    inline void               ExtractWedge(vtkWedge *, vtkDataSet *, int, LoadingInfo &);
+    inline void               ExtractTriangle(vtkTriangle *, vtkDataSet *, int, LoadingInfo &);
+    inline void               ExtractQuad(vtkQuad *, vtkDataSet *, int, LoadingInfo &);
+    inline void               ExtractPixel(vtkPixel *, vtkDataSet *, int, LoadingInfo &);
+    inline void               ExtractPolygon(vtkPolygon *, vtkDataSet *, int, LoadingInfo &);
     void                      KernelBasedSample(vtkDataSet *);
     void                      RasterBasedSample(vtkDataSet *, int num = 0);
-
     virtual bool              FilterUnderstandsTransformedRectMesh();
-
     void                      GetLoadingInfoForArrays(vtkDataSet *, LoadingInfo &);
 };
 
 #endif
+
+

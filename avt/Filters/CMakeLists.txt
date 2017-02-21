@@ -166,14 +166,16 @@ LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_D
 
 #********************************* SERIAL ************************************
 ADD_LIBRARY(avtfilters_ser ${AVTFILTERS_SOURCES})
-add_compile_options(-std=c++0x)
+target_compile_options(avtfilters_ser PUBLIC "$<$<CONFIG:DEBUG>:-std=c++11>")
+target_compile_options(avtfilters_ser PUBLIC "$<$<CONFIG:RELEASE>:-std=c++11>")
 TARGET_LINK_LIBRARIES(avtfilters_ser visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_ser avtdatabase_ser avtdbatts ${EAVL_LIB} ${VTKM_LIB} vtkFiltersModeling ${OSPRAY_LIBRARIES})
 VISIT_INSTALL_TARGETS(avtfilters_ser)
 
 #********************************* PARALLEL **********************************
 IF(VISIT_PARALLEL)
     ADD_PARALLEL_LIBRARY(avtfilters_par ${AVTFILTERS_SOURCES})
-    add_compile_options(-std=c++0x)
+    target_compile_options(avtfilters_par PUBLIC "$<$<CONFIG:DEBUG>:-std=c++11>")
+    target_compile_options(avtfilters_par PUBLIC "$<$<CONFIG:RELEASE>:-std=c++11>")
     TARGET_LINK_LIBRARIES(avtfilters_par visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_par avtdatabase_par avtdbatts ${EAVL_LIB} ${VTKM_LIB} vtkFiltersModeling ${OSPRAY_LIBRARIES})
     VISIT_INSTALL_TARGETS(avtfilters_par)
 ENDIF(VISIT_PARALLEL)
