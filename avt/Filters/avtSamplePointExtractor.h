@@ -195,7 +195,6 @@ public:
     void                      SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
     void                      SetViewDirection(double *_vD) 
     { std::copy(_vD, _vD + 3, viewDirection); }
-	//{ for (int i=0; i<3; i++) { viewDirection[i] = _vD[i]; } }
     void                      SetCameraPosition(double *_cp) 
     { std::copy(_cp, _cp + 3, cameraPosition); }
     void                      SetCameraUpVector(double *_cu) 

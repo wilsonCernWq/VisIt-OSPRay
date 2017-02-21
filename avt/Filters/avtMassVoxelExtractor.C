@@ -108,7 +108,7 @@
 // ****************************************************************************
 
 avtMassVoxelExtractor::avtMassVoxelExtractor(int w, int h, int d,
-											 avtVolume *vol, avtCellList *cl)
+					     avtVolume *vol, avtCellList *cl)
 	: avtExtractor(w, h, d, vol, cl)
 {
 	fullImgWidth = w;
@@ -128,7 +128,6 @@ avtMassVoxelExtractor::avtMassVoxelExtractor(int w, int h, int d,
 	modelViewProj = vtkMatrix4x4::New();
 	invModelViewProj = vtkMatrix4x4::New();
 
-
 	X = NULL;
 	Y = NULL;
 	Z = NULL;
@@ -140,8 +139,11 @@ avtMassVoxelExtractor::avtMassVoxelExtractor(int w, int h, int d,
 	ind_buffer    = new int[3*depth];
 	valid_sample  = new bool[depth];
 	lighting = false;
-	lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;   lightPosition[3] = 1.0;
-	materialProperties[0] = 0.4; materialProperties[1] = 0.75; materialProperties[3] = 0.0; materialProperties[3] = 15.0;
+	lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0; lightPosition[3] = 1.0;
+	materialProperties[0] = 0.4; 
+	materialProperties[1] = 0.75;
+	materialProperties[2] = 0.0; 
+	materialProperties[3] = 15.0;
 	gradient[0] = gradient[1] = gradient[2] = 0;
 
 	proc = patch = 0;
@@ -270,6 +272,7 @@ AssignEight(int vartype, double *vals, int *index, int s, int m, void *array)
         break;
     }
 }
+
 
 // ****************************************************************************
 //  Function:  ConvertToDouble
@@ -2233,6 +2236,18 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// 	         << " float, uchar, double\n";
 	//     return;
 	// }
+	//
+	
+	//
+	// TODO : implement a testing OSPRay render here without breaking the existing code
+	//
+	// move this block to avtRayTracer
+	// int argc = 1;
+	// const char* argv[1] = { "visit-ospray" }; // cant call it twice
+	// ospInit(&argc, argv);
+	
+	//
+	// end TODO
 	//
 
 	//

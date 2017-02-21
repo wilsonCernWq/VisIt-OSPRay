@@ -40,6 +40,9 @@
 //                             avtRayTracer.C                                //
 // ************************************************************************* //
 
+#include "ospray/ospray.h"
+#include "ospray/ospcommon/vec.h"
+
 #include <avtRayTracer.h>
 
 #include <vector>
@@ -612,6 +615,14 @@ avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
 void
 avtRayTracer::Execute(void)
 {
+    
+    //
+    // init ospray before everything
+    int argc = 1;
+    const char* argv[1] = { "visit-ospray" }; // cant call it twice
+    ospInit(&argc, argv);	
+
+    // start of original pipeline
     int  timingIndex = visitTimer->StartTimer();
     bool parallelOn = (imgComm.GetNumProcs() == 1)?false:true;
 
@@ -847,7 +858,7 @@ avtRayTracer::Execute(void)
 	//writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", __opaqueImageZB, screen[0], screen[1]);
 	//writeDepthBufferToPPM("/home/pascal/Desktop/depthBuffer", __opaqueImageZB, screen[0], screen[1]);
 
-	extractor.setDepthBuffer(__opaqueImageZB, screen[0]*screen[1]);
+	extractor.setDepthBuffer(__opaqueImageZB, screen[0] * screen[1]);
 	extractor.setRGBBuffer(__opaqueImageData, screen[0], screen[1]);
 
 	int _bufExtents[4] = {0,0,0,0};

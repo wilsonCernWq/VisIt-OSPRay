@@ -172,28 +172,31 @@ avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
 
     shouldDoTiling = false;
 
-	modeIs3D = true;
-	SetKernelBasedSampling(false);
-
-	shouldSetUpArbitrator    = false;
-	arbitratorPrefersMinimum = false;
-	arbitrator               = NULL;
-
-	patchCount = 0;
-
-	trilinearInterpolation = false;
-	rayCastingSLIVR = false;
-	rayCastingSLIVRParallel = false;
-
-	modelViewProj = vtkMatrix4x4::New();
-
-	lighting = false;
-	lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;   lightPosition[3] = 1.0;
-	lightDirection[0] = 0; lightDirection[1] = 0; lightDirection[2] = -1;
-	materialProperties[0] = 0.4; materialProperties[1] = 0.75; materialProperties[3] = 0.0; materialProperties[3] = 15.0;
-
-	depthBuffer = NULL;
-	rgbColorBuffer = NULL;
+    modeIs3D = true;
+    SetKernelBasedSampling(false);
+    
+    shouldSetUpArbitrator    = false;
+    arbitratorPrefersMinimum = false;
+    arbitrator               = NULL;
+    
+    patchCount = 0;
+    
+    trilinearInterpolation = false;
+    rayCastingSLIVR = false;
+    rayCastingSLIVRParallel = false;
+    
+    modelViewProj = vtkMatrix4x4::New();
+    
+    lighting = false;
+    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;   lightPosition[3] = 1.0;
+    lightDirection[0] = 0; lightDirection[1] = 0; lightDirection[2] = -1;
+    materialProperties[0] = 0.4; 
+    materialProperties[1] = 0.75; 
+    materialProperties[2] = 0.0; 
+    materialProperties[3] = 15.0;
+    
+    depthBuffer = NULL;
+    rgbColorBuffer = NULL;
 }
 
 
@@ -1051,6 +1054,9 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->setBufferExtents(bufferExtents);
 
 	    massVoxelExtractor->SetViewDirection(viewDirection);
+	    massVoxelExtractor->SetCameraPosition(cameraPosition);
+	    massVoxelExtractor->SetCameraUpVector(cameraUpVector);
+
 	    massVoxelExtractor->SetMVPMatrix(modelViewProj);
 	    massVoxelExtractor->SetClipPlanes(clipPlanes);
 	    massVoxelExtractor->SetPanPercentages(panPercentage);
