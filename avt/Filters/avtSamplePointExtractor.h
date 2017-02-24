@@ -214,7 +214,6 @@ public:
     { depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1]; }
     void                      SetMVPMatrix(vtkMatrix4x4 *_mvp)
     { modelViewProj->DeepCopy(_mvp); }
-    // get functions (Qi) although it works, it is a wrong way of using array/pointer
     void                      getSpatialExtents(double _spatialExtents[6])
     { for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
     void                      getAvgPatchExtents(double _avgPatchExtents[6])

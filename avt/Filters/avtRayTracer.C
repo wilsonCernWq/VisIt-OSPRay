@@ -833,7 +833,6 @@ avtRayTracer::Execute(void)
 		  << fullImageExtents[3] << std::endl;
 	//
 	// -----------------------------
-	//
 	// (Qi) this should be replaced by proper vtkOSPRay initialization later
 	// init ospray before everything
 	static bool first_entry = true;
@@ -845,6 +844,7 @@ avtRayTracer::Execute(void)
 	//
 	// OSPRay camera
 	// do some ospray stuffs to speed things up
+	//
 	std::cout << "make ospray camera" << std::endl;
 	OSPCamera ospCamera = ospNewCamera("perspective");
 
@@ -870,6 +870,7 @@ avtRayTracer::Execute(void)
 
 	//
 	// OSPRay transfer function stuffs
+	//
 	std::cout << "make ospray transfer function" << std::endl;
 	OSPTransferFunction ospTransferFcn = 
 	    ospNewTransferFunction("piecewise_linear");
@@ -914,6 +915,9 @@ avtRayTracer::Execute(void)
 	extractor.SetDepthExtents(depthExtents);
 	extractor.SetMVPMatrix(pvm);
 	
+	//
+	// (Qi) special variables for OSPRay
+	//
 	extractor.SetCameraPosition(view.camera);
 	extractor.SetCameraUpVector(view.viewUp);
 	extractor.SetCameraAspect(aspect);
@@ -922,22 +926,25 @@ avtRayTracer::Execute(void)
 
 	//
 	// Capture background
+	//
 	__opaqueImageVTK = opaqueImage->GetImage().GetImageVTK();
 	__opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
 	__opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
 
+	//
 	//createColorPPM("/home/pascal/Desktop/background", __opaqueImageData, screen[0], screen[1]);
-	// writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", 
-	// 			__opaqueImageZB, screen[0], screen[1]);
-	// writeDepthBufferToPPM("/home/pascal/Desktop/depthBuffer", 
-	// 		      __opaqueImageZB, screen[0], screen[1]);
+	//writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", 
+	//			  __opaqueImageZB, screen[0], screen[1]);
+	//writeDepthBufferToPPM("/home/pascal/Desktop/depthBuffer", 
+	//		        __opaqueImageZB, screen[0], screen[1]);
+	//
+	
+	extractor.setDepthBuffer(__opaqueImageZB,   screen[0]*screen[1]);
+	extractor.setRGBBuffer  (__opaqueImageData, screen[0],screen[1]);
 
-	extractor.setDepthBuffer(__opaqueImageZB, screen[0] * screen[1]);
-	extractor.setRGBBuffer(__opaqueImageData, screen[0], screen[1]);
-
-	int _bufExtents[4] = {0,0,0,0};
-	_bufExtents[1] = screen[0]; _bufExtents[3] = screen[1];
-	extractor.setBufferExtents(_bufExtents);
+	int _bufferExtents[4] = {0,0,0,0}; // xmin, xmax, ymin, ymax
+	_bufferExtents[1] = screen[0]; _bufferExtents[3] = screen[1];
+	extractor.setBufferExtents(_bufferExtents);
 
     }
 
@@ -973,7 +980,8 @@ avtRayTracer::Execute(void)
     {
 	debug5 << "Start compositing" << std::endl;
 
-	avtRayCompositer rc(rayfoo);                            // only required to force an update - Need to find a way to get rid of that!!!!
+	avtRayCompositer rc(rayfoo);
+	// only required to force an update - Need to find a way to get rid of that!!!!
 	rc.SetInput(samples);
 	avtImage_p image  = rc.GetTypedOutput();
 	image->Update(GetGeneralContract());
@@ -988,8 +996,8 @@ avtRayTracer::Execute(void)
 
 	    //
 	    // Get the metadata for all patches
-	    std::vector<imgMetaData> allImgMetaData;          // contains the metadata to composite the image
-	    int numPatches = extractor.getImgPatchSize();     // get the number of patches
+	    std::vector<imgMetaData> allImgMetaData; // contains the metadata to composite the image
+	    int numPatches = extractor.getImgPatchSize(); // get the number of patches
 								       
 	    for (int i=0; i<numPatches; i++)
 	    {

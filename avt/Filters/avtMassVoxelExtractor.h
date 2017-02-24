@@ -273,7 +273,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 	// Background + other plots
 	float           *depthBuffer;           // depth buffer for the background and other plots
 	unsigned char   *rgbColorBuffer;        // bounding box + pseudo color + ...
-	int              bufferExtents[4];      // extents of the buffer( minX, maxX, minY, maxY)
+	int              bufferExtents[4];      // extents of the buffer(minX, maxX, minY, maxY)
 	//
 	// Rendering
 	int              renderingAreaExtents[4];

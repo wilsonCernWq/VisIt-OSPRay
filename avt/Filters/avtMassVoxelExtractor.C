@@ -620,7 +620,6 @@ avtMassVoxelExtractor::RegisterGrid(vtkRectilinearGrid *rgrid,
     {
         vtkDataArray *arr = rgrid->GetCellData()->GetArray(i);
         const char *name = arr->GetName();
-	std::cout << name << std::endl;
         int idx = -1;
         for (size_t j = 0 ; j < varorder.size() ; j++)
         {
@@ -634,7 +633,7 @@ avtMassVoxelExtractor::RegisterGrid(vtkRectilinearGrid *rgrid,
         }
         if (idx < 0)
             continue;
-        cell_index[ncell_arrays] = idx; std::cout << idx << std::endl;
+        cell_index[ncell_arrays] = idx;
         cell_vartypes[ncell_arrays] = arr->GetDataType();
         cell_size[ncell_arrays] = arr->GetNumberOfComponents();
         cell_arrays[ncell_arrays++] = arr->GetVoidPointer(0);
@@ -2261,7 +2260,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // 	continue;
     //     _pt_arrays.push_back(arr);
     // }
-	
+    //
     // 1) get data from vtkRectlinearGrid	
     std::cout << "work starts \n";
     void* ospVolumePointer;
@@ -2275,7 +2274,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospVolumeDataType = cell_vartypes[0];
     }
     std::cout << "working fine - set data pointer" << std::endl;
-	
+    //
     // 2) set data type
     std::string ospVoxelType;
     if (ospVolumeDataType == VTK_FLOAT) {
@@ -2289,33 +2288,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     }
     std::cout << "working fine - 1 - " << ospVoxelType << " \n";
     //
-    // const int nX = dims[0];
-    // const int nY = dims[1];
-    // const int nZ = dims[2];
-    // vtkDataArray *xarray = rgrid->GetXCoordinates();
-    // vtkDataArray *yarray = rgrid->GetYCoordinates();
-    // vtkDataArray *zarray = rgrid->GetZCoordinates();
-    // int startX = SnapXLeft(xarray->GetTuple1(0));
-    // int stopX  = SnapXRight(xarray->GetTuple1(nX-1));
-    // int startY = SnapYBottom(yarray->GetTuple1(0));
-    // int stopY  = SnapYTop(yarray->GetTuple1(nY-1));
-    // int startZ = SnapZFront(zarray->GetTuple1(0));
-    // int stopZ  = SnapZBack(zarray->GetTuple1(nZ-1));
-    // std::cout << " X " << startX << stopX
-    // 	     << " Y " << startY << stopY
-    // 	     << " Z " << startZ << stopZ << endl;
-    // for (auto i = 0; i < dims[0]; ++i) {
-    //     for (auto j = 0; j < dims[1]; ++j) {
-    // 	for (auto k = 0; k < dims[2]; ++k) {
-    // 	    //std::cout << _cell_arrays[0]->GetTuple1(k * (nY-1) * (nX-1) + j * (nX-1) + i)
-    // 	    //          << " ";
-    // 	}
-    // 	//std::cout << std::endl;
-    //     }
-    //     //std::cout << std::endl;
-    // } 
-    // 2) convert data to ospray data. currently we do deep copy
-    // 3) render frame buffer	
+    // 3) convert data to ospray data. currently we do deep copy
+    // 4) render frame buffer	
     //
     // end TODO
     //
@@ -2327,7 +2301,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     int w_max = restrictedMaxWidth+1;
     int h_min = restrictedMinHeight;
     int h_max = restrictedMaxHeight+1;
-
     imgWidth = imgHeight = 0;
 
     //
@@ -2385,21 +2358,22 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
     //
     // Compute z order for blending patches
+    //
     double _center[3];
     _center[0] = (X[0] + X[dims[0]-1])/2.0;
     _center[1] = (Y[0] + Y[dims[1]-1])/2.0;
     _center[2] = (Z[0] + Z[dims[2]-1])/2.0;
-    double __depth = sqrt( (_center[0]-view.camera[0])*(_center[0]-view.camera[0]) +  
-			   (_center[1]-view.camera[1])*(_center[1]-view.camera[1]) + 
-			   (_center[2]-view.camera[2])*(_center[2]-view.camera[2]) );
-    eyeSpaceDepth = __depth;
+    double _depth = sqrt( (_center[0]-view.camera[0])*(_center[0]-view.camera[0]) +  
+			  (_center[1]-view.camera[1])*(_center[1]-view.camera[1]) + 
+			  (_center[2]-view.camera[2])*(_center[2]-view.camera[2]) );
+    eyeSpaceDepth = _depth;
 
     // Qi debug: world coordinate
     cout << "center " << _center[0] << " " << _center[1] << " " << _center[2] << endl;
 
     double _clipSpaceZ = 0;
     double _world[3];
-    for (int i=0; i<8; i++)
+    for (int i=0; i<8; i++) // to search for the patch size on screen
     {
 	int pos2D[2];
 	float tempZ;
@@ -2409,7 +2383,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	_world[2] = coordinates[i][2];
 
 	tempZ = project(_world, pos2D, fullImgWidth, fullImgHeight);
-	std::cout << "camera coord " << pos2D[0] << " " << pos2D[1] << std::endl;
 
 	// Clamp values
 	pos2D[0] = std::min(std::max(pos2D[0], 0), w_max-1);
@@ -2422,7 +2395,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	xMax = std::max(xMax, pos2D[0]);
 	yMin = std::min(yMin, pos2D[1]);
 	yMax = std::max(yMax, pos2D[1]);
-
 
 	if (i == 0)
 	{
@@ -2458,7 +2430,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
     //
     // Initialize memory
-    imgArray =  new float[((imgWidth)*4) * imgHeight]();   // image
+    //
+    imgArray =  new float[((imgWidth)*4) * imgHeight](); // framebuffer
 
     //
     // Send rays
@@ -2466,17 +2439,25 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
     imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
 
-    //debug5 << "Send rays ~ screen:" << xMin << ", " << xMax << "    "  << yMin << ", " << yMax <<  "    " << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] <<  "   Buffer extents: " << bufferExtents[0] << ", " << bufferExtents[1] << "   " << bufferExtents[2] << ", " << bufferExtents[3] << std::endl;
+    cout << "Send rays ~ screen:" 
+	 << xMin << ", " << xMax << " "  << yMin << ", " << yMax <<  " " 
+	 << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] 
+	 <<  " Buffer extents: " 
+	 << bufferExtents[0] << ", " 
+	 << bufferExtents[1] << "  " 
+	 << bufferExtents[2] << ", " 
+	 << bufferExtents[3] << std::endl;
 
     for (int _x = xMin ; _x < xMax ; _x++)
 	for (int _y = yMin ; _y < yMax ; _y++)
 	{
 	    int index = (_y-yMin)*imgWidth + (_x-xMin);
 
-
-	    if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
+            // outside visible range
+	    if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )	
 	    {
-		int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + (_x-bufferExtents[0]) );
+		int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + 
+				  (_x-bufferExtents[0]) );
 
 		if ( depthBuffer[fullIndex] != 1)
 		{
@@ -2499,10 +2480,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    else
 	    {
 		double _origin[3], _terminus[3];
-		double origin[4]  = {0,0,0,1};      // starting point where we start sampling
-		double terminus[4]= {0,0,0,1};      // ending point where we stop sampling
+		double origin[4]  = {0,0,0,1}; // starting point where we start sampling
+		double terminus[4]= {0,0,0,1}; // ending point where we stop sampling
 
-		GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);    // find the starting point & ending point of the ray
+		GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);   
+		// find the starting point & ending point of the ray
 
 		for (int i=0; i<3; i++){
 		    origin[i] = _origin[i];
@@ -2533,10 +2515,17 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		    + std::to_string(i++),
 		    imgArray,imgWidth,imgHeight);
 
-    if (i == 47) 
+    if (true) 
     {
 	// Qi enabling debug
 	std::cout << "creating ospray volume" << std::endl;
+
+	ospcommon::vec2f ospImgStart((float)xMin/bufferExtents[1], (float)yMin/bufferExtents[3]);
+	ospcommon::vec2f ospImgStop ((float)xMax/bufferExtents[1], (float)yMax/bufferExtents[3]);
+	ospSetVec2f(*ospCamera, "imageStart", (osp::vec2f&)ospImgStart);
+	ospSetVec2f(*ospCamera, "imageEnd",   (osp::vec2f&)ospImgStop );
+	ospCommit(*ospCamera);
+	std::cout << "imageStart " << ospImgStart << " imageStop " << ospImgStop << std::endl;
 
 	//ospcommon::vec3i volumeDims(256, 256, 256);
 	//ospcommon::vec3f volumeLbox(0,0,0);
@@ -2555,25 +2544,41 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	std::cout << "patch spacing " << volumeSpac << std::endl;
 
 	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
-	std::vector<float> volumeData(ospVolumeSize, 0);
+	std::vector<double> volumeData;
 
-	// for (size_t i = 0; i < volumeData.size(); ++i)
-	// { volumeData[i] = (i % 255)/46.0f; }
-
-	for (size_t i = 0; i < volumeData.size(); ++i)
-	{ volumeData[i] = ((double*)ospVolumePointer)[i]; }
-	    
+	if (ncell_arrays > 0)
+	{	    
+	    for (int l = 0 ; l < ncell_arrays ; l++)            // ncell_arrays: usually 1
+	    {
+		void  *cellarray = cell_arrays[l];
+		std::cout << "some cell index = " << cell_index[l] << std::endl;
+		for (int m = 0 ; m < cell_size[l] ; m++)        // cell_size[l] usually 1
+		{
+		    for (int iz = 0; iz < dims[2]; iz++) {
+		    for (int iy = 0; iy < dims[1]; iy++) {
+		    for (int ix = 0; ix < dims[0]; ix++) {
+			int id = iz * (dims[1]-1) * (dims[0]-1) + iy * (dims[0]-1) + ix;
+			//std::cout << X[ix] << " " << Y[iy] << " " << Z[iz] << std::endl;
+			volumeData.push_back(((double*)ospVolumePointer)[cell_size[l] * id + m]);
+		    }
+		    }
+		    }
+		}
+	    }
+	}
+	
 	OSPVolume ospVolume = ospNewVolume("shared_structured_volume");
 	OSPData ospVoxelData = ospNewData(ospVolumeSize,
-					  OSP_FLOAT,volumeData.data(),
+					  OSP_DOUBLE, volumeData.data(),
 					  OSP_DATA_SHARED_BUFFER);
-	ospSetData(ospVolume,  "voxelData", ospVoxelData);
-	ospSetString(ospVolume, "voxelType", "float");
+	ospSetData(ospVolume,   "voxelData", ospVoxelData);
+	ospSetString(ospVolume, "voxelType", "double");
 	ospSetVec3f(ospVolume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
 	ospSetVec3f(ospVolume, "gridSpacing", (const osp::vec3f&)volumeSpac);
 
 	ospSetVec3i(ospVolume, "dimensions", (osp::vec3i&)volumeDims);
-	ospSetObject(ospVolume, "transferFunction", *ospTransferFcn);	    
+	ospSetObject(ospVolume, "transferFunction", *ospTransferFcn);
+	ospSet1f(ospVolume, "samplingRate", 0.5f);
 	ospCommit(ospVolume);
 
 	std::cout << "creating ospray model" << std::endl;
@@ -2589,24 +2594,25 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospSetVec3f(ospRenderer, "bgColor", (osp::vec3f&)ospBgColor);
 	ospCommit(ospRenderer);
 
-	//ospcommon::vec2i imageSize (imgWidth,imgHeight);
-	ospcommon::vec2i imageSize (1024, 1024);
-
+	ospcommon::vec2i imageSize (imgWidth,imgHeight);	
 	OSPFrameBuffer ospfb = 
-	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_SRGBA, 
+	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, 
 			      OSP_FB_COLOR | OSP_FB_ACCUM);
 	ospFrameBufferClear(ospfb, OSP_FB_COLOR | OSP_FB_ACCUM);
 	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
 	    
 	// save ospray image and clean up
-	const uint32_t * fb = (uint32_t*)ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
-	writePPM("/home/sci/qwu/Desktop/osp/volume_", i-1, imageSize, fb);
+	const float * fb = (float*)ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
+	for (int i = 0; i < imgWidth * imgHeight; i++) {
+	    imgArray[i] = fb[i];
+	}
+	writeArrayToPPM("/home/sci/qwu/Desktop/osp/osp_patches_"+std::to_string(i-1),
+			imgArray,imgWidth,imgHeight);	
 	ospUnmapFrameBuffer(fb, ospfb);
 	ospRelease(ospWorld);
 	ospRelease(ospVolume);
 	ospRelease(ospRenderer);
-	ospRelease(ospfb);
-	// exit(-1);
+	ospRelease(ospfb);		
     }
 }
 
@@ -3191,7 +3197,8 @@ avtMassVoxelExtractor::reflect(float vec[3], float normal[3], float refl[3])
 // ****************************************************************************
 
 double
-avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _screenWidth, int _screenHeight)
+avtMassVoxelExtractor::project
+(double _worldCoordinates[3], int pos2D[2], int _screenWidth, int _screenHeight)
 {
 	double normDevCoord[4];
 	double worldCoordinates[4] = {0,0,0,1};
@@ -3226,11 +3233,11 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _s
 	pos2D[0] = round( normDevCoord[0]*(_screenWidth/2.)  + (_screenWidth/2.)  );
 	pos2D[1] = round( normDevCoord[1]*(_screenHeight/2.) + (_screenHeight/2.) );
 
-	std::cout << "camera raw coord "
-		  << normDevCoord[0] << " "
-		  << normDevCoord[1] << " "
-		  << normDevCoord[2] << " "
-		  << normDevCoord[3] << std::endl;
+	// std::cout << "camera raw coord "
+	// 	     << normDevCoord[0] << " "
+	// 	     << normDevCoord[1] << " "
+	// 	     << normDevCoord[2] << " "
+	// 	     << normDevCoord[3] << std::endl;
 
 	// Add panning
 	pos2D[0] += round(_screenWidth * panPercentage[0]);
@@ -3253,7 +3260,8 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _s
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height)
+avtMassVoxelExtractor::unProject
+(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height)
 {
 	// remove panning
 	_x -= round(_width * panPercentage[0]);
@@ -3295,7 +3303,8 @@ avtMassVoxelExtractor::unProject(int _x, int _y, float _z, double _worldCoordina
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::getImageDimensions(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth)
+avtMassVoxelExtractor::getImageDimensions
+(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth)
 {
 	inUse = patchDrawn;
 
@@ -3379,9 +3388,14 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
 		if (normal_dot_light < 0)
 			normal_dot_light = -normal_dot_light;
 
-		debug5 << "normal_dot_light: " << normal_dot_light << "   _gradient: " << _gradient[0] << ", " << _gradient[1] << ", " << _gradient[2] << std::endl;
+		debug5 << "normal_dot_light: " << normal_dot_light 
+		       << "   _gradient: " 
+		       << _gradient[0] << ", " 
+		       << _gradient[1] << ", " 
+		       << _gradient[2] << std::endl;
 		// Calculate color using phong shading
-		// I = (I  * ka) + [ (I_i  * kd * (L.N)) + (Ia_i * ks * (R.V)^ns) ]_for each light source i
+		// I = (I  * ka) + [ (I_i  * kd * (L.N)) + (Ia_i * ks * (R.V)^ns) ]
+		// for each light source i
 		for (int i=0; i<3; i++)
 		{
 			source_rgb[i] =  ( (materialProperties[0] + materialProperties[1] * normal_dot_light)           * source_rgb[i] ) +		// I  * ( ka + kd*abs(cos(angle)) )
