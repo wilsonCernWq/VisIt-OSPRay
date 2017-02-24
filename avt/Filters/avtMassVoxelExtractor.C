@@ -71,9 +71,6 @@
 #include <limits>
 #include <math.h>
 
-#include "ospray/ospray.h"
-#include "ospray/ospcommon/vec.h"
-
 // ****************************************************************************
 //  Method: avtMassVoxelExtractor constructor
 //
@@ -134,6 +131,9 @@ avtMassVoxelExtractor::avtMassVoxelExtractor(int w, int h, int d,
 	divisors_X = NULL;
 	divisors_Y = NULL;
 	divisors_Z = NULL;
+	
+	// Qi what is depth ????
+	std::cout << "avtMassVoxelExtractor depth = " << depth << std::endl;
 
 	prop_buffer   = new double[3*depth];
 	ind_buffer    = new int[3*depth];
@@ -620,6 +620,7 @@ avtMassVoxelExtractor::RegisterGrid(vtkRectilinearGrid *rgrid,
     {
         vtkDataArray *arr = rgrid->GetCellData()->GetArray(i);
         const char *name = arr->GetName();
+	std::cout << name << std::endl;
         int idx = -1;
         for (size_t j = 0 ; j < varorder.size() ; j++)
         {
@@ -633,7 +634,7 @@ avtMassVoxelExtractor::RegisterGrid(vtkRectilinearGrid *rgrid,
         }
         if (idx < 0)
             continue;
-        cell_index[ncell_arrays] = idx;
+        cell_index[ncell_arrays] = idx; std::cout << idx << std::endl;
         cell_vartypes[ncell_arrays] = arr->GetDataType();
         cell_size[ncell_arrays] = arr->GetNumberOfComponents();
         cell_arrays[ncell_arrays++] = arr->GetVoidPointer(0);
@@ -1679,8 +1680,8 @@ avtMassVoxelExtractor::ExtractImageSpaceGrid(vtkRectilinearGrid *rgrid,
 	int last_y_hit = 0;
 	int last_z_hit = 0;
 
-	vtkUnsignedCharArray *ghosts = (vtkUnsignedCharArray *)rgrid->GetCellData()
-												   ->GetArray("avtGhostZones");
+	vtkUnsignedCharArray *ghosts = 
+	    (vtkUnsignedCharArray *)rgrid->GetCellData()->GetArray("avtGhostZones");
 	std::vector<void *>  cell_arrays;
 	std::vector<int>     cell_vartypes;
 	std::vector<int>     cell_size;
@@ -1908,6 +1909,8 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
 	int first = 0;
 	int last = 0;
 	bool hasIntersections = FindSegmentIntersections(origin, terminus, first, last);
+
+	//std::cout << "frist - last" << first << " " << last << std::endl;
 
 	if (!hasIntersections)
 		return;
@@ -2158,271 +2161,453 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
 //  Modifications:
 //
 // ****************************************************************************
+void 
+writePPM
+(const char *fileName, int id, const ospcommon::vec2i &size, const uint32_t *pixel)
+{
+    std::string name(fileName);
+    name = name + std::to_string(id) + std::string(".ppm");
+    using namespace ospcommon;
+    FILE *file = fopen(name.c_str(), "wb");
+    fprintf(file, "P6\n%i %i\n255\n", size.x, size.y);
+    unsigned char *out = (unsigned char *)alloca(3*size.x);
+    for (int y = 0; y < size.y; y++) {
+	const unsigned char *in = (const unsigned char *)&pixel[(size.y-1-y)*size.x];
+	for (int x = 0; x < size.x; x++) {
+	    out[3*x + 0] = in[4*x + 0];
+	    out[3*x + 1] = in[4*x + 1];
+	    out[3*x + 2] = in[4*x + 2];
+	}
+	fwrite(out, 3*size.x, sizeof(char), file);
+    }
+    fprintf(file, "\n");
+    fclose(file);
+}
 
 void
 avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
-(vtkRectilinearGrid *rgrid, std::vector<std::string> &varnames, std::vector<int> &varsize)
+(vtkRectilinearGrid *rgrid, 
+ std::vector<std::string> &varnames, 
+ std::vector<int> &varsize)
 {
-	patchDrawn = 0;
+    patchDrawn = 0;
 
-	// Qi debug
-	// cout << "materialProperties:" 
-	//      << materialProperties[0] << ", " 
-	//      << materialProperties[1] << ", " 
-	//      << materialProperties[2] << ", " 
-	//      << materialProperties[3] << std::endl;
-
-	//
-	// Some of our sampling routines need a chance to pre-process the data.
-	// Register the grid here so we can do that.
-	//
-	RegisterGrid(rgrid, varnames, varsize); // stores the values in a structure so that it can be used
-	//
-	// Qi comment
-	// here rgrid is the dataset
-	// Found a way to convert vtkRectilinearGrid to vtkImageData
-	//
-	// reference from https://github.com/Kitware/VTK/blob/master/Rendering/Volume/vtkVolumeMapper.cxx
-	//
-	// void vtkVolumeMapper::SetInputData( vtkDataSet *genericInput )
-	// {
-	//     vtkImageData *input =
-	// 	vtkImageData::SafeDownCast( genericInput );
-	//     if ( input )
-	//     {
-	// 	this->SetInputData( input );
-	//     }
-	//     else
-	//     {
-	// 	vtkErrorMacro("The SetInput method of this mapper requires vtkImageData as input");
-	//     }
-	// }
-	//
-	// reference from vtkOSPRayVolumeMapper
-	//
-	// vtkOSPRayRenderer* OSPRayRenderer = vtkOSPRayRenderer::SafeDownCast(ren);
-	// if (!OSPRayRenderer) { return; }
-	// OSPRayModel = this->OSPRayManager->OSPRayVolumeModel;
-	// OSPRenderer renderer = this->OSPRayManager->OSPRayVolumeRenderer;
-	// vtkImageData *data = this->GetInput();
-	// vtkDataArray * scalars = 
-	//     this->GetScalars(data, 
-	// 		     this->ScalarMode,
-	// 		     this->ArrayAccessMode, 
-	// 		     this->ArrayId, 
-	// 		     this->ArrayName, 
-	// 		     this->CellFlag);
-	// void* ScalarDataPointer =
-	//     this->GetInput()->GetPointData()->GetScalars()->GetVoidPointer(0);
-	// int ScalarDataType =
-	//     this->GetInput()->GetPointData()->GetScalars()->GetDataType();
-	//
-	// int dim[3];
-	// data->GetDimensions(dim);
-	//
-	// size_t typeSize = 0;
-	// std::string voxelType;
-	// if (ScalarDataType == VTK_FLOAT) {
-	//     typeSize = sizeof(float);
-	//     voxelType = "float";
-	// } else if (ScalarDataType == VTK_UNSIGNED_CHAR) {
-	//     typeSize = sizeof(unsigned char);
-	//     voxelType = "uchar";
-	// } else if (ScalarDataType == VTK_DOUBLE) {	
-	//     typeSize = sizeof(double);
-	//     voxelType = "double";
-	// } else {
-	//     std::cerr << "ERROR: Unsupported data type for ospray volumes, current supported data types are: " 
-	// 	         << " float, uchar, double\n";
-	//     return;
-	// }
-	//
+    // Qi debug
+    // cout << "materialProperties:" 
+    //      << materialProperties[0] << ", " 
+    //      << materialProperties[1] << ", " 
+    //      << materialProperties[2] << ", " 
+    //      << materialProperties[3] << std::endl;
+    //
+    // Some of our sampling routines need a chance to pre-process the data.
+    // Register the grid here so we can do that.
+    //
+    RegisterGrid(rgrid, varnames, varsize);
+    // stores the values in a structure so that it can be used
+    //
+    // Qi comment
+    // here rgrid is the dataset
+    //
+    // TODO : implement a testing OSPRay render here 
+    //        without breaking the existing code
+    //
+    // * move this block to avtRayTracer
+    // * initialization
+    //
+    // * camera / transfer function stuffs
+    // --> moved to avtRayTracer for speeding things up
+    //
+    // * process data
+    //
+    std::cout << "point data size: " << npt_arrays << std::endl;
+    std::cout << "cell data size: "  << ncell_arrays << std::endl;
+    // std::vector<vtkDataArray *>  _cell_arrays;
+    // for (int i = 0 ; i < rgrid->GetCellData()->GetNumberOfArrays() ; i++)
+    // {
+    //     vtkDataArray *arr = rgrid->GetCellData()->GetArray(i);
+    //     const char *name = arr->GetName();
+    //     int idx = -1;
+    //     for (int j = 0 ; j < (int)varnames.size() ; j++)
+    //     {
+    // 	if (varnames[j] == name)
+    // 	{
+    // 	    idx = 0;
+    // 	    for (int k = 0 ; k < j ; k++)
+    // 		idx += varsize[k];
+    // 	    break;
+    // 	}
+    //     }
+    //     if (idx < 0)
+    // 	continue;
+    //     _cell_arrays.push_back(arr);
+    // }
+    // std::vector<vtkDataArray *>  _pt_arrays;
+    // for (int i = 0 ; i < rgrid->GetPointData()->GetNumberOfArrays() ; i++)
+    // {
+    //     vtkDataArray *arr = rgrid->GetPointData()->GetArray(i);
+    //     const char *name = arr->GetName();
+    //     int idx = -1;
+    //     for (int j = 0 ; j < (int)varnames.size() ; j++)
+    //     {
+    // 	if (varnames[j] == name)
+    // 	{
+    // 	    idx = 0;
+    // 	    for (int k = 0 ; k < j ; k++)
+    // 		idx += varsize[k];
+    // 	    break;
+    // 	}
+    //     }
+    //     if (idx < 0)
+    // 	continue;
+    //     _pt_arrays.push_back(arr);
+    // }
 	
-	//
-	// TODO : implement a testing OSPRay render here without breaking the existing code
-	//
-	// move this block to avtRayTracer
-	// int argc = 1;
-	// const char* argv[1] = { "visit-ospray" }; // cant call it twice
-	// ospInit(&argc, argv);
+    // 1) get data from vtkRectlinearGrid	
+    std::cout << "work starts \n";
+    void* ospVolumePointer;
+    int ospVolumeDataType;
+    if (npt_arrays > 0) {
+	ospVolumePointer = pt_arrays[0];
+	ospVolumeDataType = pt_vartypes[0];
+    }
+    if (ncell_arrays > 0){
+	ospVolumePointer = cell_arrays[0];
+	ospVolumeDataType = cell_vartypes[0];
+    }
+    std::cout << "working fine - set data pointer" << std::endl;
 	
-	//
-	// end TODO
-	//
+    // 2) set data type
+    std::string ospVoxelType;
+    if (ospVolumeDataType == VTK_FLOAT) {
+	ospVoxelType = "float";
+    } else if (ospVolumeDataType == VTK_UNSIGNED_CHAR) {
+	ospVoxelType = "uchar";
+    } else if (ospVolumeDataType == VTK_DOUBLE) {	
+	ospVoxelType = "double";
+    } else {
+	EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
+    }
+    std::cout << "working fine - 1 - " << ospVoxelType << " \n";
+    //
+    // const int nX = dims[0];
+    // const int nY = dims[1];
+    // const int nZ = dims[2];
+    // vtkDataArray *xarray = rgrid->GetXCoordinates();
+    // vtkDataArray *yarray = rgrid->GetYCoordinates();
+    // vtkDataArray *zarray = rgrid->GetZCoordinates();
+    // int startX = SnapXLeft(xarray->GetTuple1(0));
+    // int stopX  = SnapXRight(xarray->GetTuple1(nX-1));
+    // int startY = SnapYBottom(yarray->GetTuple1(0));
+    // int stopY  = SnapYTop(yarray->GetTuple1(nY-1));
+    // int startZ = SnapZFront(zarray->GetTuple1(0));
+    // int stopZ  = SnapZBack(zarray->GetTuple1(nZ-1));
+    // std::cout << " X " << startX << stopX
+    // 	     << " Y " << startY << stopY
+    // 	     << " Z " << startZ << stopZ << endl;
+    // for (auto i = 0; i < dims[0]; ++i) {
+    //     for (auto j = 0; j < dims[1]; ++j) {
+    // 	for (auto k = 0; k < dims[2]; ++k) {
+    // 	    //std::cout << _cell_arrays[0]->GetTuple1(k * (nY-1) * (nX-1) + j * (nX-1) + i)
+    // 	    //          << " ";
+    // 	}
+    // 	//std::cout << std::endl;
+    //     }
+    //     //std::cout << std::endl;
+    // } 
+    // 2) convert data to ospray data. currently we do deep copy
+    // 3) render frame buffer	
+    //
+    // end TODO
+    //
 
-	//
-	// Determine what range we are dealing with on this iteration.
-	//
-	int w_min = restrictedMinWidth;
-	int w_max = restrictedMaxWidth+1;
-	int h_min = restrictedMinHeight;
-	int h_max = restrictedMaxHeight+1;
+    //
+    // Determine what range we are dealing with on this iteration.
+    //
+    int w_min = restrictedMinWidth;
+    int w_max = restrictedMaxWidth+1;
+    int h_min = restrictedMinHeight;
+    int h_max = restrictedMaxHeight+1;
 
-	imgWidth = imgHeight = 0;
+    imgWidth = imgHeight = 0;
 
-	//
-	// Let's find out if this range can even intersect the dataset.
-	// If not, just skip it.
-	//
-	if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max))
-	   return;
+    //
+    // Let's find out if this range can even intersect the dataset.
+    // If not, just skip it.
+    //
+    if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max))
+	return;
 
-	//
-	// Determine the screen size of the patch being processed
-	//
-	xMin = yMin = std::numeric_limits<int>::max();
-	xMax = yMax = std::numeric_limits<int>::min();
+    //
+    // Determine the screen size of the patch being processed
+    //
+    xMin = yMin = std::numeric_limits<int>::max();
+    xMax = yMax = std::numeric_limits<int>::min();
 
-	float coordinates[8][3];
-	coordinates[0][0] = X[0];           coordinates[0][1] = Y[0];           coordinates[0][2] = Z[0];
-	coordinates[1][0] = X[dims[0]-1];   coordinates[1][1] = Y[0];           coordinates[1][2] = Z[0];
-	coordinates[2][0] = X[dims[0]-1];   coordinates[2][1] = Y[dims[1]-1];   coordinates[2][2] = Z[0];
-	coordinates[3][0] = X[0];           coordinates[3][1] = Y[dims[1]-1];   coordinates[3][2] = Z[0];
+    float coordinates[8][3];
+    coordinates[0][0] = X[0];          
+    coordinates[0][1] = Y[0];          
+    coordinates[0][2] = Z[0];
+	
+    coordinates[1][0] = X[dims[0]-1];
+    coordinates[1][1] = Y[0];   
+    coordinates[1][2] = Z[0];
+	
+    coordinates[2][0] = X[dims[0]-1];
+    coordinates[2][1] = Y[dims[1]-1];
+    coordinates[2][2] = Z[0];
+	
+    coordinates[3][0] = X[0];
+    coordinates[3][1] = Y[dims[1]-1];
+    coordinates[3][2] = Z[0];
 
-	coordinates[4][0] = X[0];           coordinates[4][1] = Y[0];           coordinates[4][2] = Z[dims[2]-1];
-	coordinates[5][0] = X[dims[0]-1];   coordinates[5][1] = Y[0];           coordinates[5][2] = Z[dims[2]-1];
-	coordinates[6][0] = X[dims[0]-1];   coordinates[6][1] = Y[dims[1]-1];   coordinates[6][2] = Z[dims[2]-1];
-	coordinates[7][0] = X[0];           coordinates[7][1] = Y[dims[1]-1];   coordinates[7][2] = Z[dims[2]-1];
+    coordinates[4][0] = X[0];
+    coordinates[4][1] = Y[0];
+    coordinates[4][2] = Z[dims[2]-1];
+	
+    coordinates[5][0] = X[dims[0]-1];
+    coordinates[5][1] = Y[0];
+    coordinates[5][2] = Z[dims[2]-1];
+	
+    coordinates[6][0] = X[dims[0]-1];
+    coordinates[6][1] = Y[dims[1]-1];
+    coordinates[6][2] = Z[dims[2]-1];
+	
+    coordinates[7][0] = X[0];
+    coordinates[7][1] = Y[dims[1]-1];
+    coordinates[7][2] = Z[dims[2]-1];
 
-	cout << "Extents (XYZ)" 
-	     << " - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] 
-	     << " - Max: " << X[dims[0]-1] << ", " << Y[dims[1]-1] << ", " << Z[dims[2]-1] << endl;
+    cout << "Extents (XYZ)" 
+	 << " - Min: " << X[0] << ", " << Y[0] << ", " << Z[0] 
+	 << " - Max: " 
+	 << X[dims[0]-1] << ", " 
+	 << Y[dims[1]-1] << ", " 
+	 << Z[dims[2]-1] << endl;
 
-	//
-	// Compute z order for blending patches
-	double _center[3];
-	_center[0] = (X[0] + X[dims[0]-1])/2.0;
-	_center[1] = (Y[0] + Y[dims[1]-1])/2.0;
-	_center[2] = (Z[0] + Z[dims[2]-1])/2.0;
-	double __depth = sqrt( (_center[0]-view.camera[0])*(_center[0]-view.camera[0]) +  
-			       (_center[1]-view.camera[1])*(_center[1]-view.camera[1]) + 
-			       (_center[2]-view.camera[2])*(_center[2]-view.camera[2]) );
-	eyeSpaceDepth = __depth;
+    //
+    // Compute z order for blending patches
+    double _center[3];
+    _center[0] = (X[0] + X[dims[0]-1])/2.0;
+    _center[1] = (Y[0] + Y[dims[1]-1])/2.0;
+    _center[2] = (Z[0] + Z[dims[2]-1])/2.0;
+    double __depth = sqrt( (_center[0]-view.camera[0])*(_center[0]-view.camera[0]) +  
+			   (_center[1]-view.camera[1])*(_center[1]-view.camera[1]) + 
+			   (_center[2]-view.camera[2])*(_center[2]-view.camera[2]) );
+    eyeSpaceDepth = __depth;
 
-	// Qi debug: world coordinate
-	cout << "center " << _center[0] << " " << _center[1] << " " << _center[2] << endl;
+    // Qi debug: world coordinate
+    cout << "center " << _center[0] << " " << _center[1] << " " << _center[2] << endl;
 
-	double _clipSpaceZ = 0;
-	double _world[3];
-	for (int i=0; i<8; i++)
+    double _clipSpaceZ = 0;
+    double _world[3];
+    for (int i=0; i<8; i++)
+    {
+	int pos2D[2];
+	float tempZ;
+
+	_world[0] = coordinates[i][0];
+	_world[1] = coordinates[i][1];
+	_world[2] = coordinates[i][2];
+
+	tempZ = project(_world, pos2D, fullImgWidth, fullImgHeight);
+	std::cout << "camera coord " << pos2D[0] << " " << pos2D[1] << std::endl;
+
+	// Clamp values
+	pos2D[0] = std::min(std::max(pos2D[0], 0), w_max-1);
+	pos2D[0] = std::min(std::max(pos2D[0], 0), w_max-1);
+	pos2D[1] = std::min(std::max(pos2D[1], 0), h_max-1);
+	pos2D[1] = std::min(std::max(pos2D[1], 0), h_max-1);
+
+	// Get min max
+	xMin = std::min(xMin, pos2D[0]);
+	xMax = std::max(xMax, pos2D[0]);
+	yMin = std::min(yMin, pos2D[1]);
+	yMax = std::max(yMax, pos2D[1]);
+
+
+	if (i == 0)
 	{
-		int pos2D[2];
-		float tempZ;
+	    _clipSpaceZ = tempZ;
+	    renderingDepthsExtents[0] = tempZ;
+	    renderingDepthsExtents[1] = tempZ;
+	}
+	else
+	{
+	    if ( _clipSpaceZ > tempZ )
+		_clipSpaceZ = tempZ;
 
-		_world[0] = coordinates[i][0];
-		_world[1] = coordinates[i][1];
-		_world[2] = coordinates[i][2];
+	    if (renderingDepthsExtents[0] > tempZ)      // min z
+		renderingDepthsExtents[0] = tempZ;
 
-		tempZ = project(_world, pos2D, fullImgWidth, fullImgHeight);
+	    if (renderingDepthsExtents[1] < tempZ)      // max z
+		renderingDepthsExtents[1] = tempZ;
+	};
+    }
 
-		// Clamp values
-		pos2D[0] = std::min(std::max(pos2D[0], 0), w_max-1);
-		pos2D[0] = std::min(std::max(pos2D[0], 0), w_max-1);
-		pos2D[1] = std::min(std::max(pos2D[1], 0), h_max-1);
-		pos2D[1] = std::min(std::max(pos2D[1], 0), h_max-1);
+    renderingAreaExtents[0] = xMin;
+    renderingAreaExtents[1] = xMax;
+    renderingAreaExtents[2] = yMin;
+    renderingAreaExtents[3] = yMax;
 
-		// Get min max
-		xMin = std::min(xMin, pos2D[0]);
-		xMax = std::max(xMax, pos2D[0]);
-		yMin = std::min(yMin, pos2D[1]);
-		yMax = std::max(yMax, pos2D[1]);
+    clipSpaceDepth = _clipSpaceZ;
+
+    imgWidth  = xMax-xMin;
+    imgHeight = yMax-yMin;
 
 
-		if (i == 0)
+    //debug5 << "Initialize memory" << std::endl;
+
+    //
+    // Initialize memory
+    imgArray =  new float[((imgWidth)*4) * imgHeight]();   // image
+
+    //
+    // Send rays
+    imgDims[0] = imgWidth;       imgDims[1] = imgHeight;
+    imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
+    imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
+
+    //debug5 << "Send rays ~ screen:" << xMin << ", " << xMax << "    "  << yMin << ", " << yMax <<  "    " << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] <<  "   Buffer extents: " << bufferExtents[0] << ", " << bufferExtents[1] << "   " << bufferExtents[2] << ", " << bufferExtents[3] << std::endl;
+
+    for (int _x = xMin ; _x < xMax ; _x++)
+	for (int _y = yMin ; _y < yMax ; _y++)
+	{
+	    int index = (_y-yMin)*imgWidth + (_x-xMin);
+
+
+	    if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
+	    {
+		int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + (_x-bufferExtents[0]) );
+
+		if ( depthBuffer[fullIndex] != 1)
 		{
-			_clipSpaceZ = tempZ;
-			renderingDepthsExtents[0] = tempZ;
-			renderingDepthsExtents[1] = tempZ;
+		    double clipDepth = depthBuffer[fullIndex]*2 - 1;
+
+		    if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
+		    {
+			patchDrawn = 1;
+
+
+						
+
+			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
+			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1] / 255.0;
+			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2] / 255.0;
+			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 3] = 1.0;
+		    }
 		}
-		else
-		{
-			if ( _clipSpaceZ > tempZ )
-				_clipSpaceZ = tempZ;
+	    }
+	    else
+	    {
+		double _origin[3], _terminus[3];
+		double origin[4]  = {0,0,0,1};      // starting point where we start sampling
+		double terminus[4]= {0,0,0,1};      // ending point where we stop sampling
 
-			if (renderingDepthsExtents[0] > tempZ)      // min z
-				renderingDepthsExtents[0] = tempZ;
+		GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);    // find the starting point & ending point of the ray
 
-			if (renderingDepthsExtents[1] < tempZ)      // max z
-				renderingDepthsExtents[1] = tempZ;
-		};
+		for (int i=0; i<3; i++){
+		    origin[i] = _origin[i];
+		    terminus[i] = _terminus[i];
+		}
+
+		SampleAlongSegment(origin, terminus, _x, _y);            
+		// Go get the segments along this ray and store them in
+	    }
 	}
 
-	renderingAreaExtents[0] = xMin;
-	renderingAreaExtents[1] = xMax;
-	renderingAreaExtents[2] = yMin;
-	renderingAreaExtents[3] = yMax;
+    //
+    // Deallocate memory if not used
+    if (patchDrawn == 0)
+    {
+	if (imgArray != NULL)
+	    delete []imgArray;
 
-	clipSpaceDepth = _clipSpaceZ;
+	imgArray = NULL;
 
-	imgWidth  = xMax-xMin;
-	imgHeight = yMax-yMin;
+	return;
+    }
 
+    // save original image
+    static int i = 0;
+    std::cout << "saving patch image to " << i << std::endl;
+    writeArrayToPPM("/home/sci/qwu/Desktop/cpuimg/local_patches_"
+		    + std::to_string(i++),
+		    imgArray,imgWidth,imgHeight);
 
-	//debug5 << "Initialize memory" << std::endl;
+    if (i == 47) 
+    {
+	// Qi enabling debug
+	std::cout << "creating ospray volume" << std::endl;
 
-	//
-	// Initialize memory
-	imgArray =  new float[((imgWidth)*4) * imgHeight]();   // image
+	//ospcommon::vec3i volumeDims(256, 256, 256);
+	//ospcommon::vec3f volumeLbox(0,0,0);
+	//ospcommon::vec3f volumeMbox(255,255,255);
 
-	//
-	// Send rays
-	imgDims[0] = imgWidth;       imgDims[1] = imgHeight;
-	imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
-	imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
+	ospcommon::vec3i volumeDims(dims[0], dims[1], dims[2]);	
+	ospcommon::vec3f volumeLbox(X[0],         Y[0],         Z[0]);
+	ospcommon::vec3f volumeMbox(X[dims[0]-1], Y[dims[1]-1], Z[dims[2]-1]);
 
-	//debug5 << "Send rays ~ screen:" << xMin << ", " << xMax << "    "  << yMin << ", " << yMax <<  "    " << renderingDepthsExtents[0] << ", " << renderingDepthsExtents[1] <<  "   Buffer extents: " << bufferExtents[0] << ", " << bufferExtents[1] << "   " << bufferExtents[2] << ", " << bufferExtents[3] << std::endl;
+	ospcommon::vec3f volumeSpac
+	    ((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims-1.0f));
 
-	for (int _x = xMin ; _x < xMax ; _x++)
-		for (int _y = yMin ; _y < yMax ; _y++)
-		{
-			int index = (_y-yMin)*imgWidth + (_x-xMin);
+	std::cout << "patch dim " << volumeDims << std::endl;
+	std::cout << "patch min box " << volumeLbox << std::endl;
+	std::cout << "patch max box " << volumeMbox << std::endl;
+	std::cout << "patch spacing " << volumeSpac << std::endl;
 
+	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
+	std::vector<float> volumeData(ospVolumeSize, 0);
 
-			if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )     // outside visible range
-			{
-				int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + (_x-bufferExtents[0]) );
+	// for (size_t i = 0; i < volumeData.size(); ++i)
+	// { volumeData[i] = (i % 255)/46.0f; }
 
-				if ( depthBuffer[fullIndex] != 1)
-				{
-					double clipDepth = depthBuffer[fullIndex]*2 - 1;
+	for (size_t i = 0; i < volumeData.size(); ++i)
+	{ volumeData[i] = ((double*)ospVolumePointer)[i]; }
+	    
+	OSPVolume ospVolume = ospNewVolume("shared_structured_volume");
+	OSPData ospVoxelData = ospNewData(ospVolumeSize,
+					  OSP_FLOAT,volumeData.data(),
+					  OSP_DATA_SHARED_BUFFER);
+	ospSetData(ospVolume,  "voxelData", ospVoxelData);
+	ospSetString(ospVolume, "voxelType", "float");
+	ospSetVec3f(ospVolume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
+	ospSetVec3f(ospVolume, "gridSpacing", (const osp::vec3f&)volumeSpac);
 
-					if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
-					{
-						patchDrawn = 1;
+	ospSetVec3i(ospVolume, "dimensions", (osp::vec3i&)volumeDims);
+	ospSetObject(ospVolume, "transferFunction", *ospTransferFcn);	    
+	ospCommit(ospVolume);
 
-						imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
-						imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1] / 255.0;
-						imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2] / 255.0;
-						imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 3] = 1.0;
-					}
-				}
-			}
-			else
-			{
-				double _origin[3], _terminus[3];
-				double origin[4]  = {0,0,0,1};      // starting point where we start sampling
-				double terminus[4]= {0,0,0,1};      // ending point where we stop sampling
+	std::cout << "creating ospray model" << std::endl;
+	OSPModel ospWorld = ospNewModel();
+	ospAddVolume(ospWorld, ospVolume);
+	ospCommit(ospWorld);
 
-				GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);    // find the starting point & ending point of the ray
+	std::cout << "creating osp renderer" << std::endl;
+	ospcommon::vec3f ospBgColor(0.0, 0.0, 0.0);
+	OSPRenderer ospRenderer = ospNewRenderer("scivis");
+	ospSetObject(ospRenderer, "camera", *ospCamera);
+	ospSetObject(ospRenderer, "model",   ospWorld);
+	ospSetVec3f(ospRenderer, "bgColor", (osp::vec3f&)ospBgColor);
+	ospCommit(ospRenderer);
 
-				for (int i=0; i<3; i++){
-					origin[i] = _origin[i];
-					terminus[i] = _terminus[i];
-				}
+	//ospcommon::vec2i imageSize (imgWidth,imgHeight);
+	ospcommon::vec2i imageSize (1024, 1024);
 
-				SampleAlongSegment(origin, terminus, _x, _y);             // Go get the segments along this ray and store them in
-			}
-		}
-
-	//
-	// Deallocate memory if not used
-	if (patchDrawn == 0)
-	{
-		if (imgArray != NULL)
-			delete []imgArray;
-
-		imgArray = NULL;
-	}
+	OSPFrameBuffer ospfb = 
+	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_SRGBA, 
+			      OSP_FB_COLOR | OSP_FB_ACCUM);
+	ospFrameBufferClear(ospfb, OSP_FB_COLOR | OSP_FB_ACCUM);
+	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+	    
+	// save ospray image and clean up
+	const uint32_t * fb = (uint32_t*)ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
+	writePPM("/home/sci/qwu/Desktop/osp/volume_", i-1, imageSize, fb);
+	ospUnmapFrameBuffer(fb, ospfb);
+	ospRelease(ospWorld);
+	ospRelease(ospVolume);
+	ospRelease(ospRenderer);
+	ospRelease(ospfb);
+	// exit(-1);
+    }
 }
 
 
@@ -3019,8 +3204,15 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _s
 
 	if (normDevCoord[3] == 0)
 	{
-		debug5 << "avtMassVoxelExtractor::project division by 0 error!" << endl;
-		debug5 << "worldCoordinates: " << worldCoordinates[0] << ", " << worldCoordinates[1] << ", " << worldCoordinates[2] << "   " << normDevCoord[0] << ", " << normDevCoord[1] << ", " << normDevCoord[2] << endl;
+		debug5 << "avtMassVoxelExtractor::project division by 0 error!" 
+		       << endl;
+		debug5 << "worldCoordinates: " 
+		       << worldCoordinates[0] << ", " 
+		       << worldCoordinates[1] << ", " 
+		       << worldCoordinates[2] << "   " 
+		       << normDevCoord[0] << ", " 
+		       << normDevCoord[1] << ", " 
+		       << normDevCoord[2] << endl;
 		debug5 << "Matrix: " << *modelViewProj << endl;
 	}
 
@@ -3034,6 +3226,11 @@ avtMassVoxelExtractor::project(double _worldCoordinates[3], int pos2D[2], int _s
 	pos2D[0] = round( normDevCoord[0]*(_screenWidth/2.)  + (_screenWidth/2.)  );
 	pos2D[1] = round( normDevCoord[1]*(_screenHeight/2.) + (_screenHeight/2.) );
 
+	std::cout << "camera raw coord "
+		  << normDevCoord[0] << " "
+		  << normDevCoord[1] << " "
+		  << normDevCoord[2] << " "
+		  << normDevCoord[3] << std::endl;
 
 	// Add panning
 	pos2D[0] += round(_screenWidth * panPercentage[0]);

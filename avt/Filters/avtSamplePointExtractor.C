@@ -1043,6 +1043,9 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	{
 	    varnames.push_back(samples->GetVariableName(i));
 	    varsizes.push_back(samples->GetVariableSize(i));
+	    // std::cout << varsizes[i] << " " << varnames[i] << std::endl;
+	    // size of the variable (in case it is not a single number ?)
+	    // name of the variable
 	}
 
 	//
@@ -1054,8 +1057,11 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->setBufferExtents(bufferExtents);
 
 	    massVoxelExtractor->SetViewDirection(viewDirection);
-	    massVoxelExtractor->SetCameraPosition(cameraPosition);
-	    massVoxelExtractor->SetCameraUpVector(cameraUpVector);
+	    massVoxelExtractor->SetOSPCamera(ospCamera);
+	    massVoxelExtractor->SetOSPTransferFcn(ospTransferFcn);
+	    //massVoxelExtractor->SetCameraPosition(cameraPosition);
+	    //massVoxelExtractor->SetCameraUpVector(cameraUpVector);
+	    //massVoxelExtractor->SetCameraAspect(cameraAspect);
 
 	    massVoxelExtractor->SetMVPMatrix(modelViewProj);
 	    massVoxelExtractor->SetClipPlanes(clipPlanes);
@@ -1113,13 +1119,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 		massVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
 		imgDataHashMap.insert(std::pair<int, imgData>(tmpImageDataHash.patchNumber, tmpImageDataHash));
 
-		// Qi enabling debug
-		// writeArrayToPPM("/home/sci/qwu/Desktop/local_patches_" + 
-		// 		toStr(tmpImageMetaPatch.procId) + "_" + 
-		// 		toStr(tmpImageMetaPatch.patchNumber), 
-		// 		tmpImageDataHash.imagePatch, 
-		// 		tmpImageMetaPatch.dims[0], 
-		// 		tmpImageMetaPatch.dims[1]);
+	       
 
 		patchCount++;
 	    }

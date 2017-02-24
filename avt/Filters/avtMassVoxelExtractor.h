@@ -43,6 +43,9 @@
 #ifndef AVT_MASS_VOXEL_EXTRACTOR_H
 #define AVT_MASS_VOXEL_EXTRACTOR_H
 
+#include "ospray/ospray.h"
+#include "ospray/ospcommon/vec.h"
+
 #include <filters_exports.h>
 
 #include <avtExtractor.h>
@@ -126,37 +129,50 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 	{ for (int i=0;i<4;i++) { lightPosition[i] = _lightPos[i]; } }
 	void             SetMatProperties(double _matProp[4]) 
 	{ for (int i=0;i<4;i++) { materialProperties[i]=_matProp[i]; } }
-	void             SetScalarRange(double _range[2]) { scalarRange[0]=_range[0]; scalarRange[1]=_range[1];}
+	void             SetScalarRange(double _range[2])
+	{ scalarRange[0]=_range[0]; scalarRange[1]=_range[1];}
 	void             SetTFVisibleRange(double _tfRange[2])
 	{ tFVisibleRange[0]=_tfRange[0]; tFVisibleRange[1]=_tfRange[1]; }
-	void             SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
+	void             SetTransferFn(avtOpacityMap *_transferFn1D) 
+	{ transferFn1D = _transferFn1D; };
 	void             SetViewDirection(double *_vD)
 	{ for (int i=0; i<3; i++) { viewDirection[i] = view_direction[i] = _vD[i]; } }
 	void             SetCameraPosition(double *_cp) 
 	{ std::copy(_cp, _cp + 3, cameraPosition); }
 	void             SetCameraUpVector(double *_cu) 
 	{ std::copy(_cu, _cu + 3, cameraUpVector); }
+	void             SetCameraAspect(double _a) { cameraAspect = _a; }
 	void             SetClipPlanes(double _camClip[2])
 	{ clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
 	void             SetPanPercentages(double _pan[2])
 	{ panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1]; }
 	void             SetDepthExtents(double _depthExtents[2])
-	{ fullVolumeDepthExtents[0] = _depthExtents[0]; fullVolumeDepthExtents[1] = _depthExtents[1]; }
+	{ 
+	    fullVolumeDepthExtents[0] = _depthExtents[0]; 
+	    fullVolumeDepthExtents[1] = _depthExtents[1]; 
+	}
 	void             SetMVPMatrix(vtkMatrix4x4 *_mvp)
-	{ modelViewProj->DeepCopy(_mvp); vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); }
+	{ 
+	    modelViewProj->DeepCopy(_mvp); 
+	    vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); 
+	}
 	//
 	// Getting the image
 	void             getImageDimensions(int &inUse, int dims[2], 
 					    int screen_ll[2], int screen_ur[2], 
 					    float &eyeDepth, float &clipDepth);
 	void             getComputedImage(float *image);
-	void             setProcIdPatchID(int _proc, int _patch) { proc = _proc; patch = _patch; }
+	void             setProcIdPatchID(int _proc, int _patch)
+	{ proc = _proc; patch = _patch; }
 	//
 	// Set the background information
 	void             setDepthBuffer(float *_zBuffer, int size) { depthBuffer=_zBuffer; }
 	void             setRGBBuffer(unsigned char  *_colorBuffer, int width, int height)
 	{ rgbColorBuffer=_colorBuffer; };
-	void             setBufferExtents(int _extents[4]) { for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
+	void             setBufferExtents(int _extents[4])
+	{ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
+	void             SetOSPCamera(OSPCamera* _cam) { ospCamera = _cam; }
+	void             SetOSPTransferFcn(OSPTransferFunction* _t) { ospTransferFcn = _t; }
 
   protected:
 	bool             gridsAreInWorldSpace;
@@ -179,6 +195,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 	double           view_direction[3]; // they are redundant. One of them should be removed
 	double           cameraPosition[3]; // (Qi) camera location in world coordinate
 	double           cameraUpVector[3]; // (Qi) camera up vector direction
+	double           cameraAspect;
 	double          *X;
 	double          *Y;
 	double          *Z;
@@ -233,6 +250,12 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 	void             getIndexandDistFromCenter(float dist, int index,   
 						   int &index_before, int &index_after,  
 						   float &dist_before, float &dist_after);
+
+	//
+	// OSPRay stuffs
+	//
+	OSPCamera            *ospCamera;
+	OSPTransferFunction  *ospTransferFcn;
 
 	//
 	// RC SLIVR Specific

@@ -118,36 +118,36 @@ avtRayTracer::avtRayTracer()
     view.parallelScale = 10;
     view.orthographic = true;
 
-	panPercentage[0] = 0;
-	panPercentage[1] = 0;
+    panPercentage[0] = 0;
+    panPercentage[1] = 0;
 
-	rayfoo         = NULL;
-	opaqueImage    = NULL;
+    rayfoo         = NULL;
+    opaqueImage    = NULL;
 
-	background[0]  = 255;
-	background[1]  = 255;
-	background[2]  = 255;
-	backgroundMode = BACKGROUND_SOLID;
-	gradBG1[0] = 0.;
-	gradBG1[1] = 0.;
-	gradBG1[2] = 1.;
-	gradBG2[0] = 0.;
-	gradBG2[1] = 0.;
-	gradBG2[2] = 0.;
+    background[0]  = 255;
+    background[1]  = 255;
+    background[2]  = 255;
+    backgroundMode = BACKGROUND_SOLID;
+    gradBG1[0] = 0.;
+    gradBG1[1] = 0.;
+    gradBG1[2] = 1.;
+    gradBG2[0] = 0.;
+    gradBG2[1] = 0.;
+    gradBG2[2] = 0.;
 
-	screen[0] = screen[1] = 400;
-	samplesPerRay  = 40;
-	kernelBasedSampling = false;
-	trilinearInterpolation = false;
-	rayCastingSLIVR = false;
-	convexHullOnRCSLIVR = false;
+    screen[0] = screen[1] = 400;
+    samplesPerRay  = 40;
+    kernelBasedSampling = false;
+    trilinearInterpolation = false;
+    rayCastingSLIVR = false;
+    convexHullOnRCSLIVR = false;
 
-	lighting = false;
-	lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0; lightPosition[3] = 1.0;
-	materialProperties[0] = 0.4; 
-	materialProperties[1] = 0.75;
-	materialProperties[3] = 0.0;
-	materialProperties[3] = 15.0;
+    lighting = false;
+    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0; lightPosition[3] = 1.0;
+    materialProperties[0] = 0.4; 
+    materialProperties[1] = 0.75;
+    materialProperties[3] = 0.0;
+    materialProperties[3] = 15.0;
 }
 
 // ****************************************************************************
@@ -162,7 +162,8 @@ avtRayTracer::avtRayTracer()
 //
 // ****************************************************************************
 
-avtRayTracer::~avtRayTracer() {;}
+avtRayTracer::~avtRayTracer() {}
+
 
 // ****************************************************************************
 //  Method: avtRayTracer::SetBackgroundColor
@@ -324,29 +325,33 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 // ****************************************************************************
 
 void
-avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2], float *dst, int dimsDst[2], int posDst[2])
+avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2], 
+			  float *dst, int dimsDst[2], int posDst[2])
 {
-	for (int _y=0; _y<dimsSrc[1]; _y++)
-		for (int _x=0; _x<dimsSrc[0]; _x++)
-		{
-			int startingX = posSrc[0];
-			int startingY = posSrc[1];
+    for (int _y=0; _y<dimsSrc[1]; _y++)
+	for (int _x=0; _x<dimsSrc[0]; _x++)
+	{
+	    int startingX = posSrc[0];
+	    int startingY = posSrc[1];
+	    
+	    if ((startingX + _x) > (posDst[0]+dimsDst[0]))
+		continue;
+	    
+	    if ((startingY + _y) > (posDst[1]+dimsDst[1]))
+		continue;
+	    
+	    // index in the subimage
+	    int subImgIndex = dimsSrc[0]*_y*4 + _x*4;
+	      // index in the big buffer
+	    int bufferIndex = ( (startingY+_y - posDst[1])*dimsDst[0]*4  + 
+				(startingX+_x - posDst[0])*4 );
 
-			if ((startingX + _x) > (posDst[0]+dimsDst[0]))
-				continue;
-
-			if ((startingY + _y) > (posDst[1]+dimsDst[1]))
-				continue;
-
-			int subImgIndex = dimsSrc[0]*_y*4 + _x*4;                                     // index in the subimage
-			int bufferIndex = ( (startingY+_y - posDst[1])*dimsDst[0]*4  + (startingX+_x - posDst[0])*4 );    // index in the big buffer
-
-			// back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-			dst[bufferIndex+0] = imgComm.clamp( (dst[bufferIndex+0] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+0] );
-			dst[bufferIndex+1] = imgComm.clamp( (dst[bufferIndex+1] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+1] );
-			dst[bufferIndex+2] = imgComm.clamp( (dst[bufferIndex+2] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+2] );
-			dst[bufferIndex+3] = imgComm.clamp( (dst[bufferIndex+3] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+3] );
-		}
+	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
+	    dst[bufferIndex+0] = imgComm.clamp( (dst[bufferIndex+0] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+0] );
+	    dst[bufferIndex+1] = imgComm.clamp( (dst[bufferIndex+1] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+1] );
+	    dst[bufferIndex+2] = imgComm.clamp( (dst[bufferIndex+2] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+2] );
+	    dst[bufferIndex+3] = imgComm.clamp( (dst[bufferIndex+3] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+3] );
+	}
 }
 
 
@@ -615,13 +620,6 @@ avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
 void
 avtRayTracer::Execute(void)
 {
-    
-    //
-    // init ospray before everything
-    int argc = 1;
-    const char* argv[1] = { "visit-ospray" }; // cant call it twice
-    ospInit(&argc, argv);	
-
     // start of original pipeline
     int  timingIndex = visitTimer->StartTimer();
     bool parallelOn = (imgComm.GetNumProcs() == 1)?false:true;
@@ -708,33 +706,34 @@ avtRayTracer::Execute(void)
 	     << view_direction[1] << " "
 	     << view_direction[2] << std::endl;
 	cout << "camera: "       
-	       << view.camera[0] << ", " 
-	       << view.camera[1] << ", " 
-	       << view.camera[2] << std::endl;
+	     << view.camera[0] << ", " 
+	     << view.camera[1] << ", " 
+	     << view.camera[2] << std::endl;
 	cout << "focus: "    
-	       << view.focus[0] << ", " 
-	       << view.focus[1] << ", " 
-	       << view.focus[2] << std::endl;
+	     << view.focus[0] << ", " 
+	     << view.focus[1] << ", " 
+	     << view.focus[2] << std::endl;
 	cout << "viewUp: "    
-	       << view.viewUp[0] << ", " 
-	       << view.viewUp[1] << ", " 
-	       << view.viewUp[2] << std::endl;
-	debug5 << "viewAngle: "  << view.viewAngle  << std::endl;
-	debug5 << "eyeAngle: "  << view.eyeAngle  << std::endl;
-	debug5 << "parallelScale: "  << view.parallelScale  << std::endl;
-	debug5 << "setScale: "  << view.setScale  << std::endl;
-	debug5 << "nearPlane: " << view.nearPlane   << std::endl;
-	debug5 << "farPlane: " << view.farPlane     << std::endl;
-	debug5 << "imagePan[0]: " << view.imagePan[0]     << std::endl;		// this is a freaking fraction!!!
-	debug5 << "imagePan[1]: " << view.imagePan[1]     << std::endl;
-	debug5 << "imageZoom: " << view.imageZoom     << std::endl;
-	debug5 << "orthographic: " << view.orthographic     << std::endl;
-	debug5 << "shear[0]: " << view.shear[0]     << std::endl;
-	debug5 << "shear[1]: " << view.shear[1]     << std::endl;
-	debug5 << "shear[2]: " << view.shear[2]     << std::endl;
-	debug5 << "oldNearPlane: " << oldNearPlane  << std::endl;
-	debug5 << "oldFarPlane: " <<oldFarPlane     << std::endl;
-	debug5 << "aspect: " << aspect << std::endl << std::endl;
+	     << view.viewUp[0] << ", " 
+	     << view.viewUp[1] << ", " 
+	     << view.viewUp[2] << std::endl;
+	cout << "viewAngle: "  << view.viewAngle  << std::endl;
+	cout << "eyeAngle: "  << view.eyeAngle  << std::endl;
+	cout << "parallelScale: "  << view.parallelScale  << std::endl;
+	cout << "setScale: "  << view.setScale  << std::endl;
+	cout << "nearPlane: " << view.nearPlane   << std::endl;
+	cout << "farPlane: " << view.farPlane     << std::endl;
+        // this is a freaking fraction!!!
+	cout << "imagePan[0]: " << view.imagePan[0]     << std::endl;		
+	cout << "imagePan[1]: " << view.imagePan[1]     << std::endl;
+	cout << "imageZoom: " << view.imageZoom     << std::endl;
+	cout << "orthographic: " << view.orthographic     << std::endl;
+	cout << "shear[0]: " << view.shear[0]     << std::endl;
+	cout << "shear[1]: " << view.shear[1]     << std::endl;
+	cout << "shear[2]: " << view.shear[2]     << std::endl;
+	cout << "oldNearPlane: " << oldNearPlane  << std::endl;
+	cout << "oldFarPlane: " <<oldFarPlane     << std::endl;
+	cout << "aspect: " << aspect << std::endl << std::endl;
 
 	double _clip[2];
 	_clip[0]=oldNearPlane;  _clip[1]=oldFarPlane;
@@ -816,7 +815,8 @@ avtRayTracer::Execute(void)
 	double depthExtents[2];
 
 	GetSpatialExtents(dbounds);
-	project3Dto2D(dbounds, screen[0], screen[1], pvm,  fullImageExtents, depthExtents);
+	project3Dto2D
+	    (dbounds, screen[0], screen[1], pvm,  fullImageExtents, depthExtents);
 
 	// Qi debug
 	std::cout << "Full data extents: " 
@@ -831,7 +831,75 @@ avtRayTracer::Execute(void)
 		  << fullImageExtents[1] << "  " 
 		  << fullImageExtents[2] << ", "
 		  << fullImageExtents[3] << std::endl;
+	//
+	// -----------------------------
+	//
+	// (Qi) this should be replaced by proper vtkOSPRay initialization later
+	// init ospray before everything
+	static bool first_entry = true;
+	if (first_entry) {
+	    int argc = 2; const char* argv[2] = { "visitOSPRay", "--osp:debug" }; 
+	    ospInit(&argc, argv); first_entry = false;
+	}
 
+	//
+	// OSPRay camera
+	// do some ospray stuffs to speed things up
+	std::cout << "make ospray camera" << std::endl;
+	OSPCamera ospCamera = ospNewCamera("perspective");
+
+	// ospcommon::vec3i volumeDims(256, 256, 256);
+	// const ospcommon::vec3f camPos(-248, -62, 60);
+	// const ospcommon::vec3f camDir = ospcommon::vec3f(volumeDims)/2.f-camPos;
+	// const ospcommon::vec3f camUp(0, 0, 1);
+
+	const ospcommon::vec3f camPos(view.camera[0],view.camera[1],view.camera[2]);
+	const ospcommon::vec3f camDir(view_direction[0], view_direction[1], view_direction[2]);
+	const ospcommon::vec3f camUp (view.viewUp[0], view.viewUp[1], view.viewUp[2]);
+
+	std::cout << " campos " << camPos << std::endl;
+	std::cout << " camdir " << camDir << std::endl;
+	std::cout << " camup  " << camUp  << std::endl;
+
+	ospSetf(ospCamera, "aspect", aspect);
+	ospSetVec3f(ospCamera, "pos", (osp::vec3f&)camPos);
+	ospSetVec3f(ospCamera, "dir", (osp::vec3f&)camDir);
+	ospSetVec3f(ospCamera, "up",  (osp::vec3f&)camUp);
+	ospSet1f(ospCamera, "fovy", (float)view.viewAngle);	
+	ospCommit(ospCamera);
+
+	//
+	// OSPRay transfer function stuffs
+	std::cout << "make ospray transfer function" << std::endl;
+	OSPTransferFunction ospTransferFcn = 
+	    ospNewTransferFunction("piecewise_linear");
+	std::vector<ospcommon::vec3f> ospColors;
+	std::vector<float> ospOpacities;
+	for (auto i = 0; i < transferFn1D->GetNumberOfTableEntries(); ++i) {
+	    ospColors.emplace_back(transferFn1D->GetTableFloat()[i].R,
+				   transferFn1D->GetTableFloat()[i].G,
+				   transferFn1D->GetTableFloat()[i].B);
+	    ospOpacities.emplace_back(transferFn1D->GetTableFloat()[i].A);
+	}
+	const ospcommon::vec2f valueRange((float)transferFn1D->GetMin(), 
+					  (float)transferFn1D->GetMax());
+	OSPData ospColorsData = 
+	    ospNewData(ospColors.size(),OSP_FLOAT3,ospColors.data());
+	ospCommit(ospColorsData);
+	OSPData ospOpacityData = 
+	    ospNewData(ospOpacities.size(),OSP_FLOAT,ospOpacities.data());	
+	ospCommit(ospOpacityData);
+	ospSetData(ospTransferFcn, "colors",    ospColorsData);
+	ospSetData(ospTransferFcn, "opacities", ospOpacityData);
+	ospSetVec2f(ospTransferFcn, "valueRange", (osp::vec2f&)valueRange);
+	ospCommit(ospTransferFcn);
+	std::cout << "trasnfer func range " << valueRange << std::endl;
+	// -----------------------------
+	//
+
+	// 
+	// continuation of previous pipeline
+	//
 	if (parallelOn == false)
 	    extractor.SetRayCastingSLIVRParallel(true);
 
@@ -840,13 +908,17 @@ avtRayTracer::Execute(void)
 	extractor.SetLightDirection(lightDirection);
 	extractor.SetMatProperties(materialProperties);
 	extractor.SetViewDirection(view_direction);
-	extractor.SetCameraPosition(view.camera);
-	extractor.SetCameraUpVector(view.viewUp);
 	extractor.SetTransferFn(transferFn1D);
 	extractor.SetClipPlanes(_clip);
 	extractor.SetPanPercentages(view.imagePan);
 	extractor.SetDepthExtents(depthExtents);
 	extractor.SetMVPMatrix(pvm);
+	
+	extractor.SetCameraPosition(view.camera);
+	extractor.SetCameraUpVector(view.viewUp);
+	extractor.SetCameraAspect(aspect);
+	extractor.SetOSPCamera(&ospCamera);
+	extractor.SetOSPTransferFcn(&ospTransferFcn);
 
 	//
 	// Capture background
@@ -855,8 +927,10 @@ avtRayTracer::Execute(void)
 	__opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
 
 	//createColorPPM("/home/pascal/Desktop/background", __opaqueImageData, screen[0], screen[1]);
-	//writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", __opaqueImageZB, screen[0], screen[1]);
-	//writeDepthBufferToPPM("/home/pascal/Desktop/depthBuffer", __opaqueImageZB, screen[0], screen[1]);
+	// writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", 
+	// 			__opaqueImageZB, screen[0], screen[1]);
+	// writeDepthBufferToPPM("/home/pascal/Desktop/depthBuffer", 
+	// 		      __opaqueImageZB, screen[0], screen[1]);
 
 	extractor.setDepthBuffer(__opaqueImageZB, screen[0] * screen[1]);
 	extractor.setRGBBuffer(__opaqueImageData, screen[0], screen[1]);
@@ -864,6 +938,7 @@ avtRayTracer::Execute(void)
 	int _bufExtents[4] = {0,0,0,0};
 	_bufExtents[1] = screen[0]; _bufExtents[3] = screen[1];
 	extractor.setBufferExtents(_bufExtents);
+
     }
 
     //

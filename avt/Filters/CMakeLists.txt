@@ -72,11 +72,6 @@
 #
 #****************************************************************************/
 
-if (ospray_BINARY)
-find_package(ospray REQUIRED)
-include_directories(${OSPRAY_INCLUDE_DIRS})
-endif()
-
 SET(AVTFILTERS_SOURCES
 avtActualExtentsFilter.C
 avtCondenseDatasetFilter.C

@@ -43,6 +43,9 @@
 #ifndef AVT_SAMPLE_POINT_EXTRACTOR_H
 #define AVT_SAMPLE_POINT_EXTRACTOR_H
 
+#include "ospray/ospray.h"
+#include "ospray/ospcommon/vec.h"
+
 #include <filters_exports.h>
 
 #include <avtDatasetToSamplePointsFilter.h>
@@ -174,17 +177,19 @@ public:
     //    xx = class fields
     void                      RegisterRayFunction(avtRayFunction *_rf) { rayfoo = _rf; };
     void                      RestrictToTile(int, int, int, int);
-    void                      StartTiling(void) { shouldDoTiling = true; }; // added by Qi: pair with StopTiling
+    void                      StartTiling(void) { shouldDoTiling = true; }; // added by Qi 
     void                      StopTiling(void) { shouldDoTiling = false; };
     void                      SendCellsMode(bool);
-    void                      SetRectilinearGridsAreInWorldSpace(bool, const avtViewInfo &,double);
+    void                      SetRectilinearGridsAreInWorldSpace(bool, 
+								 const avtViewInfo &,double);
     void                      Set3DMode(bool _m) { modeIs3D = _m; };
     void                      SetKernelBasedSampling(bool);
     void                      SetJittering(bool);
     void                      SetUpArbitrator(std::string &, bool);
     void                      SetTrilinear(bool _t) { trilinearInterpolation = _t; };
     void                      SetRayCastingSLIVR(bool _s) { rayCastingSLIVR = _s; };
-    void                      SetRayCastingSLIVRParallel(bool _p) { rayCastingSLIVRParallel = _p; };
+    void                      SetRayCastingSLIVRParallel(bool _p)
+    { rayCastingSLIVRParallel = _p; };
     void                      SetLighting(bool _l) { lighting = _l; };
     void                      SetLightPosition(double _lp[4])
     { for (int i=0;i<4;i++) { lightPosition[i] = _lp[i]; } }
@@ -192,13 +197,15 @@ public:
     { for (int i=0;i<3;i++) { lightDirection[i] = _ld[i]; } }
     void                      SetMatProperties(double _matProp[4])
     { for (int i=0;i<4;i++) { materialProperties[i] = _matProp[i]; } }
-    void                      SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
+    void                      SetTransferFn(avtOpacityMap *_transferFn1D)
+    { transferFn1D = _transferFn1D; };
     void                      SetViewDirection(double *_vD) 
     { std::copy(_vD, _vD + 3, viewDirection); }
     void                      SetCameraPosition(double *_cp) 
     { std::copy(_cp, _cp + 3, cameraPosition); }
     void                      SetCameraUpVector(double *_cu) 
     { std::copy(_cu, _cu + 3, cameraUpVector); }
+    void                      SetCameraAspect(double _a) { cameraAspect = _a; }
     void                      SetClipPlanes(double _camClip[2])
     { clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
     void                      SetPanPercentages(double _pan[2])
@@ -224,17 +231,23 @@ public:
     // gets the number of patches
     int                       getImgPatchSize(){ return patchCount;};
     // gets the metadata
-    imgMetaData               getImgMetaPatch(int patchId){ return imageMetaPatchVector.at(patchId);}
+    imgMetaData               getImgMetaPatch(int patchId)
+    { return imageMetaPatchVector.at(patchId);}
     // gets the image & erase its existence
     void                      getnDelImgData(int patchId, imgData &tempImgData);
     // deletes patches
     void                      delImgPatches();
     // Set background buffer
-    void                      setDepthBuffer(float *_zBuffer, int _size) { depthBuffer = _zBuffer; }
-    void                      setRGBBuffer(unsigned char  *_colorBuffer, int _width, int _height)
+    void                      setDepthBuffer(float *_zBuffer, int _size)
+    { depthBuffer = _zBuffer; }
+    void                      setRGBBuffer(unsigned char  *_colorBuffer, 
+					   int _width, int _height)
     { rgbColorBuffer = _colorBuffer; };
     void                      setBufferExtents(int _extents[4])
     { for (int i=0;i<4; i++) bufferExtents[i] = _extents[i]; }
+    // Qi add
+    void             SetOSPCamera(OSPCamera* _cam) { ospCamera = _cam; }
+    void             SetOSPTransferFcn(OSPTransferFunction* _t) { ospTransferFcn = _t; }
 
 public:
     typedef std::multimap<int, imgData>::iterator iter_t;
@@ -291,6 +304,7 @@ protected:
     double                    viewDirection[3];  // this is camera direction also
     double                    cameraPosition[3]; // (Qi) camera location in world coordinate
     double                    cameraUpVector[3]; // (Qi) camera up vector direction
+    double                    cameraAspect;
     double                    depthExtents[2];
     double                    clipPlanes[2];
     double                    panPercentage[2];
@@ -309,6 +323,11 @@ protected:
     imgMetaData               initMetaPatch(int id);    // initialize a patch
     // Qi modification
     // ...
+    // OSPRay stuffs
+    //
+    OSPCamera            *ospCamera;
+    OSPTransferFunction  *ospTransferFcn;
+    
 
 protected:
     typedef struct 

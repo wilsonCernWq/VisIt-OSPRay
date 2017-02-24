@@ -62,6 +62,8 @@ struct _RGBA
     float A;
 };
 
+typedef _RGBA RGBAF; // added by Qi, for using _RGBA nicely outside the function
+
 // ****************************************************************************
 //  Class: avtOpacityMap
 //
@@ -96,9 +98,12 @@ public:
     virtual                     ~avtOpacityMap();
 
     const RGBA                  *GetTable(void) { return table; };
+    const RGBAF                 *GetTableFloat(void) { return transferFn1D; };
     void                         SetTable(unsigned char *, int, double = 1.);
-    void                         SetTable(unsigned char *arr, int te, double attenuation, float over);
-    void                         SetTableFloat(unsigned char *arr, int te, double attenuation, float over);
+    void                         SetTable(unsigned char *arr, int te,
+					  double attenuation, float over);
+    void                         SetTableFloat(unsigned char *arr, int te, 
+					       double attenuation, float over);
     void                         SetTable(RGBA *, int, double = 1.);
     const RGBA                  &GetOpacity(double);
 
@@ -135,7 +140,7 @@ private:
     // These methods are defined to prevent accidental use of bitwise copy
     // implementations.  If you want to re-define them to do something
     // meaningful, that's fine.
-                         avtOpacityMap(const avtOpacityMap &) {;};
+                         avtOpacityMap(const avtOpacityMap &) {};
     avtOpacityMap       &operator=(const avtOpacityMap &) { return *this; };
 };
 
