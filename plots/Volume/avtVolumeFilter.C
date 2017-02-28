@@ -611,6 +611,10 @@ avtImage_p
 avtVolumeFilter::RenderImage(avtImage_p opaque_image,
 							 const WindowAttributes &window)
 {
+    
+    // Qi to exam if this function is called in parallel
+    std::cout << " running avtVolumeFilter::RenderImage " << std::endl;
+
 	if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
 		return RenderImageRaycastingSLIVR(opaque_image,window);
 	}
