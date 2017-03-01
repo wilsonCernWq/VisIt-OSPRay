@@ -685,7 +685,6 @@ avtRayTracer::Execute(void)
     if (rayCastingSLIVR)
     {
 	extractor.SetRayCastingSLIVR(true);
-
 	//
 	// Camera Settings
 	vtkCamera *sceneCam = vtkCamera::New();
@@ -701,46 +700,45 @@ avtRayTracer::Execute(void)
 	sceneCam->SetParallelScale(view.parallelScale);
 
 	debug5 << "RT View settings: " << endl;
-	cout << "inheriant view direction: "
-	     << view_direction[0] << " "
-	     << view_direction[1] << " "
-	     << view_direction[2] << std::endl;
-	cout << "camera: "       
-	     << view.camera[0] << ", " 
-	     << view.camera[1] << ", " 
-	     << view.camera[2] << std::endl;
-	cout << "focus: "    
-	     << view.focus[0] << ", " 
-	     << view.focus[1] << ", " 
-	     << view.focus[2] << std::endl;
-	cout << "viewUp: "    
-	     << view.viewUp[0] << ", " 
-	     << view.viewUp[1] << ", " 
-	     << view.viewUp[2] << std::endl;
-	cout << "viewAngle: "  << view.viewAngle  << std::endl;
-	cout << "eyeAngle: "  << view.eyeAngle  << std::endl;
-	cout << "parallelScale: "  << view.parallelScale  << std::endl;
-	cout << "setScale: "  << view.setScale  << std::endl;
-	cout << "nearPlane: " << view.nearPlane   << std::endl;
-	cout << "farPlane: " << view.farPlane     << std::endl;
+	debug5 << "inheriant view direction: "
+	       << view_direction[0] << " "
+	       << view_direction[1] << " "
+	       << view_direction[2] << std::endl;
+	debug5 << "camera: "       
+	       << view.camera[0] << ", " 
+	       << view.camera[1] << ", " 
+	       << view.camera[2] << std::endl;
+	debug5 << "focus: "    
+	       << view.focus[0] << ", " 
+	       << view.focus[1] << ", " 
+	       << view.focus[2] << std::endl;
+	debug5 << "viewUp: "    
+	       << view.viewUp[0] << ", " 
+	       << view.viewUp[1] << ", " 
+	       << view.viewUp[2] << std::endl;
+	debug5 << "viewAngle: "  << view.viewAngle  << std::endl;
+	debug5 << "eyeAngle: "   << view.eyeAngle  << std::endl;
+	debug5 << "parallelScale: "  << view.parallelScale  << std::endl;
+	debug5 << "setScale: "  << view.setScale  << std::endl;
+	debug5 << "nearPlane: " << view.nearPlane   << std::endl;
+	debug5 << "farPlane: "  << view.farPlane     << std::endl;
         // this is a freaking fraction!!!
-	cout << "imagePan[0]: " << view.imagePan[0]     << std::endl;		
-	cout << "imagePan[1]: " << view.imagePan[1]     << std::endl;
-	cout << "imageZoom: " << view.imageZoom     << std::endl;
-	cout << "orthographic: " << view.orthographic     << std::endl;
-	cout << "shear[0]: " << view.shear[0]     << std::endl;
-	cout << "shear[1]: " << view.shear[1]     << std::endl;
-	cout << "shear[2]: " << view.shear[2]     << std::endl;
-	cout << "oldNearPlane: " << oldNearPlane  << std::endl;
-	cout << "oldFarPlane: " <<oldFarPlane     << std::endl;
-	cout << "aspect: " << aspect << std::endl << std::endl;
+	debug5 << "imagePan[0]: " << view.imagePan[0]     << std::endl;		
+	debug5 << "imagePan[1]: " << view.imagePan[1]     << std::endl;
+	debug5 << "imageZoom: " << view.imageZoom     << std::endl;
+	debug5 << "orthographic: " << view.orthographic     << std::endl;
+	debug5 << "shear[0]: " << view.shear[0]     << std::endl;
+	debug5 << "shear[1]: " << view.shear[1]     << std::endl;
+	debug5 << "shear[2]: " << view.shear[2]     << std::endl;
+	debug5 << "oldNearPlane: " << oldNearPlane  << std::endl;
+	debug5 << "oldFarPlane: "  << oldFarPlane     << std::endl;
+	debug5 << "aspect: " << aspect << std::endl << std::endl;
 
 	double _clip[2];
 	_clip[0]=oldNearPlane;  _clip[1]=oldFarPlane;
 
 	panPercentage[0] = view.imagePan[0];
 	panPercentage[1] = view.imagePan[1];
-
 
 	// Scaling
 	vtkMatrix4x4 *scaletrans = vtkMatrix4x4::New();
@@ -769,13 +767,15 @@ avtRayTracer::Execute(void)
 	vm->Transpose();
 
 	// Projection: http://www.codinglabs.net/article_world_view_projection_matrix.aspx
-	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
+	vtkMatrix4x4 *p = 
+	    sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
 
 	// The Z buffer that is passed from visit is in clip scape with z limits of -1 and 1
-	// (http://www.codinglabs.net/article_world_view_projection_matrix.aspx). However, using VTK, the
+	// (http://www.codinglabs.net/article_world_view_projection_matrix.aspx).
+	// However, using VTK, the
 	// z limits are withing nearz and farz.
-	// (https://fossies.org/dox/VTK-7.0.0/classvtkCamera.html#a77e5d3a6e753ae4068f9a3d91267d0eb)
-	// So, the projection matrix from VTK is hijacked here and adjusted to be within -1 and 1 too
+	// So, the projection matrix from VTK is hijacked here and adjusted 
+	// to be within -1 and 1 too
 	// Same as in avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
 	if (!view.orthographic)
 	{
@@ -789,7 +789,6 @@ avtRayTracer::Execute(void)
 	    p->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
 	    p->SetElement(2, 3, -(oldFarPlane + oldNearPlane) / (oldFarPlane-oldNearPlane));
 	}
-
 
 	// pan
 	vtkMatrix4x4 *pantrans = vtkMatrix4x4::New();
@@ -837,7 +836,8 @@ avtRayTracer::Execute(void)
 	// init ospray before everything
 	static bool first_entry = true;
 	if (first_entry) {
-	    int argc = 2; const char* argv[2] = { "visitOSPRay", "--osp:debug" }; 
+	    std::cout << "initialize ospray" << std::endl;
+	    int argc = 1; const char* argv[1] = { "visitOSPRay" }; 
 	    ospInit(&argc, argv); first_entry = false;
 	}
 
@@ -847,15 +847,17 @@ avtRayTracer::Execute(void)
 	//
 	std::cout << "make ospray camera" << std::endl;
 	OSPCamera ospCamera = ospNewCamera("perspective");
-
-	// ospcommon::vec3i volumeDims(256, 256, 256);
-	// const ospcommon::vec3f camPos(-248, -62, 60);
-	// const ospcommon::vec3f camDir = ospcommon::vec3f(volumeDims)/2.f-camPos;
-	// const ospcommon::vec3f camUp(0, 0, 1);
-
-	const ospcommon::vec3f camPos(view.camera[0],view.camera[1],view.camera[2]);
-	const ospcommon::vec3f camDir(view_direction[0], view_direction[1], view_direction[2]);
-	const ospcommon::vec3f camUp (view.viewUp[0], view.viewUp[1], view.viewUp[2]);
+	
+	// the zooming is applied by moving camera closer to the focus point
+	float currOspCam[3];
+	for (int i = 0; i < 3; ++i) {
+	    currOspCam[i] = (view.camera[i] - view.focus[i]) / view.imageZoom + view.focus[i];
+	}
+	const ospcommon::vec3f camPos(currOspCam[0],currOspCam[1],currOspCam[2]);
+	const ospcommon::vec3f camUp (view.viewUp[0],view.viewUp[1],view.viewUp[2]);
+	const ospcommon::vec3f camDir(view_direction[0], 
+				      view_direction[1], 
+				      view_direction[2]);
 
 	std::cout << " campos " << camPos << std::endl;
 	std::cout << " camdir " << camDir << std::endl;
@@ -865,7 +867,8 @@ avtRayTracer::Execute(void)
 	ospSetVec3f(ospCamera, "pos", (osp::vec3f&)camPos);
 	ospSetVec3f(ospCamera, "dir", (osp::vec3f&)camDir);
 	ospSetVec3f(ospCamera, "up",  (osp::vec3f&)camUp);
-	ospSet1f(ospCamera, "fovy", (float)view.viewAngle);	
+	ospSet1f(ospCamera, "fovy", (float)view.viewAngle);
+	ospSet1f(ospCamera, "nearClip", (float)oldNearPlane);
 	ospCommit(ospCamera);
 
 	//
@@ -874,27 +877,35 @@ avtRayTracer::Execute(void)
 	std::cout << "make ospray transfer function" << std::endl;
 	OSPTransferFunction ospTransferFcn = 
 	    ospNewTransferFunction("piecewise_linear");
+
+	// color and opacity
 	std::vector<ospcommon::vec3f> ospColors;
 	std::vector<float> ospOpacities;
 	for (auto i = 0; i < transferFn1D->GetNumberOfTableEntries(); ++i) {
 	    ospColors.emplace_back(transferFn1D->GetTableFloat()[i].R,
 				   transferFn1D->GetTableFloat()[i].G,
 				   transferFn1D->GetTableFloat()[i].B);
+	    //std::cout << ospColors.back() << " ";
 	    ospOpacities.emplace_back(transferFn1D->GetTableFloat()[i].A);
+	    //std::cout << ospOpacities.back() << std::endl;
 	}
-	const ospcommon::vec2f valueRange((float)transferFn1D->GetMin(), 
-					  (float)transferFn1D->GetMax());
-	OSPData ospColorsData = 
-	    ospNewData(ospColors.size(),OSP_FLOAT3,ospColors.data());
+	OSPData ospColorsData = ospNewData(ospColors.size(),OSP_FLOAT3,ospColors.data());
 	ospCommit(ospColorsData);
-	OSPData ospOpacityData = 
-	    ospNewData(ospOpacities.size(),OSP_FLOAT,ospOpacities.data());	
+	OSPData ospOpacityData = ospNewData(ospOpacities.size(),OSP_FLOAT, ospOpacities.data());
 	ospCommit(ospOpacityData);
 	ospSetData(ospTransferFcn, "colors",    ospColorsData);
 	ospSetData(ospTransferFcn, "opacities", ospOpacityData);
-	ospSetVec2f(ospTransferFcn, "valueRange", (osp::vec2f&)valueRange);
 	ospCommit(ospTransferFcn);
-	std::cout << "trasnfer func range " << valueRange << std::endl;
+
+	// value range
+	const ospcommon::vec2f valueRange((float)transferFn1D->GetMin(), 
+					  (float)transferFn1D->GetMax());
+	//std::cout << "transfer value range " << valueRange << std::endl;
+	ospSetVec2f(ospTransferFcn, "valueRange", (osp::vec2f&)valueRange);
+
+	// commit changes
+	ospCommit(ospTransferFcn);
+	//std::cout << "trasnfer func range " << valueRange << std::endl;
 	// -----------------------------
 	//
 
@@ -911,7 +922,7 @@ avtRayTracer::Execute(void)
 	extractor.SetViewDirection(view_direction);
 	extractor.SetTransferFn(transferFn1D);
 	extractor.SetClipPlanes(_clip);
-	extractor.SetPanPercentages(view.imagePan);
+	extractor.SetPanPercentages(view.imagePan); // ??? disabled
 	extractor.SetDepthExtents(depthExtents);
 	extractor.SetMVPMatrix(pvm);
 	

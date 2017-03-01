@@ -704,7 +704,7 @@ avtSamplePointExtractor::PostExecute(void)
 void
 avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 {
-    debug5<<"got here!"<<endl;
+    cout << "got here! -- avtSamplePointExtractor::ExecuteTree" << endl;
 
     //check memory
     unsigned long m_size, m_rss;
@@ -792,6 +792,8 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 		UpdateProgress(10*currentNode+9, 10*totalNodes);
 		currentNode++;
 	}
+
+	std::cout << "parallel rank #" << PAR_Rank() << " has " << patchCount  << " patches in data tree" << std::endl;
 
 	//check memory after
 	avtMemory::GetMemorySize(m_size, m_rss);
