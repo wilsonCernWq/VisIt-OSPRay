@@ -2218,8 +2218,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //
     // * process data
     //
-    //std::cout << "point data size: " << npt_arrays << std::endl;
-    //std::cout << "cell data size: "  << ncell_arrays << std::endl;
+    std::cout << "point data size: " << npt_arrays << std::endl;
+    std::cout << "cell data size: "  << ncell_arrays << std::endl;
     // std::vector<vtkDataArray *>  _cell_arrays;
     // for (int i = 0 ; i < rgrid->GetCellData()->GetNumberOfArrays() ; i++)
     // {
@@ -2464,27 +2464,27 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		    if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
 		    {
 			patchDrawn = 1;
-			// imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
-			// imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1] / 255.0;
-			// imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2] / 255.0;
-			// imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 3] = 1.0;
+			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
+			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1] / 255.0;
+			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2] / 255.0;
+			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 3] = 1.0;
 		    }
 		}
 	    }
 	    else
 	    {
 		patchDrawn = 1;
-		// double _origin[3], _terminus[3];
-		// double origin[4]  = {0,0,0,1}; // starting point where we start sampling
-		// double terminus[4]= {0,0,0,1}; // ending point where we stop sampling
-		// // find the starting point & ending point of the ray
-		// GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);   
-		// for (int i=0; i<3; i++){
-		//     origin[i] = _origin[i];
-		//     terminus[i] = _terminus[i];
-		// }
-		// // Go get the segments along this ray and store them in
-		// SampleAlongSegment(origin, terminus, _x, _y);
+		double _origin[3], _terminus[3];
+		double origin[4]  = {0,0,0,1}; // starting point where we start sampling
+		double terminus[4]= {0,0,0,1}; // ending point where we stop sampling
+		// find the starting point & ending point of the ray
+		GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);   
+		for (int i=0; i<3; i++){
+		    origin[i] = _origin[i];
+		    terminus[i] = _terminus[i];
+		}
+		// Go get the segments along this ray and store them in
+		SampleAlongSegment(origin, terminus, _x, _y);
 	    }
 	}
     }
@@ -2503,10 +2503,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
     // save original image
     static int i = 0;
-    //std::cout << "saving patch image to " << i << std::endl;
-    //writeArrayToPPM("/home/sci/qwu/Desktop/cpuimg/local_patches_"
-    //                + std::to_string(i++),
-    //                imgArray,imgWidth,imgHeight);
+    std::cout << "saving patch image to " << i << std::endl;
+    writeArrayToPPM("/home/sci/qwu/Desktop/cpuimg/local_patches_"
+                   + std::to_string(i),
+                   imgArray,imgWidth,imgHeight);
 
     if (true) 
     {
@@ -2524,25 +2524,25 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// 	     << " imageStop  " << ospImgStop << std::endl;
 
 	// volume
-	ospcommon::vec3i volumeDims(dims[0]-2,    dims[1]-2,    dims[2]-2);	
-	ospcommon::vec3f volumeLbox(X[1],         Y[1],         Z[1]);
-	ospcommon::vec3f volumeMbox(X[dims[0]-2], Y[dims[1]-2], Z[dims[2]-2]);
-
-	ospcommon::vec3f volumeSpac
-	    ((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims-1.0f));
 
 	// std::cout << "patch dim " << volumeDims << std::endl;
 	// std::cout << "patch min box " << volumeLbox << std::endl;
 	// std::cout << "patch max box " << volumeMbox << std::endl;
 	// std::cout << "patch spacing " << volumeSpac << std::endl;
 
-	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
-	std::vector<float> volumeData;
+	std::vector<double> volumeData;
 
-	static ospcommon::vec2f valueRange(0,0);
-	const ospcommon::vec2f TvalueRange((float)transferFn1D->GetMin(), 
-					   (float)transferFn1D->GetMax());
-	if (ncell_arrays > 0) {	    
+	int __max = std::numeric_limits<int>::max();
+	int __min = std::numeric_limits<int>::min();
+	ospcommon::vec3i volumeDimMin(__max,__max,__max);	
+	ospcommon::vec3i volumeDimMax(__min,__min,__min);	
+
+	// this set of parameter works fine for now: 1<= ix < dims[x]-1 
+	//  volumeLbox(X[1],Y[1],Z[1]);
+	//  volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
+
+	if (ncell_arrays > 0) 
+	{
 	    for (int l = 0 ; l < ncell_arrays ; l++) // ncell_arrays: usually 1
 	    {
 		void  *cellarray = cell_arrays[l];		
@@ -2555,11 +2555,16 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 				    iz * (dims[1]-1) * (dims[0]-1) + 
 				    iy * (dims[0]-1) + 
 				    ix;
-				double vsample = ((double*)ospVolumePointer)
-				    [cell_index[l]+cell_size[l]*id+m];
-				volumeData.push_back(vsample);
-				valueRange.x = std::min(valueRange.x, volumeData.back());
-				valueRange.y = std::max(valueRange.y, volumeData.back());
+				//if (ghosts[id] != 0) { continue; }
+				// std::cout << id << "(" << ix << "," << iy << "," << iz << ")" << std::endl; 
+				double val = ((double*)ospVolumePointer)[cell_index[l]+cell_size[l]*id+m];
+				volumeData.push_back(val);
+				volumeDimMax.x = std::max(ix+1, volumeDimMax.x);
+				volumeDimMax.y = std::max(iy+1, volumeDimMax.y);
+				volumeDimMax.z = std::max(iz+1, volumeDimMax.z);
+				volumeDimMin.x = std::min(ix+1, volumeDimMin.x);
+				volumeDimMin.y = std::min(iy+1, volumeDimMin.y);
+				volumeDimMin.z = std::min(iz+1, volumeDimMin.z);
 			    }
 			}
 		    }
@@ -2569,21 +2574,35 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// std::cout << "data value range " << valueRange << std::endl;
 	// std::cout << "transfer function value range " << TvalueRange << std::endl;
 
-	// std::cout << "safty check " 
-	// 	  << volumeData.size() << " = " << ospVolumeSize << std::endl;
+	std::cout << "max range " << volumeDimMax << " min range " << volumeDimMin << std::endl; 
+	ospcommon::vec3i volumeDims = volumeDimMax - volumeDimMin + 1;
+	
+	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
+
+	ospcommon::vec3f volumeLbox(X[1],Y[1],Z[1]);
+	ospcommon::vec3f volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
+
+	ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims - 0.0f));
+
+        std::cout << "patch spacing " << volumeSpac << " " << X[1] - X[0] <<std::endl;
+	std::cout << "safty check " 
+	 	  << volumeData.size() << " = " << ospVolumeSize 
+		  << " " << dims[0] << " " << dims[1] << " " << dims[2]
+		  << std::endl;
 	
 	OSPVolume ospVolume = ospNewVolume("shared_structured_volume");
 	OSPData ospVoxelData = ospNewData(ospVolumeSize,
-					  OSP_FLOAT, volumeData.data(),
+					  OSP_DOUBLE, volumeData.data(),
 					  OSP_DATA_SHARED_BUFFER);
 	ospSetData(ospVolume, "voxelData", ospVoxelData);
-	ospSetString(ospVolume, "voxelType", "float");
+	ospSetString(ospVolume, "voxelType", "double");
 	ospSetVec3f(ospVolume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
 	ospSetVec3f(ospVolume, "gridSpacing", (const osp::vec3f&)volumeSpac);
 	ospSetVec3i(ospVolume, "dimensions", (osp::vec3i&)volumeDims);
 	ospSetObject(ospVolume, "transferFunction", *ospTransferFcn);
-	ospSet1f(ospVolume, "samplingRate", 4.0f);	
+	ospSet1f(ospVolume, "samplingRate", 5.0f);	
 	ospSet1i(ospVolume, "adaptiveSampling", 0); // boolean is set by integer
+	ospSet1i(ospVolume, "gradientShadingEnabled", 0);
 	if (lighting) {
 	    ospSet1i(ospVolume, "gradientShadingEnabled", 1);
 	    //ospSetVec3f(ospVolume, "specular", osp::vec3f{1.0f, 1.0f, 1.0f});
@@ -2638,7 +2657,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospCommit(ospRenderer);
 
 	ospcommon::vec2i imageSize(imgWidth, imgHeight);	
-	OSPFrameBuffer ospfb = ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
+	OSPFrameBuffer ospfb = 
+	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
 	ospFrameBufferClear(ospfb, OSP_FB_COLOR | OSP_FB_ACCUM);	
 	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
 
@@ -2647,9 +2667,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	std::copy(fb, fb + (imageSize.x * imageSize.y) * 4, imgArray);
 	// for (int pid = 0; pid < (imageSize.x * imageSize.y) * 4; ++pid)
 	// { imgArray[pid] = fb[pid]; }
-	// writeArrayToPPM("/home/sci/qwu/Desktop/osp/osp_patches_" +
-	// 		std::to_string(i-1),
-	// 		imgArray,imgWidth,imgHeight);	
+	writeArrayToPPM("/home/sci/qwu/Desktop/osp/osp_patches_" +
+			std::to_string(i++),
+			imgArray,imgWidth,imgHeight);	
 	ospUnmapFrameBuffer(fb, ospfb);
 	ospRelease(ospWorld);
 	ospRelease(ospVolume);
