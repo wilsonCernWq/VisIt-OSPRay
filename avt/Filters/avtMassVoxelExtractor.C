@@ -157,6 +157,9 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
 
     depthBuffer = NULL;
     rgbColorBuffer = NULL;
+
+    // Qi volume
+    ospVolume = NULL;
 }
 
 
@@ -1167,7 +1170,8 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::getIndexandDistFromCenter(float dist, int index,    int &index_before, int &index_after,    float &dist_before, float &dist_after)
+avtMassVoxelExtractor::getIndexandDistFromCenter
+(float dist, int index, int &index_before, int &index_after, float &dist_before, float &dist_after)
 {
     float center = 0.5;
     if (dist < center)
@@ -1185,8 +1189,6 @@ avtMassVoxelExtractor::getIndexandDistFromCenter(float dist, int index,    int &
 	dist_after = 1.0 - dist_before;
     }
 }
-
-
 
 
 // ****************************************************************************
@@ -2191,108 +2193,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 {
     patchDrawn = 0;
 
-    // Qi debug
-    // cout << "materialProperties:" 
-    //      << materialProperties[0] << ", " 
-    //      << materialProperties[1] << ", " 
-    //      << materialProperties[2] << ", " 
-    //      << materialProperties[3] << std::endl;
     //
     // Some of our sampling routines need a chance to pre-process the data.
     // Register the grid here so we can do that.
     //
     RegisterGrid(rgrid, varnames, varsize);
     // stores the values in a structure so that it can be used
-    //
-    // Qi comment
-    // here rgrid is the dataset
-    //
-    // TODO : implement a testing OSPRay render here 
-    //        without breaking the existing code
-    //
-    // * move this block to avtRayTracer
-    // * initialization
-    //
-    // * camera / transfer function stuffs
-    // --> moved to avtRayTracer for speeding things up
-    //
-    // * process data
-    //
-    std::cout << "point data size: " << npt_arrays << std::endl;
-    std::cout << "cell data size: "  << ncell_arrays << std::endl;
-    // std::vector<vtkDataArray *>  _cell_arrays;
-    // for (int i = 0 ; i < rgrid->GetCellData()->GetNumberOfArrays() ; i++)
-    // {
-    //     vtkDataArray *arr = rgrid->GetCellData()->GetArray(i);
-    //     const char *name = arr->GetName();
-    //     int idx = -1;
-    //     for (int j = 0 ; j < (int)varnames.size() ; j++)
-    //     {
-    // 	if (varnames[j] == name)
-    // 	{
-    // 	    idx = 0;
-    // 	    for (int k = 0 ; k < j ; k++)
-    // 		idx += varsize[k];
-    // 	    break;
-    // 	}
-    //     }
-    //     if (idx < 0)
-    // 	continue;
-    //     _cell_arrays.push_back(arr);
-    // }
-    // std::vector<vtkDataArray *>  _pt_arrays;
-    // for (int i = 0 ; i < rgrid->GetPointData()->GetNumberOfArrays() ; i++)
-    // {
-    //     vtkDataArray *arr = rgrid->GetPointData()->GetArray(i);
-    //     const char *name = arr->GetName();
-    //     int idx = -1;
-    //     for (int j = 0 ; j < (int)varnames.size() ; j++)
-    //     {
-    // 	if (varnames[j] == name)
-    // 	{
-    // 	    idx = 0;
-    // 	    for (int k = 0 ; k < j ; k++)
-    // 		idx += varsize[k];
-    // 	    break;
-    // 	}
-    //     }
-    //     if (idx < 0)
-    // 	continue;
-    //     _pt_arrays.push_back(arr);
-    // }
-    //
-    // 1) get data from vtkRectlinearGrid	
-    //std::cout << "work starts \n";
-    void* ospVolumePointer;
-    int ospVolumeDataType;
-    if (npt_arrays > 0) {
-	ospVolumePointer = pt_arrays[0];
-	ospVolumeDataType = pt_vartypes[0];
-    }
-    if (ncell_arrays > 0){
-	ospVolumePointer = cell_arrays[0];
-	ospVolumeDataType = cell_vartypes[0];
-    }
-    //std::cout << "working fine - set data pointer" << std::endl;
-    //
-    // 2) set data type
-    std::string ospVoxelType;
-    if (ospVolumeDataType == VTK_FLOAT) {
-	ospVoxelType = "float";
-    } else if (ospVolumeDataType == VTK_UNSIGNED_CHAR) {
-	ospVoxelType = "uchar";
-    } else if (ospVolumeDataType == VTK_DOUBLE) {	
-	ospVoxelType = "double";
-    } else {
-	EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
-    }
-    //std::cout << "working fine - 1 - " << ospVoxelType << " \n";
-    //
-    // 3) convert data to ospray data. currently we do deep copy
-    // 4) render frame buffer	
-    //
-    // end TODO
-    //
 
     //
     // Determine what range we are dealing with on this iteration.
@@ -2448,71 +2354,176 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // 	 << bufferExtents[2] << ", " 
     // 	 << bufferExtents[3] << std::endl;
 
-    for (int _x = xMin ; _x < xMax ; _x++)
-    {
-	for (int _y = yMin ; _y < yMax ; _y++)
-	{
-	    int index = (_y-yMin)*imgWidth + (_x-xMin);
-            // outside visible range
-	    if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )	
-	    {
-		int fullIndex = ( (_y-bufferExtents[2]) * (bufferExtents[1]-bufferExtents[0]) + 
-				  (_x-bufferExtents[0]) );
-		if ( depthBuffer[fullIndex] != 1)
-		{
-		    double clipDepth = depthBuffer[fullIndex]*2 - 1;
-		    if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
-		    {
-			patchDrawn = 1;
-			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0] / 255.0;
-			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1] / 255.0;
-			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2] / 255.0;
-			imgArray[(_y-yMin)*(imgWidth*4) + (_x-xMin)*4 + 3] = 1.0;
-		    }
-		}
-	    }
-	    else
-	    {
-		patchDrawn = 1;
-		double _origin[3], _terminus[3];
-		double origin[4]  = {0,0,0,1}; // starting point where we start sampling
-		double terminus[4]= {0,0,0,1}; // ending point where we stop sampling
-		// find the starting point & ending point of the ray
-		GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);   
-		for (int i=0; i<3; i++){
-		    origin[i] = _origin[i];
-		    terminus[i] = _terminus[i];
-		}
-		// Go get the segments along this ray and store them in
-		SampleAlongSegment(origin, terminus, _x, _y);
-	    }
-	}
-    }
+    // for (int _x = xMin ; _x < xMax ; _x++)
+    // {
+    // 	for (int _y = yMin ; _y < yMax ; _y++)
+    // 	{
+    // 	    int index = (_y-yMin)*imgWidth + (_x-xMin);
+    //         // outside visible range
+    // 	    if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )	
+    // 	    {
+    // 		int fullIndex = ((_y-bufferExtents[2])*(bufferExtents[1]-bufferExtents[0])+(_x-bufferExtents[0]));
+    // 		if ( depthBuffer[fullIndex] != 1)
+    // 		{
+    // 		    double clipDepth = depthBuffer[fullIndex]*2 - 1;
+    // 		    if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
+    // 		    {
+    // 			patchDrawn = 1;
+    // 			imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0]/255.0;
+    // 			imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1]/255.0;
+    // 			imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2]/255.0;
+    // 			imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 3] = 1.0;
+    // 		    }
+    // 		}
+    // 	    }
+    // 	    else
+    // 	    {
+    // 		patchDrawn = 1;
+    // 		double _origin[3], _terminus[3];
+    // 		double origin[4]  = {0,0,0,1}; // starting point where we start sampling
+    // 		double terminus[4]= {0,0,0,1}; // ending point where we stop sampling
+    // 		// find the starting point & ending point of the ray
+    // 		GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);   
+    // 		for (int i=0; i<3; i++){
+    // 		    origin[i] = _origin[i];
+    // 		    terminus[i] = _terminus[i];
+    // 		}
+    // 		// Go get the segments along this ray and store them in
+    // 		SampleAlongSegment(origin, terminus, _x, _y);
+    // 	    }
+    // 	}
+    // }
+
+    patchDrawn = 1;
 
     //
     // Deallocate memory if not used
     if (patchDrawn == 0)
     {
-    	if (imgArray != NULL)
-    	    delete []imgArray;
-
+    	if (imgArray != NULL) { delete []imgArray; }
     	imgArray = NULL;
-
     	return;
     }
 
-    // save original image
-    static int i = 0;
-    std::cout << "saving patch image to " << i << std::endl;
-    writeArrayToPPM("/home/sci/qwu/Desktop/cpuimg/local_patches_"
-                   + std::to_string(i),
-                   imgArray,imgWidth,imgHeight);
+    // // save original image
+    // std::cout << "saving patch image to " << patch << std::endl;
+    // writeArrayToPPM("/home/sci/qwu/Desktop/cpuimg/local_patches_"
+    //                + std::to_string(patch),
+    //                imgArray,imgWidth,imgHeight);
 
-    if (true) 
-    {
+
+    if (isDataDirty) {
+	isDataDirty = false;
+	// if the dataset is marked to be "updated", we need to recommit all ospray volume;
+        // delete previous ospray data (we need to release model also in avtRayTracer !!)
+	
+	
+	//
+	// Qi comment
+	// here rgrid is the dataset
+	//
+	// TODO : implement a testing OSPRay render here 
+	//        without breaking the existing code
+	//
+	// * move this block to avtRayTracer
+	// * initialization
+	//
+	// * camera / transfer function stuffs
+	// --> moved to avtRayTracer for speeding things up
+	//
+	// * process data
+	//
+	// // std::cout << "point data size: " << npt_arrays << std::endl;
+	// // std::cout << "cell data size: "  << ncell_arrays << std::endl;
+	// std::vector<vtkDataArray *>  _cell_arrays;
+	// for (int i = 0 ; i < rgrid->GetCellData()->GetNumberOfArrays() ; i++)
+	// {
+	//     vtkDataArray *arr = rgrid->GetCellData()->GetArray(i);
+	//     const char *name = arr->GetName();
+	//     int idx = -1;
+	//     for (int j = 0 ; j < (int)varnames.size() ; j++)
+	//     {
+	// 	if (varnames[j] == name)
+	// 	{
+	// 	    idx = 0;
+	// 	    for (int k = 0 ; k < j ; k++)
+	// 		idx += varsize[k];
+	// 	    break;
+	// 	}
+	//     }
+	//     if (idx < 0)
+	// 	continue;
+	//     _cell_arrays.push_back(arr);
+	// }
+	// std::vector<vtkDataArray *>  _pt_arrays;
+	// for (int i = 0 ; i < rgrid->GetPointData()->GetNumberOfArrays() ; i++)
+	// {
+	//     vtkDataArray *arr = rgrid->GetPointData()->GetArray(i);
+	//     const char *name = arr->GetName();
+	//     int idx = -1;
+	//     for (int j = 0 ; j < (int)varnames.size() ; j++)
+	//     {
+	// 	if (varnames[j] == name)
+	// 	{
+	// 	    idx = 0;
+	// 	    for (int k = 0 ; k < j ; k++)
+	// 		idx += varsize[k];
+	// 	    break;
+	// 	}
+	//     }
+	//     if (idx < 0)
+	// 	continue;
+	//     _pt_arrays.push_back(arr);
+	// }
+	//
+	// 1) get data from vtkRectlinearGrid	
+	std::cout << "ospray work starts \n";
+	void* ospVolumePointer;
+	int ospVolumeDataType;
+	if (npt_arrays > 0) {
+	    ospVolumePointer = pt_arrays[0];
+	    ospVolumeDataType = pt_vartypes[0];
+	}
+	if (ncell_arrays > 0){
+	    ospVolumePointer = cell_arrays[0];
+	    ospVolumeDataType = cell_vartypes[0];
+	}
+	//std::cout << "working fine - set data pointer" << std::endl;
+	//
+	// 2) set data type
+	std::string ospVoxelType;
+	OSPDataType ospVoxelDataType;
+	if (ospVolumeDataType == VTK_UNSIGNED_CHAR) {
+	    ospVoxelType = "uchar";
+	    ospVoxelDataType = OSP_UCHAR;
+	} else if (ospVolumeDataType == VTK_SHORT) {
+	    ospVoxelType = "short";
+	    ospVoxelDataType = OSP_SHORT;
+	} else if (ospVolumeDataType == VTK_UNSIGNED_SHORT) {
+	    ospVoxelType = "ushort";
+	    ospVoxelDataType = OSP_USHORT;
+	} else if (ospVolumeDataType == VTK_FLOAT) {
+	    ospVoxelType = "float";
+	    ospVoxelDataType = OSP_FLOAT;
+	} else if (ospVolumeDataType == VTK_DOUBLE) {	
+	    ospVoxelType = "double";
+	    ospVoxelDataType = OSP_DOUBLE;
+	} else {
+	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
+	}
+	//std::cout << "working fine - 1 - " << ospVoxelType << " \n";
+	//
+	// 3) convert data to ospray data. currently we do deep copy
+	// 4) render frame buffer	
+	//
+	// end TODO
+	//
+ 
 	// Qi enabling debug
-	//std::cout << "creating ospray volume" << std::endl;
-
+	// std::cout << "creating ospray volume" << std::endl;
+	std::cout << "processing patch image " << patch 
+		  << " lighting = " << lighting 
+		  << " data " << ospVoxelType << (ospVolume == NULL) << std::endl;
 	ospcommon::vec2f ospImgStart(((float)xMin)/bufferExtents[1], 
 				     ((float)yMin)/bufferExtents[3]);
 	ospcommon::vec2f ospImgStop (((float)xMax)/bufferExtents[1], 
@@ -2520,142 +2531,154 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospSetVec2f(*ospCamera, "imageStart", (osp::vec2f&)ospImgStart);
 	ospSetVec2f(*ospCamera, "imageEnd",   (osp::vec2f&)ospImgStop );
 	ospCommit(*ospCamera);
-	// std::cout << " imageStart " << ospImgStart 
-	// 	     << " imageStop  " << ospImgStop << std::endl;
 
 	// volume
 
-	// std::cout << "patch dim " << volumeDims << std::endl;
-	// std::cout << "patch min box " << volumeLbox << std::endl;
-	// std::cout << "patch max box " << volumeMbox << std::endl;
-	// std::cout << "patch spacing " << volumeSpac << std::endl;
+	// // version 1    
+	// std::vector<double> volumeData;
+    
+	// int __max = std::numeric_limits<int>::max();
+	// int __min = std::numeric_limits<int>::min();
+	// ospcommon::vec3i volumeDimMin(__max,__max,__max);	
+	// ospcommon::vec3i volumeDimMax(__min,__min,__min);	
+    
+	// /* 
+	//  * this set of parameter works fine for now: 1<= ix < dims[x]-1 
+	//  *  volumeLbox(X[1],Y[1],Z[1]);
+	//  *  volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
+	//  */
+	// if (ncell_arrays > 0) 
+	// {
+	// 	for (int l = 0 ; l < ncell_arrays ; l++) // ncell_arrays: usually 1
+	// 	{
+	// 	    void  *cellarray = cell_arrays[l];		
+	// 	    for (int m = 0 ; m < cell_size[l] ; m++) // cell_size[l] usually 1
+	// 	    {
+	// 		for (int iz = 1; iz < dims[2]-1; iz++) {
+	// 		    for (int iy = 1; iy < dims[1]-1; iy++) {
+	// 			for (int ix = 1; ix < dims[0]-1; ix++) {
+	// 			    int id = 
+	// 				iz * (dims[1]-1) * (dims[0]-1) + 
+	// 				iy * (dims[0]-1) + 
+	// 				ix;
+	// 			    // if (ghosts[id] != 0) { continue; }
+	// 			    double val = ((double*)ospVolumePointer)[cell_index[l]+cell_size[l]*id+m];
+	// 			    volumeData.push_back(val);
+	// 			    volumeDimMax.x = std::max(ix+1, volumeDimMax.x);
+	// 			    volumeDimMax.y = std::max(iy+1, volumeDimMax.y);
+	// 			    volumeDimMax.z = std::max(iz+1, volumeDimMax.z);
+	// 			    volumeDimMin.x = std::min(ix+1, volumeDimMin.x);
+	// 			    volumeDimMin.y = std::min(iy+1, volumeDimMin.y);
+	// 			    volumeDimMin.z = std::min(iz+1, volumeDimMin.z);
+	// 			}
+	// 		    }
+	// 		}
+	// 	    }
+	// 	}
+	// }
+	// // std::cout << "max range " << volumeDimMax << " min range " << volumeDimMin << std::endl; 
+	// OSPVolume ospVolume = ospNewVolume("shared_structured_volume");    
+	// ospcommon::vec3i volumeDims = volumeDimMax - volumeDimMin + 1;
+	// ospcommon::vec3f volumeLbox(X[1],Y[1],Z[1]);
+	// ospcommon::vec3f volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
+	// ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims - 0.0f));
+	// size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
 
-	std::vector<double> volumeData;
+	// // std::cout << "patch spacing " << volumeSpac << " " << X[1] - X[0] <<std::endl;
+	// // std::cout << "safty check " 
+	// // 	      << volumeData.size() << " = " << ospVolumeSize 
+	// // 	      << " " << dims[0] << " " << dims[1] << " " << dims[2]
+	// // 	      << std::endl;
+	// OSPData ospVoxelData = ospNewData(ospVolumeSize,OSP_DOUBLE,volumeData.data(),OSP_DATA_SHARED_BUFFER);
+	// ospSetData(ospVolume, "voxelData", ospVoxelData);
+	// ospSetString(ospVolume, "voxelType", "double");
+	// ospSetVec3f(ospVolume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
+	// ospSetVec3f(ospVolume, "gridSpacing", (const osp::vec3f&)volumeSpac);
+	// ospSetVec3i(ospVolume, "dimensions", (osp::vec3i&)volumeDims);
 
-	int __max = std::numeric_limits<int>::max();
-	int __min = std::numeric_limits<int>::min();
-	ospcommon::vec3i volumeDimMin(__max,__max,__max);	
-	ospcommon::vec3i volumeDimMax(__min,__min,__min);	
-
-	// this set of parameter works fine for now: 1<= ix < dims[x]-1 
-	//  volumeLbox(X[1],Y[1],Z[1]);
-	//  volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
-
-	if (ncell_arrays > 0) 
-	{
-	    for (int l = 0 ; l < ncell_arrays ; l++) // ncell_arrays: usually 1
-	    {
-		void  *cellarray = cell_arrays[l];		
-		for (int m = 0 ; m < cell_size[l] ; m++) // cell_size[l] usually 1
-		{
-		    for (int iz = 1; iz < dims[2]-1; iz++) {
-			for (int iy = 1; iy < dims[1]-1; iy++) {
-			    for (int ix = 1; ix < dims[0]-1; ix++) {
-				int id = 
-				    iz * (dims[1]-1) * (dims[0]-1) + 
-				    iy * (dims[0]-1) + 
-				    ix;
-				//if (ghosts[id] != 0) { continue; }
-				// std::cout << id << "(" << ix << "," << iy << "," << iz << ")" << std::endl; 
-				double val = ((double*)ospVolumePointer)[cell_index[l]+cell_size[l]*id+m];
-				volumeData.push_back(val);
-				volumeDimMax.x = std::max(ix+1, volumeDimMax.x);
-				volumeDimMax.y = std::max(iy+1, volumeDimMax.y);
-				volumeDimMax.z = std::max(iz+1, volumeDimMax.z);
-				volumeDimMin.x = std::min(ix+1, volumeDimMin.x);
-				volumeDimMin.y = std::min(iy+1, volumeDimMin.y);
-				volumeDimMin.z = std::min(iz+1, volumeDimMin.z);
-			    }
-			}
-		    }
-		}
-	    }
-	}
-	// std::cout << "data value range " << valueRange << std::endl;
-	// std::cout << "transfer function value range " << TvalueRange << std::endl;
-
-	std::cout << "max range " << volumeDimMax << " min range " << volumeDimMin << std::endl; 
-	ospcommon::vec3i volumeDims = volumeDimMax - volumeDimMin + 1;
-	
-	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
-
-	ospcommon::vec3f volumeLbox(X[1],Y[1],Z[1]);
+	// version 2
+   	
+	ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);
+	ospcommon::vec3f volumeLbox(X[0],Y[0],Z[0]);
 	ospcommon::vec3f volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
+	ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims-1.0f));
+	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
+	OSPData ospVoxelData = ospNewData(ospVolumeSize,ospVoxelDataType,ospVolumePointer,OSP_DATA_SHARED_BUFFER);
+	std::cout << "volume start" << std::endl;
+	ospSetData(ospVolume->volume, "voxelData", ospVoxelData);
+	ospSetString(ospVolume->volume, "voxelType", ospVoxelType.c_str());
+	ospSetVec3f(ospVolume->volume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
+	ospSetVec3f(ospVolume->volume, "gridSpacing", (const osp::vec3f&)volumeSpac);
+	ospSetVec3i(ospVolume->volume, "dimensions", (osp::vec3i&)volumeDims);
+	std::cout << "volume end" << std::endl;
 
-	ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims - 0.0f));
+	// // version 3 -- deep copy + block_brike
+	// OSPVolume ospVolume = ospNewVolume("block_bricked_volume");
+	// ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);
+	// ospcommon::vec3f volumeLbox(X[0],Y[0],Z[0]);
+	// ospcommon::vec3f volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
+	// ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims-1.0f));
+	// size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
+	// ospSetString(ospVolume, "voxelType", "double");
+	// ospSetVec3i(ospVolume, "dimensions", (osp::vec3i&)volumeDims);
+	// ospSetVec3f(ospVolume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
+	// ospSetVec3f(ospVolume, "gridSpacing", (const osp::vec3f&)volumeSpac);
+	// ospSetRegion(ospVolume,ospVolumePointer,osp::vec3i{0,0,0},(osp::vec3i&)volumeDims);
+	// std::cout << "patch spacing " << volumeSpac << " " << X[1] - X[0] <<std::endl;
 
-        std::cout << "patch spacing " << volumeSpac << " " << X[1] - X[0] <<std::endl;
-	std::cout << "safty check " 
-	 	  << volumeData.size() << " = " << ospVolumeSize 
-		  << " " << dims[0] << " " << dims[1] << " " << dims[2]
-		  << std::endl;
-	
-	OSPVolume ospVolume = ospNewVolume("shared_structured_volume");
-	OSPData ospVoxelData = ospNewData(ospVolumeSize,
-					  OSP_DOUBLE, volumeData.data(),
-					  OSP_DATA_SHARED_BUFFER);
-	ospSetData(ospVolume, "voxelData", ospVoxelData);
-	ospSetString(ospVolume, "voxelType", "double");
-	ospSetVec3f(ospVolume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
-	ospSetVec3f(ospVolume, "gridSpacing", (const osp::vec3f&)volumeSpac);
-	ospSetVec3i(ospVolume, "dimensions", (osp::vec3i&)volumeDims);
-	ospSetObject(ospVolume, "transferFunction", *ospTransferFcn);
-	ospSet1f(ospVolume, "samplingRate", 5.0f);	
-	ospSet1i(ospVolume, "adaptiveSampling", 0); // boolean is set by integer
-	ospSet1i(ospVolume, "gradientShadingEnabled", 0);
+	// ospcommon::vec3f volumeLowerClip(0,0,0);       // this is the clipping box coordinate ---
+	// ospcommon::vec3f volumeUpperClip(0.5,0.5,0.5); // same as the clipping operator in visIt ---
+	// ospSetVec3f(ospVolume, "volumeClippingBoxLower", (osp::vec3f&)volumeLowerClip);
+	// ospSetVec3f(ospVolume, "volumeClippingBoxUpper", (osp::vec3f&)volumeUpperClip);
+
+	// other properties
+	ospSetObject(ospVolume->volume, "transferFunction", *ospTransferFcn);
+	ospSetVec3f(ospVolume->volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
+	ospSet1f(ospVolume->volume, "samplingRate", 5.0f);
+	ospSet1i(ospVolume->volume, "singleShade", 1);
+	ospSet1i(ospVolume->volume, "adaptiveSampling", 0); // boolean is set by integer
+	ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
 	if (lighting) {
-	    ospSet1i(ospVolume, "gradientShadingEnabled", 1);
-	    //ospSetVec3f(ospVolume, "specular", osp::vec3f{1.0f, 1.0f, 1.0f});
+	    ospSet1i(ospVolume->volume, "gradientShadingEnabled", 1);
 	} else {
-	    ospSet1i(ospVolume, "gradientShadingEnabled", 0);
+	    ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
 	}
-	ospCommit(ospVolume);
+	ospCommit(ospVolume->volume);
+    	std::cout << "volume end" << std::endl;
 
 	// std::cout << "creating ospray model" << std::endl;
 	OSPModel ospWorld = ospNewModel();
-	ospAddVolume(ospWorld, ospVolume);
+	ospAddVolume(ospWorld, ospVolume->volume);
 	ospCommit(ospWorld);
-
+    
 	OSPRenderer ospRenderer = ospNewRenderer("scivis");
 	ospSetObject(ospRenderer, "camera", *ospCamera);
 	ospSetObject(ospRenderer, "model",   ospWorld);
-	ospSet1i(ospRenderer, "shadowsEnabled", 0);
 	ospSet1i(ospRenderer, "backgroundEnabled", 0);
 	ospSet1i(ospRenderer, "oneSidedLighting", 0);
+	ospSet1i(ospRenderer, "shadowsEnabled", 0);
 
-	if (lighting == true) {
-
-	    ospSet1i(ospRenderer, "shadowsEnabled", 1);
-	    // std::cout << materialProperties[0] << " "; // Ia Intensity
-	    // std::cout << materialProperties[1] << " "; // Id
-	    // std::cout << materialProperties[2] << " "; // Is
-	    // std::cout << materialProperties[3] << std::endl; // Ns
-
-	    // std::cout << -view_direction[0] << " "
-	    // 	      << -view_direction[1] << " "
-	    // 	      << -view_direction[2] << std::endl;
-
-	    osp::vec3f lightdir{
-		    (float)view_direction[0],
-		    (float)view_direction[1],
-		    (float)view_direction[2]};
-
+	if (lighting == true) 
+	{
+	    // ospSet1i(ospRenderer, "shadowsEnabled", 1);
+	    osp::vec3f lightdir{(float)view_direction[0],(float)view_direction[1],(float)view_direction[2]};
+    
 	    OSPLight ambientLight = ospNewLight(ospRenderer, "AmbientLight");
 	    ospSet1f(ambientLight, "intensity", materialProperties[0]);
 	    ospCommit(ambientLight);
-
+    
 	    OSPLight directionalLight = ospNewLight(ospRenderer, "DirectionalLight");
 	    ospSet1f(directionalLight, "intensity", materialProperties[2]);
 	    ospSetVec3f(directionalLight, "direction", lightdir);
 	    ospCommit(directionalLight);
-
+    
 	    std::vector<OSPLight> lights;
 	    lights.push_back(ambientLight);
 	    lights.push_back(directionalLight);
 	    ospSetData(ospRenderer,"lights",ospNewData(lights.size(),OSP_OBJECT,&lights[0]));
 	}
 	ospCommit(ospRenderer);
-
+    
 	ospcommon::vec2i imageSize(imgWidth, imgHeight);	
 	OSPFrameBuffer ospfb = 
 	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
@@ -2665,16 +2688,14 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// save ospray image and clean up
 	float *fb = (float*) ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
 	std::copy(fb, fb + (imageSize.x * imageSize.y) * 4, imgArray);
-	// for (int pid = 0; pid < (imageSize.x * imageSize.y) * 4; ++pid)
-	// { imgArray[pid] = fb[pid]; }
 	writeArrayToPPM("/home/sci/qwu/Desktop/osp/osp_patches_" +
-			std::to_string(i++),
+			std::to_string(patch),
 			imgArray,imgWidth,imgHeight);	
 	ospUnmapFrameBuffer(fb, ospfb);
 	ospRelease(ospWorld);
-	ospRelease(ospVolume);
 	ospRelease(ospRenderer);
-	ospRelease(ospfb);		
+	ospRelease(ospfb);	
+	// ospRelease(ospVolume);
     }
 }
 
@@ -3369,12 +3390,9 @@ avtMassVoxelExtractor::getImageDimensions
 (int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth)
 {
     inUse = patchDrawn;
-
     dims[0] = imgDims[0];    dims[1] = imgDims[1];
-
     screen_ll[0] = imgLowerLeft[0];     screen_ll[1] = imgLowerLeft[1];
     screen_ur[0] = imgUpperRight[0];    screen_ur[1] = imgUpperRight[1];
-
     eyeDepth = eyeSpaceDepth;
     clipDepth = clipSpaceDepth;
 }

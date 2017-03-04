@@ -185,6 +185,7 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
 
     void computeRay(double camera[3], double position[3], double ray[3]);
     bool intersect(double bounds[6], double ray[3], double cameraPos[3], double &tMin, double &tMax);
+
 };
 
 

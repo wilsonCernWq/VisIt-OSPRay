@@ -40,6 +40,21 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include "ospray/ospray.h"
+#include "ospray/ospcommon/vec.h"
+
+#include <vtkType.h>
+
+struct ospVolumeMeta {
+    OSPVolume volume;
+    ospVolumeMeta() { 
+	volume = ospNewVolume("shared_structured_volume"); 
+    }
+    ~ospVolumeMeta() {
+        // ospRelease(volume);
+    }
+    void SetVoxelData() {}
+};
 
 // ****************************************************************************
 //  Struct:  imgMetaData
@@ -55,17 +70,14 @@ struct imgMetaData
 {
     int procId;       // processor that produced the patch
     int patchNumber;  // id of the patch on that processor - with procId, acts as a key
-
     int destProcId;   // destination proc where this patch gets composited
-
-    int inUse;   // whether the patch is composed locally or not
+    int inUse;        // whether the patch is composed locally or not
     int dims[2];      // height, width
     int screen_ll[2]; // position in the final image
     int screen_ur[2];
-
-    float avg_z;        // camera space z = depth of the patch - used for compositing
-    float eye_z;        // camera space z
-    float clip_z;       // clip space z
+    float avg_z;      // camera space z = depth of the patch - used for compositing
+    float eye_z;      // camera space z
+    float clip_z;     // clip space z
 };
 
 
@@ -110,7 +122,6 @@ struct convexHull
     float extents[6];       // minX, maxX   minY, maxY   minZ, maxZ
     float cellDims[3];      // x, y, z
     float tolerance;        // amount of overlap that is considered ok - typically 2 cells for cell centered data
-
 
     // 0: no overlap    1: overlpa in Z    2: overlap in Y    3: overlap in Z
     int overlap(convexHull _hull)

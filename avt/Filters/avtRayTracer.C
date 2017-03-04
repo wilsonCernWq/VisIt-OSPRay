@@ -103,6 +103,7 @@ bool sortImgMetaDataByEyeSpaceDepth(imgMetaData const& before, imgMetaData const
 
 avtRayTracer::avtRayTracer()
 {
+    // view information
     view.camera[0] = -5.;
     view.camera[1] = 10.;
     view.camera[2] = -15.;
@@ -117,7 +118,7 @@ avtRayTracer::avtRayTracer()
     view.farPlane  = 30.;
     view.parallelScale = 10;
     view.orthographic = true;
-
+    
     panPercentage[0] = 0;
     panPercentage[1] = 0;
 
@@ -134,20 +135,23 @@ avtRayTracer::avtRayTracer()
     gradBG2[0] = 0.;
     gradBG2[1] = 0.;
     gradBG2[2] = 0.;
-
+    
     screen[0] = screen[1] = 400;
     samplesPerRay  = 40;
+    //! flags
     kernelBasedSampling = false;
     trilinearInterpolation = false;
     rayCastingSLIVR = false;
     convexHullOnRCSLIVR = false;
-
+    //! lighting properties
     lighting = false;
     lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0; lightPosition[3] = 1.0;
     materialProperties[0] = 0.4; 
     materialProperties[1] = 0.75;
     materialProperties[3] = 0.0;
     materialProperties[3] = 15.0;
+
+    std::cout << "new ray-tracer" << std::endl;
 }
 
 // ****************************************************************************
@@ -651,6 +655,16 @@ avtRayTracer::Execute(void)
     avtWorldSpaceToImageSpaceTransform trans(view, aspect);
     trans.SetInput(GetInput());
 
+    // priiiint out filename
+    std::cout << "filename " << trans.GetOutput()->GetInfo().GetAttributes().GetFilename()
+	      << " full db name " << trans.GetOutput()->GetInfo().GetAttributes().GetFilename() << std::endl;
+
+    //auto binrange = trans.GetOutput()->GetInfo().GetAttributes().GetVariableBinRanges();    
+    //std::cout << "--- binrange " << std::endl;
+    //for (auto v : binrange) {
+    //std::cout << " --- binrange " << v << std::endl;
+    //}
+
     //
     // Extract all of the samples from the dataset.
     //
@@ -658,6 +672,8 @@ avtRayTracer::Execute(void)
     bool doKernel = kernelBasedSampling;
     if (trans.GetOutput()->GetInfo().GetAttributes().GetTopologicalDimension() == 0)
 	doKernel = true;
+
+    std::cout << " do kernel " << doKernel << std::endl;
 
     extractor.SetKernelBasedSampling(doKernel);
     extractor.RegisterRayFunction(rayfoo);
@@ -832,13 +848,27 @@ avtRayTracer::Execute(void)
 		  << fullImageExtents[3] << std::endl;
 	//
 	// -----------------------------
+	//
+	// 1st March
+	// okay so here is the idea
+	// you create one model only
+	// you iterate through all the patches within the data tree you have
+	// you use block_brick/shared volume (for now)
+	//   for each patch -> create one volume (store it on a vector) and commit once
+	// after that, you commit everything else here 
+	// this should avoid most of commits 
+	//
 	// (Qi) this should be replaced by proper vtkOSPRay initialization later
 	// init ospray before everything
 	static bool first_entry = true;
+	std::vector<ospVolumeMeta> ospVolumeList;
 	if (first_entry) {
 	    std::cout << "initialize ospray" << std::endl;
 	    int argc = 1; const char* argv[1] = { "visitOSPRay" }; 
 	    ospInit(&argc, argv); first_entry = false;
+
+	    extractor.ResetOSPData();
+	    extractor.SetOSPVolumeList(ospVolumeList);
 	}
 
 	//
@@ -875,19 +905,15 @@ avtRayTracer::Execute(void)
 	// OSPRay transfer function stuffs
 	//
 	std::cout << "make ospray transfer function" << std::endl;
-	OSPTransferFunction ospTransferFcn = 
-	    ospNewTransferFunction("piecewise_linear");
+	OSPTransferFunction ospTransferFcn = ospNewTransferFunction("piecewise_linear");
 
 	// color and opacity
 	std::vector<ospcommon::vec3f> ospColors;
 	std::vector<float> ospOpacities;
+	auto TFtable = transferFn1D->GetTableFloat();
 	for (auto i = 0; i < transferFn1D->GetNumberOfTableEntries(); ++i) {
-	    ospColors.emplace_back(transferFn1D->GetTableFloat()[i].R,
-				   transferFn1D->GetTableFloat()[i].G,
-				   transferFn1D->GetTableFloat()[i].B);
-	    //std::cout << ospColors.back() << " ";
-	    ospOpacities.emplace_back(transferFn1D->GetTableFloat()[i].A);
-	    //std::cout << ospOpacities.back() << std::endl;
+	    ospColors.emplace_back(TFtable[i].R, TFtable[i].G, TFtable[i].B);
+	    ospOpacities.emplace_back(TFtable[i].A);
 	}
 	OSPData ospColorsData = ospNewData(ospColors.size(),OSP_FLOAT3,ospColors.data());
 	ospCommit(ospColorsData);

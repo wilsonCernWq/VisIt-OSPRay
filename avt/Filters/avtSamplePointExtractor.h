@@ -247,7 +247,9 @@ public:
     // Qi add
     void             SetOSPCamera(OSPCamera* _cam) { ospCamera = _cam; }
     void             SetOSPTransferFcn(OSPTransferFunction* _t) { ospTransferFcn = _t; }
-
+    void             ResetOSPData() { isDataDirty = true; }
+    void             SetOSPVolumeList(std::vector<ospVolumeMeta>& l) { ospVolumeList = &l; }
+    
 public:
     typedef std::multimap<int, imgData>::iterator iter_t;
 
@@ -326,6 +328,8 @@ protected:
     //
     OSPCamera            *ospCamera;
     OSPTransferFunction  *ospTransferFcn;
+    bool isDataDirty = true;
+    std::vector<ospVolumeMeta> *ospVolumeList;
     
 
 protected:

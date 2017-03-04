@@ -1189,9 +1189,13 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
     if (atts.GetScaling() == VolumeAttributes::Linear)
     {
 #ifdef HAVE_LIBSLIVR
-        if ((atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) ||
-            ((atts.GetRendererType() == VolumeAttributes::RayCasting) && (atts.GetSampling() == VolumeAttributes::Trilinear)))
+        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
+	    ds->SetDesiredGhostDataType(NO_GHOST_DATA);
+            //ds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
+	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
+		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {	    
             ds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
+	}
 #endif
         newcontract = new avtContract(contract, ds);
         primaryVariable = new char[strlen(var)+1];
@@ -1214,9 +1218,13 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
                                ds->GetTimestep(), ds->GetRestriction());
         nds->AddSecondaryVariable(var);
 #ifdef HAVE_LIBSLIVR
-        if ((atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) ||
-            ((atts.GetRendererType() == VolumeAttributes::RayCasting) && (atts.GetSampling() == VolumeAttributes::Trilinear)))
+        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
+	    nds->SetDesiredGhostDataType(NO_GHOST_DATA);
+            //nds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
+	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
+		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {	    
             nds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
+	}
 #endif
         newcontract = new avtContract(contract, nds);
         primaryVariable = new char[exprName.size()+1];
@@ -1232,9 +1240,13 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
                                ds->GetTimestep(), ds->GetRestriction());
         nds->AddSecondaryVariable(var);
 #ifdef HAVE_LIBSLIVR
-        if ((atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) ||
-            ((atts.GetRendererType() == VolumeAttributes::RayCasting) && (atts.GetSampling() == VolumeAttributes::Trilinear)))
+        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
+	    nds->SetDesiredGhostDataType(NO_GHOST_DATA);
+	    //nds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
+	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
+		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {
             nds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
+	}
 #endif
         newcontract = new avtContract(contract, nds);
         primaryVariable = new char[strlen(exprName.c_str())+1];

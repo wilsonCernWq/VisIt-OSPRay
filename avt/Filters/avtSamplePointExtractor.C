@@ -695,110 +695,110 @@ avtSamplePointExtractor::PostExecute(void)
 //    Converted the recursive function to iteration
 //
 // ****************************************************************************
-    struct datatree_childindex {
-        avtDataTree_p dt; int idx; bool visited;
-        datatree_childindex(avtDataTree_p dt_, int idx_) : dt(dt_),idx(idx_),visited(false) {}
-    };
-
+struct datatree_childindex {
+    avtDataTree_p dt; int idx; bool visited;
+    datatree_childindex(avtDataTree_p dt_, int idx_) : dt(dt_),idx(idx_),visited(false) {}
+};
 
 void
 avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 {
+    // Qi
     cout << "got here! -- avtSamplePointExtractor::ExecuteTree" << endl;
 
     //check memory
     unsigned long m_size, m_rss;
     avtMemory::GetMemorySize(m_size, m_rss);
-    debug5 << PAR_Rank() << " ~ avtSamplePointExtractor::ExecuteTree  .. .  " 
+    debug5 << PAR_Rank() 
+	   << " ~ avtSamplePointExtractor::ExecuteTree  .. .  " 
            << "    Memory use before: " << m_size << "  rss (MB): " << m_rss/(1024*1024) << endl;
 
-    //initialize rayCastingSLIVR sampling state
+    // initialize rayCastingSLIVR sampling state
     totalAssignedPatches = dt->GetNChildren();
     patchCount = 0;
     imageMetaPatchVector.clear();
     imgDataHashMap.clear();
 
-	if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
-		return;
+    if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
+	return;
 
-	debug5 << " ~ avtSamplePointExtractor::dt->GetNChildren()  "  << dt->GetNChildren() << endl;
+    debug5 << " ~ avtSamplePointExtractor::dt->GetNChildren()  "  << dt->GetNChildren() << endl;
 
-	//
-	// Process tree
-	std::stack<datatree_childindex*> nodes;
-
-	//iterative depth-first sampling
-	nodes.push(new datatree_childindex(dt,0));
-	while (!nodes.empty())
+    // Process tree
+    std::stack<datatree_childindex*> nodes;
+    
+    //iterative depth-first sampling
+    nodes.push(new datatree_childindex(dt,0));
+    while (!nodes.empty())
+    {
+	datatree_childindex *ci=nodes.top();
+	avtDataTree_p ch=ci->dt;
+	
+	if (ch->GetNChildren() != 0)
 	{
-		datatree_childindex *ci=nodes.top();
-		avtDataTree_p ch=ci->dt;
-
-		if (ch->GetNChildren() != 0)
+	    nodes.pop();  // if it has children, it never gets processed below
+	    for (int i = 0; i < ch->GetNChildren(); i++)
+	    {
+		if (ch->ChildIsPresent(i))
 		{
-			nodes.pop();  // if it has children, it never gets processed below
-			for (int i = 0; i < ch->GetNChildren(); i++)
-			{
-				if (ch->ChildIsPresent(i))
-				{
-					if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
-						continue;
-					nodes.push(new datatree_childindex(ch->GetChild(i),i));
-				}
-			}
-
+		    if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
 			continue;
+		    nodes.push(new datatree_childindex(ch->GetChild(i),i));
 		}
-
-		//do the work
-		nodes.pop();
-
-		if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
-			continue;
-
-		//
-		// Get the dataset for this leaf in the tree.
-		//
-		vtkDataSet *ds = ch->GetDataRepresentation().GetDataVTK();
-
-		//
-		// Iterate over all cells in the mesh and call the appropriate
-		// extractor for each cell to get the sample points.
-		//
-		if (kernelBasedSampling)
-			KernelBasedSample(ds);
-		else
-		{
-			if (rayCastingSLIVR == true)
-			{
-				double _scalarRange[2];
-				ds->GetScalarRange(_scalarRange);
-
-				double _tfRange[2];
-				_tfRange[0] = transferFn1D->GetMin();
-				_tfRange[1] = transferFn1D->GetMax();
-
-				double _tfVisibleRange[2];
-				_tfVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
-				_tfVisibleRange[1] = transferFn1D->GetMaxVisibleScalar();
-
-				massVoxelExtractor->SetScalarRange(_scalarRange);
-				massVoxelExtractor->SetTFVisibleRange(_tfVisibleRange);
-			}
-
-			RasterBasedSample(ds,ci->idx);
-		}
-
-		UpdateProgress(10*currentNode+9, 10*totalNodes);
-		currentNode++;
+	    }    
+	    continue;
 	}
+	
+	//do the work
+	nodes.pop();
+	if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
+	    continue;
+	
+	//
+	// Get the dataset for this leaf in the tree.
+	//
+	vtkDataSet *ds = ch->GetDataRepresentation().GetDataVTK();
+	
+	//
+	// Iterate over all cells in the mesh and call the appropriate
+	// extractor for each cell to get the sample points.
+	//
+	if (kernelBasedSampling)
+	    KernelBasedSample(ds);
+	else
+	{
+	    if (rayCastingSLIVR == true)
+	    {
+		double _scalarRange[2];
+		ds->GetScalarRange(_scalarRange);
+		
+		double _tfRange[2];
+		_tfRange[0] = transferFn1D->GetMin();
+		_tfRange[1] = transferFn1D->GetMax();
+		
+		double _tfVisibleRange[2];
+		_tfVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
+		_tfVisibleRange[1] = transferFn1D->GetMaxVisibleScalar();
+		
+		massVoxelExtractor->SetScalarRange(_scalarRange);
+		massVoxelExtractor->SetTFVisibleRange(_tfVisibleRange);
+	    }  
 
-	std::cout << "parallel rank #" << PAR_Rank() << " has " << patchCount  << " patches in data tree" << std::endl;
-
-	//check memory after
-	avtMemory::GetMemorySize(m_size, m_rss);
-	debug5 << PAR_Rank() << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
-	       <<  "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
+	    RasterBasedSample(ds,ci->idx);
+	}
+	UpdateProgress(10*currentNode+9, 10*totalNodes);
+	currentNode++;
+    }
+    
+    // Qi check rank patch number
+    isDataDirty = false; // this function run once per plot, reset the flag here
+    std::cout << "parallel rank #" << PAR_Rank() << " has " << patchCount  << " patches in data tree" << std::endl;
+    
+    //check memory after
+    avtMemory::GetMemorySize(m_size, m_rss);
+    debug5 << PAR_Rank() 
+	   << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
+	   <<  "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
 }
 
 
@@ -827,7 +827,6 @@ avtSamplePointExtractor::delImgPatches(){
 }
 
 
-
 // ****************************************************************************
 //  Method: avtSamplePointExtractor::getImgData
 //
@@ -843,11 +842,11 @@ avtSamplePointExtractor::delImgPatches(){
 void 
 avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
     iter_t it = imgDataHashMap.find(patchId);
-
     tempImgData.procId = it->second.procId;
     tempImgData.patchNumber = it->second.patchNumber;
-    memcpy(tempImgData.imagePatch,it->second.imagePatch,imageMetaPatchVector[patchId].dims[0] * 4 * imageMetaPatchVector[patchId].dims[1] * sizeof(float));
-
+    memcpy(tempImgData.imagePatch,
+	   it->second.imagePatch,
+	   imageMetaPatchVector[patchId].dims[0]*4*imageMetaPatchVector[patchId].dims[1]*sizeof(float));
     delete [](*it).second.imagePatch;
     it->second.imagePatch = NULL;
 }
@@ -1054,6 +1053,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	// Compositing Setup
 	if (rayCastingSLIVR == true)
 	{
+	    // initialize ospray volume
 	    massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
 	    massVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
 	    massVoxelExtractor->setBufferExtents(bufferExtents);
@@ -1076,6 +1076,14 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->SetLightDirection(lightDirection);
 	    massVoxelExtractor->SetMatProperties(materialProperties);
 	    massVoxelExtractor->SetTransferFn(transferFn1D);
+	    
+	    std::cout << " is data dirty " << isDataDirty << " " << ospVolumeList->size() << std::endl;
+	    if (isDataDirty) {
+		ospVolumeList->emplace_back();
+		massVoxelExtractor->ospReset();
+		massVoxelExtractor->ospSetVolumeMeta(ospVolumeList->back());
+	    }
+
 	}
 
 	// Qi print
@@ -1099,19 +1107,19 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    tmpImageMetaPatch = initMetaPatch(patchCount);
 
 	    massVoxelExtractor->getImageDimensions(
-		tmpImageMetaPatch.inUse, 
-		tmpImageMetaPatch.dims, 
+		tmpImageMetaPatch.inUse,
+		tmpImageMetaPatch.dims,
 		tmpImageMetaPatch.screen_ll, 
 		tmpImageMetaPatch.screen_ur, 
 		tmpImageMetaPatch.eye_z, 
 		tmpImageMetaPatch.clip_z);
-
+	    
 	    if (tmpImageMetaPatch.inUse == 1)
 	    {
 		tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
 		tmpImageMetaPatch.destProcId = tmpImageMetaPatch.procId;
 		imageMetaPatchVector.push_back(tmpImageMetaPatch);
-
+		
 		imgData tmpImageDataHash;
 		tmpImageDataHash.procId = tmpImageMetaPatch.procId;
 		tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
@@ -1120,8 +1128,6 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 
 		massVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
 		imgDataHashMap.insert(std::pair<int, imgData>(tmpImageDataHash.patchNumber, tmpImageDataHash));
-
-	       
 
 		patchCount++;
 	    }
@@ -1189,7 +1195,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    break;
 
 	case VTK_POLYGON:
-	    ExtractPolygon((vtkPolygon *)cell, ds, j, li);
+	    ExtractPolygon((vtkPolygon *) cell, ds, j, li);
 	    break;
 
 	default:

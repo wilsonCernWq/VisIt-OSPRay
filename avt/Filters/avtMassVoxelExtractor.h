@@ -106,7 +106,7 @@ class     vtkMatrix4x4;
 
 class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 {
-  public:
+public:
 		         avtMassVoxelExtractor(int, int, int, avtVolume *, avtCellList *);
 	virtual         ~avtMassVoxelExtractor();
 
@@ -174,7 +174,10 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 	void             SetOSPCamera(OSPCamera* _cam) { ospCamera = _cam; }
 	void             SetOSPTransferFcn(OSPTransferFunction* _t) { ospTransferFcn = _t; }
 
-  protected:
+	void ospSetVolumeMeta(ospVolumeMeta& v) { ospVolume = &v; }
+	void ospReset() { isDataDirty = true; }
+
+protected:
 	bool             gridsAreInWorldSpace;
 	bool             pretendGridsAreInWorldSpace;
 	avtViewInfo      view;
@@ -256,6 +259,8 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 	//
 	OSPCamera            *ospCamera;
 	OSPTransferFunction  *ospTransferFcn;
+	ospVolumeMeta        *ospVolume;
+	bool                 isDataDirty = true;
 
 	//
 	// RC SLIVR Specific
