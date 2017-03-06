@@ -175,7 +175,7 @@ public:
 	void             SetOSPTransferFcn(OSPTransferFunction* _t) { ospTransferFcn = _t; }
 
 	void ospSetVolumeMeta(ospVolumeMeta& v) { ospVolume = &v; }
-	void ospReset() { isDataDirty = true; }
+	void ospActive() { isDataDirty = true; }
 
 protected:
 	bool             gridsAreInWorldSpace;
@@ -260,7 +260,7 @@ protected:
 	OSPCamera            *ospCamera;
 	OSPTransferFunction  *ospTransferFcn;
 	ospVolumeMeta        *ospVolume;
-	bool                 isDataDirty = true;
+	bool                 isDataDirty = false;
 
 	//
 	// RC SLIVR Specific

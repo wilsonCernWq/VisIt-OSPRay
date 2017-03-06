@@ -2488,6 +2488,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    ospVolumePointer = cell_arrays[0];
 	    ospVolumeDataType = cell_vartypes[0];
 	}
+	if ((npt_arrays > 0 && ncell_arrays > 0) || npt_arrays > 1 || ncell_arrays > 1) {
+	    std::cerr << "WARNING: Multiple data found within one patch, don't know what to do !!" << std::endl;
+	}
 	//std::cout << "working fine - set data pointer" << std::endl;
 	//
 	// 2) set data type
@@ -2519,63 +2522,67 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// end TODO
 	//
  
-	// Qi enabling debug
-	// std::cout << "creating ospray volume" << std::endl;
-	std::cout << "processing patch image " << patch 
-		  << " lighting = " << lighting 
-		  << " data " << ospVoxelType << (ospVolume == NULL) << std::endl;
-	ospcommon::vec2f ospImgStart(((float)xMin)/bufferExtents[1], 
-				     ((float)yMin)/bufferExtents[3]);
-	ospcommon::vec2f ospImgStop (((float)xMax)/bufferExtents[1], 
-				     ((float)yMax)/bufferExtents[3]);
-	ospSetVec2f(*ospCamera, "imageStart", (osp::vec2f&)ospImgStart);
-	ospSetVec2f(*ospCamera, "imageEnd",   (osp::vec2f&)ospImgStop );
-	ospCommit(*ospCamera);
+
+	// // Qi enabling debug
+	// // std::cout << "creating ospray volume" << std::endl;
+	// std::cout << "processing patch image " << patch 
+	// 	  << " lighting = " << lighting 
+	// 	  << " data " << ospVoxelType << (ospVolume == NULL) << std::endl;
+	// ospcommon::vec2f ospImgStart(((float)xMin)/bufferExtents[1], 
+	// 			     ((float)yMin)/bufferExtents[3]);
+	// ospcommon::vec2f ospImgStop (((float)xMax)/bufferExtents[1], 
+	// 			     ((float)yMax)/bufferExtents[3]);
+	// ospSetVec2f(*ospCamera, "imageStart", (osp::vec2f&)ospImgStart);
+	// ospSetVec2f(*ospCamera, "imageEnd",   (osp::vec2f&)ospImgStop );
+	// ospCommit(*ospCamera);
 
 	// volume
 
 	// // version 1    
 	// std::vector<double> volumeData;
-    
 	// int __max = std::numeric_limits<int>::max();
 	// int __min = std::numeric_limits<int>::min();
 	// ospcommon::vec3i volumeDimMin(__max,__max,__max);	
 	// ospcommon::vec3i volumeDimMax(__min,__min,__min);	
-    
 	// /* 
 	//  * this set of parameter works fine for now: 1<= ix < dims[x]-1 
 	//  *  volumeLbox(X[1],Y[1],Z[1]);
 	//  *  volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
 	//  */
+	// int count = 0;
 	// if (ncell_arrays > 0) 
 	// {
-	// 	for (int l = 0 ; l < ncell_arrays ; l++) // ncell_arrays: usually 1
+	//     for (int l = 0 ; l < ncell_arrays ; l++) // ncell_arrays: usually 1
+	//     {
+	// 	void  *cellarray = cell_arrays[l];		
+	// 	for (int m = 0 ; m < cell_size[l] ; m++) // cell_size[l] usually 1
 	// 	{
-	// 	    void  *cellarray = cell_arrays[l];		
-	// 	    for (int m = 0 ; m < cell_size[l] ; m++) // cell_size[l] usually 1
-	// 	    {
-	// 		for (int iz = 1; iz < dims[2]-1; iz++) {
-	// 		    for (int iy = 1; iy < dims[1]-1; iy++) {
-	// 			for (int ix = 1; ix < dims[0]-1; ix++) {
-	// 			    int id = 
-	// 				iz * (dims[1]-1) * (dims[0]-1) + 
-	// 				iy * (dims[0]-1) + 
-	// 				ix;
-	// 			    // if (ghosts[id] != 0) { continue; }
-	// 			    double val = ((double*)ospVolumePointer)[cell_index[l]+cell_size[l]*id+m];
-	// 			    volumeData.push_back(val);
-	// 			    volumeDimMax.x = std::max(ix+1, volumeDimMax.x);
-	// 			    volumeDimMax.y = std::max(iy+1, volumeDimMax.y);
-	// 			    volumeDimMax.z = std::max(iz+1, volumeDimMax.z);
-	// 			    volumeDimMin.x = std::min(ix+1, volumeDimMin.x);
-	// 			    volumeDimMin.y = std::min(iy+1, volumeDimMin.y);
-	// 			    volumeDimMin.z = std::min(iz+1, volumeDimMin.z);
-	// 			}
+	// 	    for (int iz = 1; iz < dims[2]-1; iz++) {
+	// 		for (int iy = 1; iy < dims[1]-1; iy++) {
+	// 		    for (int ix = 1; ix < dims[0]-1; ix++) {
+	// 			int id = 
+	// 			    iz * (dims[1]-1) * (dims[0]-1) + 
+	// 			    iy * (dims[0]-1) + 
+	// 			    ix;
+	// 			// if (ghosts[id] != 0) { continue; }
+	// 			double val = ((double*)ospVolumePointer)
+	// 			    [cell_index[l]+cell_size[l]*id+m];
+	// 			std::cout << " " << val;
+	// 			if (count++ > 10) break;
+	// 			// volumeData.push_back(val);
+	// 			// volumeDimMax.x = std::max(ix+1, volumeDimMax.x);
+	// 			// volumeDimMax.y = std::max(iy+1, volumeDimMax.y);
+	// 			// volumeDimMax.z = std::max(iz+1, volumeDimMax.z);
+	// 			// volumeDimMin.x = std::min(ix+1, volumeDimMin.x);
+	// 			// volumeDimMin.y = std::min(iy+1, volumeDimMin.y);
+	// 			// volumeDimMin.z = std::min(iz+1, volumeDimMin.z);
 	// 		    }
 	// 		}
 	// 	    }
 	// 	}
+	//     }
 	// }
+	// std::cout << std::endl;
 	// // std::cout << "max range " << volumeDimMax << " min range " << volumeDimMin << std::endl; 
 	// OSPVolume ospVolume = ospNewVolume("shared_structured_volume");    
 	// ospcommon::vec3i volumeDims = volumeDimMax - volumeDimMin + 1;
@@ -2597,20 +2604,30 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// ospSetVec3i(ospVolume, "dimensions", (osp::vec3i&)volumeDims);
 
 	// version 2
-   	
 	ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);
 	ospcommon::vec3f volumeLbox(X[0],Y[0],Z[0]);
 	ospcommon::vec3f volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
 	ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims-1.0f));
 	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
 	OSPData ospVoxelData = ospNewData(ospVolumeSize,ospVoxelDataType,ospVolumePointer,OSP_DATA_SHARED_BUFFER);
-	std::cout << "volume start" << std::endl;
-	ospSetData(ospVolume->volume, "voxelData", ospVoxelData);
-	ospSetString(ospVolume->volume, "voxelType", ospVoxelType.c_str());
-	ospSetVec3f(ospVolume->volume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
-	ospSetVec3f(ospVolume->volume, "gridSpacing", (const osp::vec3f&)volumeSpac);
-	ospSetVec3i(ospVolume->volume, "dimensions", (osp::vec3i&)volumeDims);
-	std::cout << "volume end" << std::endl;
+	std::cout << "volume start ---> ";
+	
+	ospVolume->ospVolumePointer = ospVolumePointer;
+	ospVolume->ospVoxelType = ospVoxelType;
+        ospVolume->ospVoxelDataType = ospVoxelDataType;
+
+	ospVolume->ospVolumeSize = ospVolumeSize;
+	ospVolume->ospVoxelData = ospVoxelData;
+        ospVolume->volumeDims = volumeDims;
+	ospVolume->volumeLbox = volumeLbox;
+	ospVolume->volumeMbox = volumeMbox;
+        ospVolume->volumeSpac = volumeSpac;
+
+	// ospSetData(ospVolume->volume, "voxelData", ospVoxelData);
+	// ospSetString(ospVolume->volume, "voxelType", ospVoxelType.c_str());
+	// ospSetVec3f(ospVolume->volume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
+	// ospSetVec3f(ospVolume->volume, "gridSpacing", (const osp::vec3f&)volumeSpac);
+	// ospSetVec3i(ospVolume->volume, "dimensions", (osp::vec3i&)volumeDims);
 
 	// // version 3 -- deep copy + block_brike
 	// OSPVolume ospVolume = ospNewVolume("block_bricked_volume");
@@ -2631,71 +2648,71 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// ospSetVec3f(ospVolume, "volumeClippingBoxLower", (osp::vec3f&)volumeLowerClip);
 	// ospSetVec3f(ospVolume, "volumeClippingBoxUpper", (osp::vec3f&)volumeUpperClip);
 
-	// other properties
-	ospSetObject(ospVolume->volume, "transferFunction", *ospTransferFcn);
-	ospSetVec3f(ospVolume->volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
-	ospSet1f(ospVolume->volume, "samplingRate", 5.0f);
-	ospSet1i(ospVolume->volume, "singleShade", 1);
-	ospSet1i(ospVolume->volume, "adaptiveSampling", 0); // boolean is set by integer
-	ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
-	if (lighting) {
-	    ospSet1i(ospVolume->volume, "gradientShadingEnabled", 1);
-	} else {
-	    ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
-	}
-	ospCommit(ospVolume->volume);
-    	std::cout << "volume end" << std::endl;
+	// // -- other properties
+	// ospSetObject(ospVolume->volume, "transferFunction", *ospTransferFcn);
+	// ospSetVec3f(ospVolume->volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
+	// ospSet1f(ospVolume->volume, "samplingRate", 5.0f);
+	// ospSet1i(ospVolume->volume, "singleShade", 1);
+	// ospSet1i(ospVolume->volume, "adaptiveSampling", 0); // boolean is set by integer
+	// ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
+	// if (lighting) {
+	//     ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
+	// } else {
+	//     ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
+	// }
+	// ospCommit(ospVolume->volume);
+    	// std::cout << " <--- volume end" << std::endl;
 
-	// std::cout << "creating ospray model" << std::endl;
-	OSPModel ospWorld = ospNewModel();
-	ospAddVolume(ospWorld, ospVolume->volume);
-	ospCommit(ospWorld);
+	// // std::cout << "creating ospray model" << std::endl;
+	// OSPModel ospWorld = ospNewModel();
+	// ospAddVolume(ospWorld, ospVolume->volume);
+	// ospCommit(ospWorld);
     
-	OSPRenderer ospRenderer = ospNewRenderer("scivis");
-	ospSetObject(ospRenderer, "camera", *ospCamera);
-	ospSetObject(ospRenderer, "model",   ospWorld);
-	ospSet1i(ospRenderer, "backgroundEnabled", 0);
-	ospSet1i(ospRenderer, "oneSidedLighting", 0);
-	ospSet1i(ospRenderer, "shadowsEnabled", 0);
+	// OSPRenderer ospRenderer = ospNewRenderer("scivis");
+	// ospSetObject(ospRenderer, "camera", *ospCamera);
+	// ospSetObject(ospRenderer, "model",   ospWorld);
+	// ospSet1i(ospRenderer, "backgroundEnabled", 0);
+	// ospSet1i(ospRenderer, "oneSidedLighting", 0);
+	// ospSet1i(ospRenderer, "shadowsEnabled", 0);
 
-	if (lighting == true) 
-	{
-	    // ospSet1i(ospRenderer, "shadowsEnabled", 1);
-	    osp::vec3f lightdir{(float)view_direction[0],(float)view_direction[1],(float)view_direction[2]};
+	// if (lighting == true) 
+	// {
+	//     // ospSet1i(ospRenderer, "shadowsEnabled", 1);
+	//     osp::vec3f lightdir{(float)view_direction[0],(float)view_direction[1],(float)view_direction[2]};
     
-	    OSPLight ambientLight = ospNewLight(ospRenderer, "AmbientLight");
-	    ospSet1f(ambientLight, "intensity", materialProperties[0]);
-	    ospCommit(ambientLight);
+	//     OSPLight ambientLight = ospNewLight(ospRenderer, "AmbientLight");
+	//     ospSet1f(ambientLight, "intensity", materialProperties[0]);
+	//     ospCommit(ambientLight);
     
-	    OSPLight directionalLight = ospNewLight(ospRenderer, "DirectionalLight");
-	    ospSet1f(directionalLight, "intensity", materialProperties[2]);
-	    ospSetVec3f(directionalLight, "direction", lightdir);
-	    ospCommit(directionalLight);
+	//     OSPLight directionalLight = ospNewLight(ospRenderer, "DirectionalLight");
+	//     ospSet1f(directionalLight, "intensity", materialProperties[2]);
+	//     ospSetVec3f(directionalLight, "direction", lightdir);
+	//     ospCommit(directionalLight);
     
-	    std::vector<OSPLight> lights;
-	    lights.push_back(ambientLight);
-	    lights.push_back(directionalLight);
-	    ospSetData(ospRenderer,"lights",ospNewData(lights.size(),OSP_OBJECT,&lights[0]));
-	}
-	ospCommit(ospRenderer);
+	//     std::vector<OSPLight> lights;
+	//     lights.push_back(ambientLight);
+	//     lights.push_back(directionalLight);
+	//     ospSetData(ospRenderer,"lights",ospNewData(lights.size(),OSP_OBJECT,&lights[0]));
+	// }
+	// ospCommit(ospRenderer);
     
-	ospcommon::vec2i imageSize(imgWidth, imgHeight);	
-	OSPFrameBuffer ospfb = 
-	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
-	ospFrameBufferClear(ospfb, OSP_FB_COLOR | OSP_FB_ACCUM);	
-	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+	// ospcommon::vec2i imageSize(imgWidth, imgHeight);	
+	// OSPFrameBuffer ospfb = 
+	//     ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
+	// ospFrameBufferClear(ospfb, OSP_FB_COLOR | OSP_FB_ACCUM);	
+	// ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
 
-	// save ospray image and clean up
-	float *fb = (float*) ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
-	std::copy(fb, fb + (imageSize.x * imageSize.y) * 4, imgArray);
-	writeArrayToPPM("/home/sci/qwu/Desktop/osp/osp_patches_" +
-			std::to_string(patch),
-			imgArray,imgWidth,imgHeight);	
-	ospUnmapFrameBuffer(fb, ospfb);
-	ospRelease(ospWorld);
-	ospRelease(ospRenderer);
-	ospRelease(ospfb);	
-	// ospRelease(ospVolume);
+	// // save ospray image and clean up
+	// float *fb = (float*) ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
+	// std::copy(fb, fb + (imageSize.x * imageSize.y) * 4, imgArray);
+	// // writeArrayToPPM("/home/sci/qwu/Desktop/osp/osp_patches_" +
+	// // 		std::to_string(patch),
+	// // 		imgArray,imgWidth,imgHeight);	
+	// ospUnmapFrameBuffer(fb, ospfb);
+	// ospRelease(ospWorld);
+	// ospRelease(ospRenderer);
+	// ospRelease(ospfb);	
+	// // ospRelease(ospVolume);
     }
 }
 

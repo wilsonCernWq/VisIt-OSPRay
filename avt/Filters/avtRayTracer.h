@@ -53,10 +53,13 @@
 
 #include <map>
 #include <limits>
+#include <vector>
 
 #include <vtkCamera.h>
 class   avtRayFunction;
 class   vtkMatrix4x4;
+
+#include <imgMetaData.h>
 
 // ****************************************************************************
 //  Class: avtRayTracer
@@ -144,6 +147,7 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  SetRayCastingSLIVR(bool _rayCastingSLIVR){ rayCastingSLIVR = _rayCastingSLIVR; };
 
   protected:
+    
     avtImgCommunicator    imgComm;
     avtViewInfo           view;
 
@@ -185,6 +189,7 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
 
     void computeRay(double camera[3], double position[3], double ray[3]);
     bool intersect(double bounds[6], double ray[3], double cameraPos[3], double &tMin, double &tMax);
+
 
 };
 

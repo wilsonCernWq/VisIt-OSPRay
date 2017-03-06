@@ -46,10 +46,24 @@
 #include <vtkType.h>
 
 struct ospVolumeMeta {
+
     OSPVolume volume;
-    ospVolumeMeta() { 
-	volume = ospNewVolume("shared_structured_volume"); 
+    void* ospVolumePointer;
+    std::string ospVoxelType;
+    OSPDataType ospVoxelDataType;
+    size_t ospVolumeSize;
+    OSPData ospVoxelData;
+
+    ospcommon::vec3i volumeDims;
+    ospcommon::vec3f volumeLbox;
+    ospcommon::vec3f volumeMbox;
+    ospcommon::vec3f volumeSpac;
+
+    void init() { volume = ospNewVolume("shared_structured_volume"); }
+    void initData() {
+	ospVoxelData = ospNewData(ospVolumeSize,ospVoxelDataType,ospVolumePointer,OSP_DATA_SHARED_BUFFER);
     }
+    ospVolumeMeta() {}
     ~ospVolumeMeta() {
         // ospRelease(volume);
     }

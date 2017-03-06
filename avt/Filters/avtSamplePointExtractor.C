@@ -1080,7 +1080,8 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    std::cout << " is data dirty " << isDataDirty << " " << ospVolumeList->size() << std::endl;
 	    if (isDataDirty) {
 		ospVolumeList->emplace_back();
-		massVoxelExtractor->ospReset();
+		ospVolumeList->back().init();
+		massVoxelExtractor->ospActive();
 		massVoxelExtractor->ospSetVolumeMeta(ospVolumeList->back());
 	    }
 

@@ -698,6 +698,11 @@ avtRayTracer::Execute(void)
     //
     // Ray casting: SLIVR ~ Setup
     //
+
+    OSPCamera ospCamera;
+    OSPTransferFunction ospTransferFcn;
+    static std::vector<ospVolumeMeta> ospVolumeList;
+    static bool first_entry = true;
     if (rayCastingSLIVR)
     {
 	extractor.SetRayCastingSLIVR(true);
@@ -860,14 +865,12 @@ avtRayTracer::Execute(void)
 	//
 	// (Qi) this should be replaced by proper vtkOSPRay initialization later
 	// init ospray before everything
-	static bool first_entry = true;
-	std::vector<ospVolumeMeta> ospVolumeList;
+
 	if (first_entry) {
 	    std::cout << "initialize ospray" << std::endl;
 	    int argc = 1; const char* argv[1] = { "visitOSPRay" }; 
-	    ospInit(&argc, argv); first_entry = false;
-
-	    extractor.ResetOSPData();
+	    ospInit(&argc, argv);
+	    extractor.ActiveOSPData();
 	    extractor.SetOSPVolumeList(ospVolumeList);
 	}
 
@@ -876,7 +879,7 @@ avtRayTracer::Execute(void)
 	// do some ospray stuffs to speed things up
 	//
 	std::cout << "make ospray camera" << std::endl;
-	OSPCamera ospCamera = ospNewCamera("perspective");
+        ospCamera = ospNewCamera("perspective");
 	
 	// the zooming is applied by moving camera closer to the focus point
 	float currOspCam[3];
@@ -898,14 +901,14 @@ avtRayTracer::Execute(void)
 	ospSetVec3f(ospCamera, "dir", (osp::vec3f&)camDir);
 	ospSetVec3f(ospCamera, "up",  (osp::vec3f&)camUp);
 	ospSet1f(ospCamera, "fovy", (float)view.viewAngle);
-	ospSet1f(ospCamera, "nearClip", (float)oldNearPlane);
+	//ospSet1f(ospCamera, "nearClip", (float)view.nearPlane);
 	ospCommit(ospCamera);
 
 	//
 	// OSPRay transfer function stuffs
 	//
 	std::cout << "make ospray transfer function" << std::endl;
-	OSPTransferFunction ospTransferFcn = ospNewTransferFunction("piecewise_linear");
+        ospTransferFcn = ospNewTransferFunction("piecewise_linear");
 
 	// color and opacity
 	std::vector<ospcommon::vec3f> ospColors;
@@ -932,6 +935,8 @@ avtRayTracer::Execute(void)
 	// commit changes
 	ospCommit(ospTransferFcn);
 	//std::cout << "trasnfer func range " << valueRange << std::endl;
+
+
 	// -----------------------------
 	//
 
@@ -1015,13 +1020,98 @@ avtRayTracer::Execute(void)
     //
     if (rayCastingSLIVR == true)
     {
-	debug5 << "Start compositing" << std::endl;
+
+	std::cout << "Start compositing" << std::endl;
 
 	avtRayCompositer rc(rayfoo);
 	// only required to force an update - Need to find a way to get rid of that!!!!
 	rc.SetInput(samples);
 	avtImage_p image  = rc.GetTypedOutput();
 	image->Update(GetGeneralContract());
+
+	// OSP model
+	// -------------------------------------
+	int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
+	int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
+
+	osp::vec2f imageS{(float)fullImageExtents[0]/(float)screen[0], (float)fullImageExtents[2]/(float)screen[1]};
+	osp::vec2f imageE{(float)fullImageExtents[1]/(float)screen[0], (float)fullImageExtents[3]/(float)screen[1]};
+	ospSetVec2f(ospCamera, "imageStart", imageS);
+	ospSetVec2f(ospCamera, "imageEnd",   imageE);
+	//ospSetf(ospCamera, "aspect", (float)compositedImageWidth/compositedImageHeight);
+	ospCommit(ospCamera);
+
+	std::cout << "creating ospray model " << ospVolumeList.size() 
+		  << " volumes" << std::endl;
+	OSPModel ospWorld = ospNewModel();
+	
+	for (int i = 0; i <  ospVolumeList.size(); ++i) {
+	    auto ospVolume = ospVolumeList[i];
+	    if (first_entry) {
+		//std::cout << "check volume " << i << std::endl;
+		//std::cout << "process volume" << std::endl;
+		ospVolume.initData();
+		ospSetData(ospVolume.volume, "voxelData", ospVolume.ospVoxelData);
+		ospSetObject(ospVolume.volume, "transferFunction", ospTransferFcn);
+		ospSetString(ospVolume.volume, "voxelType", ospVolume.ospVoxelType.c_str());
+		ospSetVec3f(ospVolume.volume, "gridOrigin",  (const osp::vec3f&)(ospVolume.volumeLbox));
+		ospSetVec3f(ospVolume.volume, "gridSpacing", (const osp::vec3f&)(ospVolume.volumeSpac));
+		ospSetVec3i(ospVolume.volume, "dimensions", (osp::vec3i&)(ospVolume.volumeDims));
+		ospSetVec3f(ospVolume.volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
+		ospSet1f(ospVolume.volume, "samplingRate", 5.0f);
+		ospSet1i(ospVolume.volume, "singleShade",  0);
+		ospSet1i(ospVolume.volume, "adaptiveSampling", 0); // boolean is set by integer
+		ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
+		if (lighting) {
+		    ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
+		} else {
+		    ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
+		}
+		ospCommit(ospVolume.volume);
+	    }
+	    ospAddVolume(ospWorld, ospVolume.volume);   
+	}
+	ospCommit(ospWorld);
+    
+	OSPRenderer ospRenderer = ospNewRenderer("scivis");
+	ospSetObject(ospRenderer, "camera", ospCamera);
+	ospSetObject(ospRenderer, "model",  ospWorld);
+	ospSet1i(ospRenderer, "backgroundEnabled", 0);
+	ospSet1i(ospRenderer, "oneSidedLighting", 0);
+	ospSet1i(ospRenderer, "shadowsEnabled", 0);
+
+	if (lighting == true) 
+	{
+	    OSPLight ambientLight = ospNewLight(ospRenderer, "AmbientLight");
+	    ospSet1f(ambientLight, "intensity", materialProperties[0]);
+	    ospCommit(ambientLight);
+	    OSPLight directionalLight = ospNewLight(ospRenderer, "DirectionalLight");
+	    osp::vec3f lightdir{(float)view_direction[0],(float)view_direction[1],(float)view_direction[2]};
+	    ospSet1f(directionalLight, "intensity", materialProperties[2]);
+	    ospSetVec3f(directionalLight, "direction", lightdir);
+	    ospCommit(directionalLight);
+	    std::vector<OSPLight> lights;
+	    lights.push_back(ambientLight);
+	    lights.push_back(directionalLight);
+	    ospSetData(ospRenderer,"lights",ospNewData(lights.size(),OSP_OBJECT,&lights[0]));
+	}
+	ospCommit(ospRenderer);
+
+	ospcommon::vec2i imageSize(compositedImageWidth, compositedImageHeight);	
+	OSPFrameBuffer ospfb = ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
+	ospFrameBufferClear(ospfb, OSP_FB_COLOR | OSP_FB_ACCUM);	
+	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+
+	// save ospray image and clean up
+	float *fb = (float*) ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
+	// writeArrayToPPM("/home/sci/qwu/Desktop/fullospimg",fb,imageSize.x, imageSize.y);	
+	//ospUnmapFrameBuffer(fb, ospfb);
+	//ospRelease(ospWorld);
+	//ospRelease(ospRenderer);
+	//ospRelease(ospfb);
+	first_entry = false;
+	// -----------------------------------------
+	//
 
 	//
 	// SERIAL : Single Processor
@@ -1031,77 +1121,79 @@ avtRayTracer::Execute(void)
 	    // Qi debug
 	    cout << "Serial compositing!" << std::endl;
 
-	    //
-	    // Get the metadata for all patches
-	    std::vector<imgMetaData> allImgMetaData; // contains the metadata to composite the image
-	    int numPatches = extractor.getImgPatchSize(); // get the number of patches
+	    // //
+	    // // Get the metadata for all patches
+	    // std::vector<imgMetaData> allImgMetaData; // contains the metadata to composite the image
+	    // int numPatches = extractor.getImgPatchSize(); // get the number of patches
 								       
-	    for (int i=0; i<numPatches; i++)
-	    {
-		imgMetaData temp;
-		temp = extractor.getImgMetaPatch(i);
-		allImgMetaData.push_back(temp);
-	    }
+	    // for (int i=0; i<numPatches; i++)
+	    // {
+	    // 	imgMetaData temp;
+	    // 	temp = extractor.getImgMetaPatch(i);
+	    // 	allImgMetaData.push_back(temp);
+	    // }
 
-	    // Qi debug
-	    cout << "Number of patches: " << numPatches << std::endl;
+	    // // Qi debug
+	    // cout << "Number of patches: " << numPatches << std::endl;
 
-	    //
-	    // Sort with the largest z first
-	    std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
+	    // //
+	    // // Sort with the largest z first
+	    // std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
 
 
-	    //
-	    // Blend images
-	    //
-	    int renderedWidth = fullImageExtents[1] - fullImageExtents[0];
-	    int renderedHeight = fullImageExtents[3] - fullImageExtents[2];
-	    float *composedData = new float[renderedWidth * renderedHeight * 4]();
+	    // //
+	    // // Blend images
+	    // //
+	    // int renderedWidth = fullImageExtents[1] - fullImageExtents[0];
+	    // int renderedHeight = fullImageExtents[3] - fullImageExtents[2];
+	    // float *composedData = new float[renderedWidth * renderedHeight * 4]();
 
-	    for (int i=0; i<numPatches; i++)
-	    {
-		imgMetaData currentPatch = allImgMetaData[i];
+	    float* composedData = fb;
 
-		imgData tempImgData;
-		tempImgData.imagePatch = NULL;
-		tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
-		extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
+	    // for (int i=0; i<numPatches; i++)
+	    // {
+	    // 	imgMetaData currentPatch = allImgMetaData[i];
 
-		for (int _y=0; _y<currentPatch.dims[1]; _y++)
-		    for (int _x=0; _x<currentPatch.dims[0]; _x++)
-		    {
-			int startingX = currentPatch.screen_ll[0];
-			int startingY = currentPatch.screen_ll[1];
+	    // 	imgData tempImgData;
+	    // 	tempImgData.imagePatch = NULL;
+	    // 	tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
+	    // 	extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
 
-			if ((startingX + _x) > fullImageExtents[1])
-			    continue;
+	    // 	for (int _y=0; _y<currentPatch.dims[1]; _y++)
+	    // 	    for (int _x=0; _x<currentPatch.dims[0]; _x++)
+	    // 	    {
+	    // 		int startingX = currentPatch.screen_ll[0];
+	    // 		int startingY = currentPatch.screen_ll[1];
 
-			if ((startingY + _y) > fullImageExtents[3])
-			    continue;
+	    // 		if ((startingX + _x) > fullImageExtents[1])
+	    // 		    continue;
 
-			// index in the subimage
-			int subImgIndex = (_y*currentPatch.dims[0] + _x) * 4;
-			// index in the big buffer
-			int bufferIndex = ( (((startingY+_y)-fullImageExtents[2]) * renderedWidth)  +  ((startingX+_x)-fullImageExtents[0]) ) * 4;
+	    // 		if ((startingY + _y) > fullImageExtents[3])
+	    // 		    continue;
 
-			if (composedData[bufferIndex+3] < 1.0)
-			{
-			    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-			    float alpha = (1.0 - tempImgData.imagePatch[subImgIndex+3]);
-			    composedData[bufferIndex+0] = imgComm.clamp( (composedData[bufferIndex+0] * alpha) + tempImgData.imagePatch[subImgIndex+0] );
-			    composedData[bufferIndex+1] = imgComm.clamp( (composedData[bufferIndex+1] * alpha) + tempImgData.imagePatch[subImgIndex+1] );
-			    composedData[bufferIndex+2] = imgComm.clamp( (composedData[bufferIndex+2] * alpha) + tempImgData.imagePatch[subImgIndex+2] );
-			    composedData[bufferIndex+3] = imgComm.clamp( (composedData[bufferIndex+3] * alpha) + tempImgData.imagePatch[subImgIndex+3] );
-			}
-		    }
+	    // 		// index in the subimage
+	    // 		int subImgIndex = (_y*currentPatch.dims[0] + _x) * 4;
+	    // 		// index in the big buffer
+	    // 		int bufferIndex = ( (((startingY+_y)-fullImageExtents[2]) * renderedWidth)  +  ((startingX+_x)-fullImageExtents[0]) ) * 4;
 
-		//
-		// Clean up data
-		if (tempImgData.imagePatch != NULL)
-		    delete []tempImgData.imagePatch;
-		tempImgData.imagePatch = NULL;
-	    }
-	    allImgMetaData.clear();
+	    // 		if (composedData[bufferIndex+3] < 1.0)
+	    // 		{
+	    // 		    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
+	    // 		    float alpha = (1.0 - tempImgData.imagePatch[subImgIndex+3]);
+	    // 		    composedData[bufferIndex+0] = imgComm.clamp( (composedData[bufferIndex+0] * alpha) + tempImgData.imagePatch[subImgIndex+0] );
+	    // 		    composedData[bufferIndex+1] = imgComm.clamp( (composedData[bufferIndex+1] * alpha) + tempImgData.imagePatch[subImgIndex+1] );
+	    // 		    composedData[bufferIndex+2] = imgComm.clamp( (composedData[bufferIndex+2] * alpha) + tempImgData.imagePatch[subImgIndex+2] );
+	    // 		    composedData[bufferIndex+3] = imgComm.clamp( (composedData[bufferIndex+3] * alpha) + tempImgData.imagePatch[subImgIndex+3] );
+	    // 		}
+	    // 	    }
+
+	    // 	//
+	    // 	// Clean up data
+	    // 	if (tempImgData.imagePatch != NULL)
+	    // 	    delete []tempImgData.imagePatch;
+	    // 	tempImgData.imagePatch = NULL;
+	    // }
+	    // allImgMetaData.clear();
 
 	    debug5 << "Serial compositing done!" << std::endl;
 
@@ -1147,9 +1239,8 @@ avtRayTracer::Execute(void)
 
 		    bool insideComposited = false;
 		    if (_x >= fullImageExtents[0] && _x < fullImageExtents[1])
-			if (_y >= fullImageExtents[2] && _y < fullImageExtents[3])
-			    insideComposited = true;
-
+		     	if (_y >= fullImageExtents[2] && _y < fullImageExtents[3])
+		     	    insideComposited = true;
 
 		    if ( insideComposited )
 		    {
@@ -1256,7 +1347,11 @@ avtRayTracer::Execute(void)
 
 	    //
 	    // Cleanup
-	    delete []composedData;
+	    ospUnmapFrameBuffer(fb, ospfb);
+	    ospRelease(ospWorld);
+	    ospRelease(ospRenderer);
+	    ospRelease(ospfb);
+	    //delete []composedData;
 	    return;
 
 	} else { 
