@@ -2435,47 +2435,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	//
 	// // std::cout << "point data size: " << npt_arrays << std::endl;
 	// // std::cout << "cell data size: "  << ncell_arrays << std::endl;
-	// std::vector<vtkDataArray *>  _cell_arrays;
-	// for (int i = 0 ; i < rgrid->GetCellData()->GetNumberOfArrays() ; i++)
-	// {
-	//     vtkDataArray *arr = rgrid->GetCellData()->GetArray(i);
-	//     const char *name = arr->GetName();
-	//     int idx = -1;
-	//     for (int j = 0 ; j < (int)varnames.size() ; j++)
-	//     {
-	// 	if (varnames[j] == name)
-	// 	{
-	// 	    idx = 0;
-	// 	    for (int k = 0 ; k < j ; k++)
-	// 		idx += varsize[k];
-	// 	    break;
-	// 	}
-	//     }
-	//     if (idx < 0)
-	// 	continue;
-	//     _cell_arrays.push_back(arr);
-	// }
-	// std::vector<vtkDataArray *>  _pt_arrays;
-	// for (int i = 0 ; i < rgrid->GetPointData()->GetNumberOfArrays() ; i++)
-	// {
-	//     vtkDataArray *arr = rgrid->GetPointData()->GetArray(i);
-	//     const char *name = arr->GetName();
-	//     int idx = -1;
-	//     for (int j = 0 ; j < (int)varnames.size() ; j++)
-	//     {
-	// 	if (varnames[j] == name)
-	// 	{
-	// 	    idx = 0;
-	// 	    for (int k = 0 ; k < j ; k++)
-	// 		idx += varsize[k];
-	// 	    break;
-	// 	}
-	//     }
-	//     if (idx < 0)
-	// 	continue;
-	//     _pt_arrays.push_back(arr);
-	// }
-	//
 	// 1) get data from vtkRectlinearGrid	
 	std::cout << "ospray work starts \n";
 	void* ospVolumePointer;
@@ -2522,7 +2481,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// end TODO
 	//
  
-
 	// // Qi enabling debug
 	// // std::cout << "creating ospray volume" << std::endl;
 	// std::cout << "processing patch image " << patch 
@@ -2536,8 +2494,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// ospSetVec2f(*ospCamera, "imageEnd",   (osp::vec2f&)ospImgStop );
 	// ospCommit(*ospCamera);
 
-	// volume
-
+	// ------- volume
 	// // version 1    
 	// std::vector<double> volumeData;
 	// int __max = std::numeric_limits<int>::max();
@@ -2604,12 +2561,26 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// ospSetVec3i(ospVolume, "dimensions", (osp::vec3i&)volumeDims);
 
 	// version 2
+	std::cout << " " << X[0] << " " << Y[0] << " " << Z[0] << std::endl; 
+	std::cout << " " << X[dims[0]-1] << " " << Y[dims[1]-1] << " " << Z[dims[2]-1] << std::endl; 
 	ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);
 	ospcommon::vec3f volumeLbox(X[0],Y[0],Z[0]);
-	ospcommon::vec3f volumeMbox(X[dims[0]-1],Y[dims[1]-1],Z[dims[2]-1]);
+	ospcommon::vec3f volumeMbox(X[dims[0]-2],Y[dims[1]-2],Z[dims[2]-2]);
 	ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims-1.0f));
+	//volumeLbox = volumeLbox - volumeSpac;
+        // this is the clipping box coordinate
+	// I am trying to fix the defects near the boundaries
+	ospcommon::vec3f volumeLowerClip(X[1],Y[1],Z[1]); 
+	ospcommon::vec3f volumeUpperClip(X[dims[0]-2],Y[dims[1]-2],Z[dims[2]-2]);
+	volumeLowerClip = volumeLowerClip - volumeSpac / 2.0f;
+	volumeUpperClip = volumeUpperClip + volumeSpac / 2.0f;
+	//ospSetVec3f(ospVolume->volume, "volumeClippingBoxLower", (osp::vec3f&)volumeLowerClip);
+	//ospSetVec3f(ospVolume->volume, "volumeClippingBoxUpper", (osp::vec3f&)volumeUpperClip);
+
 	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
-	OSPData ospVoxelData = ospNewData(ospVolumeSize,ospVoxelDataType,ospVolumePointer,OSP_DATA_SHARED_BUFFER);
+	OSPData ospVoxelData = 
+	    ospNewData(ospVolumeSize,ospVoxelDataType,ospVolumePointer,OSP_DATA_SHARED_BUFFER);
+
 	std::cout << "volume start ---> ";
 	
 	ospVolume->ospVolumePointer = ospVolumePointer;
@@ -2623,11 +2594,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospVolume->volumeMbox = volumeMbox;
         ospVolume->volumeSpac = volumeSpac;
 
-	// ospSetData(ospVolume->volume, "voxelData", ospVoxelData);
-	// ospSetString(ospVolume->volume, "voxelType", ospVoxelType.c_str());
-	// ospSetVec3f(ospVolume->volume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
-	// ospSetVec3f(ospVolume->volume, "gridSpacing", (const osp::vec3f&)volumeSpac);
-	// ospSetVec3i(ospVolume->volume, "dimensions", (osp::vec3i&)volumeDims);
+	ospSetData(ospVolume->volume, "voxelData", ospVoxelData);
+	ospSetString(ospVolume->volume, "voxelType", ospVoxelType.c_str());
+	ospSetVec3f(ospVolume->volume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
+	ospSetVec3f(ospVolume->volume, "gridSpacing", (const osp::vec3f&)volumeSpac);
+	ospSetVec3i(ospVolume->volume, "dimensions", (osp::vec3i&)volumeDims);
 
 	// // version 3 -- deep copy + block_brike
 	// OSPVolume ospVolume = ospNewVolume("block_bricked_volume");
@@ -2643,25 +2614,16 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// ospSetRegion(ospVolume,ospVolumePointer,osp::vec3i{0,0,0},(osp::vec3i&)volumeDims);
 	// std::cout << "patch spacing " << volumeSpac << " " << X[1] - X[0] <<std::endl;
 
-	// ospcommon::vec3f volumeLowerClip(0,0,0);       // this is the clipping box coordinate ---
-	// ospcommon::vec3f volumeUpperClip(0.5,0.5,0.5); // same as the clipping operator in visIt ---
-	// ospSetVec3f(ospVolume, "volumeClippingBoxLower", (osp::vec3f&)volumeLowerClip);
-	// ospSetVec3f(ospVolume, "volumeClippingBoxUpper", (osp::vec3f&)volumeUpperClip);
-
-	// // -- other properties
-	// ospSetObject(ospVolume->volume, "transferFunction", *ospTransferFcn);
-	// ospSetVec3f(ospVolume->volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
-	// ospSet1f(ospVolume->volume, "samplingRate", 5.0f);
-	// ospSet1i(ospVolume->volume, "singleShade", 1);
-	// ospSet1i(ospVolume->volume, "adaptiveSampling", 0); // boolean is set by integer
-	// ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
-	// if (lighting) {
-	//     ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
-	// } else {
-	//     ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
-	// }
-	// ospCommit(ospVolume->volume);
-    	// std::cout << " <--- volume end" << std::endl;
+	// -- other properties
+	ospSetObject(ospVolume->volume, "transferFunction", *ospTransferFcn);
+	ospSetVec3f(ospVolume->volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
+	ospSet1f(ospVolume->volume, "samplingRate", 5.0f);
+	ospSet1i(ospVolume->volume, "singleShade", 0);
+	ospSet1i(ospVolume->volume, "adaptiveSampling", 0);
+	ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
+	ospSet1i(ospVolume->volume, "preIntegration", 0);
+	ospCommit(ospVolume->volume);
+    	std::cout << " <--- volume end" << std::endl;
 
 	// // std::cout << "creating ospray model" << std::endl;
 	// OSPModel ospWorld = ospNewModel();

@@ -1048,26 +1048,24 @@ avtRayTracer::Execute(void)
 	for (int i = 0; i <  ospVolumeList.size(); ++i) {
 	    auto ospVolume = ospVolumeList[i];
 	    if (first_entry) {
-		//std::cout << "check volume " << i << std::endl;
-		//std::cout << "process volume" << std::endl;
-		ospVolume.initData();
-		ospSetData(ospVolume.volume, "voxelData", ospVolume.ospVoxelData);
-		ospSetObject(ospVolume.volume, "transferFunction", ospTransferFcn);
-		ospSetString(ospVolume.volume, "voxelType", ospVolume.ospVoxelType.c_str());
-		ospSetVec3f(ospVolume.volume, "gridOrigin",  (const osp::vec3f&)(ospVolume.volumeLbox));
-		ospSetVec3f(ospVolume.volume, "gridSpacing", (const osp::vec3f&)(ospVolume.volumeSpac));
-		ospSetVec3i(ospVolume.volume, "dimensions", (osp::vec3i&)(ospVolume.volumeDims));
-		ospSetVec3f(ospVolume.volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
-		ospSet1f(ospVolume.volume, "samplingRate", 5.0f);
-		ospSet1i(ospVolume.volume, "singleShade",  0);
-		ospSet1i(ospVolume.volume, "adaptiveSampling", 0); // boolean is set by integer
-		ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
-		if (lighting) {
-		    ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
-		} else {
-		    ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
-		}
-		ospCommit(ospVolume.volume);
+		// ospVolume.initData();
+		// ospSetData(ospVolume.volume, "voxelData", ospVolume.ospVoxelData);
+		// ospSetObject(ospVolume.volume, "transferFunction", ospTransferFcn);
+		// ospSetString(ospVolume.volume, "voxelType", ospVolume.ospVoxelType.c_str());
+		// ospSetVec3f(ospVolume.volume, "gridOrigin",  (const osp::vec3f&)(ospVolume.volumeLbox));
+		// ospSetVec3f(ospVolume.volume, "gridSpacing", (const osp::vec3f&)(ospVolume.volumeSpac));
+		// ospSetVec3i(ospVolume.volume, "dimensions", (osp::vec3i&)(ospVolume.volumeDims));
+		// ospSetVec3f(ospVolume.volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
+		// ospSet1f(ospVolume.volume, "samplingRate", 5.0f);
+		// ospSet1i(ospVolume.volume, "singleShade",  0);
+		// ospSet1i(ospVolume.volume, "adaptiveSampling", 0); // boolean is set by integer
+		// ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
+		// if (lighting) {
+		//     ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
+		// } else {
+		//     ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
+		// }
+		// ospCommit(ospVolume.volume);
 	    }
 	    ospAddVolume(ospWorld, ospVolume.volume);   
 	}
@@ -1086,7 +1084,8 @@ avtRayTracer::Execute(void)
 	    ospSet1f(ambientLight, "intensity", materialProperties[0]);
 	    ospCommit(ambientLight);
 	    OSPLight directionalLight = ospNewLight(ospRenderer, "DirectionalLight");
-	    osp::vec3f lightdir{(float)view_direction[0],(float)view_direction[1],(float)view_direction[2]};
+	    osp::vec3f lightdir
+	    {(float)view_direction[0],(float)view_direction[1],(float)view_direction[2]};
 	    ospSet1f(directionalLight, "intensity", materialProperties[2]);
 	    ospSetVec3f(directionalLight, "direction", lightdir);
 	    ospCommit(directionalLight);
