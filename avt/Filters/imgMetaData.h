@@ -47,9 +47,9 @@
 
 struct ospVolumeMeta {
 
+    std::string ospVoxelType;
     OSPVolume volume;
     void* ospVolumePointer;
-    std::string ospVoxelType;
     OSPDataType ospVoxelDataType;
     size_t ospVolumeSize;
     OSPData ospVoxelData;
@@ -59,15 +59,10 @@ struct ospVolumeMeta {
     ospcommon::vec3f volumeMbox;
     ospcommon::vec3f volumeSpac;
 
-    void init() { volume = ospNewVolume("shared_structured_volume"); }
-    void initData() {
-	ospVoxelData = ospNewData(ospVolumeSize,ospVoxelDataType,ospVolumePointer,OSP_DATA_SHARED_BUFFER);
+    void init() { 
+	//volume = ospNewVolume("shared_structured_volume"); 
+	volume = ospNewVolume("block_bricked_volume"); 
     }
-    ospVolumeMeta() {}
-    ~ospVolumeMeta() {
-        // ospRelease(volume);
-    }
-    void SetVoxelData() {}
 };
 
 // ****************************************************************************

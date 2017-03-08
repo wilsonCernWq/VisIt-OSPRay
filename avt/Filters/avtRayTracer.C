@@ -624,9 +624,11 @@ avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
 void
 avtRayTracer::Execute(void)
 {
+    //
     // start of original pipeline
+    //
     int  timingIndex = visitTimer->StartTimer();
-    bool parallelOn = (imgComm.GetNumProcs() == 1)?false:true;
+    bool parallelOn = (imgComm.GetNumProcs() == 1) ? false : true;
 
     if (rayfoo == NULL)
     {
@@ -655,15 +657,11 @@ avtRayTracer::Execute(void)
     avtWorldSpaceToImageSpaceTransform trans(view, aspect);
     trans.SetInput(GetInput());
 
-    // priiiint out filename
-    std::cout << "filename " << trans.GetOutput()->GetInfo().GetAttributes().GetFilename()
-	      << " full db name " << trans.GetOutput()->GetInfo().GetAttributes().GetFilename() << std::endl;
-
-    //auto binrange = trans.GetOutput()->GetInfo().GetAttributes().GetVariableBinRanges();    
-    //std::cout << "--- binrange " << std::endl;
-    //for (auto v : binrange) {
-    //std::cout << " --- binrange " << v << std::endl;
-    //}
+    //
+    // print out filename
+    //
+    std::cout << "filename " 
+	      << trans.GetOutput()->GetInfo().GetAttributes().GetFilename() << std::endl;
 
     //
     // Extract all of the samples from the dataset.
@@ -695,19 +693,24 @@ avtRayTracer::Execute(void)
 
     int fullImageExtents[4];
 
+    // 
+    // Qi static/useful variables
     //
-    // Ray casting: SLIVR ~ Setup
-    //
-
     OSPCamera ospCamera;
     OSPTransferFunction ospTransferFcn;
     static std::vector<ospVolumeMeta> ospVolumeList;
-    static bool first_entry = true;
+    static bool isFirstEntry = true;
+    static bool isDataDirty = true;
+
+    //
+    // Ray casting: SLIVR ~ Setup
+    //
     if (rayCastingSLIVR)
     {
 	extractor.SetRayCastingSLIVR(true);
 	//
 	// Camera Settings
+	//
 	vtkCamera *sceneCam = vtkCamera::New();
 	sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
 	sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
@@ -719,7 +722,7 @@ avtRayTracer::Execute(void)
 	else
 	    sceneCam->ParallelProjectionOff();
 	sceneCam->SetParallelScale(view.parallelScale);
-
+	// debug
 	debug5 << "RT View settings: " << endl;
 	debug5 << "inheriant view direction: "
 	       << view_direction[0] << " "
@@ -754,43 +757,33 @@ avtRayTracer::Execute(void)
 	debug5 << "oldNearPlane: " << oldNearPlane  << std::endl;
 	debug5 << "oldFarPlane: "  << oldFarPlane     << std::endl;
 	debug5 << "aspect: " << aspect << std::endl << std::endl;
-
+	// clip planes
 	double _clip[2];
 	_clip[0]=oldNearPlane;  _clip[1]=oldFarPlane;
-
 	panPercentage[0] = view.imagePan[0];
 	panPercentage[1] = view.imagePan[1];
-
 	// Scaling
 	vtkMatrix4x4 *scaletrans = vtkMatrix4x4::New();
 	scaletrans->Identity();
 	scaletrans->SetElement(0, 0, scale[0]);
 	scaletrans->SetElement(1, 1, scale[1]);
 	scaletrans->SetElement(2, 2, scale[2]);
-
 	// Zoom and pan portions
 	vtkMatrix4x4 *imageZoomAndPan = vtkMatrix4x4::New();
 	imageZoomAndPan->Identity();
 	imageZoomAndPan->SetElement(0, 0, view.imageZoom);
 	imageZoomAndPan->SetElement(1, 1, view.imageZoom);
-	//imageZoomAndPan->SetElement(0, 3, 2*view.imagePan[0]*view.imageZoom);
-	//imageZoomAndPan->SetElement(1, 3, 2*view.imagePan[1]*view.imageZoom);
-
 	// View
 	vtkMatrix4x4 *tmp = vtkMatrix4x4::New();
 	vtkMatrix4x4 *vm = vtkMatrix4x4::New();
 	vtkMatrix4x4 *vmInit = sceneCam->GetModelViewTransformMatrix();
-
 	vmInit->Transpose();
 	imageZoomAndPan->Transpose();
 	vtkMatrix4x4::Multiply4x4(vmInit, scaletrans, tmp);
 	vtkMatrix4x4::Multiply4x4(tmp, imageZoomAndPan, vm);
 	vm->Transpose();
-
 	// Projection: http://www.codinglabs.net/article_world_view_projection_matrix.aspx
-	vtkMatrix4x4 *p = 
-	    sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
-
+	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
 	// The Z buffer that is passed from visit is in clip scape with z limits of -1 and 1
 	// (http://www.codinglabs.net/article_world_view_projection_matrix.aspx).
 	// However, using VTK, the
@@ -810,18 +803,13 @@ avtRayTracer::Execute(void)
 	    p->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
 	    p->SetElement(2, 3, -(oldFarPlane + oldNearPlane) / (oldFarPlane-oldNearPlane));
 	}
-
 	// pan
 	vtkMatrix4x4 *pantrans = vtkMatrix4x4::New();
 	pantrans->Identity();
 	pantrans->SetElement(0, 3, 2*view.imagePan[0]);
 	pantrans->SetElement(1, 3, 2*view.imagePan[1]);
-
 	vtkMatrix4x4::Multiply4x4(p,vm,pvm);
-
 	debug5 << "pvm: " << *pvm << std::endl;
-
-	//
 	// Cleanup
 	scaletrans->Delete();
 	imageZoomAndPan->Delete();
@@ -832,25 +820,25 @@ avtRayTracer::Execute(void)
 
 	//
 	// Get the full image extents of the volume
+	//
 	double depthExtents[2];
-
 	GetSpatialExtents(dbounds);
-	project3Dto2D
-	    (dbounds, screen[0], screen[1], pvm,  fullImageExtents, depthExtents);
+	project3Dto2D(dbounds, screen[0], screen[1], pvm,  fullImageExtents, depthExtents);
 
-	// Qi debug
-	std::cout << "Full data extents: " 
-		  << dbounds[0] << ", " 
-		  << dbounds[1] << "  " 
-		  << dbounds[2] << ", " 
-		  << dbounds[3] << "  " 
-		  << dbounds[4] << ", " 
-		  << dbounds[5] << std::endl;
-	std::cout << "fullImageExtents: " 
-		  << fullImageExtents[0] << ", " 
-		  << fullImageExtents[1] << "  " 
-		  << fullImageExtents[2] << ", "
-		  << fullImageExtents[3] << std::endl;
+	//
+	// // Qi debug
+	// std::cout << "Full data extents: " 
+	// 	  << dbounds[0] << ", " 
+	// 	  << dbounds[1] << "  " 
+	// 	  << dbounds[2] << ", " 
+	// 	  << dbounds[3] << "  " 
+	// 	  << dbounds[4] << ", " 
+	// 	  << dbounds[5] << std::endl;
+	// std::cout << "fullImageExtents: " 
+	// 	  << fullImageExtents[0] << ", " 
+	// 	  << fullImageExtents[1] << "  " 
+	// 	  << fullImageExtents[2] << ", "
+	// 	  << fullImageExtents[3] << std::endl;
 	//
 	// -----------------------------
 	//
@@ -865,12 +853,15 @@ avtRayTracer::Execute(void)
 	//
 	// (Qi) this should be replaced by proper vtkOSPRay initialization later
 	// init ospray before everything
-
-	if (first_entry) {
-	    std::cout << "initialize ospray" << std::endl;
-	    int argc = 1; const char* argv[1] = { "visitOSPRay" }; 
+	//
+	if (isFirstEntry) {
+	    std::cout << "Qi: Initialize OSPRay" << std::endl;
+	    int argc = 1; 
+	    const char* argv[1] = { "visitOSPRay" }; 
 	    ospInit(&argc, argv);
-	    extractor.ActiveOSPData();
+	}
+	if (isDataDirty) {
+	    extractor.ActiveOSPData(); // tell it there are new data comming in
 	    extractor.SetOSPVolumeList(ospVolumeList);
 	}
 
@@ -879,8 +870,7 @@ avtRayTracer::Execute(void)
 	// do some ospray stuffs to speed things up
 	//
 	std::cout << "make ospray camera" << std::endl;
-        ospCamera = ospNewCamera("perspective");
-	
+        ospCamera = ospNewCamera("perspective");       
 	// the zooming is applied by moving camera closer to the focus point
 	float currOspCam[3];
 	for (int i = 0; i < 3; ++i) {
@@ -891,17 +881,14 @@ avtRayTracer::Execute(void)
 	const ospcommon::vec3f camDir(view_direction[0], 
 				      view_direction[1], 
 				      view_direction[2]);
-
 	std::cout << " campos " << camPos << std::endl;
 	std::cout << " camdir " << camDir << std::endl;
 	std::cout << " camup  " << camUp  << std::endl;
-
 	ospSetf(ospCamera, "aspect", aspect);
 	ospSetVec3f(ospCamera, "pos", (osp::vec3f&)camPos);
 	ospSetVec3f(ospCamera, "dir", (osp::vec3f&)camDir);
 	ospSetVec3f(ospCamera, "up",  (osp::vec3f&)camUp);
 	ospSet1f(ospCamera, "fovy", (float)view.viewAngle);
-	//ospSet1f(ospCamera, "nearClip", (float)view.nearPlane);
 	ospCommit(ospCamera);
 
 	//
@@ -909,7 +896,6 @@ avtRayTracer::Execute(void)
 	//
 	std::cout << "make ospray transfer function" << std::endl;
         ospTransferFcn = ospNewTransferFunction("piecewise_linear");
-
 	// color and opacity
 	std::vector<ospcommon::vec3f> ospColors;
 	std::vector<float> ospOpacities;
@@ -925,18 +911,11 @@ avtRayTracer::Execute(void)
 	ospSetData(ospTransferFcn, "colors",    ospColorsData);
 	ospSetData(ospTransferFcn, "opacities", ospOpacityData);
 	ospCommit(ospTransferFcn);
-
 	// value range
-	const ospcommon::vec2f valueRange((float)transferFn1D->GetMin(), 
-					  (float)transferFn1D->GetMax());
-	//std::cout << "transfer value range " << valueRange << std::endl;
+	const ospcommon::vec2f valueRange((float)transferFn1D->GetMin(),(float)transferFn1D->GetMax());
 	ospSetVec2f(ospTransferFcn, "valueRange", (osp::vec2f&)valueRange);
-
 	// commit changes
 	ospCommit(ospTransferFcn);
-	//std::cout << "trasnfer func range " << valueRange << std::endl;
-
-
 	// -----------------------------
 	//
 
@@ -960,10 +939,10 @@ avtRayTracer::Execute(void)
 	//
 	// (Qi) special variables for OSPRay
 	//
-	extractor.SetCameraPosition(view.camera);
-	extractor.SetCameraUpVector(view.viewUp);
-	extractor.SetCameraAspect(aspect);
-	extractor.SetOSPCamera(&ospCamera);
+ 	extractor.SetCameraPosition(view.camera); //
+	extractor.SetCameraUpVector(view.viewUp); // They are not useful anymore
+	extractor.SetCameraAspect(aspect);        // Leaving them here currently
+	extractor.SetOSPCamera(&ospCamera);       //
 	extractor.SetOSPTransferFcn(&ospTransferFcn);
 
 	//
@@ -973,14 +952,6 @@ avtRayTracer::Execute(void)
 	__opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
 	__opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
 
-	//
-	//createColorPPM("/home/pascal/Desktop/background", __opaqueImageData, screen[0], screen[1]);
-	//writeOutputToFileByLine("/home/pascal/Desktop/debugImages/RCSLV_depth_1_", 
-	//			  __opaqueImageZB, screen[0], screen[1]);
-	//writeDepthBufferToPPM("/home/pascal/Desktop/depthBuffer", 
-	//		        __opaqueImageZB, screen[0], screen[1]);
-	//
-	
 	extractor.setDepthBuffer(__opaqueImageZB,   screen[0]*screen[1]);
 	extractor.setRGBBuffer  (__opaqueImageData, screen[0],screen[1]);
 
@@ -1012,103 +983,71 @@ avtRayTracer::Execute(void)
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
 
-    // Qi debug
-    cout << "Raytracing rendering done! " << std::endl;
-
     //
     // Ray casting: SLIVR ~ After Rendering
     //
     if (rayCastingSLIVR == true)
     {
-
-	std::cout << "Start compositing" << std::endl;
-
 	avtRayCompositer rc(rayfoo);
 	// only required to force an update - Need to find a way to get rid of that!!!!
 	rc.SetInput(samples);
 	avtImage_p image  = rc.GetTypedOutput();
 	image->Update(GetGeneralContract());
 
+	// Qi debug
+	std::cout << "Start compositing" << std::endl;
+
 	// OSP model
 	// -------------------------------------
 	int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
 	int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
-
-	osp::vec2f imageS{(float)fullImageExtents[0]/(float)screen[0], (float)fullImageExtents[2]/(float)screen[1]};
-	osp::vec2f imageE{(float)fullImageExtents[1]/(float)screen[0], (float)fullImageExtents[3]/(float)screen[1]};
-	ospSetVec2f(ospCamera, "imageStart", imageS);
-	ospSetVec2f(ospCamera, "imageEnd",   imageE);
-	//ospSetf(ospCamera, "aspect", (float)compositedImageWidth/compositedImageHeight);
+	float r_xl = (float)fullImageExtents[0]/(float)screen[0]; // relative lower x coord
+	float r_yl = (float)fullImageExtents[2]/(float)screen[1]; // relative lower y coord
+	float r_xu = (float)fullImageExtents[1]/(float)screen[0];
+	float r_yu = (float)fullImageExtents[3]/(float)screen[1];
+	ospSetVec2f(ospCamera, "imageStart", osp::vec2f{r_xl, r_yl});
+	ospSetVec2f(ospCamera, "imageEnd",   osp::vec2f{r_xu, r_yu});
 	ospCommit(ospCamera);
-
-	std::cout << "creating ospray model " << ospVolumeList.size() 
-		  << " volumes" << std::endl;
-	OSPModel ospWorld = ospNewModel();
-	
-	for (int i = 0; i <  ospVolumeList.size(); ++i) {
-	    auto ospVolume = ospVolumeList[i];
-	    if (first_entry) {
-		// ospVolume.initData();
-		// ospSetData(ospVolume.volume, "voxelData", ospVolume.ospVoxelData);
-		// ospSetObject(ospVolume.volume, "transferFunction", ospTransferFcn);
-		// ospSetString(ospVolume.volume, "voxelType", ospVolume.ospVoxelType.c_str());
-		// ospSetVec3f(ospVolume.volume, "gridOrigin",  (const osp::vec3f&)(ospVolume.volumeLbox));
-		// ospSetVec3f(ospVolume.volume, "gridSpacing", (const osp::vec3f&)(ospVolume.volumeSpac));
-		// ospSetVec3i(ospVolume.volume, "dimensions", (osp::vec3i&)(ospVolume.volumeDims));
-		// ospSetVec3f(ospVolume.volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
-		// ospSet1f(ospVolume.volume, "samplingRate", 5.0f);
-		// ospSet1i(ospVolume.volume, "singleShade",  0);
-		// ospSet1i(ospVolume.volume, "adaptiveSampling", 0); // boolean is set by integer
-		// ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
-		// if (lighting) {
-		//     ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
-		// } else {
-		//     ospSet1i(ospVolume.volume, "gradientShadingEnabled", 0);
-		// }
-		// ospCommit(ospVolume.volume);
-	    }
-	    ospAddVolume(ospWorld, ospVolume.volume);   
-	}
+	// creating osp model
+	std::cout << "creating ospModel w/ " << ospVolumeList.size() << " volumes" << std::endl;
+	OSPModel ospWorld = ospNewModel();	
+	for (auto ospVolume : ospVolumeList) { ospAddVolume(ospWorld, ospVolume.volume); }
 	ospCommit(ospWorld);
-    
+	// osp renderer
 	OSPRenderer ospRenderer = ospNewRenderer("scivis");
 	ospSetObject(ospRenderer, "camera", ospCamera);
 	ospSetObject(ospRenderer, "model",  ospWorld);
 	ospSet1i(ospRenderer, "backgroundEnabled", 0);
 	ospSet1i(ospRenderer, "oneSidedLighting", 0);
 	ospSet1i(ospRenderer, "shadowsEnabled", 0);
-
-	if (lighting == true) 
-	{
-	    OSPLight ambientLight = ospNewLight(ospRenderer, "AmbientLight");
-	    ospSet1f(ambientLight, "intensity", materialProperties[0]);
-	    ospCommit(ambientLight);
-	    OSPLight directionalLight = ospNewLight(ospRenderer, "DirectionalLight");
-	    osp::vec3f lightdir
-	    {(float)view_direction[0],(float)view_direction[1],(float)view_direction[2]};
-	    ospSet1f(directionalLight, "intensity", materialProperties[2]);
-	    ospSetVec3f(directionalLight, "direction", lightdir);
-	    ospCommit(directionalLight);
-	    std::vector<OSPLight> lights;
-	    lights.push_back(ambientLight);
-	    lights.push_back(directionalLight);
-	    ospSetData(ospRenderer,"lights",ospNewData(lights.size(),OSP_OBJECT,&lights[0]));
-	}
+	// if (lighting == true)
+	// {
+	//     OSPLight ambientLight = ospNewLight(ospRenderer, "AmbientLight");
+	//     ospSet1f(ambientLight, "intensity", materialProperties[0]);
+	//     ospCommit(ambientLight);
+	//     OSPLight directionalLight = ospNewLight(ospRenderer, "DirectionalLight");
+	//     osp::vec3f lightdir
+	//     {(float)view_direction[0],(float)view_direction[1],(float)view_direction[2]};
+	//     ospSet1f(directionalLight, "intensity", materialProperties[2]);
+	//     ospSetVec3f(directionalLight, "direction", lightdir);
+	//     ospCommit(directionalLight);
+	//     std::vector<OSPLight> lights;
+	//     lights.push_back(ambientLight);
+	//     lights.push_back(directionalLight);
+	//     ospSetData(ospRenderer,"lights",ospNewData(lights.size(),OSP_OBJECT,&lights[0]));
+	// }
 	ospCommit(ospRenderer);
-
+	// render frame buffer
 	ospcommon::vec2i imageSize(compositedImageWidth, compositedImageHeight);	
-	OSPFrameBuffer ospfb = ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
+	OSPFrameBuffer ospfb = 
+	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
 	ospFrameBufferClear(ospfb, OSP_FB_COLOR | OSP_FB_ACCUM);	
 	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
-
 	// save ospray image and clean up
 	float *fb = (float*) ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
-	// writeArrayToPPM("/home/sci/qwu/Desktop/fullospimg",fb,imageSize.x, imageSize.y);	
-	//ospUnmapFrameBuffer(fb, ospfb);
-	//ospRelease(ospWorld);
-	//ospRelease(ospRenderer);
-	//ospRelease(ospfb);
-	first_entry = false;
+	// reset flags
+	isFirstEntry = false;
+	isDataDirty = false;
 	// -----------------------------------------
 	//
 
@@ -1138,7 +1077,6 @@ avtRayTracer::Execute(void)
 	    // //
 	    // // Sort with the largest z first
 	    // std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
-
 
 	    // //
 	    // // Blend images
