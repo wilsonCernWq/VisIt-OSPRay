@@ -60,8 +60,8 @@ struct ospVolumeMeta {
     ospcommon::vec3f volumeSpac;
 
     void init() { 
-	//volume = ospNewVolume("shared_structured_volume"); 
-	volume = ospNewVolume("block_bricked_volume"); 
+	volume = ospNewVolume("shared_structured_volume"); 
+	// volume = ospNewVolume("block_bricked_volume"); 
     }
 };
 

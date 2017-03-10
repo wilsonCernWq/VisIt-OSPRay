@@ -372,6 +372,19 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 	avtOpacityMap om(256);
 	om.SetTableFloat(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0, atts.GetRendererSamples());
 
+	// check if we need to refresh OSPRay volume
+	static float oldOMAt = 1.0f;
+	static float oldOMRs = 0.0f;
+	static std::string oldOM = "";
+	std::string newOM = std::string(vtf,vtf+4*256);
+	if (oldOM != newOM || 
+	    oldOMAt != atts.GetOpacityAttenuation() || 
+	    oldOMRs != atts.GetRendererSamples()) { 
+	    software->SetDataDrity();
+	    oldOM = newOM; oldOMAt = atts.GetOpacityAttenuation(); oldOMRs = atts.GetRendererSamples();
+	    std::cout << "New transfer function data, need to recommit volumes" << std::endl; ;
+	}
+
 	double actualRange[2];
 	bool artificialMin = atts.GetUseColorVarMin();
 	bool artificialMax = atts.GetUseColorVarMax();
@@ -384,7 +397,6 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 	double range[2];
 	range[0] = (artificialMin ? atts.GetColorVarMin() : actualRange[0]);
 	range[1] = (artificialMax ? atts.GetColorVarMax() : actualRange[1]);
-
 
 	if (atts.GetScaling() == VolumeAttributes::Log)
 	{
@@ -421,8 +433,6 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 	software->SetTransferFn(&om);
 
 	debug5 << "Min visible scalar range:" << om.GetMinVisibleScalar() << "  Max visible scalar range: "  <<  om.GetMaxVisibleScalar() << std::endl;
-
-
 
 	//
 	// Determine which variables to use and tell the ray function.
@@ -504,8 +514,6 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 	software->SetSamplesPerRay(atts.GetSamplesPerRay());
 
 	debug5 << "Sampling rate: "  << atts.GetRendererSamples() << std::endl;
-
-
 
 	//
 	// Set camera parameters
@@ -609,16 +617,15 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 
 avtImage_p
 avtVolumeFilter::RenderImage(avtImage_p opaque_image,
-							 const WindowAttributes &window)
+			     const WindowAttributes &window)
 {
     
-    // Qi to exam if this function is called in parallel
-    std::cout << " running avtVolumeFilter::RenderImage " << std::endl;
+        // Qi to exam if this function is called in parallel
+        std::cout << "Running avtVolumeFilter::RenderImage " << std::endl;
 
 	if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
 		return RenderImageRaycastingSLIVR(opaque_image,window);
 	}
-
 
 	//
 	// We need to create a dummy pipeline with the volume renderer that we
@@ -637,10 +644,11 @@ avtVolumeFilter::RenderImage(avtImage_p opaque_image,
 	unsigned char vtf[4*256];
 	atts.GetTransferFunction(vtf);
 	avtOpacityMap om(256);
-	if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && (atts.GetSampling() == VolumeAttributes::Trilinear))
-		om.SetTable(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0, atts.GetRendererSamples());
+	if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
+	    (atts.GetSampling() == VolumeAttributes::Trilinear))
+	    om.SetTable(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0, atts.GetRendererSamples());
 	else
-		om.SetTable(vtf, 256, atts.GetOpacityAttenuation());
+	    om.SetTable(vtf, 256, atts.GetOpacityAttenuation());
 	double actualRange[2];
 	bool artificialMin = atts.GetUseColorVarMin();
 	bool artificialMax = atts.GetUseColorVarMax();

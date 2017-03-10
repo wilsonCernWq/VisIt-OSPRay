@@ -146,6 +146,7 @@ public:
 	{ clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
 	void             SetPanPercentages(double _pan[2])
 	{ panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1]; }
+	void             SetImageZoom(double _zoom) { imageZoom = _zoom; }
 	void             SetDepthExtents(double _depthExtents[2])
 	{ 
 	    fullVolumeDepthExtents[0] = _depthExtents[0]; 
@@ -193,6 +194,7 @@ protected:
 	vtkMatrix4x4    *invModelViewProj;
 	double           clipPlanes[2];
 	double 		 panPercentage[2];
+	double           imageZoom;
 	double           fullVolumeDepthExtents[2];
 	double           viewDirection[3];  // -->
 	double           view_direction[3]; // they are redundant. One of them should be removed

@@ -723,7 +723,7 @@ avtVolumePlot::ApplyRenderingTransformation(avtDataObject_p input)
         }
 #endif
 	// Qi exam if this is run in parallel
-	std::cout << " running avtVolumePlot::ApplyRenderingTransformation " << std::endl;
+	std::cout << "Running avtVolumePlot::ApplyRenderingTransformation " << std::endl;
 
         volumeImageFilter = new avtVolumeFilter();
         volumeImageFilter->SetAttributes(atts);

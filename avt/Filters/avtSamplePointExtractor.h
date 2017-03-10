@@ -210,6 +210,7 @@ public:
     { clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
     void                      SetPanPercentages(double _pan[2])
     { panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1]; }
+    void                      SetImageZoom(double _zoom) { imageZoom = _zoom; }
     void                      SetDepthExtents(double _depthExtents[2])
     { depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1]; }
     void                      SetMVPMatrix(vtkMatrix4x4 *_mvp)
@@ -309,6 +310,7 @@ protected:
     double                    depthExtents[2];
     double                    clipPlanes[2];
     double                    panPercentage[2];
+    double                    imageZoom;
     vtkMatrix4x4              *modelViewProj;
     // lighting & material
     bool                      lighting;
@@ -326,6 +328,8 @@ protected:
     // ...
     // OSPRay stuffs
     //
+    bool ospEmptyVolumeList;
+    int  ospVolumeId;
     OSPCamera            *ospCamera;
     OSPTransferFunction  *ospTransferFcn;
     bool isDataDirty = false;

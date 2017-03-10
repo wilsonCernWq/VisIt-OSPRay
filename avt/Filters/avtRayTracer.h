@@ -60,6 +60,7 @@ class   avtRayFunction;
 class   vtkMatrix4x4;
 
 #include <imgMetaData.h>
+#include "ospray/ospray.h"
 
 // ****************************************************************************
 //  Class: avtRayTracer
@@ -145,8 +146,13 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  SetViewDirection(double *vd){ for (int i=0; i<3; i++) view_direction[i] = vd[i]; }
     void                  SetTrilinear(bool t) {trilinearInterpolation = t; };
     void                  SetRayCastingSLIVR(bool _rayCastingSLIVR){ rayCastingSLIVR = _rayCastingSLIVR; };
+    void                  SetDataDrity() { isDataDirty = true; }
 
   protected:
+
+    bool                  isDataDirty;
+    OSPCamera ospCamera;
+    OSPTransferFunction ospTransferFcn;
     
     avtImgCommunicator    imgComm;
     avtViewInfo           view;

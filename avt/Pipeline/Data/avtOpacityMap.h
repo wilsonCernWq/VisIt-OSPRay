@@ -125,6 +125,7 @@ public:
     int                          QueryTF(double scalarValue, double color[4]);
 
 protected:
+
     RGBA                        *table;
     _RGBA                       *transferFn1D;
     int                          tableEntries;
@@ -140,8 +141,8 @@ private:
     // These methods are defined to prevent accidental use of bitwise copy
     // implementations.  If you want to re-define them to do something
     // meaningful, that's fine.
-                         avtOpacityMap(const avtOpacityMap &) {};
-    avtOpacityMap       &operator=(const avtOpacityMap &) { return *this; };
+                                 avtOpacityMap(const avtOpacityMap &) {};
+    avtOpacityMap               &operator=(const avtOpacityMap &) { return *this; };
 };
 
 

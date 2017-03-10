@@ -132,9 +132,6 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
     divisors_Y = NULL;
     divisors_Z = NULL;
     
-    // Qi what is depth ????
-    // std::cout << "avtMassVoxelExtractor depth = " << depth << std::endl;
-
     prop_buffer   = new double[3*depth];
     ind_buffer    = new int[3*depth];
     valid_sample  = new bool[depth];
@@ -154,7 +151,6 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
     eyeSpaceDepth = -1;
     clipSpaceDepth = -1;
     imgArray = NULL;                            // the image data
-
     depthBuffer = NULL;
     rgbColorBuffer = NULL;
 
@@ -601,7 +597,8 @@ avtMassVoxelExtractor::RegisterGrid(vtkRectilinearGrid *rgrid,
         delete [] Z;
 
     // dims is the size of each of the small 3D patches e.g. 52x16x16 (or grid)
-    // X, Y & Z store the "real" coordinates each point in the grid (the above grid) e.g. 0.61075, 0.19536, 0.01936 for 0,0,0
+    // X, Y & Z store the "real" coordinates each point in the grid (the above grid)
+    // e.g. 0.61075, 0.19536, 0.01936 for 0,0,0
     X = new double[dims[0]];
     for (size_t i = 0 ; i < (size_t)dims[0] ; i++)
         X[i] = rgrid->GetXCoordinates()->GetTuple1(i);
@@ -2438,8 +2435,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	//
 	// 3) volume
 	//
-	std::cout << "volume start ---> ";
-#if (0)
+	std::cout << "volume start ---> " << patch;
+#if (1)
 	// version 1: shared structure volume
 	ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);
 	ospcommon::vec3f volumeLbox(X[0],Y[0],Z[0]);
@@ -3135,8 +3132,8 @@ avtMassVoxelExtractor::project
     // 	     << normDevCoord[3] << std::endl;
 
     // Add panning
-    pos2D[0] += round(_screenWidth * panPercentage[0]);
-    pos2D[1] += round(_screenHeight * panPercentage[1]); 
+    pos2D[0] += round(_screenWidth * panPercentage[0] * imageZoom);
+    pos2D[1] += round(_screenHeight * panPercentage[1] * imageZoom); 
 
     return normDevCoord[2];
 }
@@ -3159,8 +3156,8 @@ avtMassVoxelExtractor::unProject
 (int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height)
 {
     // remove panning
-    _x -= round(_width * panPercentage[0]);
-    _y -= round(_height * panPercentage[1]); 
+    _x -= round(_width * panPercentage[0] * imageZoom);
+    _y -= round(_height * panPercentage[1] * imageZoom); 
 
     double worldCoordinates[4] = {0,0,0,1};
     double in[4] = {0,0,0,1};

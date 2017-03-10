@@ -319,6 +319,7 @@ avtOpacityMap::SetTable(unsigned char *arr, int te, double attenuation, float ov
 void
 avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, float over)
 {
+    std::cout << "Set transfer function table float" << std::endl;
     if (attenuation < -1. || attenuation > 1.)
     {
         debug1 << "Bad attenuation value " << attenuation << std::endl;
@@ -345,21 +346,15 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
         transferFn1D[i].A = alpha;
         if (alpha != 0 && minVisibleScalarIndex == -1){
             minVisibleScalarIndex = i;
-            //debug5 << "starting alpha = 0 at i= " << i << std::endl;
         }
 
-        //debug5 << i << " : " << transferFn1D[i].R << ", " << transferFn1D[i].G << ", " << transferFn1D[i].B <<  ", " << transferFn1D[i].A << std::endl;
     }
     for (int i=tableEntries-1; i>=0; i--)
     {
         if (transferFn1D[i].A != 0 && maxVisibleScalarIndex == -1){
             maxVisibleScalarIndex = i;
-            //debug5 << "ending alpha = 0 at i= " << i << std::endl;
         }
     }
-
-
-    //debug5 << "minVisibleScalarIndex: " << minVisibleScalarIndex << "   maxVisibleScalarIndex: " << maxVisibleScalarIndex << std::endl;
 
     //
     // We need to set the intermediate vars again since the table size has
@@ -367,6 +362,8 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
     //
     SetIntermediateVars();
 }
+
+
 // ****************************************************************************
 //  Method: avtOpacityMap::GetMinVisibleScalar
 //
@@ -417,17 +414,16 @@ void avtOpacityMap::computeVisibleRange()
     else
         minVisibleScalar = ( ((float)minVisibleScalarIndex/(tableEntries-1)) * scalarRange) + min;
     
-
-
     if (maxVisibleScalarIndex == tableEntries-1)
         maxVisibleScalar =  max;
     else
         maxVisibleScalar = ( ((float)maxVisibleScalarIndex/(tableEntries-1)) * scalarRange) + min;
 
-
-     debug5 << "max: " << max << "  min: " << min << "  scalarRange: " << scalarRange << "  minVisibleScalarIndex: " << minVisibleScalarIndex <<
-             "  maxVisibleScalarIndex: " << maxVisibleScalarIndex << "   tableEntries: " << tableEntries << 
-             "  maxVisibleScalar: " << maxVisibleScalar << "   minVisibleScalar: " << minVisibleScalar << std::endl;
+     debug5 << " max: " << max << " min: " << min 
+	    << " scalarRange: " << scalarRange << " minVisibleScalarIndex: " << minVisibleScalarIndex 
+	    << " maxVisibleScalarIndex: " << maxVisibleScalarIndex << " tableEntries: " << tableEntries
+	    << " maxVisibleScalar: " << maxVisibleScalar << " minVisibleScalar: " << minVisibleScalar 
+	    << std::endl;
 }
 
 // ****************************************************************************
@@ -454,6 +450,8 @@ void avtOpacityMap::computeVisibleRange()
 void
 avtOpacityMap::SetTable(RGBA *arr, int te, double attenuation)
 {
+    std::cout << "Set transfer function table" << std::endl;
+
     if (attenuation < 0. || attenuation > 1.)
     {
         debug1 << "Bad attenuation value " << attenuation << std::endl;
@@ -486,9 +484,6 @@ avtOpacityMap::SetTable(RGBA *arr, int te, double attenuation)
     //
     SetIntermediateVars();
 }
-
-
-
 
 
 // ****************************************************************************

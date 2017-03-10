@@ -43,6 +43,11 @@
 #include "ospray/ospray.h"
 #include "ospray/ospcommon/vec.h"
 
+#ifdef _WIN32
+#  define _USE_MATH_DEFINES
+#  include <math.h> // M_PI
+#endif
+
 #include <avtRayTracer.h>
 
 #include <vector>
@@ -117,14 +122,11 @@ avtRayTracer::avtRayTracer()
     view.nearPlane = 5.;
     view.farPlane  = 30.;
     view.parallelScale = 10;
-    view.orthographic = true;
-    
+    view.orthographic = true;   
     panPercentage[0] = 0;
     panPercentage[1] = 0;
-
     rayfoo         = NULL;
     opaqueImage    = NULL;
-
     background[0]  = 255;
     background[1]  = 255;
     background[2]  = 255;
@@ -134,24 +136,24 @@ avtRayTracer::avtRayTracer()
     gradBG1[2] = 1.;
     gradBG2[0] = 0.;
     gradBG2[1] = 0.;
-    gradBG2[2] = 0.;
-    
+    gradBG2[2] = 0.;    
     screen[0] = screen[1] = 400;
     samplesPerRay  = 40;
-    //! flags
+    // flags
     kernelBasedSampling = false;
     trilinearInterpolation = false;
     rayCastingSLIVR = false;
     convexHullOnRCSLIVR = false;
-    //! lighting properties
+    // lighting properties
     lighting = false;
     lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0; lightPosition[3] = 1.0;
     materialProperties[0] = 0.4; 
     materialProperties[1] = 0.75;
     materialProperties[3] = 0.0;
     materialProperties[3] = 15.0;
-
-    std::cout << "new ray-tracer" << std::endl;
+    // Qi flags for OSPRay
+    std::cout << "New ray-tracer" << std::endl;
+    isDataDirty = false;
 }
 
 // ****************************************************************************
@@ -372,13 +374,42 @@ avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2],
 //  Modifications:
 //
 // ****************************************************************************
+double normVec(double vec[3])
+{
+    return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+}
+
+void
+unProjectKeepPan(int _x, int _y, float _z, double _worldCoordinates[3], 
+		 int _width, int _height, vtkMatrix4x4 *invModelViewProj)
+{
+	double worldCoordinates[4] = {0,0,0,1};
+	double in[4] = {0,0,0,1};
+	in[0] = (_x - _width/2. )/(_width/2.);
+	in[1] = (_y - _height/2.)/(_height/2.);
+	in[2] = _z;
+
+	invModelViewProj->MultiplyPoint(in, worldCoordinates);
+
+	if (worldCoordinates[3] == 0)
+		debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
+
+	worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
+	worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
+	worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
+	worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
+
+	_worldCoordinates[0] = worldCoordinates[0];
+	_worldCoordinates[1] = worldCoordinates[1];
+	_worldCoordinates[2] = worldCoordinates[2];
+}
 
 void
 avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height, vtkMatrix4x4 *invModelViewProj)
 {
 	// remove panning
-	_x -= round(_width * panPercentage[0]);
-	_y -= round(_height * panPercentage[1]); 
+	_x -= round(_width * panPercentage[0]  * view.imageZoom);
+	_y -= round(_height * panPercentage[1] * view.imageZoom); 
 
 	double worldCoordinates[4] = {0,0,0,1};
 	double in[4] = {0,0,0,1};
@@ -416,7 +447,8 @@ avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3], i
 //
 // ****************************************************************************
 double
-avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, vtkMatrix4x4 *modelViewProj)
+avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], 
+		      int _width, int _height, vtkMatrix4x4 *modelViewProj)
 {
 	double normDevCoord[4];
 	double worldCoordinates[4] = {0,0,0,1};
@@ -430,7 +462,13 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int
 	if (normDevCoord[3] == 0)
 	{
 		debug5 << "avtMassVoxelExtractor::project division by 0 error!" << endl;
-		debug5 << "worldCoordinates: " << worldCoordinates[0] << ", " << worldCoordinates[1] << ", " << worldCoordinates[2] << "   " << normDevCoord[0] << ", " << normDevCoord[1] << ", " << normDevCoord[2] << endl;
+		debug5 << "worldCoordinates: " 
+		       << worldCoordinates[0] << ", " 
+		       << worldCoordinates[1] << ", " 
+		       << worldCoordinates[2] << "   " 
+		       << normDevCoord[0] << ", " 
+		       << normDevCoord[1] << ", " 
+		       << normDevCoord[2] << endl;
 		debug5 << "Matrix: " << *modelViewProj << endl;
 	}
 
@@ -442,8 +480,8 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int
 	pos2D[0] = round( normDevCoord[0]*(_width/2.)  + (_width/2.)  );
 	pos2D[1] = round( normDevCoord[1]*(_height/2.) + (_height/2.) );
 
-	pos2D[0] += round(_width * panPercentage[0]);
-	pos2D[1] += round(_height * panPercentage[1]);
+	pos2D[0] += round(_width * panPercentage[0]  * view.imageZoom);
+	pos2D[1] += round(_height * panPercentage[1]  * view.imageZoom);
 
 	return normDevCoord[2];
 }
@@ -463,7 +501,8 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], int _width, int
 //
 // ****************************************************************************
 void
-avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
+avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, 
+			    vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
 {
 	double _world[3];
 	int _xMin, _xMax, _yMin, _yMax;
@@ -475,15 +514,37 @@ avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatr
 	_zMax = std::numeric_limits<double>::min();
 
 	float coordinates[8][3];
-	coordinates[0][0] = _3Dextents[0];   coordinates[0][1] = _3Dextents[2];   coordinates[0][2] = _3Dextents[4];
-	coordinates[1][0] = _3Dextents[1];   coordinates[1][1] = _3Dextents[2];   coordinates[1][2] = _3Dextents[4];
-	coordinates[2][0] = _3Dextents[1];   coordinates[2][1] = _3Dextents[3];   coordinates[2][2] = _3Dextents[4];
-	coordinates[3][0] = _3Dextents[0];   coordinates[3][1] = _3Dextents[3];   coordinates[3][2] = _3Dextents[4];
+	coordinates[0][0] = _3Dextents[0];   
+	coordinates[0][1] = _3Dextents[2];   
+	coordinates[0][2] = _3Dextents[4];
+	
+	coordinates[1][0] = _3Dextents[1];   
+	coordinates[1][1] = _3Dextents[2];   
+	coordinates[1][2] = _3Dextents[4];
+	
+	coordinates[2][0] = _3Dextents[1];  
+	coordinates[2][1] = _3Dextents[3];
+	coordinates[2][2] = _3Dextents[4];
+	
+	coordinates[3][0] = _3Dextents[0]; 
+	coordinates[3][1] = _3Dextents[3]; 
+	coordinates[3][2] = _3Dextents[4];
 
-	coordinates[4][0] = _3Dextents[0];   coordinates[4][1] = _3Dextents[2];   coordinates[4][2] = _3Dextents[5];
-	coordinates[5][0] = _3Dextents[1];   coordinates[5][1] = _3Dextents[2];   coordinates[5][2] = _3Dextents[5];
-	coordinates[6][0] = _3Dextents[1];   coordinates[6][1] = _3Dextents[3];   coordinates[6][2] = _3Dextents[5];
-	coordinates[7][0] = _3Dextents[0];   coordinates[7][1] = _3Dextents[3];   coordinates[7][2] = _3Dextents[5];
+	coordinates[4][0] = _3Dextents[0];
+	coordinates[4][1] = _3Dextents[2];
+	coordinates[4][2] = _3Dextents[5];
+
+	coordinates[5][0] = _3Dextents[1]; 
+	coordinates[5][1] = _3Dextents[2]; 
+	coordinates[5][2] = _3Dextents[5];
+	
+	coordinates[6][0] = _3Dextents[1]; 
+	coordinates[6][1] = _3Dextents[3];
+	coordinates[6][2] = _3Dextents[5];
+
+	coordinates[7][0] = _3Dextents[0]; 
+	coordinates[7][1] = _3Dextents[3]; 
+	coordinates[7][2] = _3Dextents[5];
 
 	int pos2D[2];
 	double _z;
@@ -505,9 +566,13 @@ avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, vtkMatr
 	}
 
 
-	debug5 << "_2DExtents " << _2DExtents[0] << ", " << _2DExtents[1] << "   "  << _2DExtents[2] << ", "  << _2DExtents[3] << "     z: " << depthExtents[0] << ", " << depthExtents[1] << endl;
+	debug5 << "_2DExtents " 
+	       << _2DExtents[0] << ", " 
+	       << _2DExtents[1] << "   "  
+	       << _2DExtents[2] << ", "  
+	       << _2DExtents[3] 
+	       << "     z: " << depthExtents[0] << ", " << depthExtents[1] << endl;
 }
-
 
 
 // ****************************************************************************
@@ -532,6 +597,7 @@ avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
 
 	return false;
 }
+
 // ****************************************************************************
 //  Method: avtRayTracer::Execute
 //
@@ -620,6 +686,9 @@ avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
 //    Add the ray casting SLIVR code
 //
 // ****************************************************************************
+double deg2rad (double degrees) {
+    return degrees * 4.0 * atan (1.0) / 180.0;
+}
 
 void
 avtRayTracer::Execute(void)
@@ -660,7 +729,7 @@ avtRayTracer::Execute(void)
     //
     // print out filename
     //
-    std::cout << "filename " 
+    std::cout << "Data filename " 
 	      << trans.GetOutput()->GetInfo().GetAttributes().GetFilename() << std::endl;
 
     //
@@ -671,7 +740,7 @@ avtRayTracer::Execute(void)
     if (trans.GetOutput()->GetInfo().GetAttributes().GetTopologicalDimension() == 0)
 	doKernel = true;
 
-    std::cout << " do kernel " << doKernel << std::endl;
+    // std::cout << " do kernel " << doKernel << std::endl;
 
     extractor.SetKernelBasedSampling(doKernel);
     extractor.RegisterRayFunction(rayfoo);
@@ -696,12 +765,10 @@ avtRayTracer::Execute(void)
     // 
     // Qi static/useful variables
     //
-    OSPCamera ospCamera;
-    OSPTransferFunction ospTransferFcn;
-    static std::vector<ospVolumeMeta> ospVolumeList;
-    static bool isFirstEntry = true;
-    static bool isDataDirty = true;
 
+    static std::vector<ospVolumeMeta> ospVolumeList;
+    static bool isFirstEntry = true; // this is bad // need to be fixed for box operator
+    
     //
     // Ray casting: SLIVR ~ Setup
     //
@@ -723,40 +790,39 @@ avtRayTracer::Execute(void)
 	    sceneCam->ParallelProjectionOff();
 	sceneCam->SetParallelScale(view.parallelScale);
 	// debug
-	debug5 << "RT View settings: " << endl;
-	debug5 << "inheriant view direction: "
-	       << view_direction[0] << " "
-	       << view_direction[1] << " "
-	       << view_direction[2] << std::endl;
-	debug5 << "camera: "       
-	       << view.camera[0] << ", " 
-	       << view.camera[1] << ", " 
-	       << view.camera[2] << std::endl;
-	debug5 << "focus: "    
-	       << view.focus[0] << ", " 
-	       << view.focus[1] << ", " 
-	       << view.focus[2] << std::endl;
-	debug5 << "viewUp: "    
-	       << view.viewUp[0] << ", " 
-	       << view.viewUp[1] << ", " 
-	       << view.viewUp[2] << std::endl;
-	debug5 << "viewAngle: "  << view.viewAngle  << std::endl;
-	debug5 << "eyeAngle: "   << view.eyeAngle  << std::endl;
-	debug5 << "parallelScale: "  << view.parallelScale  << std::endl;
-	debug5 << "setScale: "  << view.setScale  << std::endl;
-	debug5 << "nearPlane: " << view.nearPlane   << std::endl;
-	debug5 << "farPlane: "  << view.farPlane     << std::endl;
-        // this is a freaking fraction!!!
-	debug5 << "imagePan[0]: " << view.imagePan[0]     << std::endl;		
-	debug5 << "imagePan[1]: " << view.imagePan[1]     << std::endl;
-	debug5 << "imageZoom: " << view.imageZoom     << std::endl;
-	debug5 << "orthographic: " << view.orthographic     << std::endl;
-	debug5 << "shear[0]: " << view.shear[0]     << std::endl;
-	debug5 << "shear[1]: " << view.shear[1]     << std::endl;
-	debug5 << "shear[2]: " << view.shear[2]     << std::endl;
-	debug5 << "oldNearPlane: " << oldNearPlane  << std::endl;
-	debug5 << "oldFarPlane: "  << oldFarPlane     << std::endl;
-	debug5 << "aspect: " << aspect << std::endl << std::endl;
+	std::cout << "RT View settings: " << endl
+		  << "  inheriant view direction: "
+		  << view_direction[0] << " "
+		  << view_direction[1] << " "
+		  << view_direction[2] << std::endl
+		  << "  camera: "       
+		  << view.camera[0] << ", " 
+		  << view.camera[1] << ", " 
+		  << view.camera[2] << std::endl
+		  << "  focus: "    
+		  << view.focus[0] << ", " 
+		  << view.focus[1] << ", " 
+		  << view.focus[2] << std::endl
+		  << "  viewUp: "    
+		  << view.viewUp[0] << ", " 
+		  << view.viewUp[1] << ", " 
+		  << view.viewUp[2] << std::endl
+		  << "  viewAngle: " << view.viewAngle << std::endl
+		  << "  eyeAngle:  " << view.eyeAngle  << std::endl
+		  << "  parallelScale: " << view.parallelScale  << std::endl
+		  << "  setScale: " << view.setScale << std::endl
+		  << "  nearPlane: " << view.nearPlane << std::endl
+		  << "  farPlane:  " << view.farPlane  << std::endl
+		  << "  imagePan[0]: " << view.imagePan[0] << std::endl // this is a fraction!!!
+		  << "  imagePan[1]: " << view.imagePan[1] << std::endl // this is a fraction!!!
+		  << "  imageZoom:   " << view.imageZoom   << std::endl
+		  << "  orthographic: " << view.orthographic << std::endl
+		  << "  shear[0]: " << view.shear[0] << std::endl
+		  << "  shear[1]: " << view.shear[1] << std::endl
+		  << "  shear[2]: " << view.shear[2] << std::endl
+		  << "  oldNearPlane: " << oldNearPlane << std::endl
+		  << "  oldFarPlane:  " << oldFarPlane  << std::endl
+		  << "  aspect: " << aspect << std::endl << std::endl;
 	// clip planes
 	double _clip[2];
 	_clip[0]=oldNearPlane;  _clip[1]=oldFarPlane;
@@ -803,30 +869,23 @@ avtRayTracer::Execute(void)
 	    p->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
 	    p->SetElement(2, 3, -(oldFarPlane + oldNearPlane) / (oldFarPlane-oldNearPlane));
 	}
-	// pan
-	vtkMatrix4x4 *pantrans = vtkMatrix4x4::New();
-	pantrans->Identity();
-	pantrans->SetElement(0, 3, 2*view.imagePan[0]);
-	pantrans->SetElement(1, 3, 2*view.imagePan[1]);
+	// compute pvm matrix
 	vtkMatrix4x4::Multiply4x4(p,vm,pvm);
-	debug5 << "pvm: " << *pvm << std::endl;
-	// Cleanup
+	std::cout << "pvm: " << *pvm << std::endl;
+	// cleanup
 	scaletrans->Delete();
 	imageZoomAndPan->Delete();
 	vmInit->Delete();
 	tmp->Delete();
 	vm->Delete();
 	p->Delete();
-
-	//
-	// Get the full image extents of the volume
-	//
+	// get the full image extents of the volume
 	double depthExtents[2];
 	GetSpatialExtents(dbounds);
-	project3Dto2D(dbounds, screen[0], screen[1], pvm,  fullImageExtents, depthExtents);
+	project3Dto2D(dbounds, screen[0], screen[1], pvm, fullImageExtents, depthExtents);
 
 	//
-	// // Qi debug
+	// Qi debug
 	// std::cout << "Full data extents: " 
 	// 	  << dbounds[0] << ", " 
 	// 	  << dbounds[1] << "  " 
@@ -876,7 +935,9 @@ avtRayTracer::Execute(void)
 	for (int i = 0; i < 3; ++i) {
 	    currOspCam[i] = (view.camera[i] - view.focus[i]) / view.imageZoom + view.focus[i];
 	}
-	const ospcommon::vec3f camPos(currOspCam[0],currOspCam[1],currOspCam[2]);
+	const ospcommon::vec3f camPos(currOspCam[0],
+				      currOspCam[1],
+				      currOspCam[2]);
 	const ospcommon::vec3f camUp (view.viewUp[0],view.viewUp[1],view.viewUp[2]);
 	const ospcommon::vec3f camDir(view_direction[0], 
 				      view_direction[1], 
@@ -933,6 +994,7 @@ avtRayTracer::Execute(void)
 	extractor.SetTransferFn(transferFn1D);
 	extractor.SetClipPlanes(_clip);
 	extractor.SetPanPercentages(view.imagePan); // ??? disabled
+	extractor.SetImageZoom(view.imageZoom); 
 	extractor.SetDepthExtents(depthExtents);
 	extractor.SetMVPMatrix(pvm);
 	
@@ -997,14 +1059,25 @@ avtRayTracer::Execute(void)
 	// Qi debug
 	std::cout << "Start compositing" << std::endl;
 
+	//
 	// OSP model
 	// -------------------------------------
 	int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
 	int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
-	float r_xl = (float)fullImageExtents[0]/(float)screen[0]; // relative lower x coord
-	float r_yl = (float)fullImageExtents[2]/(float)screen[1]; // relative lower y coord
-	float r_xu = (float)fullImageExtents[1]/(float)screen[0];
-	float r_yu = (float)fullImageExtents[3]/(float)screen[1];
+	float r_panx = panPercentage[0] * view.imageZoom;
+	float r_pany = panPercentage[1] * view.imageZoom;
+	float r_xl = (float)fullImageExtents[0]/(float)screen[0] - r_panx; 
+	float r_yl = (float)fullImageExtents[2]/(float)screen[1] - r_pany; 
+	float r_xu = (float)fullImageExtents[1]/(float)screen[0] - r_panx;
+	float r_yu = (float)fullImageExtents[3]/(float)screen[1] - r_pany;
+	std::cout << "image start " << r_xl << " " << r_yl << std::endl
+		  << "image end   " << r_xu << " " << r_yu << std::endl
+		  << "image extents " 
+		  << fullImageExtents[0] << " " 
+		  << fullImageExtents[1] << " " 
+		  << fullImageExtents[2] << " " 
+		  << fullImageExtents[3] << std::endl
+		  << "screen " << screen[0] << " " << screen[1] << std::endl;
 	ospSetVec2f(ospCamera, "imageStart", osp::vec2f{r_xl, r_yl});
 	ospSetVec2f(ospCamera, "imageEnd",   osp::vec2f{r_xu, r_yu});
 	ospCommit(ospCamera);
@@ -1059,6 +1132,8 @@ avtRayTracer::Execute(void)
 	    // Qi debug
 	    cout << "Serial compositing!" << std::endl;
 
+	    float* composedData = fb;
+
 	    // //
 	    // // Get the metadata for all patches
 	    // std::vector<imgMetaData> allImgMetaData; // contains the metadata to composite the image
@@ -1084,8 +1159,6 @@ avtRayTracer::Execute(void)
 	    // int renderedWidth = fullImageExtents[1] - fullImageExtents[0];
 	    // int renderedHeight = fullImageExtents[3] - fullImageExtents[2];
 	    // float *composedData = new float[renderedWidth * renderedHeight * 4]();
-
-	    float* composedData = fb;
 
 	    // for (int i=0; i<numPatches; i++)
 	    // {
