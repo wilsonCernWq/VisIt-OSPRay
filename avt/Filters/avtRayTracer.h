@@ -147,6 +147,7 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     void                  SetTrilinear(bool t) {trilinearInterpolation = t; };
     void                  SetRayCastingSLIVR(bool _rayCastingSLIVR){ rayCastingSLIVR = _rayCastingSLIVR; };
     void                  SetDataDrity() { isDataDirty = true; }
+    void                  SetRendererSampleRate(double r) { rendererSampleRate = r; }
 
   protected:
 
@@ -159,6 +160,7 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
 
     int                   screen[2];
     int                   samplesPerRay;
+    double                rendererSampleRate;
     bool                  kernelBasedSampling;
     bool                  trilinearInterpolation;
     int                   backgroundMode;

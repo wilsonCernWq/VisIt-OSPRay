@@ -372,19 +372,6 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 	avtOpacityMap om(256);
 	om.SetTableFloat(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0, atts.GetRendererSamples());
 
-	// check if we need to refresh OSPRay volume
-	static float oldOMAt = 1.0f;
-	static float oldOMRs = 0.0f;
-	static std::string oldOM = "";
-	std::string newOM = std::string(vtf,vtf+4*256);
-	if (oldOM != newOM || 
-	    oldOMAt != atts.GetOpacityAttenuation() || 
-	    oldOMRs != atts.GetRendererSamples()) { 
-	    software->SetDataDrity();
-	    oldOM = newOM; oldOMAt = atts.GetOpacityAttenuation(); oldOMRs = atts.GetRendererSamples();
-	    std::cout << "New transfer function data, need to recommit volumes" << std::endl; ;
-	}
-
 	double actualRange[2];
 	bool artificialMin = atts.GetUseColorVarMin();
 	bool artificialMax = atts.GetUseColorVarMax();
@@ -432,7 +419,29 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 	avtCompositeRF *compositeRF = new avtCompositeRF(lm, &om, &om);
 	software->SetTransferFn(&om);
 
-	debug5 << "Min visible scalar range:" << om.GetMinVisibleScalar() << "  Max visible scalar range: "  <<  om.GetMaxVisibleScalar() << std::endl;
+	//
+	// check if we need to refresh OSPRay volume
+	// Qi
+	static double oldOMAt = 1.0f;
+	static double oldOMRs = 0.0f;
+	static double oldOMr[2] = { 0.0, 0.0 }; 
+	static std::string oldOM = "";
+	std::string newOM = std::string(vtf,vtf+4*256);
+	if (oldOM != newOM || 
+	    oldOMAt != atts.GetOpacityAttenuation() || 
+	    oldOMRs != atts.GetRendererSamples() ||
+	    oldOMr[0] != range[0] || oldOMr[1] != range[1]) 
+	{ 
+	    software->SetDataDrity();
+	    oldOM = newOM; 
+	    oldOMAt = atts.GetOpacityAttenuation(); 
+	    oldOMRs = atts.GetRendererSamples();
+	    oldOMr[0] = range[0]; oldOMr[1] = range[1];
+	    std::cout << "New transfer function data, need to recommit volumes" << std::endl; ;
+	}
+
+	debug5 << "Min visible scalar range: " << om.GetMinVisibleScalar() << " "
+	       << "Max visible scalar range: " << om.GetMaxVisibleScalar() << std::endl;
 
 	//
 	// Determine which variables to use and tell the ray function.
@@ -509,11 +518,20 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 
 	//
 	// Unsure about this one??? RayFunction seems important
-	//
+	//	
 	software->SetRayFunction(compositeRF);
 	software->SetSamplesPerRay(atts.GetSamplesPerRay());
+	software->SetRendererSampleRate(atts.GetRendererSamples());
 
-	debug5 << "Sampling rate: "  << atts.GetRendererSamples() << std::endl;
+	debug5 << "Sampling rate: (GetSamplesPerRay)   " << atts.GetSamplesPerRay() << std::endl;
+	debug5 << "Sampling rate: (GetRendererSamples) " << atts.GetRendererSamples() << std::endl;
+
+	static double oldSampleRate = 0.0f;
+	if (oldSampleRate != atts.GetRendererSamples()) 
+	{
+	    software->SetDataDrity();
+	    oldSampleRate = atts.GetRendererSamples();
+	}
 
 	//
 	// Set camera parameters

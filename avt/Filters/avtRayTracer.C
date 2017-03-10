@@ -995,6 +995,7 @@ avtRayTracer::Execute(void)
 	extractor.SetClipPlanes(_clip);
 	extractor.SetPanPercentages(view.imagePan); // ??? disabled
 	extractor.SetImageZoom(view.imageZoom); 
+	extractor.SetRendererSampleRate(rendererSampleRate); 
 	extractor.SetDepthExtents(depthExtents);
 	extractor.SetMVPMatrix(pvm);
 	

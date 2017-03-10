@@ -177,8 +177,9 @@ public:
 
 	void ospSetVolumeMeta(ospVolumeMeta& v) { ospVolume = &v; }
 	void ospActive() { isDataDirty = true; }
-
+	void SetRendererSampleRate(double r) { rendererSampleRate = r; }
 protected:
+	double                rendererSampleRate;
 	bool             gridsAreInWorldSpace;
 	bool             pretendGridsAreInWorldSpace;
 	avtViewInfo      view;

@@ -250,6 +250,7 @@ public:
     void             SetOSPTransferFcn(OSPTransferFunction* _t) { ospTransferFcn = _t; }
     void             ActiveOSPData() { isDataDirty = true; }
     void             SetOSPVolumeList(std::vector<ospVolumeMeta>& l) { ospVolumeList = &l; }
+    void                  SetRendererSampleRate(double r) { rendererSampleRate = r; }
     
 public:
     typedef std::multimap<int, imgData>::iterator iter_t;
@@ -260,6 +261,7 @@ public:
     std::multimap<int, imgData> imgDataHashMap;
 
 protected:
+    double                rendererSampleRate;
     int                       width,       height,       depth;
     int                       currentNode, totalNodes;
     int                       widthMin,    widthMax;

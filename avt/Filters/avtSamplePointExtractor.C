@@ -1081,6 +1081,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->SetClipPlanes(clipPlanes);
 	    massVoxelExtractor->SetPanPercentages(panPercentage);
 	    massVoxelExtractor->SetImageZoom(imageZoom); 
+	    massVoxelExtractor->SetRendererSampleRate(rendererSampleRate); 
 	    massVoxelExtractor->SetDepthExtents(depthExtents);
 
 	    massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);

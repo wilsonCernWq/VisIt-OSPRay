@@ -2498,7 +2498,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// -- other properties
 	ospSetObject(ospVolume->volume, "transferFunction", *ospTransferFcn);
 	ospSetVec3f(ospVolume->volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
-	ospSet1f(ospVolume->volume, "samplingRate", 5.0f);
+	ospSet1f(ospVolume->volume, "samplingRate", (float)rendererSampleRate);
 	ospSet1i(ospVolume->volume, "singleShade", 0);
 	ospSet1i(ospVolume->volume, "adaptiveSampling", 0);
 	ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
