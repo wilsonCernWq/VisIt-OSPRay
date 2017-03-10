@@ -822,7 +822,8 @@ avtRayTracer::Execute(void)
 		  << "  shear[2]: " << view.shear[2] << std::endl
 		  << "  oldNearPlane: " << oldNearPlane << std::endl
 		  << "  oldFarPlane:  " << oldFarPlane  << std::endl
-		  << "  aspect: " << aspect << std::endl << std::endl;
+		  << "  aspect: " << aspect << std::endl;
+	
 	// clip planes
 	double _clip[2];
 	_clip[0]=oldNearPlane;  _clip[1]=oldFarPlane;
@@ -871,7 +872,7 @@ avtRayTracer::Execute(void)
 	}
 	// compute pvm matrix
 	vtkMatrix4x4::Multiply4x4(p,vm,pvm);
-	std::cout << "pvm: " << *pvm << std::endl;
+	// std::cout << "pvm: " << *pvm << std::endl;
 	// cleanup
 	scaletrans->Delete();
 	imageZoomAndPan->Delete();
@@ -973,7 +974,8 @@ avtRayTracer::Execute(void)
 	ospSetData(ospTransferFcn, "opacities", ospOpacityData);
 	ospCommit(ospTransferFcn);
 	// value range
-	const ospcommon::vec2f valueRange((float)transferFn1D->GetMin(),(float)transferFn1D->GetMax());
+	const ospcommon::vec2f valueRange((float)transferFn1D->GetMin(),
+					  (float)transferFn1D->GetMax());
 	ospSetVec2f(ospTransferFcn, "valueRange", (osp::vec2f&)valueRange);
 	// commit changes
 	ospCommit(ospTransferFcn);
@@ -1063,6 +1065,9 @@ avtRayTracer::Execute(void)
 	//
 	// OSP model
 	// -------------------------------------
+	std::cout << "number of samples = samplesPerRay / rendererSampleRate: "
+		  << samplesPerRay << " / " << rendererSampleRate << " = " 
+		  << samplesPerRay / rendererSampleRate << std::endl;
 	int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
 	int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
 	float r_panx = panPercentage[0] * view.imageZoom;
@@ -1091,9 +1096,10 @@ avtRayTracer::Execute(void)
 	OSPRenderer ospRenderer = ospNewRenderer("scivis");
 	ospSetObject(ospRenderer, "camera", ospCamera);
 	ospSetObject(ospRenderer, "model",  ospWorld);
-	ospSet1i(ospRenderer, "backgroundEnabled", 0);
-	ospSet1i(ospRenderer, "oneSidedLighting", 0);
 	ospSet1i(ospRenderer, "shadowsEnabled", 0);
+	ospSet1i(ospRenderer, "aoSamples", 0);
+	ospSet1i(ospRenderer, "oneSidedLighting", 0);
+	ospSet1i(ospRenderer, "backgroundEnabled", 0);
 	// if (lighting == true)
 	// {
 	//     OSPLight ambientLight = ospNewLight(ospRenderer, "AmbientLight");
