@@ -31,6 +31,7 @@ elif [ "$1" == "vtkospray" ]; then
 
 elif [ "$1" == "cmake" ]; then 
     
+    cp -v avt/Plotter/OSPRay/CMake/* ../src-visit2.12.0/avt/Plotter/OSPRay/CMake
     cp -v ./*.txt           ../src-visit2.12.0/
     cp -v avt/Filters/*.txt ../src-visit2.12.0/avt/Filters/
 

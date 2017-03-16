@@ -1180,15 +1180,6 @@ ELSE(VISIT_OSPRAY)
     MESSAGE(STATUS "OSPRAY for VisIt: OFF")
 ENDIF(VISIT_OSPRAY)
 
-#-- added by Qi
-if(ospray_BINARY)
-  MESSAGE(STATUS "OSPRAY Binary for VisIt: ON")
-  find_package(ospray REQUIRED)
-  include_directories(${OSPRAY_INCLUDE_DIRS})
-else(ospray_BINARY)
-  MESSAGE(STATUS "OSPRAY Binary for VisIt: OFF")
-endif(ospray_BINARY)
-
 #-----------------------------------------------------------------------------
 # If we are doing a static build or the VTK Python wrappers do not exist:
 #   Disable python filters.

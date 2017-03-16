@@ -1,6 +1,5 @@
 ## ======================================================================================= ##
 ## Copyright 2014-2015 Texas Advanced Computing Center, The University of Texas at Austin  ##
-## All rights reserved.                                                                    ##
 ##                                                                                         ##
 ## Licensed under the BSD 3-Clause License, (the "License"); you may not use this file     ##
 ## except in compliance with the License.                                                  ##
@@ -15,34 +14,20 @@
 ## See the License for the specific language governing permissions and limitations under   ##
 ## limitations under the License.                                                          ##
 ## ======================================================================================= ##
+# Find OSPRay
+# defines:
+# OSPRAY_FOUND
+# OSPRAY_INCLUDE_DIRS
+# OSPRAY_LIBRARIES
 
-set (_vtk_modules)
-if(PARAVIEW_USE_MPI)
-  list(APPEND _vtk_modules vtkParallelMPI)
-endif()
+find_package(ospray REQUIRED)
+include_directories(${OSPRAY_INCLUDE_DIRS})
 
-if (BUILD_AGAINST_PARAVIEW)
-  list(APPEND _vtk_modules vtkPVClientServerCoreRendering)
-endif()
-
-if (VTK_RENDERING_BACKEND STREQUAL "OpenGL2")
-  message("GL2")
-  list(APPEND _vtk_modules vtkRenderingOpenGL2)
-else()
-  message("GL1")
-  list(APPEND _vtk_modules vtkRenderingOpenGL)
-endif()
-
-vtk_module(vtkOSPRay
-  DEPENDS
-    vtkFiltersCore
-    vtkParallelCore
-    vtkFiltersHybrid
-    ${_vtk_modules}
-  TEST_DEPENDS
-    vtkTestingRendering
-    vtkIOPLY
-  TEST_LABELS
-    PARAVIEW
-  EXCLUDE_FROM_WRAP_HIERARCHY
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(OSPRAY 
+  DEFAULT_MSG
+  OSPRAY_INCLUDE_DIR
+  OSPRAY_LIBRARIES
 )
+
+set(OSPRAY_LIBRARY_DIRS ${OSPRAY_INCLUDE_DIRS}/../lib64/)
