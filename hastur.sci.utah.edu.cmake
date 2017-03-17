@@ -27,12 +27,13 @@ VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/impi/2017.0.098/bin64/mpicc T
 
 ##
 ## OSPRay
-##
+## -- VTK 6.1.0 forces to use python 2.7.6, need to manually change it
+## -- recommend to remove tbb libraries inside embree and ospray binary folder
 ##
 SET(embree_DIR /home/sci/qwu/OSPRay/embree-2.14.0.x86_64.linux/lib/cmake/embree-2.14.0)
 SET(ospray_DIR /home/sci/qwu/OSPRay/ospray-1.2.0.x86_64.linux/lib/cmake/ospray-1.2.0)
-SET(TBB_ROOT ~/OSPRay/tbb2017_20160916oss)
-SET(ISPC_EXECUTABLE ~/OSPRay/ispc-v1.9.1-linux)
+SET(TBB_ROOT /home/sci/qwu/OSPRay/tbb2017_20160916oss)
+SET(ISPC_EXECUTABLE /home/sci/qwu/OSPRay/ispc-v1.9.1-linux)
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
 
 ##
@@ -56,7 +57,7 @@ VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
 ##
 ## Python
 ##
-VISIT_OPTION_DEFAULT(VISIT_PYTHON_DIR ${VISITHOME}/python/2.7.11/${VISITARCH})
+VISIT_OPTION_DEFAULT(VISIT_PYTHON_DIR ${VISITHOME}/python/2.7.6/${VISITARCH})
 
 ##
 ## Qt

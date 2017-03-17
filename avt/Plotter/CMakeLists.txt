@@ -61,12 +61,6 @@
 #
 #****************************************************************************/
 
-if(VISIT_OSPRAY)
-   SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-       ${VISIT_SOURCE_DIR}/avt/Plotter/OSPRay/CMake)
-   FIND_PACKAGE(OSPRay REQUIRED)
-endif()
-
 SET(VISIT_VTK_MANTA_SOURCES
 Manta/vtkMantaPolyDataMapper.C 
 Manta/vtkMantaTexture.C
@@ -82,20 +76,20 @@ Manta/vtkMantaCubeAxesActor.C
 )
 
 SET(VISIT_VTK_OSPRAY_SOURCES
-    OSPRay/vtkOSPRay/vtkOSPRay.h
-    OSPRay/vtkOSPRay/vtkOSPRayActor.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayCamera.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayLight.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayManager.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.h
-    OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayProperty.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayRenderer.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayTexture.cxx
-    OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.h
-    OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.cxx
-    OSPRay/vtkOSPRayModule.h
+  OSPRay/vtkOSPRay/vtkOSPRay.h
+  OSPRay/vtkOSPRay/vtkOSPRayActor.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayCamera.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayLight.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayManager.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.h
+  OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayProperty.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayRenderer.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayTexture.cxx
+  OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.h
+  OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.cxx
+  OSPRay/vtkOSPRayModule.h
 )
 
 # create configuration file to pass off cmake options
@@ -188,9 +182,9 @@ IF(VISIT_MANTA)
 ENDIF(VISIT_MANTA)
 
 IF(VISIT_OSPRAY)
-    SET(AVTPLOTTER_SOURCES ${AVTPLOTTER_SOURCES} ${VISIT_VTK_OSPRAY_SOURCES} )
-    SET(VTK_INCLUDE_DIRS ${VTK_INCLUDE_DIRS}
-        ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Rendering/Volume)
+  SET(AVTPLOTTER_SOURCES ${AVTPLOTTER_SOURCES} ${VISIT_VTK_OSPRAY_SOURCES} )
+  SET(VTK_INCLUDE_DIRS ${VTK_INCLUDE_DIRS}
+    ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Rendering/Volume)
 ENDIF(VISIT_OSPRAY)
 
 INCLUDE_DIRECTORIES(
@@ -220,15 +214,14 @@ ${GRAPHICS_INCLUDES}
 )
 
 # Add link directories
-LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_DIRS} ${MESA_LIBRARY_DIR} ${GLEW_LIBRARY_DIR} )
-
+LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_DIRS} ${MESA_LIBRARY_DIR} ${GLEW_LIBRARY_DIR})
 
 #********************************* SERIAL ************************************
 ADD_LIBRARY(avtplotter_ser ${AVTPLOTTER_SOURCES})
 IF(HAVE_LIB_R)
-    TARGET_LINK_LIBRARIES(avtplotter_ser visitcommon avtmath avtview avtfilters_ser avtpipeline_ser visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB} vtkFiltersStatisticsGnuR)
+  TARGET_LINK_LIBRARIES(avtplotter_ser visitcommon avtmath avtview avtfilters_ser avtpipeline_ser visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB} vtkFiltersStatisticsGnuR)
 ELSE(HAVE_LIB_R)
-    TARGET_LINK_LIBRARIES(avtplotter_ser visitcommon avtmath avtview avtfilters_ser avtpipeline_ser visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB})
+  TARGET_LINK_LIBRARIES(avtplotter_ser visitcommon avtmath avtview avtfilters_ser avtpipeline_ser visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB})
 ENDIF(HAVE_LIB_R)
 # Add vtk defines
 ADD_TARGET_DEFINITIONS(avtplotter_ser "${VTK_DEFINITIONS}")
@@ -236,38 +229,30 @@ IF(VISIT_MANTA)
   TARGET_LINK_LIBRARIES(avtplotter_ser ${MANTA_TARGET_LINK_LIBRARIES})
 ENDIF(VISIT_MANTA)
 IF(VISIT_OSPRAY)
-    MESSAGE(STATUS "OSPRAY_TARGET_LINK_LIBRARIES: " ${OSPRAY_TARGET_LINK_LIBRARIES})
-    MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
-    MESSAGE(STATUS "OSPRAY_INCLUDE_DIRS: " ${OSPRAY_INCLUDE_DIRS})
-    TARGET_LINK_LIBRARIES(avtplotter_ser ${OSPRAY_TARGET_LINK_LIBRARIES}
-        ${OSPRAY_LIBRARIES} ${VTK_LIBRARIES})
-    INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIRS} ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Parallel/Core)
+  MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
+  MESSAGE(STATUS "OSPRAY_INCLUDE_DIRS: " ${OSPRAY_INCLUDE_DIRS})
+  TARGET_LINK_LIBRARIES(avtplotter_ser ${OSPRAY_LIBRARIES} ${VTK_LIBRARIES})
+  INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIRS} ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Parallel/Core)
 ENDIF(VISIT_OSPRAY)
 VISIT_INSTALL_TARGETS(avtplotter_ser)
 
 #********************************* PARALLEL **********************************
 IF(VISIT_PARALLEL)
-    ADD_PARALLEL_LIBRARY(avtplotter_par ${AVTPLOTTER_SOURCES})
-    IF(HAVE_LIB_R)
-        TARGET_LINK_LIBRARIES(avtplotter_par visitcommon avtmath avtview avtfilters_par avtpipeline_par visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB} vtkFiltersStatisticsGnuR)
-    ELSE(HAVE_LIB_R)
-        TARGET_LINK_LIBRARIES(avtplotter_par visitcommon avtmath avtview avtfilters_par avtpipeline_par visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB})
-    ENDIF(HAVE_LIB_R)
-    # Add vtk defines
-    ADD_TARGET_DEFINITIONS(avtplotter_par "${VTK_DEFINITIONS}")
-    IF(VISIT_MANTA)
-      TARGET_LINK_LIBRARIES(avtplotter_par ${MANTA_TARGET_LINK_LIBRARIES})
-      #IF(ICET_FOUND)
-      #  INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})
-      #  LINK_DIRECTORIES(${ICET_LIBRARY_DIR})
-      #ENDIF(ICET_FOUND)
-    ENDIF(VISIT_MANTA)
-    IF(VISIT_OSPRAY)
-        TARGET_LINK_LIBRARIES(avtplotter_par ${OSPRAY_TARGET_LINK_LIBRARIES}
-            ${OSPRAY_LIBRARIES})
-    ENDIF(VISIT_OSPRAY)
-
-    VISIT_INSTALL_TARGETS(avtplotter_par)
+  ADD_PARALLEL_LIBRARY(avtplotter_par ${AVTPLOTTER_SOURCES})
+  IF(HAVE_LIB_R)
+    TARGET_LINK_LIBRARIES(avtplotter_par visitcommon avtmath avtview avtfilters_par avtpipeline_par visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB} vtkFiltersStatisticsGnuR)
+  ELSE(HAVE_LIB_R)
+    TARGET_LINK_LIBRARIES(avtplotter_par visitcommon avtmath avtview avtfilters_par avtpipeline_par visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB})
+  ENDIF(HAVE_LIB_R)
+  # Add vtk defines
+  ADD_TARGET_DEFINITIONS(avtplotter_par "${VTK_DEFINITIONS}")
+  IF(VISIT_MANTA)
+    TARGET_LINK_LIBRARIES(avtplotter_par ${MANTA_TARGET_LINK_LIBRARIES})
+  ENDIF(VISIT_MANTA)
+  IF(VISIT_OSPRAY)
+    TARGET_LINK_LIBRARIES(avtplotter_par ${OSPRAY_LIBRARIES})
+  ENDIF(VISIT_OSPRAY)
+  VISIT_INSTALL_TARGETS(avtplotter_par)
 ENDIF(VISIT_PARALLEL)
 
 

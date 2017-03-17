@@ -915,10 +915,10 @@ avtRayTracer::Execute(void)
 	// init ospray before everything
 	//
 	if (isFirstEntry) {
-	    std::cout << "Qi: Initialize OSPRay" << std::endl;
-	    int argc = 1; 
-	    const char* argv[1] = { "visitOSPRay" }; 
-	    ospInit(&argc, argv);
+	    // std::cout << "Qi: Initialize OSPRay" << std::endl;
+	    // int argc = 1; 
+	    // const char* argv[1] = { "visitOSPRay" }; 
+	    // ospInit(&argc, argv);
 	}
 	if (isDataDirty) {
 	    extractor.ActiveOSPData(); // tell it there are new data comming in
