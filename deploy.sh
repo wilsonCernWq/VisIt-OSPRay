@@ -26,16 +26,16 @@ elif [ "$1" == "source" ]; then
 
 elif [ "$1" == "vtkospray" ]; then
 
-    gvfs-trash ../src-visit2.12.0/avt/Plotter/OSPRay/vtkOSPRay/*
-    cp -vr avt/Plotter/OSPRay/vtkOSPRay/* ../src-visit2.12.0/avt/Plotter/OSPRay/vtkOSPRay
+    gvfs-trash ../src-visit2.12.0/avt/Plotter/OSPRay
+    cp -v avt/Plotter/vtk/* ../src-visit2.12.0/avt/Plotter/vtk
 
 elif [ "$1" == "cmake" ]; then 
-    
+
+    gvfs-trash ../src-visit2.12.0/avt/Plotter/OSPRay/CMake    
     cp -v hastur.sci.utah.edu.cmake ../src-visit2.12.0/config-site
-    cp -v avt/Plotter/*.txt ../src-visit2.12.0/avt/Plotter
-    cp -v avt/Plotter/OSPRay/CMake/* ../src-visit2.12.0/avt/Plotter/OSPRay/CMake
     cp -v ./*.txt           ../src-visit2.12.0/
     cp -v avt/Filters/*.txt ../src-visit2.12.0/avt/Filters/
+    cp -v avt/Plotter/*.txt ../src-visit2.12.0/avt/Plotter
 
 fi
 

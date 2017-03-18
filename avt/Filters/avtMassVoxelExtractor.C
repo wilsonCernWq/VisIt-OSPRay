@@ -2436,7 +2436,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// 3) volume
 	//
 	std::cout << "volume start ---> " << patch;
-#if (1)
+#if (0)
 	// version 1: shared structure volume
 	ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);
 	ospcommon::vec3f volumeLbox(X[0],Y[0],Z[0]);
@@ -2499,7 +2499,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospSetObject(ospVolume->volume, "transferFunction", *ospTransferFcn);
 	ospSet1i(ospVolume->volume, "gradientShadingEnabled", 0);
 	ospSet1i(ospVolume->volume, "preIntegration", 0);
-	ospSet1i(ospVolume->volume, "singleShade", 0);
+	// ospSet1i(ospVolume->volume, "singleShade", 1);
 	ospSet1i(ospVolume->volume, "adaptiveSampling", 0);
 	ospSet1f(ospVolume->volume, "samplingRate", (float)rendererSampleRate);
 	ospSetVec3f(ospVolume->volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});

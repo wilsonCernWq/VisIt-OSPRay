@@ -40,10 +40,51 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include <vtkType.h>
+
+#include <avtOpacityMap.h>
 #include "ospray/ospray.h"
 #include "ospray/ospcommon/vec.h"
 
-#include <vtkType.h>
+struct ospContext {
+
+    OSPCamera           camera;
+    OSPTransferFunction transferFcn;
+
+    void setCamera(const float campos[3], const float camfocus[3], 
+		   const float camup[3], const float camdir[3],
+		   const float aspect, const float zoomratio, const float fovy) {
+	float current[3];
+	for (int i = 0; i < 3; ++i) {
+	    current[i] = (campos[i] - camfocus[i]) / zoomratio + camfocus[i];
+	}
+	const ospcommon::vec3f camPos(current[0], current[1], current[2]);
+	const ospcommon::vec3f camDir(camdir[0], camdir[1], camdir[2]);
+	const ospcommon::vec3f camUp (camup[0], camup[1], camup[2]);
+	ospSetf(camera, "aspect", aspect);
+	ospSetVec3f(camera, "pos", (osp::vec3f&)camPos);
+	ospSetVec3f(camera, "dir", (osp::vec3f&)camDir);
+	ospSetVec3f(camera, "up",  (osp::vec3f&)camUp);
+	ospSet1f(camera, "fovy", fovy);
+	ospCommit(camera);
+    }
+  
+    void setTF(const RGBAF* table, unsigned int size, float datamin, float datamax) {
+	std::vector<ospcommon::vec3f> colors;
+	std::vector<float>            opacities;
+	for (int i = 0; i < size; ++i) {
+	    colors.emplace_back(table[i].R, table[i].G, table[i].B);
+	    opacities.emplace_back(table[i].A);
+	}
+	OSPData colorData   = ospNewData(colors.size(), OSP_FLOAT3, colors.data());
+	OSPData opacityData = ospNewData(opacities.size(), OSP_FLOAT, opacities.data());
+        const ospcommon::vec2f range(datamin, datamax);
+	ospSetData(transferFcn, "colors",    colorData);
+	ospSetData(transferFcn, "opacities", opacityData);
+	ospSetVec2f(transferFcn, "valueRange", (osp::vec2f&)range);
+        ospCommit(transferFcn);
+    }
+};
 
 struct ospVolumeMeta {
 
@@ -60,8 +101,8 @@ struct ospVolumeMeta {
     ospcommon::vec3f volumeSpac;
 
     void init() { 
-	volume = ospNewVolume("shared_structured_volume"); 
-	// volume = ospNewVolume("block_bricked_volume"); 
+	//volume = ospNewVolume("shared_structured_volume"); 
+	volume = ospNewVolume("block_bricked_volume"); 
     }
 };
 

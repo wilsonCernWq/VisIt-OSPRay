@@ -914,12 +914,6 @@ avtRayTracer::Execute(void)
 	// (Qi) this should be replaced by proper vtkOSPRay initialization later
 	// init ospray before everything
 	//
-	if (isFirstEntry) {
-	    // std::cout << "Qi: Initialize OSPRay" << std::endl;
-	    // int argc = 1; 
-	    // const char* argv[1] = { "visitOSPRay" }; 
-	    // ospInit(&argc, argv);
-	}
 	if (isDataDirty) {
 	    extractor.ActiveOSPData(); // tell it there are new data comming in
 	    extractor.SetOSPVolumeList(ospVolumeList);
@@ -1007,7 +1001,7 @@ avtRayTracer::Execute(void)
  	extractor.SetCameraPosition(view.camera); //
 	extractor.SetCameraUpVector(view.viewUp); // They are not useful anymore
 	extractor.SetCameraAspect(aspect);        // Leaving them here currently
-	extractor.SetOSPCamera(&ospCamera);       //
+	// extractor.SetOSPCamera(&ospCamera);       //
 	extractor.SetOSPTransferFcn(&ospTransferFcn);
 
 	//
@@ -1093,12 +1087,13 @@ avtRayTracer::Execute(void)
 	for (auto ospVolume : ospVolumeList) { ospAddVolume(ospWorld, ospVolume.volume); }
 	ospCommit(ospWorld);
 	// osp renderer
+	std::cout << "creating scivis renderer" << std::endl;
 	OSPRenderer ospRenderer = ospNewRenderer("scivis");
 	ospSetObject(ospRenderer, "camera", ospCamera);
 	ospSetObject(ospRenderer, "model",  ospWorld);
 	ospSet1i(ospRenderer, "shadowsEnabled", 0);
-	ospSet1i(ospRenderer, "aoSamples", 0);
-	ospSet1i(ospRenderer, "oneSidedLighting", 0);
+	//ospSet1i(ospRenderer, "aoSamples", 0);
+	//ospSet1i(ospRenderer, "oneSidedLighting", 0);
 	ospSet1i(ospRenderer, "backgroundEnabled", 0);
 	// if (lighting == true)
 	// {
@@ -1118,6 +1113,7 @@ avtRayTracer::Execute(void)
 	// }
 	ospCommit(ospRenderer);
 	// render frame buffer
+	std::cout << "render frame" << std::endl;
 	ospcommon::vec2i imageSize(compositedImageWidth, compositedImageHeight);	
 	OSPFrameBuffer ospfb = 
 	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
@@ -1125,6 +1121,7 @@ avtRayTracer::Execute(void)
 	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
 	// save ospray image and clean up
 	float *fb = (float*) ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
+	std::cout << "done rendering" << std::endl;
 	// reset flags
 	isFirstEntry = false;
 	isDataDirty = false;
