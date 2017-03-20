@@ -1175,19 +1175,14 @@ ENDIF(VISIT_THREAD)
 
 IF(VISIT_OSPRAY)
     ADD_DEFINITIONS(-DVISIT_OSPRAY)
+    FIND_PACKAGE(ospray REQUIRED)
+    INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
+    MESSAGE(STATUS "OSPRAY_INCLUDE_DIR "${OSPRAY_INCLUDE_DIR})
+    MESSAGE(STATUS "OSPRAY_LIBRARIESR "${OSPRAY_LIBRARIES})
     MESSAGE(STATUS "OSPRAY for VisIt: ON")
 ELSE(VISIT_OSPRAY)
     MESSAGE(STATUS "OSPRAY for VisIt: OFF")
 ENDIF(VISIT_OSPRAY)
-
-#-- added by Qi
-if(ospray_BINARY)
-  MESSAGE(STATUS "OSPRAY Binary for VisIt: ON")
-  find_package(ospray REQUIRED)
-  include_directories(${OSPRAY_INCLUDE_DIRS})
-else(ospray_BINARY)
-  MESSAGE(STATUS "OSPRAY Binary for VisIt: OFF")
-endif(ospray_BINARY)
 
 #-----------------------------------------------------------------------------
 # If we are doing a static build or the VTK Python wrappers do not exist:

@@ -901,25 +901,21 @@ avtRayTracer::Execute(void)
 	// 	  << fullImageExtents[3] << std::endl;
 	//
 	// -----------------------------
-	//
-	// 1st March
-	// okay so here is the idea
-	// you create one model only
-	// you iterate through all the patches within the data tree you have
-	// you use block_brick/shared volume (for now)
-	//   for each patch -> create one volume (store it on a vector) and commit once
-	// after that, you commit everything else here 
-	// this should avoid most of commits 
-	//
-	// (Qi) this should be replaced by proper vtkOSPRay initialization later
-	// init ospray before everything
-	//
-	if (isFirstEntry) {
-	    std::cout << "Qi: Initialize OSPRay" << std::endl;
-	    int argc = 1; 
-	    const char* argv[1] = { "visitOSPRay" }; 
-	    ospInit(&argc, argv);
+	// can not initialize ospray globally, do manually check each time
+	{
+	    OSPDevice device = ospGetCurrentDevice();
+	    if (device == nullptr) {
+		std::cout << "Initializing OSPRay" << std::endl;
+		device = ospCreateDevice();
+		ospDeviceSet1i(device, "debug", 0);
+		ospDeviceCommit(device);
+		ospSetCurrentDevice(device);
+		ospDeviceSetErrorMsgFunc
+		    (device, 
+		     [](const char *msg) { std::cout << msg; });
+	    }	   
 	}
+
 	if (isDataDirty) {
 	    extractor.ActiveOSPData(); // tell it there are new data comming in
 	    extractor.SetOSPVolumeList(ospVolumeList);

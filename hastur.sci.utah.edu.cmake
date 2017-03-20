@@ -34,7 +34,7 @@ SET(embree_DIR /home/sci/qwu/OSPRay/embree-2.14.0.x86_64.linux/lib/cmake/embree-
 SET(ospray_DIR /home/sci/qwu/OSPRay/ospray-1.2.0.x86_64.linux/lib/cmake/ospray-1.2.0)
 SET(TBB_ROOT /home/sci/qwu/OSPRay/tbb2017_20160916oss)
 SET(ISPC_EXECUTABLE /home/sci/qwu/OSPRay/ispc-v1.9.1-linux)
-SET(ospray_BINARY ON)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
 
 ##
 ## VisIt Thread Option
