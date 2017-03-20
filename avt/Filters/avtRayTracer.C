@@ -914,6 +914,12 @@ avtRayTracer::Execute(void)
 	// (Qi) this should be replaced by proper vtkOSPRay initialization later
 	// init ospray before everything
 	//
+	if (isFirstEntry) {
+	    std::cout << "Qi: Initialize OSPRay" << std::endl;
+	    int argc = 1; 
+	    const char* argv[1] = { "visitOSPRay" }; 
+	    ospInit(&argc, argv);
+	}
 	if (isDataDirty) {
 	    extractor.ActiveOSPData(); // tell it there are new data comming in
 	    extractor.SetOSPVolumeList(ospVolumeList);
@@ -1083,8 +1089,28 @@ avtRayTracer::Execute(void)
 	ospCommit(ospCamera);
 	// creating osp model
 	std::cout << "creating ospModel w/ " << ospVolumeList.size() << " volumes" << std::endl;
-	OSPModel ospWorld = ospNewModel();	
-	for (auto ospVolume : ospVolumeList) { ospAddVolume(ospWorld, ospVolume.volume); }
+	OSPModel ospWorld = ospNewModel();
+	// OSPVolume ospVolume = ospNewVolume("block_bricked_volume");
+	std::cout << "Full data extents: " 
+	 	  << dbounds[0] << ", " 
+		  << dbounds[1] << "  " 
+		  << dbounds[2] << ", " 
+		  << dbounds[3] << "  " 
+		  << dbounds[4] << ", " 
+		  << dbounds[5] << std::endl;
+	//const float* unitCellVector = 
+	//    trans.GetOutput()->GetInfo().GetAttributes().GetUnitCellVectors();
+	//std::cout << "unit cell vector: " 
+	//	  << unitCellVector[0] << " "
+	//	  << unitCellVector[1] << " "
+	//	  << unitCellVector[2] << std::endl;
+	std::cout << "cell dimension: " 
+		  << (dbounds[1] - dbounds[0])/ospVolumeList[0].volumeSpac.x << " "
+		  << (dbounds[3] - dbounds[2])/ospVolumeList[0].volumeSpac.y << " "
+		  << (dbounds[5] - dbounds[4])/ospVolumeList[0].volumeSpac.z << std::endl;
+	for (auto v : ospVolumeList) { 
+	    ospAddVolume(ospWorld, v.volume); 
+	}
 	ospCommit(ospWorld);
 	// osp renderer
 	std::cout << "creating scivis renderer" << std::endl;
@@ -1116,9 +1142,9 @@ avtRayTracer::Execute(void)
 	std::cout << "render frame" << std::endl;
 	ospcommon::vec2i imageSize(compositedImageWidth, compositedImageHeight);	
 	OSPFrameBuffer ospfb = 
-	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
-	ospFrameBufferClear(ospfb, OSP_FB_COLOR | OSP_FB_ACCUM);	
-	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+	    ospNewFrameBuffer((osp::vec2i&)imageSize, OSP_FB_RGBA32F, OSP_FB_COLOR);
+	ospFrameBufferClear(ospfb, OSP_FB_COLOR);	
+	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR);
 	// save ospray image and clean up
 	float *fb = (float*) ospMapFrameBuffer(ospfb, OSP_FB_COLOR);
 	std::cout << "done rendering" << std::endl;
@@ -1362,6 +1388,8 @@ avtRayTracer::Execute(void)
 	    //
 	    // Cleanup
 	    ospUnmapFrameBuffer(fb, ospfb);
+	    ospRelease(ospCamera);
+	    ospRelease(ospTransferFcn);
 	    ospRelease(ospWorld);
 	    ospRelease(ospRenderer);
 	    ospRelease(ospfb);

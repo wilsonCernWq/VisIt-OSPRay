@@ -180,19 +180,6 @@ vtkVisItGraphicsFactory::vtkVisItGraphicsFactory()
 void
 InitVTKRendering::Initialize(void)
 {
-
-#ifdef VISIT_OSPRAY
-    // if (avtCallback::UseOSPRay())
-    // {
-    //   vtkOSPRayObjectFactory* ofactory = vtkOSPRayObjectFactory::New();
-    //   vtkObjectFactory::RegisterFactory(ofactory);
-    //   ofactory->Delete();
-    // }
-    int ac = 1;
-    const char* av[] = { "pvOSPRay\0" };
-    ospInit(&ac, av);
-#endif
-
     // Register the factory that allows VisIt objects to override vtk objects.
     vtkVisItGraphicsFactory *factory = vtkVisItGraphicsFactory::New();
     vtkObjectFactory::RegisterFactory(factory);
@@ -206,6 +193,18 @@ InitVTKRendering::Initialize(void)
       vtkMantaObjectFactory* mfactory = vtkMantaObjectFactory::New();
       vtkObjectFactory::RegisterFactory(mfactory);
       mfactory->Delete();
+    }
+#endif
+
+#ifdef VISIT_OSPRAY
+    if (avtCallback::UseOSPRay())
+    {
+      // vtkOSPRayObjectFactory* ofactory = vtkOSPRayObjectFactory::New();
+      // vtkObjectFactory::RegisterFactory(ofactory);
+      // ofactory->Delete();
+      int ac = 1;
+      const char* av[] = { "visit\0" };
+      ospInit(&ac, av);
     }
 #endif
 

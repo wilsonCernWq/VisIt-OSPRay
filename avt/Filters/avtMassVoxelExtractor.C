@@ -2437,37 +2437,37 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	//
 	std::cout << "volume start ---> " << patch;
 #if (0)
-	// version 1: shared structure volume
-	ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);
-	ospcommon::vec3f volumeLbox(X[0],Y[0],Z[0]);
-	ospcommon::vec3f volumeMbox(X[dims[0]-2],Y[dims[1]-2],Z[dims[2]-2]);
-	ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims-1.0f));
-        // this is the clipping box coordinate
-	// I am trying to fix the defects near the boundaries
-	ospcommon::vec3f volumeLowerClip(X[1],Y[1],Z[1]); 
-	ospcommon::vec3f volumeUpperClip(X[dims[0]-2],Y[dims[1]-2],Z[dims[2]-2]);
-	ospSetVec3f(ospVolume->volume, "volumeClippingBoxLower", (osp::vec3f&)volumeLowerClip);
-	ospSetVec3f(ospVolume->volume, "volumeClippingBoxUpper", (osp::vec3f&)volumeUpperClip);
-	// create vlxel data
-	size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
-	OSPData ospVoxelData = 
-	    ospNewData(ospVolumeSize,ospVoxelDataType,ospVolumePointer,OSP_DATA_SHARED_BUFFER);
-	// save data into the structure for debugging purpose
-	ospVolume->ospVolumePointer = ospVolumePointer;
-	ospVolume->ospVoxelType = ospVoxelType;
-        ospVolume->ospVoxelDataType = ospVoxelDataType;	
-	ospVolume->ospVolumeSize = ospVolumeSize;
-	ospVolume->ospVoxelData = ospVoxelData;
-        ospVolume->volumeDims = volumeDims;
-	ospVolume->volumeLbox = volumeLbox;
-	ospVolume->volumeMbox = volumeMbox;
-        ospVolume->volumeSpac = volumeSpac;
-	// commit volume information
-	ospSetData(ospVolume->volume, "voxelData", ospVoxelData);
-	ospSetString(ospVolume->volume, "voxelType", ospVoxelType.c_str());
-	ospSetVec3f(ospVolume->volume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
-	ospSetVec3f(ospVolume->volume, "gridSpacing", (const osp::vec3f&)volumeSpac);
-	ospSetVec3i(ospVolume->volume, "dimensions", (osp::vec3i&)volumeDims);
+	// // version 1: shared structure volume
+	// ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);
+	// ospcommon::vec3f volumeLbox(X[0],Y[0],Z[0]);
+	// ospcommon::vec3f volumeMbox(X[dims[0]-2],Y[dims[1]-2],Z[dims[2]-2]);
+	// ospcommon::vec3f volumeSpac((volumeMbox - volumeLbox)/((ospcommon::vec3f)volumeDims-1.0f));
+        // // this is the clipping box coordinate
+	// // I am trying to fix the defects near the boundaries
+	// ospcommon::vec3f volumeLowerClip(X[1],Y[1],Z[1]); 
+	// ospcommon::vec3f volumeUpperClip(X[dims[0]-2],Y[dims[1]-2],Z[dims[2]-2]);
+	// ospSetVec3f(ospVolume->volume, "volumeClippingBoxLower", (osp::vec3f&)volumeLowerClip);
+	// ospSetVec3f(ospVolume->volume, "volumeClippingBoxUpper", (osp::vec3f&)volumeUpperClip);
+	// // create vlxel data
+	// size_t ospVolumeSize = volumeDims.x * volumeDims.y * volumeDims.z;
+	// OSPData ospVoxelData = 
+	//     ospNewData(ospVolumeSize,ospVoxelDataType,ospVolumePointer,OSP_DATA_SHARED_BUFFER);
+	// // save data into the structure for debugging purpose
+	// ospVolume->ospVolumePointer = ospVolumePointer;
+	// ospVolume->ospVoxelType = ospVoxelType;
+        // ospVolume->ospVoxelDataType = ospVoxelDataType;	
+	// ospVolume->ospVolumeSize = ospVolumeSize;
+	// ospVolume->ospVoxelData = ospVoxelData;
+        // ospVolume->volumeDims = volumeDims;
+	// ospVolume->volumeLbox = volumeLbox;
+	// ospVolume->volumeMbox = volumeMbox;
+        // ospVolume->volumeSpac = volumeSpac;
+	// // commit volume information
+	// ospSetData(ospVolume->volume, "voxelData", ospVoxelData);
+	// ospSetString(ospVolume->volume, "voxelType", ospVoxelType.c_str());
+	// ospSetVec3f(ospVolume->volume, "gridOrigin",  (const osp::vec3f&)volumeLbox);
+	// ospSetVec3f(ospVolume->volume, "gridSpacing", (const osp::vec3f&)volumeSpac);
+	// ospSetVec3i(ospVolume->volume, "dimensions", (osp::vec3i&)volumeDims);
 #else
 	// version 2: deep copy + block_brike
 	ospcommon::vec3i volumeDims(dims[0]-1,dims[1]-1,dims[2]-1);

@@ -1071,11 +1071,11 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->setBufferExtents(bufferExtents);
 
 	    massVoxelExtractor->SetViewDirection(viewDirection);
-	    massVoxelExtractor->SetOSPCamera(ospCamera);
+	    //massVoxelExtractor->SetOSPCamera(ospCamera);
 	    massVoxelExtractor->SetOSPTransferFcn(ospTransferFcn);
-	    massVoxelExtractor->SetCameraPosition(cameraPosition);
-	    massVoxelExtractor->SetCameraUpVector(cameraUpVector);
-	    massVoxelExtractor->SetCameraAspect(cameraAspect);
+	    //massVoxelExtractor->SetCameraPosition(cameraPosition);
+	    //massVoxelExtractor->SetCameraUpVector(cameraUpVector);
+	    //massVoxelExtractor->SetCameraAspect(cameraAspect);
 
 	    massVoxelExtractor->SetMVPMatrix(modelViewProj);
 	    massVoxelExtractor->SetClipPlanes(clipPlanes);
