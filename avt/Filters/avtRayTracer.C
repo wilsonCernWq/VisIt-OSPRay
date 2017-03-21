@@ -926,7 +926,7 @@ avtRayTracer::Execute(void)
 	// do some ospray stuffs to speed things up
 	//
 	std::cout << "make ospray camera" << std::endl;
-        ospCamera = ospNewCamera("perspective");       
+        ospCamera = ospNewCamera("perspective");     
 	// the zooming is applied by moving camera closer to the focus point
 	float currOspCam[3];
 	for (int i = 0; i < 3; ++i) {
@@ -1085,6 +1085,17 @@ avtRayTracer::Execute(void)
 	ospCommit(ospCamera);
 	// creating osp model
 	std::cout << "creating ospModel w/ " << ospVolumeList.size() << " volumes" << std::endl;
+	std::cout << "Full data extents: " 
+	 	  << dbounds[0] << ", " 
+		  << dbounds[1] << "  " 
+		  << dbounds[2] << ", " 
+		  << dbounds[3] << "  " 
+		  << dbounds[4] << ", " 
+		  << dbounds[5] << std::endl;
+	std::cout << "cell dimension: " 
+		  << (dbounds[1] - dbounds[0])/ospVolumeList[0].volumeSpac.x << " "
+		  << (dbounds[3] - dbounds[2])/ospVolumeList[0].volumeSpac.y << " "
+		  << (dbounds[5] - dbounds[4])/ospVolumeList[0].volumeSpac.z << std::endl;
 	OSPModel ospWorld = ospNewModel();	
 	for (auto ospVolume : ospVolumeList) { ospAddVolume(ospWorld, ospVolume.volume); }
 	ospCommit(ospWorld);

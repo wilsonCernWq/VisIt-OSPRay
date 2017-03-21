@@ -37,13 +37,227 @@
 *****************************************************************************/
 #ifndef IMG_METADATA_H
 #define IMG_METADATA_H
+
 #include <stdio.h>
 #include <string>
 #include <iostream>
+
 #include "ospray/ospray.h"
 #include "ospray/ospcommon/vec.h"
 
 #include <vtkType.h>
+#include <avtOpacityMap.h>
+
+#define OSP_PERSPECTIVE              1
+#define OSP_ORTHOGRAPHIC             2
+#define OSP_BLOCK_BRICKED_VOLUME     3
+#define OSP_SHARED_STRUCTURED_VOLUME 4
+#define OSP_INVALID                  5
+#define OSP_VALID                    6
+
+struct OSPContext {
+
+    ~OSPContext() {
+	ospUnmapFrameBuffer(framebufferData, framebuffer);
+	ospRelease(camera);
+	ospRelease(transferfcn);
+	ospRelease(world);
+	ospRelease(renderer);
+	ospRelease(framebuffer);
+    }
+
+    //! framebuffer component
+    OSPFrameBuffer framebuffer;
+    float         *framebufferData = NULL;
+    void InitFB(unsigned int width, unsigned int height) {
+	ospcommon::vec2i imageSize(width, height);	
+	framebuffer = ospNewFrameBuffer((osp::vec2i&)imageSize, 
+					OSP_FB_RGBA32F, 
+					OSP_FB_COLOR | OSP_FB_ACCUM);
+	ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM);
+    }
+    void RenderFB() {
+	if (framebufferData != NULL) { ospUnmapFrameBuffer(framebufferData, framebuffer); }
+	ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+        framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
+    }
+    float* GetData() {
+	return framebufferData;
+    }
+
+    //! ospRenderer component
+    OSPRenderer         renderer;
+    unsigned char       rendererType = OSP_INVALID;
+    void InitRenderer() {
+	if (rendererType == OSP_INVALID) {
+	    renderer = ospNewRenderer("scivis");
+	    rendererType = OSP_VALID;
+	}
+    }
+    void SetRenderer(bool lighting, float material[4], float dir[3]) {
+	ospSetObject(renderer, "camera", camera);
+	ospSetObject(renderer, "model",  world);
+	ospSet1i(renderer, "backgroundEnabled", 0);
+	ospSet1i(renderer, "oneSidedLighting", 0);
+	ospSet1i(renderer, "aoSamples", 0);
+	if (lighting == true)
+	{
+	    ospSet1i(renderer, "shadowsEnabled", 0);
+	    OSPLight aLight = ospNewLight(renderer, "AmbientLight");
+	    ospSet1f(aLight, "intensity", material[0]);
+	    ospCommit(aLight);
+	    OSPLight dLight = ospNewLight(renderer, "DirectionalLight");
+	    ospSet1f(dLight, "intensity", material[2]);
+	    ospSetVec3f(dLight, "direction", osp::vec3f{(float)dir[0],(float)dir[1],(float)dir[2]});
+	    ospCommit(dLight);
+	    OSPLight lights[2] = { aLight, dLight };
+	    ospSetData(renderer,"lights",
+		       ospNewData(2, OSP_OBJECT, lights));
+	}
+	ospCommit(renderer);
+    }
+
+    //! ospModel component
+    OSPModel            world;
+    unsigned char       worldType = OSP_INVALID;
+    void InitWorld() {
+	if (worldType == OSP_INVALID) {
+	    world = ospNewModel();
+	    worldType = OSP_VALID;
+	}
+    }
+    void SetWorld() {
+	ospAddVolume(world, volume);
+	ospCommit(world);
+    }
+
+    //! ospVolume component
+    OSPVolume           volume;
+    unsigned char       volumeType = OSP_INVALID;
+    void InitVolume(unsigned char type) {
+	if (volumeType != type) {
+	    volumeType = type;	    
+            ospRelease(volume);
+	    switch (type) {
+	    case (OSP_BLOCK_BRICKED_VOLUME):
+		volume = ospNewVolume("block_bricked_volume"); 
+		break;
+	    case (OSP_SHARED_STRUCTURED_VOLUME):
+		volume = ospNewVolume("block_bricked_volume"); 
+		break;
+	    default:
+		cout << "ERROR: wrong ospray volume type" << std::endl;
+		volumeType = OSP_INVALID;
+	    }
+	}
+    }
+    void SetVolume(void* dataPtr, int dataType) {
+/* 	//! calculate volume data type */
+/* 	std::string voxelType; */
+/* 	OSPDataType voxelDataType; */
+/* 	if (dataType == VTK_UNSIGNED_CHAR) { */
+/* 	    voxelType = "uchar"; */
+/* 	    voxelDataType = OSP_UCHAR; */
+/* 	} else if (dataType == VTK_SHORT) { */
+/* 	    voxelType = "short"; */
+/* 	    voxelDataType = OSP_SHORT; */
+/* 	} else if (dataType == VTK_UNSIGNED_SHORT) { */
+/* 	    voxelType = "ushort"; */
+/* 	    voxelDataType = OSP_USHORT; */
+/* 	} else if (dataType == VTK_FLOAT) { */
+/* 	    voxelType = "float"; */
+/* 	    voxelDataType = OSP_FLOAT; */
+/* 	} else if (dataType == VTK_DOUBLE) {	 */
+/* 	    voxelType = "double"; */
+/* 	    voxelDataType = OSP_DOUBLE; */
+/* 	} else { */
+/* 	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type"); */
+/* 	} */
+    }
+
+    //! ospCamera component
+    OSPCamera           camera;
+    unsigned char       cameraType = OSP_INVALID;
+    void InitCamera(unsigned char type) {
+	if (cameraType != type) {
+	    cameraType = type;
+	    ospRelease(camera);
+	    switch (type) {
+	    case (OSP_PERSPECTIVE):
+                camera = ospNewCamera("perspective");
+		break;
+	    case (OSP_ORTHOGRAPHIC):
+                camera = ospNewCamera("orthographic");
+		break;
+	    default:
+		cout << "ERROR: wrong ospray camera type" << std::endl;
+	        cameraType = OSP_INVALID;
+	    }
+	}
+    }
+    void SetCamera(const float campos[3], 
+		   const float camfocus[3], 
+		   const float camup [3], 
+		   const float camdir[3],
+		   const float aspect, 
+		   const float fovy, 
+		   const float zoomratio, 
+		   const float imagepan[2],
+		   const int imageExtents[2],
+		   const int screenExtents[2]) {
+	float current[3];
+	for (int i = 0; i < 3; ++i) {
+	    current[i] = (campos[i] - camfocus[i]) / zoomratio + camfocus[i];
+	}
+	const ospcommon::vec3f camPos(current[0], current[1], current[2]);
+	const ospcommon::vec3f camDir(camdir[0], camdir[1], camdir[2]);
+	const ospcommon::vec3f camUp (camup[0], camup[1], camup[2]);
+	ospSetf(camera, "aspect", aspect);
+	ospSetVec3f(camera, "pos", (osp::vec3f&)camPos);
+	ospSetVec3f(camera, "dir", (osp::vec3f&)camDir);
+	ospSetVec3f(camera, "up",  (osp::vec3f&)camUp);
+	ospSet1f(camera, "fovy", fovy);
+	float r_panx = imagepan[0] * zoomratio;
+	float r_pany = imagepan[1] * zoomratio;
+	float r_xl = (float)imageExtents[0]/(float)screenExtents[0] - r_panx; 
+	float r_yl = (float)imageExtents[2]/(float)screenExtents[1] - r_pany; 
+	float r_xu = (float)imageExtents[1]/(float)screenExtents[0] - r_panx;
+	float r_yu = (float)imageExtents[3]/(float)screenExtents[1] - r_pany;
+	ospSetVec2f(camera, "imageStart", osp::vec2f{r_xl, r_yl});
+	ospSetVec2f(camera, "imageEnd",   osp::vec2f{r_xu, r_yu});
+	ospCommit(camera);
+    }
+
+    //! ospTransferFunction component
+    OSPTransferFunction transferfcn;
+    unsigned char       transferfcnType = OSP_INVALID;  
+    void InitTransferFunction() {
+	if (transferfcnType == OSP_INVALID) {
+	    transferfcn = ospNewTransferFunction("piecewise_linear");
+	    transferfcnType = OSP_VALID;
+	}
+    }
+    void SetTransferFunction(const RGBAF* table, 
+			     const unsigned int size, 
+			     const float datamin, 
+			     const float datamax) {
+	std::vector<ospcommon::vec3f> colors;
+	std::vector<float>            opacities;
+	for (int i = 0; i < size; ++i) {
+	    colors.emplace_back(table[i].R, table[i].G, table[i].B);
+	    opacities.emplace_back(table[i].A);
+	}
+	OSPData colorData   = 
+	    ospNewData(colors.size(), OSP_FLOAT3, colors.data());
+	OSPData opacityData = 
+	    ospNewData(opacities.size(), OSP_FLOAT, opacities.data());
+        const ospcommon::vec2f range(datamin, datamax);
+	ospSetData(transferfcn, "colors",    colorData);
+	ospSetData(transferfcn, "opacities", opacityData);
+	ospSetVec2f(transferfcn, "valueRange", (osp::vec2f&)range);
+        ospCommit(transferfcn);
+    }
+};
 
 struct ospVolumeMeta {
 

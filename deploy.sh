@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd /home/sci/qwu/visitOSPRay/visitOSPRayCPU/pascal
+cd /home/sci/qwu/visitOSPRay/visitOSPRayCPU/working
 
 if [ "$1" == "source" ]; then 
 
