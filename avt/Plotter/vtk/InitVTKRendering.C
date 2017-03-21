@@ -58,9 +58,9 @@
 #include <vtkMantaObjectFactory.h>
 #endif
 
-#ifdef VISIT_OSPRAY
-#include "ospray/ospray.h"
-#endif
+// #ifdef VISIT_OSPRAY
+// #include "ospray/ospray.h"
+// #endif
 
 #include <avtCallback.h>
 #include <DebugStream.h>
@@ -180,6 +180,16 @@ vtkVisItGraphicsFactory::vtkVisItGraphicsFactory()
 void
 InitVTKRendering::Initialize(void)
 {
+// #ifdef VISIT_OSPRAY
+//     if (avtCallback::UseOSPRay())
+//     {
+// 	// debug1 << "InitVTKRendering::Initializing turning on OSPRay" << endl;
+// 	// vtkOSPRayObjectFactory* ofactory = vtkOSPRayObjectFactory::New();
+// 	// vtkObjectFactory::RegisterFactory(ofactory);
+// 	// ofactory->Delete();
+//     }
+// #endif
+
     // Register the factory that allows VisIt objects to override vtk objects.
     vtkVisItGraphicsFactory *factory = vtkVisItGraphicsFactory::New();
     vtkObjectFactory::RegisterFactory(factory);
@@ -195,17 +205,4 @@ InitVTKRendering::Initialize(void)
       mfactory->Delete();
     }
 #endif
-
-#ifdef VISIT_OSPRAY
-    if (avtCallback::UseOSPRay())
-    {
-      // vtkOSPRayObjectFactory* ofactory = vtkOSPRayObjectFactory::New();
-      // vtkObjectFactory::RegisterFactory(ofactory);
-      // ofactory->Delete();
-      int ac = 1;
-      const char* av[] = { "visit\0" };
-      ospInit(&ac, av);
-    }
-#endif
-
 }

@@ -901,25 +901,21 @@ avtRayTracer::Execute(void)
 	// 	  << fullImageExtents[3] << std::endl;
 	//
 	// -----------------------------
-	//
-	// 1st March
-	// okay so here is the idea
-	// you create one model only
-	// you iterate through all the patches within the data tree you have
-	// you use block_brick/shared volume (for now)
-	//   for each patch -> create one volume (store it on a vector) and commit once
-	// after that, you commit everything else here 
-	// this should avoid most of commits 
-	//
-	// (Qi) this should be replaced by proper vtkOSPRay initialization later
-	// init ospray before everything
-	//
-	if (isFirstEntry) {
-	    std::cout << "Qi: Initialize OSPRay" << std::endl;
-	    int argc = 1; 
-	    const char* argv[1] = { "visitOSPRay" }; 
-	    ospInit(&argc, argv);
+	// can not initialize ospray globally, do manually check each time
+	{
+	    OSPDevice device = ospGetCurrentDevice();
+	    if (device == nullptr) {
+		std::cout << "Initializing OSPRay" << std::endl;
+		device = ospCreateDevice();
+		ospDeviceSet1i(device, "debug", 0);
+		ospDeviceCommit(device);
+		ospSetCurrentDevice(device);
+		ospDeviceSetErrorMsgFunc
+		    (device, 
+		     [](const char *msg) { std::cout << msg; });
+	    }	   
 	}
+
 	if (isDataDirty) {
 	    extractor.ActiveOSPData(); // tell it there are new data comming in
 	    extractor.SetOSPVolumeList(ospVolumeList);
@@ -930,7 +926,7 @@ avtRayTracer::Execute(void)
 	// do some ospray stuffs to speed things up
 	//
 	std::cout << "make ospray camera" << std::endl;
-        ospCamera = ospNewCamera("perspective");       
+        ospCamera = ospNewCamera("perspective");     
 	// the zooming is applied by moving camera closer to the focus point
 	float currOspCam[3];
 	for (int i = 0; i < 3; ++i) {
@@ -1089,8 +1085,6 @@ avtRayTracer::Execute(void)
 	ospCommit(ospCamera);
 	// creating osp model
 	std::cout << "creating ospModel w/ " << ospVolumeList.size() << " volumes" << std::endl;
-	OSPModel ospWorld = ospNewModel();
-	// OSPVolume ospVolume = ospNewVolume("block_bricked_volume");
 	std::cout << "Full data extents: " 
 	 	  << dbounds[0] << ", " 
 		  << dbounds[1] << "  " 
@@ -1098,19 +1092,12 @@ avtRayTracer::Execute(void)
 		  << dbounds[3] << "  " 
 		  << dbounds[4] << ", " 
 		  << dbounds[5] << std::endl;
-	//const float* unitCellVector = 
-	//    trans.GetOutput()->GetInfo().GetAttributes().GetUnitCellVectors();
-	//std::cout << "unit cell vector: " 
-	//	  << unitCellVector[0] << " "
-	//	  << unitCellVector[1] << " "
-	//	  << unitCellVector[2] << std::endl;
 	std::cout << "cell dimension: " 
 		  << (dbounds[1] - dbounds[0])/ospVolumeList[0].volumeSpac.x << " "
 		  << (dbounds[3] - dbounds[2])/ospVolumeList[0].volumeSpac.y << " "
 		  << (dbounds[5] - dbounds[4])/ospVolumeList[0].volumeSpac.z << std::endl;
-	for (auto v : ospVolumeList) { 
-	    ospAddVolume(ospWorld, v.volume); 
-	}
+	OSPModel ospWorld = ospNewModel();	
+	for (auto ospVolume : ospVolumeList) { ospAddVolume(ospWorld, ospVolume.volume); }
 	ospCommit(ospWorld);
 	// osp renderer
 	std::cout << "creating scivis renderer" << std::endl;
