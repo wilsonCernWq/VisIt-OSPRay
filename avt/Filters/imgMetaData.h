@@ -58,9 +58,7 @@
 #define OSP_VALID                    6
 
 struct OSPContext {
-    
-    ospcommon::vec3f volumeStart(std::numeric_limits<float>::max());
-    ospcommon::vec3f volumeStop (std::numeric_limits<float>::min());
+
     ospcommon::vec3f volumeSpacing;
     ospcommon::vec3f volumeDims;
     
@@ -97,8 +95,12 @@ struct OSPContext {
 	    regionSize    = size;
 	    regionSpacing = (regionStop - regionStart)/((ospcommon::vec3f)regionSize - 1.0f);
 	    //! compute bounding box
-	    volumeStart = min(regionStart, volumeStart);
-	    volumeStop  = min(regionStop,  volumeStop);
+	    /* volumeStart.x = min(regionStart.x, volumeStart.x); */
+	    /* volumeStart.y = min(regionStart.y, volumeStart.y); */
+	    /* volumeStart.z = min(regionStart.z, volumeStart.z); */
+	    /* volumeStop.x  = max(regionStop.x,  volumeStop.x); */
+	    /* volumeStop.y  = max(regionStop.y,  volumeStop.y); */
+	    /* volumeStop.z  = max(regionStop.z,  volumeStop.z); */
 	}
 
 	//! field
@@ -111,27 +113,27 @@ struct OSPContext {
 	ospcommon::vec3i regionSize;
     };
 
-    OSPFrameBuffer          framebuffer;
-    float                  *framebufferData = NULL;
-    OSPRenderer             renderer;
+    OSPFrameBuffer          framebuffer = nullptr;
+    float                  *framebufferData = nullptr;
+    OSPRenderer             renderer = nullptr;
     unsigned char           rendererType = OSP_INVALID;
-    OSPModel                world;
+    OSPModel                world = nullptr;
     unsigned char           worldType = OSP_INVALID;
-    OSPVolume               volume;
+    OSPVolume               volume = nullptr;
     unsigned char           volumeType = OSP_INVALID;
     std::vector<volumeInfo> volumePatchInfo;
-    OSPCamera               camera;
+    OSPCamera               camera = nullptr;
     unsigned char           cameraType = OSP_INVALID;
-    OSPTransferFunction     transferfcn;
+    OSPTransferFunction     transferfcn = nullptr;
     unsigned char           transferfcnType = OSP_INVALID;
 
     ~OSPContext() {
-	ospUnmapFrameBuffer(framebufferData, framebuffer);
-	ospRelease(camera);
-	ospRelease(transferfcn);
-	ospRelease(world);
-	ospRelease(renderer);
-	ospRelease(framebuffer);
+	if (framebufferData != nullptr) { ospUnmapFrameBuffer(framebufferData, framebuffer); }
+	if (camera != nullptr) { ospRelease(camera); }
+	if (transferfcn != nullptr) { ospRelease(transferfcn); }
+	if (world != nullptr) { ospRelease(world); }
+	if (renderer != nullptr) { ospRelease(renderer); }
+	if (framebuffer != nullptr) { ospRelease(framebuffer); }
     }
 
     void InitOSP() { 
