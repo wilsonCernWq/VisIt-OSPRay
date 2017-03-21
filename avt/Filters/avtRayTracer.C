@@ -693,6 +693,9 @@ double deg2rad (double degrees) {
 void
 avtRayTracer::Execute(void)
 {
+    static OSPContext ospray;
+    ospray.InitOSP();
+
     //
     // start of original pipeline
     //
@@ -902,19 +905,6 @@ avtRayTracer::Execute(void)
 	//
 	// -----------------------------
 	// can not initialize ospray globally, do manually check each time
-	{
-	    OSPDevice device = ospGetCurrentDevice();
-	    if (device == nullptr) {
-		std::cout << "Initializing OSPRay" << std::endl;
-		device = ospCreateDevice();
-		ospDeviceSet1i(device, "debug", 0);
-		ospDeviceCommit(device);
-		ospSetCurrentDevice(device);
-		ospDeviceSetErrorMsgFunc
-		    (device, 
-		     [](const char *msg) { std::cout << msg; });
-	    }	   
-	}
 
 	if (isDataDirty) {
 	    extractor.ActiveOSPData(); // tell it there are new data comming in
@@ -926,28 +916,31 @@ avtRayTracer::Execute(void)
 	// do some ospray stuffs to speed things up
 	//
 	std::cout << "make ospray camera" << std::endl;
-        ospCamera = ospNewCamera("perspective");     
-	// the zooming is applied by moving camera closer to the focus point
-	float currOspCam[3];
-	for (int i = 0; i < 3; ++i) {
-	    currOspCam[i] = (view.camera[i] - view.focus[i]) / view.imageZoom + view.focus[i];
-	}
-	const ospcommon::vec3f camPos(currOspCam[0],
-				      currOspCam[1],
-				      currOspCam[2]);
-	const ospcommon::vec3f camUp (view.viewUp[0],view.viewUp[1],view.viewUp[2]);
-	const ospcommon::vec3f camDir(view_direction[0], 
-				      view_direction[1], 
-				      view_direction[2]);
-	std::cout << " campos " << camPos << std::endl;
-	std::cout << " camdir " << camDir << std::endl;
-	std::cout << " camup  " << camUp  << std::endl;
-	ospSetf(ospCamera, "aspect", aspect);
-	ospSetVec3f(ospCamera, "pos", (osp::vec3f&)camPos);
-	ospSetVec3f(ospCamera, "dir", (osp::vec3f&)camDir);
-	ospSetVec3f(ospCamera, "up",  (osp::vec3f&)camUp);
-	ospSet1f(ospCamera, "fovy", (float)view.viewAngle);
-	ospCommit(ospCamera);
+        // ospCamera = ospNewCamera("perspective");     
+	// // the zooming is applied by moving camera closer to the focus point
+	// float currOspCam[3];
+	// for (int i = 0; i < 3; ++i) {
+	//     currOspCam[i] = (view.camera[i] - view.focus[i]) / view.imageZoom + view.focus[i];
+	// }
+	// const ospcommon::vec3f camPos(currOspCam[0],
+	// 			      currOspCam[1],
+	// 			      currOspCam[2]);
+	// const ospcommon::vec3f camUp (view.viewUp[0],view.viewUp[1],view.viewUp[2]);
+	// const ospcommon::vec3f camDir(view_direction[0], 
+	// 			      view_direction[1], 
+	// 			      view_direction[2]);
+	// std::cout << " campos " << camPos << std::endl;
+	// std::cout << " camdir " << camDir << std::endl;
+	// std::cout << " camup  " << camUp  << std::endl;
+	// ospSetf(ospCamera, "aspect", aspect);
+	// ospSetVec3f(ospCamera, "pos", (osp::vec3f&)camPos);
+	// ospSetVec3f(ospCamera, "dir", (osp::vec3f&)camDir);
+	// ospSetVec3f(ospCamera, "up",  (osp::vec3f&)camUp);
+	// ospSet1f(ospCamera, "fovy", (float)view.viewAngle);
+	// ospCommit(ospCamera);
+	ospray.InitCamera(OSP_PERSPECTIVE);
+	ospray.SetCamera(view.camera, view.focus, view.viewUp, view_direction, aspect, 
+			 view.viewAngle, view.imageZoom, view.imagePan, fullImageExtents, screen);
 
 	//
 	// OSPRay transfer function stuffs
@@ -996,6 +989,7 @@ avtRayTracer::Execute(void)
 	extractor.SetRendererSampleRate(rendererSampleRate); 
 	extractor.SetDepthExtents(depthExtents);
 	extractor.SetMVPMatrix(pvm);
+	extractor.SetOSPRayContext(ospray);
 	
 	//
 	// (Qi) special variables for OSPRay
@@ -1066,23 +1060,23 @@ avtRayTracer::Execute(void)
 		  << samplesPerRay / rendererSampleRate << std::endl;
 	int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
 	int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
-	float r_panx = panPercentage[0] * view.imageZoom;
-	float r_pany = panPercentage[1] * view.imageZoom;
-	float r_xl = (float)fullImageExtents[0]/(float)screen[0] - r_panx; 
-	float r_yl = (float)fullImageExtents[2]/(float)screen[1] - r_pany; 
-	float r_xu = (float)fullImageExtents[1]/(float)screen[0] - r_panx;
-	float r_yu = (float)fullImageExtents[3]/(float)screen[1] - r_pany;
-	std::cout << "image start " << r_xl << " " << r_yl << std::endl
-		  << "image end   " << r_xu << " " << r_yu << std::endl
-		  << "image extents " 
-		  << fullImageExtents[0] << " " 
-		  << fullImageExtents[1] << " " 
-		  << fullImageExtents[2] << " " 
-		  << fullImageExtents[3] << std::endl
-		  << "screen " << screen[0] << " " << screen[1] << std::endl;
-	ospSetVec2f(ospCamera, "imageStart", osp::vec2f{r_xl, r_yl});
-	ospSetVec2f(ospCamera, "imageEnd",   osp::vec2f{r_xu, r_yu});
-	ospCommit(ospCamera);
+	// float r_panx = panPercentage[0] * view.imageZoom;
+	// float r_pany = panPercentage[1] * view.imageZoom;
+	// float r_xl = (float)fullImageExtents[0]/(float)screen[0] - r_panx; 
+	// float r_yl = (float)fullImageExtents[2]/(float)screen[1] - r_pany; 
+	// float r_xu = (float)fullImageExtents[1]/(float)screen[0] - r_panx;
+	// float r_yu = (float)fullImageExtents[3]/(float)screen[1] - r_pany;
+	// std::cout << "image start " << r_xl << " " << r_yl << std::endl
+	// 	  << "image end   " << r_xu << " " << r_yu << std::endl
+	// 	  << "image extents " 
+	// 	  << fullImageExtents[0] << " " 
+	// 	  << fullImageExtents[1] << " " 
+	// 	  << fullImageExtents[2] << " " 
+	// 	  << fullImageExtents[3] << std::endl
+	// 	  << "screen " << screen[0] << " " << screen[1] << std::endl;
+	// ospSetVec2f(ospCamera, "imageStart", osp::vec2f{r_xl, r_yl});
+	// ospSetVec2f(ospCamera, "imageEnd",   osp::vec2f{r_xu, r_yu});
+	// ospCommit(ospCamera);
 	// creating osp model
 	std::cout << "creating ospModel w/ " << ospVolumeList.size() << " volumes" << std::endl;
 	std::cout << "Full data extents: " 
@@ -1102,7 +1096,7 @@ avtRayTracer::Execute(void)
 	// osp renderer
 	std::cout << "creating scivis renderer" << std::endl;
 	OSPRenderer ospRenderer = ospNewRenderer("scivis");
-	ospSetObject(ospRenderer, "camera", ospCamera);
+	ospSetObject(ospRenderer, "camera", ospray.camera);
 	ospSetObject(ospRenderer, "model",  ospWorld);
 	ospSet1i(ospRenderer, "shadowsEnabled", 0);
 	//ospSet1i(ospRenderer, "aoSamples", 0);
@@ -1374,12 +1368,12 @@ avtRayTracer::Execute(void)
 
 	    //
 	    // Cleanup
-	    ospUnmapFrameBuffer(fb, ospfb);
-	    ospRelease(ospCamera);
-	    ospRelease(ospTransferFcn);
-	    ospRelease(ospWorld);
-	    ospRelease(ospRenderer);
-	    ospRelease(ospfb);
+	    // ospUnmapFrameBuffer(fb, ospfb);
+	    // ospRelease(ospCamera);
+	    // ospRelease(ospTransferFcn);
+	    // ospRelease(ospWorld);
+	    // ospRelease(ospRenderer);
+	    // ospRelease(ospfb);
 	    //delete []composedData;
 	    return;
 

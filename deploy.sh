@@ -2,7 +2,7 @@
 
 cd /home/sci/qwu/visitOSPRay/visitOSPRayCPU/working
 
-if [ "$1" == "plot" ]; then 
+if [ "$1" == "source" ]; then 
 
     cp -r plots/* ../src-visit2.12.0/plots
 

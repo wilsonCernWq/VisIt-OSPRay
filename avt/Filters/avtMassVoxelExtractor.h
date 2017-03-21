@@ -178,6 +178,7 @@ public:
 	void ospSetVolumeMeta(ospVolumeMeta& v) { ospVolume = &v; }
 	void ospActive() { isDataDirty = true; }
 	void SetRendererSampleRate(double r) { rendererSampleRate = r; }
+	void             SetOSPRayContext(OSPContext* o) { ospray = o; }
 protected:
 	double                rendererSampleRate;
 	bool             gridsAreInWorldSpace;
@@ -264,6 +265,7 @@ protected:
 	OSPTransferFunction  *ospTransferFcn;
 	ospVolumeMeta        *ospVolume;
 	bool                 isDataDirty = false;
+	OSPContext               *ospray;
 
 	//
 	// RC SLIVR Specific

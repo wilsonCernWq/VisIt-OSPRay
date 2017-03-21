@@ -41,9 +41,11 @@
 #include <stdio.h>
 #include <string>
 #include <iostream>
+#include <limits>
 
 #include "ospray/ospray.h"
 #include "ospray/ospcommon/vec.h"
+#include "ospray/ospcommon/math.h"
 
 #include <vtkType.h>
 #include <avtOpacityMap.h>
@@ -56,6 +58,72 @@
 #define OSP_VALID                    6
 
 struct OSPContext {
+    
+    ospcommon::vec3f volumeStart(std::numeric_limits<float>::max());
+    ospcommon::vec3f volumeStop (std::numeric_limits<float>::min());
+    ospcommon::vec3f volumeSpacing;
+    ospcommon::vec3f volumeDims;
+    
+    struct volumeInfo {
+	
+	volumeInfo (void* dataPtr, int dataType, 
+		    ospcommon::vec3f start, 
+		    ospcommon::vec3f stop, 
+		    ospcommon::vec3i size) {
+	    //! calculate volume data type
+	    if (dataType == VTK_UNSIGNED_CHAR) {
+		voxelType = "uchar";
+		voxelDataType = OSP_UCHAR;
+	    } else if (dataType == VTK_SHORT) {
+		voxelType = "short";
+		voxelDataType = OSP_SHORT;
+	    } else if (dataType == VTK_UNSIGNED_SHORT) {
+		voxelType = "ushort";
+		voxelDataType = OSP_USHORT;
+	    } else if (dataType == VTK_FLOAT) {
+		voxelType = "float";
+		voxelDataType = OSP_FLOAT;
+	    } else if (dataType == VTK_DOUBLE) {
+		voxelType = "double";
+		voxelDataType = OSP_DOUBLE;
+	    } else {
+		EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
+	    }
+	    //! assign pointer
+	    voxelPtr = dataPtr;
+	    //! assign structure
+	    regionStart   = start;
+	    regionStop    = stop;
+	    regionSize    = size;
+	    regionSpacing = (regionStop - regionStart)/((ospcommon::vec3f)regionSize - 1.0f);
+	    //! compute bounding box
+	    volumeStart = min(regionStart, volumeStart);
+	    volumeStop  = min(regionStop,  volumeStop);
+	}
+
+	//! field
+	void*       voxelPtr;
+	std::string voxelType;
+	OSPDataType voxelDataType;
+	ospcommon::vec3f regionStart;
+	ospcommon::vec3f regionStop;
+	ospcommon::vec3f regionSpacing;
+	ospcommon::vec3i regionSize;
+    };
+
+    OSPFrameBuffer          framebuffer;
+    float                  *framebufferData = NULL;
+    OSPRenderer             renderer;
+    unsigned char           rendererType = OSP_INVALID;
+    OSPModel                world;
+    unsigned char           worldType = OSP_INVALID;
+    OSPVolume               volume;
+    unsigned char           volumeType = OSP_INVALID;
+    std::vector<volumeInfo> volumePatchInfo;
+    OSPCamera               camera;
+    unsigned char           cameraType = OSP_INVALID;
+    OSPTransferFunction     transferfcn;
+    unsigned char           transferfcnType = OSP_INVALID;
 
     ~OSPContext() {
 	ospUnmapFrameBuffer(framebufferData, framebuffer);
@@ -66,9 +134,21 @@ struct OSPContext {
 	ospRelease(framebuffer);
     }
 
+    void InitOSP() { 
+	OSPDevice device = ospGetCurrentDevice();
+	if (device == nullptr) {
+	    std::cout << "Initializing OSPRay" << std::endl;
+	    device = ospCreateDevice();
+	    ospDeviceSet1i(device, "debug", 0);
+	    ospDeviceCommit(device);
+	    ospSetCurrentDevice(device);
+	    ospDeviceSetErrorMsgFunc
+		(device, 
+		 [](const char *msg) { std::cout << msg; });
+	}	   
+    }
+
     //! framebuffer component
-    OSPFrameBuffer framebuffer;
-    float         *framebufferData = NULL;
     void InitFB(unsigned int width, unsigned int height) {
 	ospcommon::vec2i imageSize(width, height);	
 	framebuffer = ospNewFrameBuffer((osp::vec2i&)imageSize, 
@@ -86,8 +166,6 @@ struct OSPContext {
     }
 
     //! ospRenderer component
-    OSPRenderer         renderer;
-    unsigned char       rendererType = OSP_INVALID;
     void InitRenderer() {
 	if (rendererType == OSP_INVALID) {
 	    renderer = ospNewRenderer("scivis");
@@ -118,8 +196,6 @@ struct OSPContext {
     }
 
     //! ospModel component
-    OSPModel            world;
-    unsigned char       worldType = OSP_INVALID;
     void InitWorld() {
 	if (worldType == OSP_INVALID) {
 	    world = ospNewModel();
@@ -132,8 +208,6 @@ struct OSPContext {
     }
 
     //! ospVolume component
-    OSPVolume           volume;
-    unsigned char       volumeType = OSP_INVALID;
     void InitVolume(unsigned char type) {
 	if (volumeType != type) {
 	    volumeType = type;	    
@@ -151,33 +225,9 @@ struct OSPContext {
 	    }
 	}
     }
-    void SetVolume(void* dataPtr, int dataType) {
-/* 	//! calculate volume data type */
-/* 	std::string voxelType; */
-/* 	OSPDataType voxelDataType; */
-/* 	if (dataType == VTK_UNSIGNED_CHAR) { */
-/* 	    voxelType = "uchar"; */
-/* 	    voxelDataType = OSP_UCHAR; */
-/* 	} else if (dataType == VTK_SHORT) { */
-/* 	    voxelType = "short"; */
-/* 	    voxelDataType = OSP_SHORT; */
-/* 	} else if (dataType == VTK_UNSIGNED_SHORT) { */
-/* 	    voxelType = "ushort"; */
-/* 	    voxelDataType = OSP_USHORT; */
-/* 	} else if (dataType == VTK_FLOAT) { */
-/* 	    voxelType = "float"; */
-/* 	    voxelDataType = OSP_FLOAT; */
-/* 	} else if (dataType == VTK_DOUBLE) {	 */
-/* 	    voxelType = "double"; */
-/* 	    voxelDataType = OSP_DOUBLE; */
-/* 	} else { */
-/* 	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type"); */
-/* 	} */
-    }
+    void SetVolume() {}
 
     //! ospCamera component
-    OSPCamera           camera;
-    unsigned char       cameraType = OSP_INVALID;
     void InitCamera(unsigned char type) {
 	if (cameraType != type) {
 	    cameraType = type;
@@ -195,15 +245,15 @@ struct OSPContext {
 	    }
 	}
     }
-    void SetCamera(const float campos[3], 
-		   const float camfocus[3], 
-		   const float camup [3], 
-		   const float camdir[3],
-		   const float aspect, 
-		   const float fovy, 
-		   const float zoomratio, 
-		   const float imagepan[2],
-		   const int imageExtents[2],
+    void SetCamera(const double campos[3], 
+		   const double camfocus[3], 
+		   const double camup [3], 
+		   const double camdir[3],
+		   const double aspect, 
+		   const double fovy, 
+		   const double zoomratio, 
+		   const double imagepan[2],
+		   const int imageExtents[4],
 		   const int screenExtents[2]) {
 	float current[3];
 	for (int i = 0; i < 3; ++i) {
@@ -228,9 +278,7 @@ struct OSPContext {
 	ospCommit(camera);
     }
 
-    //! ospTransferFunction component
-    OSPTransferFunction transferfcn;
-    unsigned char       transferfcnType = OSP_INVALID;  
+    //! ospTransferFunction component  
     void InitTransferFunction() {
 	if (transferfcnType == OSP_INVALID) {
 	    transferfcn = ospNewTransferFunction("piecewise_linear");

@@ -2188,6 +2188,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
  std::vector<std::string> &varnames, 
  std::vector<int> &varsize)
 {
+   
     patchDrawn = 0;
 
     //
@@ -2505,6 +2506,14 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospSetVec3f(ospVolume->volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
 	ospCommit(ospVolume->volume);
     	std::cout << " <--- volume end" << std::endl;
+
+	ospcommon::vec3i regionSize(dims[0]-1,dims[1]-1,dims[2]-1);
+	ospcommon::vec3f regionStart(X[0],Y[0],Z[0]);
+	ospcommon::vec3f regionStop(X[dims[0]-2],Y[dims[1]-2],Z[dims[2]-2]);
+	ospray->volumePatchInfo.emplace_back(ospVolumePointer, ospVolumeDataType,
+					     regionStart, regionStop, regionSize);
+
+
     }
 }
 
