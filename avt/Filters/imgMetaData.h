@@ -76,10 +76,10 @@ struct OSPContext
 		// ospUnmapFrameBuffer(framebufferData, framebuffer); 
 	    }
 	    if (framebuffer != nullptr) { 
-		// ospRelease(framebuffer); 
+		ospRelease(framebuffer); 
 	    }
 	    if (world != nullptr) { 
-		// ospRelease(world); 
+		ospRelease(world); 
 	    }
 	    if (volume != nullptr) {
 		// ospRelease(volume); 
@@ -121,6 +121,7 @@ struct OSPContext
 	//! ospModel component
 	void InitWorld() {
 	    if (worldType == OSP_INVALID) {
+		std::cout << "-- initializing world " << patchId << std::endl;
 		world = ospNewModel();
 		worldType = OSP_VALID;
 	    }
@@ -134,6 +135,7 @@ struct OSPContext
 	//! ospVolume component
 	void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME) {
 	    if (volumeType != type) {
+		std::cout << "-- initializing volume " << patchId << std::endl;
 		volumeType = type;	    
 		ospRelease(volume);
 		switch (type) {
@@ -209,13 +211,14 @@ struct OSPContext
 
 	//! framebuffer component     
 	void InitFB(unsigned int width, unsigned int height) {
-	    if (framebufferType == OSP_INVALID) {
-		vec2i imageSize(width, height);
-		if (framebuffer != nullptr) { ospRelease(framebuffer); }
-		framebuffer = ospNewFrameBuffer((osp::vec2i&)imageSize, 
-						OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);
-		
+	    std::cout << "-- initializing fb " << patchId << std::endl;
+	    vec2i imageSize(width, height);
+	    if (framebuffer != nullptr) {
+		// ospFreeFrameBuffer(framebuffer); 
+		// ospRelease(framebuffer); 
 	    }
+	    framebuffer = ospNewFrameBuffer((osp::vec2i&)imageSize, 
+					    OSP_FB_RGBA32F, OSP_FB_COLOR | OSP_FB_ACCUM);	    
 	}
 	void RenderFB() {
 	    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM);
@@ -224,7 +227,13 @@ struct OSPContext
 	}
 	float* GetFB() {
 	    return framebufferData;
-	}	
+	}
+	void CleanFBData() {
+	    ospUnmapFrameBuffer(framebufferData, framebuffer); 
+	}
+	void CleanFB() {	   
+	    ospFreeFrameBuffer(framebuffer); 
+	}
     };
 
     std::vector<VolumeInfo> volumePatch;
@@ -236,10 +245,10 @@ struct OSPContext
     unsigned char           transferfcnType = OSP_INVALID;
 
     ~OSPContext() {
+	std::cout << "deleting ospray" << std::endl;    
 	if (camera != nullptr) { ospRelease(camera); }
 	if (transferfcn != nullptr) { ospRelease(transferfcn); }
 	if (renderer != nullptr) { ospRelease(renderer); }
-	    std::cout << "deleting ospray" << std::endl;
     }
 
     void InitOSP() { 

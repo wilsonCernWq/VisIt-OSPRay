@@ -71,6 +71,10 @@
 #include <avtSamplePoints.h>
 #include <avtVolume.h>
 #include <avtWorldSpaceToImageSpaceTransform.h>
+#include <avtMemory.h>
+
+#include <time.h>
+#include <sys/time.h>
 
 #ifdef PARALLEL
 #include <avtImageCommunicator.h>
@@ -693,8 +697,20 @@ double deg2rad (double degrees) {
 void
 avtRayTracer::Execute(void)
 {
+    //check memory after
+    unsigned long m_size, m_rss;
+    avtMemory::GetMemorySize(m_size, m_rss);
+    cout << PAR_Rank() << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024) <<  "   ... done@!!!" << endl;
+
+    cout << "Initialize ospray" << std::endl;
+
+    // std::asctime(std::localtime(&result));
+
+    double t_init = (double)clock() / CLOCKS_PER_SEC;
+
     static OSPContext ospray;
     ospray.InitOSP();
+    cout << "Complete initializing ospray" << std::endl;
 
     //
     // start of original pipeline
@@ -711,12 +727,12 @@ avtRayTracer::Execute(void)
     //
     // First we need to transform all of domains into camera space.
     //
+    cout << "Compute camera" << std::endl;
     double aspect = 1.;
     if (screen[1] > 0)
     {
 	aspect = (double)screen[0] / (double)screen[1];
     }
-
     double scale[3] = {1,1,1};
     vtkMatrix4x4 *transform = vtkMatrix4x4::New();
     avtWorldSpaceToImageSpaceTransform::CalculateTransform(view, transform, scale, aspect);
@@ -732,18 +748,19 @@ avtRayTracer::Execute(void)
     //
     // print out filename
     //
-    std::cout << "Data filename " 
-	      << trans.GetOutput()->GetInfo().GetAttributes().GetFilename() << std::endl;
+    // std::cout << "Data filename " 
+    // 	      << trans.GetOutput()->GetInfo().GetAttributes().GetFilename() << std::endl;
 
     //
     // Extract all of the samples from the dataset.
     //
+    cout << "build extractor" << std::endl;
     avtSamplePointExtractor extractor(screen[0], screen[1], samplesPerRay);
     bool doKernel = kernelBasedSampling;
     if (trans.GetOutput()->GetInfo().GetAttributes().GetTopologicalDimension() == 0)
 	doKernel = true;
 
-    // std::cout << " do kernel " << doKernel << std::endl;
+    std::cout << " do kernel " << doKernel << std::endl;
 
     extractor.SetKernelBasedSampling(doKernel);
     extractor.RegisterRayFunction(rayfoo);
@@ -769,14 +786,18 @@ avtRayTracer::Execute(void)
     // Qi static/useful variables
     //
 
-    static std::vector<ospVolumeMeta> ospVolumeList;
-    static bool isFirstEntry = true; // this is bad // need to be fixed for box operator
+    //static std::vector<ospVolumeMeta> ospVolumeList;
+    //static bool isFirstEntry = true; // this is bad // need to be fixed for box operator
     
     //
     // Ray casting: SLIVR ~ Setup
     //
     if (rayCastingSLIVR)
     {
+	cout << "rcsliver enter" << std::endl;
+    avtMemory::GetMemorySize(m_size, m_rss);
+    cout << PAR_Rank() << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024) <<  "   ... done@!!!" << endl;
+
 	extractor.SetRayCastingSLIVR(true);
 	//
 	// Camera Settings
@@ -892,6 +913,9 @@ avtRayTracer::Execute(void)
 	GetSpatialExtents(dbounds);
 	project3Dto2D(dbounds, screen[0], screen[1], pvm, fullImageExtents, depthExtents);
 
+    avtMemory::GetMemorySize(m_size, m_rss);
+    cout << PAR_Rank() << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024) <<  "   ... done@!!!" << endl;
+
 	//
 	// Qi debug
 	// std::cout << "Full data extents: " 
@@ -910,10 +934,10 @@ avtRayTracer::Execute(void)
 	// -----------------------------
 	// can not initialize ospray globally, do manually check each time
 
-	if (isDataDirty) {
-	    extractor.ActiveOSPData(); // tell it there are new data comming in
-	    extractor.SetOSPVolumeList(ospVolumeList);
-	}
+	//if (isDataDirty) {
+	//    extractor.ActiveOSPData(); // tell it there are new data comming in
+	//    extractor.SetOSPVolumeList(ospVolumeList);
+	//}
 
 	//
 	// OSPRay camera
@@ -982,6 +1006,8 @@ avtRayTracer::Execute(void)
 	ospray.SetRenderer(false, materialProperties, view.camera);
 	// -----------------------------
 	//
+    avtMemory::GetMemorySize(m_size, m_rss);
+    cout << PAR_Rank() << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024) <<  "   ... done@!!!" << endl;
 
 	// 
 	// continuation of previous pipeline
@@ -1065,6 +1091,10 @@ avtRayTracer::Execute(void)
 
 	// Qi debug
 	std::cout << "Start compositing" << std::endl;
+    avtMemory::GetMemorySize(m_size, m_rss);
+    cout << PAR_Rank() 
+	   << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
+	 <<  "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
 
 	// //
 	// // OSP model
@@ -1388,7 +1418,15 @@ avtRayTracer::Execute(void)
 	    // ospRelease(ospWorld);
 	    // ospRelease(ospRenderer);
 	    // ospRelease(ospfb);
-	    //delete []composedData;
+	    delete []composedData;
+	    //check memory after
+
+	    avtMemory::GetMemorySize(m_size, m_rss);
+	    cout << PAR_Rank() << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024) <<  "   ... done@!!!" << endl;
+
+	    std::cout << "time used for rendering: "
+		      << (double)clock() / CLOCKS_PER_SEC -  t_init << std::endl;
+
 	    return;
 
 	} else { 

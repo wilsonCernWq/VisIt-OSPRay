@@ -58,6 +58,7 @@
 #include <vtkUnsignedCharArray.h>
 
 #include <DebugStream.h>
+#include <avtMemory.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -2347,6 +2348,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //
     // OSPRay
     //
+    unsigned long m_size, m_rss;
+
     void* ospVolumePointer;
     int ospVolumeDataType;
     if (npt_arrays > 0) {
@@ -2370,6 +2373,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     volume->InitFB(imgWidth, imgHeight);
     if ( (scalarRange[1] >= tFVisibleRange[0]) && (scalarRange[0] <= tFVisibleRange[1]) )	
     {
+    avtMemory::GetMemorySize(m_size, m_rss);
+    cout << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024) <<  "   ... done@!!!" << endl;
 	ospray->SetSubCamera(xMin, xMax, yMin, yMax);
 	volume->SetVolume(ospVolumePointer, ospVolumeDataType, 
 			  X, Y, Z, dims[0]-1, dims[1]-1, dims[2]-1);   
@@ -2379,7 +2384,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	volume->RenderFB();
         std::copy(volume->GetFB(), volume->GetFB() + (imgWidth * imgHeight) * 4, imgArray);
 	patchDrawn = 1;
+	volume->CleanFBData();
+    avtMemory::GetMemorySize(m_size, m_rss);
+    cout << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024) <<  "   ... done@!!!" << endl;
     }
+    volume->CleanFB();
+
 
     //
     // Send rays
