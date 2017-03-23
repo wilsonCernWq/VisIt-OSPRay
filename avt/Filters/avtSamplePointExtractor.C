@@ -720,23 +720,22 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     imgDataHashMap.clear();
 
     // empty ospVolumeList if necessary
-    ospEmptyVolumeList = false;
-    if (isDataDirty) {
-	if (ospVolumeList->size() != totalAssignedPatches) {
-	    for (auto vMeta : *ospVolumeList) { ospRelease(vMeta.volume); } // need to think again !!!
-	    ospVolumeList->clear();
-	    ospEmptyVolumeList = true;	
-	}
-    }
+    // ospEmptyVolumeList = false;
+    // if (isDataDirty) {
+    // 	if (ospVolumeList->size() != totalAssignedPatches) {
+    // 	    for (auto vMeta : *ospVolumeList) { ospRelease(vMeta.volume); } // need to think again !!!
+    // 	    ospVolumeList->clear();
+    // 	    ospEmptyVolumeList = true;	
+    // 	}
+    // }
 
     if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
 	return;
 
-    debug5 << " ~ avtSamplePointExtractor::dt->GetNChildren()  "  << dt->GetNChildren() << endl;
+    // std::cout << " ~ avtSamplePointExtractor::dt->GetNChildren()  "  << dt->GetNChildren() << endl;
 
     // Process tree
     std::stack<datatree_childindex*> nodes;
-    ospVolumeId = 0;
     //iterative depth-first sampling
     nodes.push(new datatree_childindex(dt,0));
     while (!nodes.empty())
@@ -754,6 +753,10 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 		    if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
 			continue;
 		    nodes.push(new datatree_childindex(ch->GetChild(i),i));
+		    if (rayCastingSLIVR == true)
+		    {
+			ospray->InitPatch(i);
+		    }	
 		}
 	    }    
 	    continue;
@@ -793,16 +796,12 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 		massVoxelExtractor->SetScalarRange(_scalarRange);
 		massVoxelExtractor->SetTFVisibleRange(_tfVisibleRange);
 	    }  
-	    RasterBasedSample(ds,ci->idx);
-	    ospVolumeId++;
+	    RasterBasedSample(ds, ci->idx);
 	}
 	UpdateProgress(10*currentNode+9, 10*totalNodes);
 	currentNode++;
     }
     
-    // Qi check rank patch number
-    isDataDirty = false; // this function run once per plot, reset the flag here
-    ospEmptyVolumeList = false;
     debug5 << " parallel rank #" << PAR_Rank() 
 	   << " has " << patchCount  << " patches in data tree" << std::endl;
     
@@ -1040,7 +1039,7 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
 void
 avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 {
-    //debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample  " << num << std::endl;
+    // std::cout << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample  " << num << std::endl;
     if (modeIs3D && ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
 	avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
@@ -1073,8 +1072,9 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->SetViewDirection(viewDirection);
 
 	    massVoxelExtractor->SetOSPRayContext(ospray);
+
 	    //massVoxelExtractor->SetOSPCamera(ospCamera);
-	    massVoxelExtractor->SetOSPTransferFcn(ospTransferFcn);
+	    //massVoxelExtractor->SetOSPTransferFcn(ospTransferFcn);
 	    //massVoxelExtractor->SetCameraPosition(cameraPosition);
 	    //massVoxelExtractor->SetCameraUpVector(cameraUpVector);
 	    //massVoxelExtractor->SetCameraAspect(cameraAspect);
@@ -1093,18 +1093,18 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->SetMatProperties(materialProperties);
 	    massVoxelExtractor->SetTransferFn(transferFn1D);
 	    
-	    if (isDataDirty) {
-		if (!ospEmptyVolumeList) {
-		    massVoxelExtractor->ospActive();
-		    massVoxelExtractor->ospSetVolumeMeta((*ospVolumeList)[ospVolumeId]);
-		    // std::cout << "patch id " << ospVolumeId << std::endl;
-		} else {
-		    ospVolumeList->emplace_back();
-		    ospVolumeList->back().init();
-		    massVoxelExtractor->ospActive();
-		    massVoxelExtractor->ospSetVolumeMeta(ospVolumeList->back());			    
-		}
-	    }
+	    // if (isDataDirty) {
+	    // 	if (!ospEmptyVolumeList) {
+	    // 	    massVoxelExtractor->ospActive();
+	    // 	    massVoxelExtractor->ospSetVolumeMeta((*ospVolumeList)[ospVolumeId]);
+	    // 	    // std::cout << "patch id " << ospVolumeId << std::endl;
+	    // 	} else {
+	    // 	    ospVolumeList->emplace_back();
+	    // 	    ospVolumeList->back().init();
+	    // 	    massVoxelExtractor->ospActive();
+	    // 	    massVoxelExtractor->ospSetVolumeMeta(ospVolumeList->back());			    
+	    // 	}
+	    // }
 
 	}
 
