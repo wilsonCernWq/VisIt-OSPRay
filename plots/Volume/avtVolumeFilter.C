@@ -101,6 +101,7 @@ static void CreateViewInfoFromViewAttributes(avtViewInfo &,
 avtVolumeFilter::avtVolumeFilter()
 {
     primaryVariable = NULL;
+    newData = true;
 }
 
 
@@ -349,7 +350,7 @@ avtImage_p
 avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
                              const WindowAttributes &window)
 {
-    cout << "RendererImageRaycastingSLIVR" << std::endl;
+    std::cout << "RendererImageRaycastingSLIVR" << std::endl;
     //
     // We need to create a dummy pipeline with the volume renderer that we
     // can force to execute within our "Execute".  Start with the source.
@@ -364,15 +365,19 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     software->SetTrilinear(false);
     software->SetInput(termsrc.GetOutput());
     software->InsertOpaqueImage(opaque_image);
-
+    software->SetRefreshData(newData); newData = false; // flag to indicate new data coming in
     //
     // Set up the transfer function
     //
     unsigned char vtf[4*256];
     atts.GetTransferFunction(vtf);
     avtOpacityMap om(256);
-    om.SetTableFloatNOC(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0); // no alpha correction
-    // om.SetTableFloat(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0, atts.GetRendererSamples());
+    // remove alpha correction when using ospray (because ospray will handle that also)
+    if (avtCallback::UseOSPRay()) {
+	om.SetTableFloatNOC(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0); // no alpha correction
+    } else {
+	om.SetTableFloat(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0, atts.GetRendererSamples());
+    }
 
     double actualRange[2];
     bool artificialMin = atts.GetUseColorVarMin();
@@ -420,27 +425,6 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 
     avtCompositeRF *compositeRF = new avtCompositeRF(lm, &om, &om);
     software->SetTransferFn(&om);
-
-    //
-    // check if we need to refresh OSPRay volume
-    // Qi
-    static double oldOMAt = 1.0f;
-    static double oldOMRs = 0.0f;
-    static double oldOMr[2] = { 0.0, 0.0 }; 
-    static std::string oldOM = "";
-    std::string newOM = std::string(vtf,vtf+4*256);
-    if (oldOM != newOM || 
-	oldOMAt != atts.GetOpacityAttenuation() || 
-	oldOMRs != atts.GetRendererSamples() ||
-	oldOMr[0] != range[0] || oldOMr[1] != range[1]) 
-    { 
-	software->SetDataDrity();
-	oldOM = newOM; 
-	oldOMAt = atts.GetOpacityAttenuation(); 
-	oldOMRs = atts.GetRendererSamples();
-	oldOMr[0] = range[0]; oldOMr[1] = range[1];
-	std::cout << "New transfer function data, need to recommit volumes" << std::endl; ;
-    }
 
     debug5 << "Min visible scalar range: " << om.GetMinVisibleScalar() << " "
 	   << "Max visible scalar range: " << om.GetMaxVisibleScalar() << std::endl;
@@ -517,7 +501,6 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 	}
     }
 
-
     //
     // Unsure about this one??? RayFunction seems important
     //	
@@ -527,13 +510,6 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 
     debug5 << "Sampling rate: (GetSamplesPerRay)   " << atts.GetSamplesPerRay() << std::endl;
     debug5 << "Sampling rate: (GetRendererSamples) " << atts.GetRendererSamples() << std::endl;
-
-    static double oldSampleRate = 0.0f;
-    if (oldSampleRate != atts.GetRendererSamples()) 
-    {
-	software->SetDataDrity();
-	oldSampleRate = atts.GetRendererSamples();
-    }
 
     //
     // Set camera parameters

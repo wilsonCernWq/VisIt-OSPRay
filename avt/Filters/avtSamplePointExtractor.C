@@ -703,15 +703,12 @@ struct datatree_childindex {
 void
 avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 {
-    // Qi debug 
-    std::cout << "got here! -- avtSamplePointExtractor::ExecuteTree" << std::endl;
-
     //check memory
     unsigned long m_size, m_rss;
     avtMemory::GetMemorySize(m_size, m_rss);
-    debug5 << PAR_Rank() 
-	   << " ~ avtSamplePointExtractor::ExecuteTree  .. .  " 
-           << "    Memory use before: " << m_size << "  rss (MB): " << m_rss/(1024*1024) << endl;
+    std::cout << PAR_Rank()
+	      << " ~ avtSamplePointExtractor::ExecuteTree  .. .  " 
+	      << "   Memory use before: " << m_size << "  rss (MB): " << m_rss/(1024*1024) << endl;
 
     // initialize rayCastingSLIVR sampling state
     totalAssignedPatches = dt->GetNChildren();
@@ -719,30 +716,23 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     imageMetaPatchVector.clear();
     imgDataHashMap.clear();
 
-    // empty ospVolumeList if necessary
-    // ospEmptyVolumeList = false;
-    // if (isDataDirty) {
-    // 	if (ospVolumeList->size() != totalAssignedPatches) {
-    // 	    for (auto vMeta : *ospVolumeList) { ospRelease(vMeta.volume); } // need to think again !!!
-    // 	    ospVolumeList->clear();
-    // 	    ospEmptyVolumeList = true;	
-    // 	}
-    // }
+    // Qi debug 
+    std::cout << "got here! -- avtSamplePointExtractor::ExecuteTree " 
+	      << totalAssignedPatches << std::endl;
 
+    // if it is an empty node
     if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
 	return;
 
-    // std::cout << " ~ avtSamplePointExtractor::dt->GetNChildren()  "  << dt->GetNChildren() << endl;
-
     // Process tree
     std::stack<datatree_childindex*> nodes;
-    //iterative depth-first sampling
+
+    // iterative depth-first sampling
     nodes.push(new datatree_childindex(dt,0));
     while (!nodes.empty())
     {
 	datatree_childindex *ci=nodes.top();
-	avtDataTree_p ch=ci->dt;
-	
+	avtDataTree_p ch=ci->dt;	
 	if (ch->GetNChildren() != 0)
 	{
 	    nodes.pop();  // if it has children, it never gets processed below
@@ -760,8 +750,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 		}
 	    }    
 	    continue;
-	}
-	
+	}	
 	//do the work
 	nodes.pop();
 	if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
@@ -807,9 +796,9 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     
     //check memory after
     avtMemory::GetMemorySize(m_size, m_rss);
-    debug5 << PAR_Rank() 
-	   << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
-	   <<  "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
+    std::cout << PAR_Rank() 
+	      << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
+	      << "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
 }
 
 
@@ -1039,7 +1028,6 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
 void
 avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 {
-    // std::cout << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample  " << num << std::endl;
     if (modeIs3D && ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
 	avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
@@ -1064,65 +1052,31 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	// Compositing Setup
 	if (rayCastingSLIVR == true)
 	{
-	    // initialize ospray volume
 	    massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
 	    massVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
 	    massVoxelExtractor->setBufferExtents(bufferExtents);
-
 	    massVoxelExtractor->SetViewDirection(viewDirection);
-
-	    massVoxelExtractor->SetOSPRayContext(ospray);
-
-	    //massVoxelExtractor->SetOSPCamera(ospCamera);
-	    //massVoxelExtractor->SetOSPTransferFcn(ospTransferFcn);
-	    //massVoxelExtractor->SetCameraPosition(cameraPosition);
-	    //massVoxelExtractor->SetCameraUpVector(cameraUpVector);
-	    //massVoxelExtractor->SetCameraAspect(cameraAspect);
-
 	    massVoxelExtractor->SetMVPMatrix(modelViewProj);
 	    massVoxelExtractor->SetClipPlanes(clipPlanes);
 	    massVoxelExtractor->SetPanPercentages(panPercentage);
 	    massVoxelExtractor->SetImageZoom(imageZoom); 
 	    massVoxelExtractor->SetRendererSampleRate(rendererSampleRate); 
 	    massVoxelExtractor->SetDepthExtents(depthExtents);
-
 	    massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
-
 	    massVoxelExtractor->SetLighting(lighting);
 	    massVoxelExtractor->SetLightDirection(lightDirection);
 	    massVoxelExtractor->SetMatProperties(materialProperties);
 	    massVoxelExtractor->SetTransferFn(transferFn1D);
-	    
-	    // if (isDataDirty) {
-	    // 	if (!ospEmptyVolumeList) {
-	    // 	    massVoxelExtractor->ospActive();
-	    // 	    massVoxelExtractor->ospSetVolumeMeta((*ospVolumeList)[ospVolumeId]);
-	    // 	    // std::cout << "patch id " << ospVolumeId << std::endl;
-	    // 	} else {
-	    // 	    ospVolumeList->emplace_back();
-	    // 	    ospVolumeList->back().init();
-	    // 	    massVoxelExtractor->ospActive();
-	    // 	    massVoxelExtractor->ospSetVolumeMeta(ospVolumeList->back());			    
-	    // 	}
-	    // }
-
+	    // pass reference to ospray
+	    massVoxelExtractor->SetOSPRayContext(ospray);	    
 	}
 
-	// Qi print
-	// cout << PAR_Rank() 
-	//      << " avtSamplePointExtractor::RasterBasedSample extract ...  " 
-	//      << num << std::endl;
-
 	massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
-		
-	// Qi print
-	// cout << PAR_Rank() 
-	//      << " avtSamplePointExtractor::RasterBasedSample extract done!" 
-	//      << num << std::endl;
 
 	//
 	// Get rendering results
 	// put them into a proper vector, sort them based on z value
+	//
 	if (rayCastingSLIVR == true)
 	{
 	    imgMetaData      tmpImageMetaPatch;
@@ -1140,17 +1094,15 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    {
 		tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
 		tmpImageMetaPatch.destProcId = tmpImageMetaPatch.procId;
-		imageMetaPatchVector.push_back(tmpImageMetaPatch);
-		
+		imageMetaPatchVector.push_back(tmpImageMetaPatch);		
 		imgData tmpImageDataHash;
 		tmpImageDataHash.procId = tmpImageMetaPatch.procId;
 		tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
 		tmpImageDataHash.imagePatch = 
 		    new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] * 4 ];
-
 		massVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
-		imgDataHashMap.insert(std::pair<int, imgData>(tmpImageDataHash.patchNumber, tmpImageDataHash));
-
+		imgDataHashMap.insert
+		    (std::pair<int, imgData>(tmpImageDataHash.patchNumber, tmpImageDataHash));
 		patchCount++;
 	    }
 	}

@@ -43,9 +43,6 @@
 #ifndef AVT_SAMPLE_POINT_EXTRACTOR_H
 #define AVT_SAMPLE_POINT_EXTRACTOR_H
 
-#include "ospray/ospray.h"
-#include "ospray/ospcommon/vec.h"
-
 #include <filters_exports.h>
 
 #include <avtDatasetToSamplePointsFilter.h>
@@ -149,7 +146,6 @@ class  avtRayFunction;
 //    Added support for polygons.
 //
 //    Qi Wu, to be determined
-//    *) unified coding style
 //
 // ****************************************************************************
 
@@ -157,24 +153,12 @@ class AVTFILTERS_API avtSamplePointExtractor
     : public avtDatasetToSamplePointsFilter
 {
 public:
-    // ---
-    // constructor & destructors
-    //
                               avtSamplePointExtractor(int, int, int);
     virtual                  ~avtSamplePointExtractor();
-    // ---
-    // inherited functions 
-    //
     virtual const char       *GetType(void)
     { return "avtSamplePointExtractor"; };
     virtual const char       *GetDescription(void)
     { return "Extracting sample points";};
-    // ---
-    // functions defined locally for this class
-    //
-    // coding style:
-    //   _xx = local variables
-    //    xx = class fields
     void                      RegisterRayFunction(avtRayFunction *_rf) { rayfoo = _rf; };
     void                      RestrictToTile(int, int, int, int);
     void                      StartTiling(void) { shouldDoTiling = true; }; // added by Qi 
@@ -201,11 +185,6 @@ public:
     { transferFn1D = _transferFn1D; };
     void                      SetViewDirection(double *_vD) 
     { std::copy(_vD, _vD + 3, viewDirection); }
-    void                      SetCameraPosition(double *_cp) 
-    { std::copy(_cp, _cp + 3, cameraPosition); }
-    void                      SetCameraUpVector(double *_cu) 
-    { std::copy(_cu, _cu + 3, cameraUpVector); }
-    void                      SetCameraAspect(double _a) { cameraAspect = _a; }
     void                      SetClipPlanes(double _camClip[2])
     { clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
     void                      SetPanPercentages(double _pan[2])
@@ -245,11 +224,7 @@ public:
     { rgbColorBuffer = _colorBuffer; };
     void                      setBufferExtents(int _extents[4])
     { for (int i=0;i<4; i++) bufferExtents[i] = _extents[i]; }
-    // Qi add
-    void             SetOSPCamera(OSPCamera* _cam) { ospCamera = _cam; }
-    void             SetOSPTransferFcn(OSPTransferFunction* _t) { ospTransferFcn = _t; }
-    void             ActiveOSPData() { isDataDirty = true; }
-    void             SetOSPVolumeList(std::vector<ospVolumeMeta>& l) { ospVolumeList = &l; }
+    // Qi add for ospray  
     void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
     void             SetOSPRayContext(OSPContext& o) { ospray = &o; }
     
@@ -274,9 +249,9 @@ protected:
     double                    avgPatchExtents[3];
     double                    cellDimension[3];
     // background + other plots
-    float                     *depthBuffer;             // depth buffer for the background and other plots
-    unsigned char             *rgbColorBuffer;          // bounding box + pseudo color + ...
-    int                       bufferExtents[4];         // extents of the buffer( minX, maxX, minY, maxY)
+    float                     *depthBuffer;       // depth buffer for the background and other plots
+    unsigned char             *rgbColorBuffer;    // bounding box + pseudo color + ...
+    int                       bufferExtents[4];   // extents of the buffer( minX, maxX, minY, maxY)
     // attributor
     bool                      shouldSetUpArbitrator;
     std::string               arbitratorVarName;
@@ -306,14 +281,11 @@ protected:
     bool                      rayCastingSLIVRParallel;
     // Camera stuff
     double                    viewDirection[3];  // this is camera direction also
-    double                    cameraPosition[3]; // (Qi) camera location in world coordinate
-    double                    cameraUpVector[3]; // (Qi) camera up vector direction
-    double                    cameraAspect;
     double                    depthExtents[2];
     double                    clipPlanes[2];
     double                    panPercentage[2];
     double                    imageZoom;
-    vtkMatrix4x4              *modelViewProj;
+    vtkMatrix4x4             *modelViewProj;
     // lighting & material
     bool                      lighting;
     double                    lightPosition[4];
@@ -326,18 +298,11 @@ protected:
     virtual void              ExecuteTree(avtDataTree_p);
     void                      SetUpExtractors(void);
     imgMetaData               initMetaPatch(int id);    // initialize a patch
-    // Qi modification
-    // ...
+    //
     // OSPRay stuffs
     //
-    bool ospEmptyVolumeList;
-    int  ospVolumeId;
-    OSPCamera            *ospCamera;
-    OSPTransferFunction  *ospTransferFcn;
-    bool isDataDirty = false;
-    std::vector<ospVolumeMeta> *ospVolumeList;
-    OSPContext                 *ospray;
-    double                      rendererSampleRate;
+    OSPContext               *ospray;
+    double                    rendererSampleRate;
     
 protected:
     typedef struct 

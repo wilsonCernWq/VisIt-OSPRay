@@ -172,15 +172,9 @@ public:
 	{ rgbColorBuffer=_colorBuffer; };
 	void             setBufferExtents(int _extents[4])
 	{ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
-	void             SetOSPCamera(OSPCamera* _cam) { ospCamera = _cam; }
-	void             SetOSPTransferFcn(OSPTransferFunction* _t) { ospTransferFcn = _t; }
-
-	void ospSetVolumeMeta(ospVolumeMeta& v) { ospVolume = &v; }
-	void ospActive() { isDataDirty = true; }
-	void SetRendererSampleRate(double r) { rendererSampleRate = r; }
+	void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
 	void             SetOSPRayContext(OSPContext* o) { ospray = o; }
 protected:
-	double                rendererSampleRate;
 	bool             gridsAreInWorldSpace;
 	bool             pretendGridsAreInWorldSpace;
 	avtViewInfo      view;
@@ -261,11 +255,8 @@ protected:
 	//
 	// OSPRay stuffs
 	//
-	OSPCamera            *ospCamera;
-	OSPTransferFunction  *ospTransferFcn;
-	ospVolumeMeta        *ospVolume;
-	bool                 isDataDirty = false;
-	OSPContext               *ospray;
+	OSPContext      *ospray;
+	double           rendererSampleRate;
 
 	//
 	// RC SLIVR Specific
