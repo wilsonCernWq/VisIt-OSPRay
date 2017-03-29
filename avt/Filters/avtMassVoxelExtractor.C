@@ -59,6 +59,7 @@
 
 #include <DebugStream.h>
 #include <avtMemory.h>
+#include <TimingsManager.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1908,7 +1909,7 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
     int last = 0;
     bool hasIntersections = FindSegmentIntersections(origin, terminus, first, last);
 
-    //std::cout << "frist - last" << first << " " << last << std::endl;
+    // debug5 << "frist - last" << first << " " << last << std::endl;
 
     if (!hasIntersections)
 	return;
@@ -2320,7 +2321,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	} else {
 	    std::cerr << "WARNING: Empty dataset " << std::endl;
 	}
-	if ((npt_arrays > 0 && ncell_arrays > 0) || npt_arrays > 1 || ncell_arrays > 1) {
+	if ((npt_arrays > 0 && ncell_arrays > 0) || 
+	    npt_arrays > 1 || 
+	    ncell_arrays > 1)
+	{
 	    std::cerr << "WARNING: Multiple data found within one patch, " 
 		      << " We don't know what to do !! " 
 		      << std::endl
@@ -2328,37 +2332,37 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      << std::endl;
 	}
 	auto volume = ospray->GetPatch(patch);
-	volume->InitWorld();
-	volume->InitVolume();
-	volume->InitFB(imgWidth, imgHeight);
-	if ((scalarRange[1] >= tFVisibleRange[0]) && (scalarRange[0] <= tFVisibleRange[1]))
+	if (npt_arrays > 0) {
+	    volume->Set(ospVolumePointer, ospVolumeDataType, 
+			X, Y, Z, dims[0], dims[1], dims[2],
+			(float)rendererSampleRate);	    
+	}
+	else if (ncell_arrays > 0){
+	    volume->Set(ospVolumePointer, ospVolumeDataType, 
+			X, Y, Z, dims[0]-1, dims[1]-1, dims[2]-1,
+			(float)rendererSampleRate);	    
+	}
+	if ((scalarRange[1] >= tFVisibleRange[0]) 
+	    && (scalarRange[0] <= tFVisibleRange[1]))
 	{
-	    avtMemory::GetMemorySize(m_size, m_rss);
-	    std::cout << " ~ Memory use before rendering frame: " << m_size
-		      << "  rss (MB): " << m_rss/(1024*1024) <<  " ... done@!!!" << endl;
-	    // render frame
-	    if (npt_arrays > 0) {
-		volume->SetVolume(ospVolumePointer, ospVolumeDataType, 
-				  X, Y, Z, dims[0], dims[1], dims[2]);
-		
-	    }
-	    else if (ncell_arrays > 0){
-		volume->SetVolume(ospVolumePointer, ospVolumeDataType, 
-				  X, Y, Z, dims[0]-1, dims[1]-1, dims[2]-1);
-	
-	    }
-	    volume->SetSamplingRate((float)rendererSampleRate);
-	    volume->SetWorld();
+	    // // check memory 
+	    // avtMemory::GetMemorySize(m_size, m_rss);
+	    // debug5 << " ~ Memory use b/ rendering: "  << m_size
+	    //        << "  rss (MB): " << m_rss/(1024*1024) << std::endl;
+            // render frame
 	    ospray->SetSubCamera(xMin, xMax, yMin, yMax);
 	    ospray->SetModel(volume->GetWorld());
+	    volume->InitFB(imgWidth, imgHeight);
 	    volume->RenderFB();
-	    std::copy(volume->GetFB(), volume->GetFB() + (imgWidth * imgHeight) * 4, imgArray);
+	    std::copy(volume->GetFBData(), 
+		      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
+		      imgArray);
 	    volume->CleanFBData();
 	    patchDrawn = 1;
-	    // check memory again
-	    avtMemory::GetMemorySize(m_size, m_rss);
-	    std::cout << " ~ Memory use after rendering frame: " << m_size 
-		      << "  rss (MB): " << m_rss/(1024*1024) <<  " ... done@!!!" << endl;
+	    // // check memory again
+	    // avtMemory::GetMemorySize(m_size, m_rss);
+	    // debug5 << " ~ Memory use a/ rendering: " << m_size 
+	    // 	      << "  rss (MB): " << m_rss/(1024*1024) << std::endl;
 	}
 	volume->CleanFB();
     }
@@ -2395,6 +2399,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     	    else
     	    {
 		if (!ospray->IsEnabled()) {
+		    debug5 << "using CPU version raytracer" << std::endl;
 		    patchDrawn = 1;
 		    double _origin[3], _terminus[3];
 		    double origin[4]  = {0,0,0,1}; // starting point where we start sampling
@@ -2509,10 +2514,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 
 	float x_right = prop[0];        float x_left   = 1. - x_right;
 	float y_top   = prop[1];        float y_bottom = 1. - y_top;
-	float z_back  = prop[2];        float z_front  = 1. - z_back;
-
-	//std::cout << "x_right: " << x_right <<  "  x_left: " << x_left << "   y_top:" <<  y_top << "  y_bottom: " <<  "   z_back: " << z_back<< "  z_front: " <<  z_front << std::endl;
-		
+	float z_back  = prop[2];        float z_front  = 1. - z_back;		
 
 	// get the index and distance from the center of the neighbouring cells
 	getIndexandDistFromCenter(x_right, newInd[0], index_left, index_right,   dist_from_left, dist_from_right);
@@ -3044,12 +3046,6 @@ avtMassVoxelExtractor::project
     // Screen coordinates
     pos2D[0] = round( normDevCoord[0]*(_screenWidth/2.)  + (_screenWidth/2.)  );
     pos2D[1] = round( normDevCoord[1]*(_screenHeight/2.) + (_screenHeight/2.) );
-
-    // std::cout << "camera raw coord "
-    // 	     << normDevCoord[0] << " "
-    // 	     << normDevCoord[1] << " "
-    // 	     << normDevCoord[2] << " "
-    // 	     << normDevCoord[3] << std::endl;
 
     // Add panning
     pos2D[0] += round(_screenWidth * panPercentage[0] * imageZoom);

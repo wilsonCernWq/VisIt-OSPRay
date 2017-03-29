@@ -703,12 +703,13 @@ struct datatree_childindex {
 void
 avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 {
-    //check memory
-    unsigned long m_size, m_rss;
-    avtMemory::GetMemorySize(m_size, m_rss);
-    std::cout << PAR_Rank()
-	      << " ~ avtSamplePointExtractor::ExecuteTree  .. .  " 
-	      << "   Memory use before: " << m_size << "  rss (MB): " << m_rss/(1024*1024) << endl;
+    // // check memory
+    // unsigned long m_size, m_rss;
+    // avtMemory::GetMemorySize(m_size, m_rss);
+    // debug5 << PAR_Rank()
+    // 	      << " ~ avtSamplePointExtractor::ExecuteTree  .. .  " 
+    // 	      << "   Memory use before: " << m_size
+    //        << "  rss (MB): " << m_rss/(1024*1024) << endl;
 
     // initialize rayCastingSLIVR sampling state
     totalAssignedPatches = dt->GetNChildren();
@@ -717,8 +718,8 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     imgDataHashMap.clear();
 
     // Qi debug 
-    std::cout << "got here! -- avtSamplePointExtractor::ExecuteTree " 
-	      << totalAssignedPatches << std::endl;
+    debug5 << "got here! -- avtSamplePointExtractor::ExecuteTree " 
+	   << totalAssignedPatches << std::endl;
 
     // if it is an empty node
     if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
@@ -740,7 +741,9 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 	    {
 		if (ch->ChildIsPresent(i))
 		{
-		    if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
+		    if (*ch == NULL || 
+			(ch->GetNChildren() <= 0 && 
+			 (!(ch->HasData()))))
 			continue;
 		    nodes.push(new datatree_childindex(ch->GetChild(i),i));
 		    if (rayCastingSLIVR == true)
@@ -794,11 +797,11 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     debug5 << " parallel rank #" << PAR_Rank() 
 	   << " has " << patchCount  << " patches in data tree" << std::endl;
     
-    //check memory after
-    avtMemory::GetMemorySize(m_size, m_rss);
-    std::cout << PAR_Rank() 
-	      << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
-	      << "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
+    // // check memory after
+    // avtMemory::GetMemorySize(m_size, m_rss);
+    // debug5 << PAR_Rank() 
+    // 	      << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
+    //        << "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
 }
 
 
@@ -1043,7 +1046,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	{
 	    varnames.push_back(samples->GetVariableName(i));
 	    varsizes.push_back(samples->GetVariableSize(i));
-	    // std::cout << varsizes[i] << " " << varnames[i] << std::endl;
+	    // debug5 << varsizes[i] << " " << varnames[i] << std::endl;
 	    // size of the variable (in case it is not a single number ?)
 	    // name of the variable
 	}

@@ -348,7 +348,7 @@ extern bool GetLogicalBounds(avtDataObject_p input,int &width,int &height, int &
 
 avtImage_p
 avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
-                             const WindowAttributes &window)
+					    const WindowAttributes &window)
 {
     std::cout << "RendererImageRaycastingSLIVR" << std::endl;
     //
@@ -360,6 +360,7 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     //
     // Set up the volume renderer.
     //
+    avtCallback::SetOSPRayMode(true);
     avtRayTracer *software = new avtRayTracer;
     software->SetRayCastingSLIVR(true);
     software->SetTrilinear(false);

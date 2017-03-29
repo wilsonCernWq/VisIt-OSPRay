@@ -320,7 +320,6 @@ avtOpacityMap::SetTable(unsigned char *arr, int te, double attenuation, float ov
 void
 avtOpacityMap::SetTableFloatNOC(unsigned char *arr, int te, double attenuation)
 {
-    std::cout << "Set transfer function table float" << std::endl;
     if (attenuation < -1. || attenuation > 1.)
     {
         debug1 << "Bad attenuation value " << attenuation << std::endl;
@@ -364,7 +363,6 @@ avtOpacityMap::SetTableFloatNOC(unsigned char *arr, int te, double attenuation)
 void
 avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, float over)
 {
-    std::cout << "Set transfer function table float" << std::endl;
     if (attenuation < -1. || attenuation > 1.)
     {
         debug1 << "Bad attenuation value " << attenuation << std::endl;
@@ -495,8 +493,6 @@ void avtOpacityMap::computeVisibleRange()
 void
 avtOpacityMap::SetTable(RGBA *arr, int te, double attenuation)
 {
-    std::cout << "Set transfer function table" << std::endl;
-
     if (attenuation < 0. || attenuation > 1.)
     {
         debug1 << "Bad attenuation value " << attenuation << std::endl;

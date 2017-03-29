@@ -699,25 +699,24 @@ avtRayTracer::Execute(void)
     // check memory
     unsigned long m_size, m_rss;
     avtMemory::GetMemorySize(m_size, m_rss);
-    cout << PAR_Rank() 
-	 << " ~ Memory use after: " << m_size 
-	 << "  rss (MB): " << m_rss/(1024*1024) 
-	 <<  "  ... avtRayTracer::Execute@!!!" << endl;
+    debug5 << PAR_Rank()
+	   << " ~ Memory use begin: " << m_size 
+	   << "  rss (MB): " << m_rss/(1024*1024) 
+	   <<  "  ... avtRayTracer::Execute@!!!" << std::endl;
 
     // initialize current time
-    time_t time_start = time(NULL);
+    int timingIndex = visitTimer->StartTimer();
 
     // initialize ospray
     static OSPContext ospray;
     if (rayCastingSLIVR && avtCallback::UseOSPRay())
     {
-	ospray.InitOSP(refreshData, true);
+	ospray.InitOSP(refreshData, false, 1);
     }
 
     //
     // start of original pipeline
     //
-    int  timingIndex = visitTimer->StartTimer();
     bool parallelOn = (imgComm.GetNumProcs() == 1) ? false : true;
     if (rayfoo == NULL)
     {
@@ -728,7 +727,7 @@ avtRayTracer::Execute(void)
     //
     // First we need to transform all of domains into camera space.
     //
-    std::cout << "compute camera" << std::endl;
+    debug5 << "compute camera" << std::endl;
     double aspect = 1.;
     if (screen[1] > 0)
     {
@@ -749,7 +748,7 @@ avtRayTracer::Execute(void)
     //
     // Extract all of the samples from the dataset.
     //
-    std::cout << "create extractor" << std::endl;
+    debug5 << "create extractor" << std::endl;
     avtSamplePointExtractor extractor(screen[0], screen[1], samplesPerRay);
     bool doKernel = kernelBasedSampling;
     if (trans.GetOutput()->GetInfo().GetAttributes().GetTopologicalDimension() == 0)
@@ -780,7 +779,7 @@ avtRayTracer::Execute(void)
     //
     if (rayCastingSLIVR)
     {
-	std::cout << "start rcsliver" << std::endl;
+	debug5 << "start rcsliver" << std::endl;
 	extractor.SetRayCastingSLIVR(true);
 
 	//
@@ -788,7 +787,8 @@ avtRayTracer::Execute(void)
 	//
 	float current[3];
 	for (int i = 0; i < 3; ++i) {
-	    current[i] = (view.camera[i] - view.focus[i]) / view.imageZoom + view.focus[i];
+	    current[i] = (view.camera[i] - view.focus[i]) / view.imageZoom
+		+ view.focus[i];
 	}
 	vtkCamera *sceneCam = vtkCamera::New();
 	sceneCam->SetPosition(current[0],current[1],current[2]);
@@ -802,39 +802,39 @@ avtRayTracer::Execute(void)
 	    sceneCam->ParallelProjectionOff();
 	sceneCam->SetParallelScale(view.parallelScale);
 	// debug
-	std::cout << "RT View settings: " << endl
-		  << "  inheriant view direction: "
-		  << viewDirection[0] << " "
-		  << viewDirection[1] << " "
-		  << viewDirection[2] << std::endl
-		  << "  camera: "       
-		  << view.camera[0] << ", " 
-		  << view.camera[1] << ", " 
-		  << view.camera[2] << std::endl
-		  << "  focus: "    
-		  << view.focus[0] << ", " 
-		  << view.focus[1] << ", " 
-		  << view.focus[2] << std::endl
-		  << "  viewUp: "    
-		  << view.viewUp[0] << ", " 
-		  << view.viewUp[1] << ", " 
-		  << view.viewUp[2] << std::endl
-		  << "  viewAngle: " << view.viewAngle << std::endl
-		  << "  eyeAngle:  " << view.eyeAngle  << std::endl
-		  << "  parallelScale: " << view.parallelScale  << std::endl
-		  << "  setScale: " << view.setScale << std::endl
-		  << "  nearPlane: " << view.nearPlane << std::endl
-		  << "  farPlane:  " << view.farPlane  << std::endl
-		  << "  imagePan[0]: " << view.imagePan[0] << std::endl // this is a fraction!!!
-		  << "  imagePan[1]: " << view.imagePan[1] << std::endl // this is a fraction!!!
-		  << "  imageZoom:   " << view.imageZoom   << std::endl
-		  << "  orthographic: " << view.orthographic << std::endl
-		  << "  shear[0]: " << view.shear[0] << std::endl
-		  << "  shear[1]: " << view.shear[1] << std::endl
-		  << "  shear[2]: " << view.shear[2] << std::endl
-		  << "  oldNearPlane: " << oldNearPlane << std::endl
-		  << "  oldFarPlane:  " << oldFarPlane  << std::endl
-		  << "  aspect: " << aspect << std::endl;
+	debug5 << "RT View settings: " << endl
+	       << "  inheriant view direction: "
+	       << viewDirection[0] << " "
+	       << viewDirection[1] << " "
+	       << viewDirection[2] << std::endl
+	       << "  camera: "       
+	       << view.camera[0] << ", " 
+	       << view.camera[1] << ", " 
+	       << view.camera[2] << std::endl
+	       << "  focus: "    
+	       << view.focus[0] << ", " 
+	       << view.focus[1] << ", " 
+	       << view.focus[2] << std::endl
+	       << "  viewUp: "    
+	       << view.viewUp[0] << ", " 
+	       << view.viewUp[1] << ", " 
+	       << view.viewUp[2] << std::endl
+	       << "  viewAngle: " << view.viewAngle << std::endl
+	       << "  eyeAngle:  " << view.eyeAngle  << std::endl
+	       << "  parallelScale: " << view.parallelScale  << std::endl
+	       << "  setScale: " << view.setScale << std::endl
+	       << "  nearPlane: " << view.nearPlane << std::endl
+	       << "  farPlane:  " << view.farPlane  << std::endl
+	       << "  imagePan[0]: " << view.imagePan[0] << std::endl // this is a fraction!!!
+	       << "  imagePan[1]: " << view.imagePan[1] << std::endl // this is a fraction!!!
+	       << "  imageZoom:   " << view.imageZoom   << std::endl
+	       << "  orthographic: " << view.orthographic << std::endl
+	       << "  shear[0]: " << view.shear[0] << std::endl
+	       << "  shear[1]: " << view.shear[1] << std::endl
+	       << "  shear[2]: " << view.shear[2] << std::endl
+	       << "  oldNearPlane: " << oldNearPlane << std::endl
+	       << "  oldFarPlane:  " << oldFarPlane  << std::endl
+	       << "  aspect: " << aspect << std::endl;
 	
 	// clip planes
 	double _clip[2];
@@ -850,8 +850,6 @@ avtRayTracer::Execute(void)
 	// Zoom and pan portions
 	vtkMatrix4x4 *imageZoomAndPan = vtkMatrix4x4::New();
 	imageZoomAndPan->Identity();
-	imageZoomAndPan->SetElement(0, 0, view.imageZoom);
-	imageZoomAndPan->SetElement(1, 1, view.imageZoom);
 	// View
 	vtkMatrix4x4 *tmp = vtkMatrix4x4::New();
 	vtkMatrix4x4 *vm = vtkMatrix4x4::New();
@@ -902,28 +900,38 @@ avtRayTracer::Execute(void)
 	// -----------------------------
 	if (avtCallback::UseOSPRay()) {
 	    avtMemory::GetMemorySize(m_size, m_rss);
-	    std::cout << PAR_Rank() << " ~ Memory use before ospray: " << m_size
-		      << "  rss (MB): " << m_rss/(1024*1024) <<  "@!!!" << endl;
+	    debug5 << PAR_Rank() 
+		   << " ~ Memory use before ospray: " << m_size
+		   << "  rss (MB): " << m_rss/(1024*1024) << std::endl;
 	    // camera
-	    std::cout << "make ospray camera" << std::endl;
+	    debug5 << "make ospray camera" << std::endl;
 	    ospray.InitCamera(OSP_PERSPECTIVE);
-	    ospray.SetCamera(view.camera, view.focus, view.viewUp, viewDirection, aspect, 
-			     view.viewAngle, view.imageZoom, view.imagePan, fullImageExtents, screen);
+	    ospray.SetCamera(view.camera, 
+			     view.focus, 
+			     view.viewUp, 
+			     viewDirection,
+			     aspect, 
+			     view.viewAngle,
+			     view.imageZoom,
+			     view.imagePan,
+			     fullImageExtents,
+			     screen);
 	    // transfer function
-	    std::cout << "make ospray transfer function" << std::endl;
+	    debug5  << "make ospray transfer function" << std::endl;
 	    ospray.InitTransferFunction();
 	    ospray.SetTransferFunction(transferFn1D->GetTableFloat(), 
 				       transferFn1D->GetNumberOfTableEntries(),
 				       (float)transferFn1D->GetMin(),
 				       (float)transferFn1D->GetMax());
 	    // renderer
-	    std::cout << "make ospray renderer" << std::endl;
+	    debug5 << "make ospray renderer" << std::endl;
 	    ospray.InitRenderer();
 	    ospray.SetRenderer(false, materialProperties, view.camera);
 	    // check memory
 	    avtMemory::GetMemorySize(m_size, m_rss);
-	    std::cout << PAR_Rank() << " ~ Memory use after: " << m_size
-		      << "  rss (MB): " << m_rss/(1024*1024) <<  "   ... done@!!!" << endl;
+	    debug5 << PAR_Rank() << " ~ Memory use after: " << m_size
+		   << " rss (MB): " << m_rss/(1024*1024)
+		   << std::endl;
 	}
 	// -----------------------------
 
@@ -955,10 +963,8 @@ avtRayTracer::Execute(void)
 	__opaqueImageVTK  = opaqueImage->GetImage().GetImageVTK();
 	__opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
 	__opaqueImageZB   = opaqueImage->GetImage().GetZBuffer();
-
 	extractor.setDepthBuffer(__opaqueImageZB,   screen[0]*screen[1]);
 	extractor.setRGBBuffer  (__opaqueImageData, screen[0],screen[1]);
-
 	int _bufferExtents[4] = {0,0,0,0}; // xmin, xmax, ymin, ymax
 	_bufferExtents[1] = screen[0]; _bufferExtents[3] = screen[1];
 	extractor.setBufferExtents(_bufferExtents);
@@ -976,16 +982,17 @@ avtRayTracer::Execute(void)
 	extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
     }
 
-    int timingVolToImg = 0;
-    if (rayCastingSLIVR == true && parallelOn)
-	timingVolToImg = visitTimer->StartTimer();
+    //int timingVolToImg = 0;
+    //if (rayCastingSLIVR == true && parallelOn)
+    //{ timingVolToImg = visitTimer->StartTimer(); }
 
     // Qi debug
     avtMemory::GetMemorySize(m_size, m_rss);
-    std::cout << "Raytracing setup done! " << std::endl
-	      << PAR_Rank() 
-	      << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
-	      << "   ... avtRayTracer::Execute@!!!" << std::endl;
+    debug5 << "Raytracing setup done! " << std::endl
+	   << PAR_Rank() 
+	   << " ~ Memory use after: " << m_size 
+	   << "  rss (MB): " << m_rss/(1024*1024)
+	   << std::endl;
 	
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
@@ -999,7 +1006,7 @@ avtRayTracer::Execute(void)
 	// only required to force an update - Need to find a way to get rid of that!!!!
 	rc.SetInput(samples);
 	avtImage_p image  = rc.GetTypedOutput();
-	image->Update(GetGeneralContract());
+	image->Update(GetGeneralContract()); // this will call the execute function
 
 	//
 	// SERIAL : Single Processor
@@ -1007,7 +1014,7 @@ avtRayTracer::Execute(void)
 	if (parallelOn == false)
 	{
 	    // Qi debug
-	    cout << "Serial compositing!" << std::endl;
+	    debug5 << "Serial compositing!" << std::endl;
 
 	    //
 	    // Get the metadata for all patches
@@ -1029,14 +1036,15 @@ avtRayTracer::Execute(void)
 	    //
 	    // Blend images
 	    //
+	    debug5 << "blending image!" << std::endl;
 	    int renderedWidth = fullImageExtents[1] - fullImageExtents[0];
 	    int renderedHeight = fullImageExtents[3] - fullImageExtents[2];
 	    float *composedData = new float[renderedWidth * renderedHeight * 4]();
+	    debug5 << "blending image!" << std::endl;
 
 	    for (int i=0; i<numPatches; i++)
 	    {
 	    	imgMetaData currentPatch = allImgMetaData[i];
-
 	    	imgData tempImgData;
 	    	tempImgData.imagePatch = NULL;
 	    	tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
@@ -1064,7 +1072,7 @@ avtRayTracer::Execute(void)
 	    		{
 	    		    // back to Front compositing: 
 			    //  composited_i = composited_i-1 * (1.0 - alpha_i) + incoming;
-			    //  alpha        = alpha_i-1 * (1- alpha_i)
+			    //  alpha        = alpha_i-1 * (1- alpha_i) + alpha_i
 	    		    float alpha = (1.0 - tempImgData.imagePatch[subImgIndex+3]);
 	    		    composedData[bufferIndex+0] = 
 				imgComm.clamp((composedData[bufferIndex+0] * alpha) 
@@ -1091,7 +1099,13 @@ avtRayTracer::Execute(void)
 	    allImgMetaData.clear();
 
 	    // Qi debug
-	    std::cout << "Serial compositing done!" << std::endl;
+	    debug5 << "Serial compositing done!" << std::endl;
+	    avtMemory::GetMemorySize(m_size, m_rss);
+	    debug5 << PAR_Rank() 
+		   << " ~ Memory use: " << m_size
+		   << "  rss (MB): " << m_rss/(1024*1024)
+		   << std::endl;
+	    debug5 << "Final image compositing start!" << std::endl;
 
 	    //
 	    // Create image for visit to display
@@ -1115,11 +1129,14 @@ avtRayTracer::Execute(void)
 	    int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
 	    int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
 
+	    // experiment
+	    // ospray.RenderMultiVolume(composedData, fullImageExtents);
+
 	    // Having to adjust the dataset bounds by a arbitrary magic number here. 
 	    // Needs to be sorted out at some point!
 	    dbounds[5] = dbounds[5]-0.025;
 
-	    debug5 << "Place in image ~ screen " <<  screen[0] << ", " << screen[1] 
+	    debug5 << "Place in image ~ screen "  <<  screen[0] << ", " << screen[1] 
 		   << "  compositedImageWidth:  " << compositedImageWidth 
 		   << "  compositedImageHeight: " << compositedImageHeight
 		   << "  fullImageExtents: " 
@@ -1247,24 +1264,28 @@ avtRayTracer::Execute(void)
 		    }
 		}
 	    }
-	    SetOutput(whole_image);
-
-	    // clean up
 	    img->Delete();
+	    SetOutput(whole_image);
 	    delete []composedData;
 
-	    // check time
-	    std::cout << "time used for rendering: "
-		      << time(NULL) - time_start << std::endl;
+	    // clean up
+	    Inversepvm->Delete();
+	    pvm->Delete();
 
-	    return;
+	    // check time
+	    debug5 << "Final compositing done!" << std::endl;
+	    avtMemory::GetMemorySize(m_size, m_rss);
+	    debug5 << PAR_Rank() 
+		   << " ~ Memory use: " << m_size
+		   << "  rss (MB): " << m_rss/(1024*1024)
+		   << std::endl;	
 
 	} else { 
 
 	    //
 	    // Parallel
 	    //
-	    std::cout << "Parallel compositing" << std::endl; // Qi debug
+	    debug5 << "Parallel compositing" << std::endl; // Qi debug
 	    int  timingCompositinig = visitTimer->StartTimer();
 
 	    //
@@ -1279,7 +1300,7 @@ avtRayTracer::Execute(void)
 	    float *localPatchesDepth = NULL;
 
 	    // Qi debug
-	    cout << "Number of patches: " << numPatches << std::endl;
+	    debug5 << "Number of patches: " << numPatches << std::endl;
 	    
 	    for (int i=0; i<numPatches; i++)
 	    {
@@ -1306,7 +1327,7 @@ avtRayTracer::Execute(void)
 	    //
 
 	    // Qi debug
-	    std::cout << "Starting parallel compositing!" << std::endl;
+	    debug5 << "Starting parallel compositing!" << std::endl;
 
 	    //
 	    // Parallel Direct Send
@@ -1515,9 +1536,9 @@ avtRayTracer::Execute(void)
 
 		    }
 		}
-
 		img->Delete();
 		SetOutput(whole_image);
+		Inversepvm->Delete();
 	    }
 
 	    debug5 << "RC SLIVR: Done!" << std::endl;
@@ -1526,22 +1547,18 @@ avtRayTracer::Execute(void)
 	    // Cleanup
 	    if (composedData != NULL)
 		delete []composedData;
-
 	    if (localPatchesDepth != NULL)
 		delete []localPatchesDepth;
-
 	    pvm->Delete();
 
 	    visitTimer->StopTimer(timingCompositinig, "Compositing");
 	    visitTimer->DumpTimings();
 
-	    visitTimer->StopTimer(timingIndex, "Ray Tracing");
-	    visitTimer->DumpTimings();
 	}
 
 	// check time
-	std::cout << "time used for rendering: "
-		  << time(NULL) - time_start << std::endl;
+	visitTimer->StopTimer(timingIndex, "Ray Tracing");
+	visitTimer->DumpTimings();
 
 	return;
 

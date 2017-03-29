@@ -5,6 +5,8 @@ cd /home/sci/qwu/visitOSPRay/visitOSPRayCPU/working
 if [ "$1" == "source" ]; then 
 
     cp -r plots/* ../src-visit2.12.0/plots
+    cp -r viewer/main/*     ../src-visit2.12.0/viewer/main
+    cp -r engine/main/*     ../src-visit2.12.0/engine/main
 
     cp -r avt/Filters/*.C   ../src-visit2.12.0/avt/Filters
     cp -r avt/Filters/*.h   ../src-visit2.12.0/avt/Filters
