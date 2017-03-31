@@ -9,7 +9,7 @@ WORKSRC=${2}
 
 # shopt -s extglob
 
-if [ "$1" == "source" ]; then 
+if [ "$3" == "source" ]; then 
 
     cp -vr ${WORKSRC}/plots/*                 ${VISITSRC}/plots
     cp -vr ${WORKSRC}/viewer/main/*           ${VISITSRC}/viewer/main
@@ -20,7 +20,7 @@ if [ "$1" == "source" ]; then
     cp -vr ${WORKSRC}/avt/Pipeline/Data/*.C   ${VISITSRC}/avt/Pipeline/Data
     cp -vr ${WORKSRC}/avt/Pipeline/Data/*.h   ${VISITSRC}/avt/Pipeline/Data
 
-elif [ "$1" == "cmake" ]; then 
+elif [ "$3" == "cmake" ]; then 
     
     cp -v ${WORKSRC}/config-site/hastur.sci.utah.edu.cmake   ${VISITSRC}/config-site
     cp -v ${WORKSRC}/CMakeLists.txt                          ${VISITSRC}
