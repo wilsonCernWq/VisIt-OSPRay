@@ -94,6 +94,7 @@ struct VolumeInfo
     OSPData                 voxelData       = nullptr;
     size_t                  voxelSize       = 0;
 
+    float samplingRate = -1.0f;
     vec3f regionStart;
     vec3f regionStop;
     vec3f regionSpacing;
@@ -113,7 +114,7 @@ struct VolumeInfo
     //! other function
     void Set(void* ptr, int type,
 	     double *X, double *Y, double *Z,
-	     int nX, int nY, int nZ, float samplingRate)  {
+	     int nX, int nY, int nZ, float sr)  {
 	if (!isComplete) {
 	    worldType = OSP_INVALID;
 	    volumeType = OSP_INVALID;
@@ -123,7 +124,10 @@ struct VolumeInfo
 	if (!isComplete) { 
 	    SetVolume(ptr, type, X, Y, Z, nX, nY, nZ); 
 	}
-	SetSamplingRate(samplingRate);
+	if (samplingRate != sr) {
+	    samplingRate = sr;
+	    SetSamplingRate(samplingRate);
+	}
 	if (!isComplete) { 
 	    SetWorld();
 	}
