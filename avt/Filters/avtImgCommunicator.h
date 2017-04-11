@@ -129,7 +129,6 @@ public:
 	int intermediateImageExtents[4];
 	int intermediateImageBB[4];
 
-
 	avtImgCommunicator();
 	~avtImgCommunicator();
 

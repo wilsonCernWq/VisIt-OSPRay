@@ -451,7 +451,6 @@ void
 avtImgCommunicator::regionAllocation(int numMPIRanks, int *& regions)
 {
 	regions = new int[numMPIRanks];
-
 	// Initial allocation: partition for section rank
 	for (int i=0; i<numMPIRanks; i++)
 		regions[i] = i;

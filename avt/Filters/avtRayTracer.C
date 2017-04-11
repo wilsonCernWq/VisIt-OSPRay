@@ -711,7 +711,7 @@ avtRayTracer::Execute(void)
     static OSPContext ospray;
     if (rayCastingSLIVR && avtCallback::UseOSPRay())
     {
-	ospray.InitOSP(refreshData, false, 1);
+	ospray.InitOSP(refreshData, false);
     }
 
     //
@@ -1563,7 +1563,6 @@ avtRayTracer::Execute(void)
 	return;
 
     } else {
-
 
 #ifdef PARALLEL
 	//
