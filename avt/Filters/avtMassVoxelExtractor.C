@@ -2345,24 +2345,25 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	if ((scalarRange[1] >= tFVisibleRange[0]) 
 	    && (scalarRange[0] <= tFVisibleRange[1]))
 	{
-	    // // check memory 
-	    // avtMemory::GetMemorySize(m_size, m_rss);
-	    // debug5 << " ~ Memory use b/ rendering: "  << m_size
-	    //        << "  rss (MB): " << m_rss/(1024*1024) << std::endl;
+	    // start timing
+	    int renderIndex = visitTimer->StartTimer();
+
             // render frame
 	    ospray->SetSubCamera(xMin, xMax, yMin, yMax);
 	    ospray->SetModel(volume->GetWorld());
 	    volume->InitFB(imgWidth, imgHeight);
 	    volume->RenderFB();
+
+	    // end timing
+	    visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
+	    visitTimer->DumpTimings();
+
+	    // copy data
 	    std::copy(volume->GetFBData(), 
 		      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
 		      imgArray);
 	    volume->CleanFBData();
 	    patchDrawn = 1;
-	    // // check memory again
-	    // avtMemory::GetMemorySize(m_size, m_rss);
-	    // debug5 << " ~ Memory use a/ rendering: " << m_size 
-	    // 	      << "  rss (MB): " << m_rss/(1024*1024) << std::endl;
 	}
 	volume->CleanFB();
     }

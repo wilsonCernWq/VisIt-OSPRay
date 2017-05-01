@@ -135,7 +135,6 @@ struct VolumeInfo
     }
     bool GetCompleteFlag() { return isComplete; }
     void SetCompleteFlag(bool f) { isComplete = f; } 
-
     void SetTransferFunction(OSPTransferFunction tf) { transferfcn = tf; }
     void SetRenderer(OSPRenderer r) { renderer = r; }
 
@@ -185,11 +184,8 @@ struct VolumeInfo
 	}
     }
     OSPVolume GetVolume() { return volume; }
-    void SetVolume
-    (void* ptr, int type, 
-     double *X, double *Y, double *Z, 
-     int nX, int nY, int nZ) {
-	// std::cout << "commiting volume " << patchId << std::endl;
+    void SetVolume(void* ptr, int type, double *X, double *Y, double *Z, int nX, int nY, int nZ) {
+	// std::cout << "-- commiting volume " << patchId << std::endl;
 	// refresh existing data
 	if (voxelData != nullptr) { 
 	    ospRelease(voxelData); 
@@ -328,10 +324,6 @@ struct OSPContext
 	enabledOSPRay = true;
 	OSPDevice device = ospGetCurrentDevice();
 	if (device == nullptr) {
-	    // std::cout << "Initializing OSPRay" 
-	    //  	 << " debug: " << debug  
-	    //	         << " numThreads: " << numThreads
-	    //	         << std::endl;
 	    debug5 << "Initializing OSPRay" 
 		   << " debug: " << debug  
 		   << " numThreads: " << numThreads
@@ -495,50 +487,6 @@ struct OSPContext
         ospCommit(transferfcn);
     }
 
-    /* //! render multi volumes */
-    /* void RenderMultiVolume(float* &imgArray, const int imageExtents[4]) { */
-    /* 	float r_xl = (float)imageExtents[0]/(float)screenSize[0] - r_panx;  */
-    /* 	float r_yl = (float)imageExtents[2]/(float)screenSize[1] - r_pany;  */
-    /* 	float r_xu = (float)imageExtents[1]/(float)screenSize[0] - r_panx; */
-    /* 	float r_yu = (float)imageExtents[3]/(float)screenSize[1] - r_pany; */
-    /* 	ospSetVec2f(camera, "imageStart", osp::vec2f{r_xl, r_yl}); */
-    /* 	ospSetVec2f(camera, "imageEnd",   osp::vec2f{r_xu, r_yu}); */
-    /* 	ospCommit(camera); */
-    /* 	// std::cout << "creating world" << std::endl; */
-    /* 	OSPModel ospWorld = ospNewModel();	 */
-    /* 	for (auto ospVolume : volumePatch) { */
-    /* 	    ospAddVolume(ospWorld, ospVolume.GetVolume());  */
-    /* 	} */
-    /* 	ospCommit(ospWorld); */
-    /* 	// std::cout << "creating renderer" << std::endl; */
-    /* 	OSPRenderer ospRenderer = ospNewRenderer("scivis"); */
-    /* 	ospSetObject(ospRenderer, "model",  ospWorld); */
-    /* 	ospSetObject(ospRenderer, "camera", camera); */
-    /* 	ospSet1i(ospRenderer, "backgroundEnabled", 0); */
-    /* 	ospCommit(ospRenderer); */
-    /* 	// std::cout << "creating framebuffer" << std::endl; */
-    /* 	ospcommon::vec2i imageSize(imageExtents[1] - imageExtents[0],  */
-    /* 				   imageExtents[3] - imageExtents[2]);	 */
-    /* 	OSPFrameBuffer ospfb =  */
-    /* 	    ospNewFrameBuffer((osp::vec2i&)imageSize,  */
-    /* 			      OSP_FB_RGBA32F,  */
-    /* 			      OSP_FB_COLOR); */
-    /* 	ospFrameBufferClear(ospfb, OSP_FB_COLOR); */
-    /* 	ospRenderFrame(ospfb, ospRenderer, OSP_FB_COLOR);	 */
-    /* 	float *fb = (float*) ospMapFrameBuffer(ospfb, OSP_FB_COLOR); */
-    /* 	std::copy(fb, fb + (imageSize.x * imageSize.y * 4), imgArray); */
-    /* 	// std::cout << "removing volumes" << std::endl; */
-    /* 	for (auto ospVolume : volumePatch) { */
-    /* 	    ospRemoveVolume(ospWorld, ospVolume.GetVolume()); */
-    /* 	} */
-    /* 	ospCommit(ospWorld); */
-    /* 	// std::cout << "removing framebuffer" << std::endl; */
-    /* 	ospUnmapFrameBuffer(fb, ospfb); */
-    /* 	ospFreeFrameBuffer(ospfb); */
-    /* 	// std::cout << "removing world" << std::endl; */
-    /* 	ospRelease(ospWorld); */
-    /* 	ospRelease(ospRenderer);	 */
-    /* } */
 };
 
 // ****************************************************************************

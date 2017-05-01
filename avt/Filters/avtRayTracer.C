@@ -982,12 +982,6 @@ avtRayTracer::Execute(void)
 	extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
     }
 
-    int timingVolToImg = 0;
-    if (rayCastingSLIVR == true && parallelOn)
-    { 
-	timingVolToImg = visitTimer->StartTimer(); 
-    }
-
     // Qi debug
     avtMemory::GetMemorySize(m_size, m_rss);
     debug5 << "Raytracing setup done! " << std::endl
@@ -1004,10 +998,16 @@ avtRayTracer::Execute(void)
     //
     if (rayCastingSLIVR == true)
     {
-	avtRayCompositer rc(rayfoo);
 	// only required to force an update - Need to find a way to get rid of that!!!!
+	avtRayCompositer rc(rayfoo);
 	rc.SetInput(samples);
 	avtImage_p image  = rc.GetTypedOutput();
+
+	// start timing
+	int timingVolToImg = 0;
+	timingVolToImg = visitTimer->StartTimer(); 
+	
+	// execute rendering
 	image->Update(GetGeneralContract()); // this will call the execute function
 
 	// time rendering
