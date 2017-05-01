@@ -711,7 +711,7 @@ avtRayTracer::Execute(void)
     static OSPContext ospray;
     if (rayCastingSLIVR && avtCallback::UseOSPRay())
     {
-	ospray.InitOSP(refreshData, false);
+	ospray.InitOSP(refreshData, false, 1);
     }
 
     //
