@@ -226,7 +226,7 @@ public:
     { for (int i=0;i<4; i++) bufferExtents[i] = _extents[i]; }
     // Qi add for ospray  
     void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
-    void             SetOSPRayContext(OSPContext& o) { ospray = &o; }
+    void             SetOSPRayContext(OSPContext* o) { ospray = o; }
     
 public:
     typedef std::multimap<int, imgData>::iterator iter_t;

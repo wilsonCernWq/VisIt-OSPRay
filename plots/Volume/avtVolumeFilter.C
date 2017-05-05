@@ -101,7 +101,7 @@ static void CreateViewInfoFromViewAttributes(avtViewInfo &,
 avtVolumeFilter::avtVolumeFilter()
 {
     primaryVariable = NULL;
-    newData = true;
+    osprayRefresh = true;
 }
 
 
@@ -360,13 +360,20 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     //
     // Set up the volume renderer.
     //
+    // this needs to be fixed
     avtCallback::SetOSPRayMode(true);
+    // initialize ospray
+    if (avtCallback::UseOSPRay()) 
+    {
+	ospray.InitOSP(osprayRefresh /* refresh data flag*/, false, 1);
+	osprayRefresh = false;
+    }
     avtRayTracer *software = new avtRayTracer;
     software->SetRayCastingSLIVR(true);
     software->SetTrilinear(false);
     software->SetInput(termsrc.GetOutput());
     software->InsertOpaqueImage(opaque_image);
-    software->SetRefreshData(newData); newData = false; // flag to indicate new data coming in
+    software->SetOSPRay(&ospray);
     //
     // Set up the transfer function
     //

@@ -40,23 +40,18 @@
 //                             avtRayTracer.C                                //
 // ************************************************************************* //
 
-#include "ospray/ospray.h"
-#include "ospray/ospcommon/vec.h"
-
 #ifdef _WIN32
 #  define _USE_MATH_DEFINES
 #  include <math.h> // M_PI
 #endif
 
 #include <avtRayTracer.h>
-
+#include <time.h>
 #include <vector>
-
+#include <sys/time.h>
 #include <visit-config.h>
-
 #include <vtkImageData.h>
 #include <vtkMatrix4x4.h>
-
 #include <avtCommonDataFunctions.h>
 #include <avtDataset.h>
 #include <avtDatasetExaminer.h>
@@ -73,20 +68,15 @@
 #include <avtWorldSpaceToImageSpaceTransform.h>
 #include <avtMemory.h>
 #include <avtCallback.h>
-
-#include <time.h>
-#include <sys/time.h>
-
 #ifdef PARALLEL
-#include <avtImageCommunicator.h>
-#include <avtSamplePointCommunicator.h>
+#  include <avtImageCommunicator.h>
+#  include <avtSamplePointCommunicator.h>
 #endif
-
 #include <DebugStream.h>
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
 
-using     std::vector;
+using std::vector;
 
 bool sortImgMetaDataByDepth(imgMetaData const& before, imgMetaData const& after)
 { return before.avg_z > after.avg_z; }
@@ -156,6 +146,8 @@ avtRayTracer::avtRayTracer()
     materialProperties[1] = 0.75;
     materialProperties[3] = 0.0;
     materialProperties[3] = 15.0;
+    // ospray
+    ospray = NULL;
 }
 
 // ****************************************************************************
@@ -707,12 +699,12 @@ avtRayTracer::Execute(void)
     // initialize current time
     int timingIndex = visitTimer->StartTimer();
 
-    // initialize ospray
-    static OSPContext ospray;
-    if (rayCastingSLIVR && avtCallback::UseOSPRay())
-    {
-	ospray.InitOSP(refreshData, false, 1);
-    }
+    // // initialize ospray
+    // static OSPContext ospray;
+    // if (rayCastingSLIVR && avtCallback::UseOSPRay())
+    // {
+    // 	ospray.InitOSP(refreshData, false, 1);
+    // }
 
     //
     // start of original pipeline
@@ -905,8 +897,8 @@ avtRayTracer::Execute(void)
 		   << "  rss (MB): " << m_rss/(1024*1024) << std::endl;
 	    // camera
 	    debug5 << "make ospray camera" << std::endl;
-	    ospray.InitCamera(OSP_PERSPECTIVE);
-	    ospray.SetCamera(view.camera, 
+	    ospray->InitCamera(OSP_PERSPECTIVE);
+	    ospray->SetCamera(view.camera, 
 			     view.focus, 
 			     view.viewUp, 
 			     viewDirection,
@@ -918,15 +910,15 @@ avtRayTracer::Execute(void)
 			     screen);
 	    // transfer function
 	    debug5  << "make ospray transfer function" << std::endl;
-	    ospray.InitTransferFunction();
-	    ospray.SetTransferFunction(transferFn1D->GetTableFloat(), 
+	    ospray->InitTransferFunction();
+	    ospray->SetTransferFunction(transferFn1D->GetTableFloat(), 
 				       transferFn1D->GetNumberOfTableEntries(),
 				       (float)transferFn1D->GetMin(),
 				       (float)transferFn1D->GetMax());
 	    // renderer
 	    debug5 << "make ospray renderer" << std::endl;
-	    ospray.InitRenderer();
-	    ospray.SetRenderer(false, materialProperties, view.camera);
+	    ospray->InitRenderer();
+	    ospray->SetRenderer(false, materialProperties, view.camera);
 	    // check memory
 	    avtMemory::GetMemorySize(m_size, m_rss);
 	    debug5 << PAR_Rank() << " ~ Memory use after: " << m_size
@@ -1135,9 +1127,6 @@ avtRayTracer::Execute(void)
 
 	    int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
 	    int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
-
-	    // experiment
-	    // ospray.RenderMultiVolume(composedData, fullImageExtents);
 
 	    // Having to adjust the dataset bounds by a arbitrary magic number here. 
 	    // Needs to be sorted out at some point!

@@ -105,6 +105,7 @@ struct VolumeInfo
     //! constructor
     VolumeInfo(int id) : patchId(id) {}
     ~VolumeInfo() {
+	std::cout << "delete volume" << std::endl;
 	CleanFBData();
 	CleanFB();
 	CleanVolume();	
@@ -247,7 +248,6 @@ struct VolumeInfo
 	ospCommit(volume);
 	visitTimer->StopTimer(volumeInitIndex, "Commit OSPRay patch");
 	visitTimer->DumpTimings();
-
     }
     void SetSamplingRate(float r) {
 	ospSet1f(volume, "samplingRate", r);
@@ -293,7 +293,7 @@ struct VolumeInfo
     }
 };
 
-struct OSPContext 
+struct OSPContext
 {
     bool refreshData = false;
 
@@ -311,7 +311,7 @@ struct OSPContext
     bool  enabledOSPRay = false;
 
     ~OSPContext() {
-	// std::cout << "deleting ospray" << std::endl;    
+	std::cout << "deleting ospray" << std::endl;    
 	volumePatch.clear();
 	if (camera      != nullptr) { ospRelease(camera); }
 	if (renderer    != nullptr) { ospRelease(renderer); }
@@ -321,6 +321,7 @@ struct OSPContext
     bool IsEnabled() { return enabledOSPRay; }
 
     void InitOSP(bool flag, bool debug = false, int numThreads = -1) { 
+	std::cout << "Initialize OSPRay (new data " << flag << ")" << std::endl;
 	enabledOSPRay = true;
 	OSPDevice device = ospGetCurrentDevice();
 	if (device == nullptr) {
@@ -339,7 +340,7 @@ struct OSPContext
 		(device, [](const char *msg) { debug5 << msg; });
 	    ospDeviceCommit(device);
 	}
-	refreshData = flag;   
+	refreshData = flag;
     }
 
     void InitPatch(int id) {
