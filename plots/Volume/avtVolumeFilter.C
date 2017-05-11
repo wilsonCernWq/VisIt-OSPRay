@@ -63,6 +63,7 @@
 #include <avtSourceFromAVTDataset.h>
 #include <avtView3D.h>
 #include <avtViewInfo.h>
+#include <avtMemory.h>
 
 #include <DebugStream.h>
 #include <InvalidDimensionsException.h>
@@ -100,6 +101,11 @@ static void CreateViewInfoFromViewAttributes(avtViewInfo &,
 
 avtVolumeFilter::avtVolumeFilter()
 {
+    unsigned long m_size, m_rss;
+    avtMemory::GetMemorySize(m_size, m_rss);
+    std::cout << "~ Memory usage before instantiating avtVolumeFilter: " << m_size 
+	      << " rss (MB): " << m_rss/(1024*1024) 
+	      << std::endl;    
     primaryVariable = NULL;
     osprayRefresh = true;
 }
@@ -125,6 +131,12 @@ avtVolumeFilter::~avtVolumeFilter()
         delete [] primaryVariable;
         primaryVariable = NULL;
     }
+    unsigned long m_size, m_rss;
+    avtMemory::GetMemorySize(m_size, m_rss);
+    std::cout << "Parallel rank = " << PAR_Rank()
+	      << " ~ Memory usage after instantiating avtVolumeFilter: " << m_size 
+	      << " rss (MB): " << m_rss/(1024*1024) 
+	      << std::endl;    
 }
 
 
@@ -350,7 +362,8 @@ avtImage_p
 avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 					    const WindowAttributes &window)
 {
-    std::cout << "RendererImageRaycastingSLIVR" << std::endl;
+    std::cout << "Running: avtVolumeFilter::RendererImageRaycastingSLIVR" << std::endl;
+    std::cout << "         --- Instantiating a new avtRayTracer" << std::endl;
     //
     // We need to create a dummy pipeline with the volume renderer that we
     // can force to execute within our "Execute".  Start with the source.
@@ -627,11 +640,7 @@ avtImage_p
 avtVolumeFilter::RenderImage(avtImage_p opaque_image,
 			     const WindowAttributes &window)
 {
-    
-        // Qi to exam if this function is called in parallel
-        std::cout << "Running avtVolumeFilter::RenderImage " << std::endl;
-
-	if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
+    	if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
 		return RenderImageRaycastingSLIVR(opaque_image,window);
 	}
 

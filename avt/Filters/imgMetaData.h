@@ -50,7 +50,7 @@
 #include <vtkType.h>
 
 #include <avtOpacityMap.h>
-
+#include <avtMemory.h>
 #include <DebugStream.h>
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
@@ -69,7 +69,7 @@ typedef ospcommon::vec3i vec3i;
 typedef ospcommon::vec4f vec4f;
 typedef ospcommon::vec4i vec4i;
 
-//! this struct will contain informations related to one volume
+// this struct will contain informations related to one volume
 struct VolumeInfo 
 {
 
@@ -102,17 +102,21 @@ struct VolumeInfo
     vec3f regionUpperClip;
     vec3f regionLowerClip;
 
-    //! constructor
+    // constructor
     VolumeInfo(int id) : patchId(id) {}
+    // destructor
     ~VolumeInfo() {
-	std::cout << "delete volume" << std::endl;
+	Clean();
+    }
+
+    void Clean() {
 	CleanFBData();
 	CleanFB();
 	CleanVolume();	
 	CleanWorld();
     }
-
-    //! other function
+    
+    // other function
     void Set(void* ptr, int type,
 	     double *X, double *Y, double *Z,
 	     int nX, int nY, int nZ, float sr)  {
@@ -139,11 +143,10 @@ struct VolumeInfo
     void SetTransferFunction(OSPTransferFunction tf) { transferfcn = tf; }
     void SetRenderer(OSPRenderer r) { renderer = r; }
 
-    //! ospModel component
+    // ospModel component
     OSPModel GetWorld() { return world; }
     void InitWorld() {
 	if (worldType == OSP_INVALID) {
-	    // std::cout << "-- initializing world " << patchId << std::endl;
 	    CleanWorld();
 	    worldType = OSP_VALID;
 	    world = ospNewModel();
@@ -162,10 +165,9 @@ struct VolumeInfo
 	worldType = OSP_INVALID;
     }
 	
-    //! ospVolume component
+    // ospVolume component
     void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME) {
 	if (volumeType != type) { // only initialize once
-	    // std::cout << "-- initializing volume " << patchId << std::endl;
 	    CleanVolume();
 	    volumeType = type;
 	    switch (type) {
@@ -186,13 +188,12 @@ struct VolumeInfo
     }
     OSPVolume GetVolume() { return volume; }
     void SetVolume(void* ptr, int type, double *X, double *Y, double *Z, int nX, int nY, int nZ) {
-	// std::cout << "-- commiting volume " << patchId << std::endl;
 	// refresh existing data
 	if (voxelData != nullptr) { 
 	    ospRelease(voxelData); 
 	    voxelData = nullptr; 
 	}
-	//! calculate volume data type
+	// calculate volume data type
 	if (type == VTK_UNSIGNED_CHAR) {
 	    dataType = "uchar";
 	    voxelDataType = OSP_UCHAR;
@@ -212,9 +213,9 @@ struct VolumeInfo
 	    debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
 	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
 	}
-	//! assign data pointer
+	// assign data pointer
 	dataPtr = ptr;
-	//! assign structure
+	// assign structure
 	regionStart   = vec3f(X[0],    Y[0],    Z[0]);
 	regionStop    = vec3f(X[nX-1], Y[nY-1], Z[nZ-1]);
 	regionSize    = vec3i(nX, nY, nZ);
@@ -222,14 +223,14 @@ struct VolumeInfo
 	    ((ospcommon::vec3f)regionSize - 1.0f);
 	regionUpperClip = vec3f(X[0],Y[0],Z[0]);
 	regionLowerClip = vec3f(X[nX-2], Y[nY-2], Z[nZ-2]);
-	//! commit data
+	// commit data
 	voxelSize = nX * nY * nZ;
 	voxelData = ospNewData(voxelSize, voxelDataType, 
 			       dataPtr, OSP_DATA_SHARED_BUFFER);
 	ospSetData(volume, "voxelData", voxelData);
 	ospSetString(volume, "voxelType", dataType.c_str());
 	ospSetObject(volume, "transferFunction", transferfcn);
-	//! commit volume
+	// commit volume
 	ospSetVec3f(volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
 	ospSetVec3f(volume, 
 		    "volumeClippingBoxLower",
@@ -262,9 +263,8 @@ struct VolumeInfo
 	volumeType = OSP_INVALID;
     }
 
-    //! framebuffer component     
+    // framebuffer component     
     void InitFB(unsigned int width, unsigned int height) {
-	// std::cout << "-- initializing fb " << patchId << std::endl;
 	vec2i imageSize(width, height);
 	CleanFBData(); CleanFB();	    
 	framebuffer = ospNewFrameBuffer((osp::vec2i&)imageSize, 
@@ -309,13 +309,25 @@ struct OSPContext
     float r_pany;
     int   screenSize[2];
     bool  enabledOSPRay = false;
-
+    
     ~OSPContext() {
-	std::cout << "deleting ospray" << std::endl;    
+	std::cout << "deleting ospray" << std::endl;
+	// check memory
+	unsigned long m_size, m_rss;
+	avtMemory::GetMemorySize(m_size, m_rss);
+	std::cout << "~ Memory usage before deleting OSPRay: " << m_size 
+		  << " rss (MB): " << m_rss/(1024*1024) 
+		  << std::endl;
+	// clean stuffs
 	volumePatch.clear();
 	if (camera      != nullptr) { ospRelease(camera); }
 	if (renderer    != nullptr) { ospRelease(renderer); }
 	if (transferfcn != nullptr) { ospRelease(transferfcn); }
+	// check memory again
+	avtMemory::GetMemorySize(m_size, m_rss);
+	std::cout << "~ Memory usage after deleting OSPRay: " << m_size 
+		  << " rss (MB): " << m_rss/(1024*1024) 
+		  << std::endl;
     }
     
     bool IsEnabled() { return enabledOSPRay; }
@@ -361,7 +373,7 @@ struct OSPContext
 	return &volumePatch[id];
     }
 
-    //! ospRenderer component
+    // ospRenderer component
     void InitRenderer() {
 	if (rendererType == OSP_INVALID) {
 	    renderer = ospNewRenderer("scivis");
@@ -396,7 +408,7 @@ struct OSPContext
 	ospCommit(renderer);
     }
 
-    //! ospCamera component
+    // ospCamera component
     void InitCamera(unsigned char type) {
 	if (cameraType != type) {
 	    cameraType = type;
@@ -459,7 +471,7 @@ struct OSPContext
 	ospCommit(camera);
     }
 
-    //! ospTransferFunction component  
+    // ospTransferFunction component  
     void InitTransferFunction() {
 	if (transferfcnType == OSP_INVALID) {
 	    if (transferfcn != nullptr) { ospRelease(transferfcn); }
