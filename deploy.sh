@@ -39,6 +39,7 @@ elif [ "$3" == "cmake" ]; then
 	--exclude '*.hpp'   \
 	--exclude '*.cxx'   \
 	--exclude '*.hxx'   \
+	--exclude '*.xml'   \
 	--exclude '*.sh'    \
 	--exclude '.*'      \
 	--exclude 'README*' \
