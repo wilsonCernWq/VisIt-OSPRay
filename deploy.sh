@@ -1,35 +1,48 @@
 #!/bin/bash
 
-# define source location
-# VISITSRC=/home/sci/qwu/visitOSPRay/visitOSPRayCPU/src-visit2.12.0
-# WORKSRC=/home/sci/qwu/visitOSPRay/visitOSPRayCPU/working
-
 VISITSRC=${1}
 WORKSRC=${2}
 
-# shopt -s extglob
+HELP()
+{
+    echo "Usage: bash deploy.sh <destination-dir> <source-dir>"
+}
+
+if [ "${VISITSRC}" == "" ]; then
+    HELP
+    exit
+fi
+
+if [ "${WORKSRC}" == "" ]; then
+    HELP
+    exit
+fi
 
 if [ "$3" == "source" ]; then 
 
-    cp -vr ${WORKSRC}/plots/Volume/*.C        ${VISITSRC}/plots/Volume
-    cp -vr ${WORKSRC}/plots/Volume/*.h        ${VISITSRC}/plots/Volume
-    cp -vr ${WORKSRC}/viewer/main/*           ${VISITSRC}/viewer/main
-    cp -vr ${WORKSRC}/engine/main/*           ${VISITSRC}/engine/main
-    cp -vr ${WORKSRC}/avt/Filters/*.C         ${VISITSRC}/avt/Filters
-    cp -vr ${WORKSRC}/avt/Filters/*.h         ${VISITSRC}/avt/Filters
-    cp -vr ${WORKSRC}/avt/Plotter/vtk/*.C     ${VISITSRC}/avt/Plotter/vtk
-    cp -vr ${WORKSRC}/avt/Pipeline/Data/*.C   ${VISITSRC}/avt/Pipeline/Data
-    cp -vr ${WORKSRC}/avt/Pipeline/Data/*.h   ${VISITSRC}/avt/Pipeline/Data
+    rsync -vr \
+	--exclude '*.txt'   \
+	--exclude '*.cmake' \
+	--exclude '*.in'    \
+	--exclude '*.sh'    \
+	--exclude '.*'      \
+	--exclude 'README*' \
+	--exclude 'exclude' \
+	${WORKSRC}/* ${VISITSRC}
 
 elif [ "$3" == "cmake" ]; then 
-    
-    cp -v ${WORKSRC}/config-site/hastur.sci.utah.edu.cmake   ${VISITSRC}/config-site
-    cp -v ${WORKSRC}/CMakeLists.txt                          ${VISITSRC}
-    cp -v ${WORKSRC}/plots/Volume/CMakeLists.txt             ${VISITSRC}/plots/Volume
-    cp -v ${WORKSRC}/avt/Filters/CMakeLists.txt              ${VISITSRC}/avt/Filters
-    cp -v ${WORKSRC}/avt/Plotter/CMakeLists.txt              ${VISITSRC}/avt/Plotter
-    cp -v ${WORKSRC}/avt/Plotter/vtk/*.in                    ${VISITSRC}/avt/Plotter/vtk
+
+    rsync -vr \
+	--exclude '*.C'     \
+	--exclude '*.h'     \
+	--exclude '*.cpp'   \
+	--exclude '*.hpp'   \
+	--exclude '*.cxx'   \
+	--exclude '*.hxx'   \
+	--exclude '*.sh'    \
+	--exclude '.*'      \
+	--exclude 'README*' \
+	--exclude 'exclude' \
+	${WORKSRC}/* ${VISITSRC}
 
 fi
-
-# shopt -u extglob
