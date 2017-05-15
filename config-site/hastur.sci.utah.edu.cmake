@@ -1,7 +1,7 @@
-#/home/sci/qwu/visitOSPRay/visit/cmake/3.0.2/linux-x86_64_gcc-4.8/bin/cmake
+#/home/sci/qwu/VisIt/visit/cmake/3.0.2/linux-x86_64_gcc-4.8/bin/cmake
 ##
 ## ./build_visit2_12_0 generated host.cmake
-## created: Fri Mar 31 17:41:42 MDT 2017
+## created: Sat May 13 20:27:17 MDT 2017
 ## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -23,7 +23,7 @@ VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC -fvisibility=hidden" TYPE STRI
 ##
 VISIT_OPTION_DEFAULT(VISIT_PARALLEL ON TYPE BOOL)
 ## (configured w/ mpi compiler wrapper)
-VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/compilers_and_libraries_2017.0.098/linux/mpi/intel64/bin/mpicc TYPE FILEPATH)
+VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/impi/2017.2.174/bin64/mpicc TYPE FILEPATH)
 
 ##
 ## VisIt Thread Option
@@ -42,6 +42,11 @@ SET(TBB_ROOT /home/sci/qwu/OSPRay/tbb2017_20160916oss)
 SET(ISPC_EXECUTABLE /home/sci/qwu/OSPRay/ispc-v1.9.1-linux)                     
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)  
 
+##
+## PIDX
+##
+SET(PIDX_DIR /home/sci/qwu/VisIt/visitOSPRayCPU/PIDX/install)
+
 ##############################################################
 ##
 ## Database reader plugin support libraries
@@ -57,6 +62,8 @@ VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
 
 ##
 ## Mesa
+##
+## disable mesa for non client-server mode
 ##
 ## VISIT_OPTION_DEFAULT(VISIT_MESA_DIR ${VISITHOME}/mesa/7.10.2/${VISITARCH})
 

@@ -835,7 +835,7 @@ VISIT_3RDPARTY_VAR(R_DIR         "Path containing the R library's include and li
 VISIT_3RDPARTY_VAR(SILO_DIR      "Path containing the Silo library's include and lib")
 VISIT_3RDPARTY_DEP(SILO_LIBDEP   "Silo library dependencies")
 VISIT_3RDPARTY_VAR(UINTAH_DIR    "Path containing the Uintah library's include and lib")
-VISIT_3RDPARTY_VAR(VISUS_DIR     "Path containing the Visus library's include and lib")
+VISIT_3RDPARTY_VAR(PIDX_DIR      "Path containing the PIDX library's include and lib")
 VISIT_3RDPARTY_VAR(VTKM_DIR      "Path containing the VTKm library's include and lib")
 VISIT_3RDPARTY_VAR(XDMF_DIR      "Path containing the Xdmf library's include and lib")
 VISIT_3RDPARTY_DEP(XDMF_LIBDEP   "Xdmf library dependencies")
@@ -1182,7 +1182,7 @@ IF(VISIT_OSPRAY)
     MESSAGE(STATUS "OSPRAY_LIBRARIESR " ${OSPRAY_LIBRARIES})
     MESSAGE(STATUS "OSPRAY for VisIt: ON")
 ELSE(VISIT_OSPRAY)
-  MESSAGE(STATUS "OSPRAY for VisIt: OFF")
+    MESSAGE(STATUS "OSPRAY for VisIt: OFF")
 ENDIF(VISIT_OSPRAY)
 
 #-----------------------------------------------------------------------------
@@ -1371,7 +1371,6 @@ IF(NOT VISIT_BUILD_MINIMAL_PLUGINS OR VISIT_SELECTED_DATABASE_PLUGINS)
         SET(HAVE_LIBCONDUIT 1)
     ENDIF(CONDUIT_FOUND)
 
-
     # Configure eavl support.
     INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindEAVL.cmake)
     IF(EAVL_FOUND)
@@ -1458,12 +1457,6 @@ IF(NOT VISIT_BUILD_MINIMAL_PLUGINS OR VISIT_SELECTED_DATABASE_PLUGINS)
     IF(UINTAH_FOUND)
         SET(HAVE_LIBUINTAH 1)
     ENDIF(UINTAH_FOUND)
-
-    # Configure Visus support.
-    INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindVisus.cmake)
-    IF(VISUS_FOUND)
-        SET(HAVE_LIBVISUS 1)
-    ENDIF(VISUS_FOUND)
 
     # Configure VTKm support.
     INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindVTKm.cmake)
@@ -1682,6 +1675,19 @@ IF(VISIT_PARALLEL)
         MESSAGE(STATUS "    VISIT_PARALLEL_FORTRAN_LINKER_FLAGS = ${VISIT_PARALLEL_FORTRAN_LINKER_FLAGS}")
         MESSAGE(STATUS "    VISIT_PARALLEL_FORTRAN_LIBS = ${VISIT_PARALLEL_FORTRAN_LIBS}")
     ENDIF(VISIT_FORTRAN AND VISIT_PARALLEL_FORTRAN_LIBS)
+
+    # modified by Qi
+    # PIDX module work only with visit parallel
+    IF(NOT VISIT_BUILD_MINIMAL_PLUGINS OR VISIT_SELECTED_DATABASE_PLUGINS)
+
+      # Configure PIDX support.
+      INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindPIDX.cmake)
+      IF(PIDX_FOUND)
+        SET(HAVE_LIBPIDX 1)
+      ENDIF(PIDX_FOUND)
+
+    ENDIF()
+
 ELSE(VISIT_PARALLEL)
     MESSAGE(STATUS "Serial version of VisIt")
 ENDIF(VISIT_PARALLEL)
