@@ -2312,10 +2312,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	void* ospVolumePointer;
 	int ospVolumeDataType;
 	if (npt_arrays > 0) {
+	    std::cerr << "[ospray] Point Dataset " << std::endl;
 	    ospVolumePointer = pt_arrays[0];
 	    ospVolumeDataType = pt_vartypes[0];
 	}
 	else if (ncell_arrays > 0){
+	    std::cerr << "[ospray] Cell Dataset " << std::endl;
 	    ospVolumePointer = cell_arrays[0];
 	    ospVolumeDataType = cell_vartypes[0];
 	} else {
@@ -2328,7 +2330,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    std::cerr << "WARNING: Multiple data found within one patch, " 
 		      << " We don't know what to do !! " 
 		      << std::endl
-		      << " One of the dataset might be missing "
+		      << "         One of the dataset might be missing "
 		      << std::endl;
 	}
 	auto volume = ospray->GetPatch(patch);
@@ -2364,6 +2366,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      imgArray);
 	    volume->CleanFBData();
 	    patchDrawn = 1;
+
+	    // debug write patch image into file
+	    // debug5 << "saving image in rendering!" << std::endl;
+	    // static int i = 0;
+	    // writeArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/patch_" + std::to_string(i++), imgArray, imgWidth, imgHeight);
+
 	}
 	volume->CleanFB();
     }

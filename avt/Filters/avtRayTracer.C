@@ -1035,66 +1035,92 @@ avtRayTracer::Execute(void)
 	    //
 	    // Blend images
 	    //
-	    debug5 << "blending image!" << std::endl;
-	    int renderedWidth = fullImageExtents[1] - fullImageExtents[0];
+	    int renderedWidth  = fullImageExtents[1] - fullImageExtents[0];
 	    int renderedHeight = fullImageExtents[3] - fullImageExtents[2];
-	    float *composedData = new float[renderedWidth * renderedHeight * 4]();
-	    debug5 << "blending image!" << std::endl;
+	    float *composedData = NULL;
+	    composedData = new float[renderedWidth * renderedHeight * 4]{0};
+
+	    debug5 << "total num of patches " << numPatches << std::endl;
+	    debug5 << "composedData size " << renderedWidth << ", " << renderedHeight << std::endl;
+	    debug5 << "fullImageExtents " 
+		   << fullImageExtents[0] << " "
+		   << fullImageExtents[1] << " "
+		   << fullImageExtents[2] << " "
+		   << fullImageExtents[3] << std::endl;
 
 	    for (int i=0; i<numPatches; i++)
 	    {
-	    	imgMetaData currentPatch = allImgMetaData[i];
+	    	imgMetaData currentPatch = allImgMetaData[i];		
 	    	imgData tempImgData;
 	    	tempImgData.imagePatch = NULL;
 	    	tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
 	    	extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
 
-	    	for (int _y=0; _y<currentPatch.dims[1]; _y++)
-	    	    for (int _x=0; _x<currentPatch.dims[0]; _x++)
+		debug5 << "current patch id = " << i << std::endl;
+		debug5 << "current patch size = " << currentPatch.dims[0] << ", " <<  currentPatch.dims[1] << std::endl;
+		debug5 << "current patch starting" 
+		       << " X = " << currentPatch.screen_ll[0] 
+		       << " Y = " << currentPatch.screen_ll[1] << std::endl;
+
+	    	for (int patchY = 0; patchY < currentPatch.dims[1]; patchY++) 
+		{
+	    	    for (int patchX = 0; patchX < currentPatch.dims[0]; patchX++)
 	    	    {
-	    		int startingX = currentPatch.screen_ll[0];
-	    		int startingY = currentPatch.screen_ll[1];
+	    		const int startingX = currentPatch.screen_ll[0];
+	    		const int startingY = currentPatch.screen_ll[1];
 
-	    		if ((startingX + _x) > fullImageExtents[1])
-	    		    continue;
+			const int bufferX = startingX + patchX + 1;
+			const int bufferY = startingY + patchY + 1;
+			
+	    		if (bufferX >= fullImageExtents[1]) { continue; }
 
-	    		if ((startingY + _y) > fullImageExtents[3])
-	    		    continue;
+	    		if (bufferY >= fullImageExtents[3]) { continue; }
 
 	    		// index in the subimage
-	    		int subImgIndex = (_y*currentPatch.dims[0] + _x) * 4;
+	    		int patchIndex = (patchY * currentPatch.dims[0] + patchX) * 4;
 	    		// index in the big buffer
-	    		int bufferIndex = ((((startingY+_y)-fullImageExtents[2]) * renderedWidth) 
-					   +((startingX+_x)-fullImageExtents[0])) * 4;
+	    		int bufferIndex = ((bufferY - fullImageExtents[2]) * renderedWidth
+					   + bufferX - fullImageExtents[0]) * 4;
+			
+			// debug5 << " X = " << bufferX - fullImageExtents[0] 
+			//        << " Y = " << bufferY - fullImageExtents[2] << std::endl;  
 
 	    		if (composedData[bufferIndex+3] < 1.0)
 	    		{
 	    		    // back to Front compositing: 
-			    //  composited_i = composited_i-1 * (1.0 - alpha_i) + incoming;
-			    //  alpha        = alpha_i-1 * (1- alpha_i) + alpha_i
-	    		    float alpha = (1.0 - tempImgData.imagePatch[subImgIndex+3]);
-	    		    composedData[bufferIndex+0] = 
-				imgComm.clamp((composedData[bufferIndex+0] * alpha) 
-					      + tempImgData.imagePatch[subImgIndex+0]);
-	    		    composedData[bufferIndex+1] = 
-				imgComm.clamp((composedData[bufferIndex+1] * alpha) 
-					      + tempImgData.imagePatch[subImgIndex+1]);
-	    		    composedData[bufferIndex+2] = 
-				imgComm.clamp((composedData[bufferIndex+2] * alpha)
-					      + tempImgData.imagePatch[subImgIndex+2]);
-	    		    composedData[bufferIndex+3] = 
-				imgComm.clamp((composedData[bufferIndex+3] * alpha) 
-					      + tempImgData.imagePatch[subImgIndex+3]);
+	    		    float alpha = (1.0 - tempImgData.imagePatch[patchIndex + 3]);
+	    		    composedData[bufferIndex + 0] = 
+				imgComm.clamp((composedData[bufferIndex + 0] * alpha) 
+					      + tempImgData.imagePatch[patchIndex + 0]);
+	    		    composedData[bufferIndex + 1] = 
+				imgComm.clamp((composedData[bufferIndex + 1] * alpha) 
+					      + tempImgData.imagePatch[patchIndex + 1]);
+	    		    composedData[bufferIndex + 2] = 
+				imgComm.clamp((composedData[bufferIndex + 2] * alpha)
+					      + tempImgData.imagePatch[patchIndex + 2]);
+	    		    composedData[bufferIndex + 3] = 
+				imgComm.clamp((composedData[bufferIndex + 3] * alpha) 
+					      + tempImgData.imagePatch[patchIndex + 3]);
 	    		}
 	    	    }
+		}
+
+		// debug write patch image into file		
+		// writeArrayToPPM("/home/sci/qwu/Desktop/debug/compisiting/patch_" + std::to_string(i), tempImgData.imagePatch, currentPatch.dims[0], currentPatch.dims[1]);		    
 
 	    	//
 	    	// Clean up data
 	    	if (tempImgData.imagePatch != NULL) {
-	    	    delete []tempImgData.imagePatch;
+		    debug5 << "Free patch data!" << std::endl;
+		    delete[] tempImgData.imagePatch;
+		    debug5 << "Free patch data done!" << std::endl;
 		}
-	    	tempImgData.imagePatch = NULL;
+		tempImgData.imagePatch = NULL;
 	    }
+
+	    // writeArrayToPPM("/home/sci/qwu/Desktop/debug/compisiting/composed", composedData, renderedWidth, renderedHeight);
+
+	    debug5 << "Clear allImageMetaData" << std::endl;
 	    allImgMetaData.clear();
 
 	    // Qi debug
@@ -1123,9 +1149,9 @@ avtRayTracer::Execute(void)
 	    // Blend in with bounding box and other visit plots
 	    //
 	    vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
-	    vtkMatrix4x4::Invert(pvm,Inversepvm);
+	    vtkMatrix4x4::Invert(pvm, Inversepvm);
 
-	    int compositedImageWidth = fullImageExtents[1] - fullImageExtents[0];
+	    int compositedImageWidth  = fullImageExtents[1] - fullImageExtents[0];
 	    int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
 
 	    // Having to adjust the dataset bounds by a arbitrary magic number here. 
@@ -1174,11 +1200,11 @@ avtRayTracer::Execute(void)
 				unProject(_x, _y, _tempZ, worldCoordinates,
 					  screen[0], screen[1], Inversepvm);
 
-				debug5 << "x, y, z: " << _x << ", " << _y << ", " << _tempZ 
-				       << "   wordld: " 
-				       << worldCoordinates[0] << ", " 
-				       << worldCoordinates[1] << ", " 
-				       << worldCoordinates[2] << std::endl;
+				// debug5 << "x, y, z: " << _x << ", " << _y << ", " << _tempZ 
+				//        << "   wordld: " 
+				//        << worldCoordinates[0] << ", " 
+				//        << worldCoordinates[1] << ", " 
+				//        << worldCoordinates[2] << std::endl;
 
 				if ( checkInBounds(dbounds, worldCoordinates) )
 				{
@@ -1262,7 +1288,10 @@ avtRayTracer::Execute(void)
 	    }
 	    img->Delete();
 	    SetOutput(whole_image);
-	    delete []composedData;
+
+	    if (composedData != NULL) {
+		delete [] composedData;
+	    }
 
 	    // clean up
 	    Inversepvm->Delete();
@@ -1271,7 +1300,7 @@ avtRayTracer::Execute(void)
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
 	    avtMemory::GetMemorySize(m_size, m_rss);
-	    debug5 << PAR_Rank() 
+	    debug5 << PAR_Rank()
 		   << " ~ Memory use: " << m_size
 		   << "  rss (MB): " << m_rss/(1024*1024)
 		   << std::endl;

@@ -703,14 +703,6 @@ struct datatree_childindex {
 void
 avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 {
-    // // check memory
-    // unsigned long m_size, m_rss;
-    // avtMemory::GetMemorySize(m_size, m_rss);
-    // debug5 << PAR_Rank()
-    // 	      << " ~ avtSamplePointExtractor::ExecuteTree  .. .  " 
-    // 	      << "   Memory use before: " << m_size
-    //        << "  rss (MB): " << m_rss/(1024*1024) << endl;
-
     // initialize rayCastingSLIVR sampling state
     totalAssignedPatches = dt->GetNChildren();
     patchCount = 0;
@@ -797,11 +789,6 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     debug5 << " parallel rank #" << PAR_Rank() 
 	   << " has " << patchCount  << " patches in data tree" << std::endl;
     
-    // // check memory after
-    // avtMemory::GetMemorySize(m_size, m_rss);
-    // debug5 << PAR_Rank() 
-    // 	      << " ~ Memory use after: " << m_size << "  rss (MB): " << m_rss/(1024*1024)
-    //        << "   ... avtSamplePointExtractor::ExecuteTree done@!!!" << endl;
 }
 
 
