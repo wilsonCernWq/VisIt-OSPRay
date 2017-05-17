@@ -280,29 +280,36 @@ avtImgCommunicator::blendWithBackground(float *_image, int extents[4], float bac
 void
 avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4])
 {
-	int widthSrc, heightSrc, widthDst;
-	widthSrc  = srcExtents[1] - srcExtents[0];
-	heightSrc = srcExtents[3] - srcExtents[2];
+    int widthSrc, heightSrc, widthDst;
+    widthSrc  = srcExtents[1] - srcExtents[0];
+    heightSrc = srcExtents[3] - srcExtents[2];
 
-	widthDst  = dstExtents[1] - dstExtents[0];
+    widthDst  = dstExtents[1] - dstExtents[0];
 
-	#if defined(VISIT_THREADS)
-	#endif
+#if defined(VISIT_THREADS)
+#endif
 
-	for (int _y=blendExtents[2]; _y<blendExtents[3]; _y++)
-		for (int _x=blendExtents[0]; _x<blendExtents[1]; _x++)
-		{
+    for (int bufferY=blendExtents[2]; bufferY<blendExtents[3]; bufferY++) 
+    {
+	for (int bufferX=blendExtents[0]; bufferX<blendExtents[1]; bufferX++)
+	{
+	    
+	    if (bufferX <  dstExtents[0]) { continue; }
+	    if (bufferX >= dstExtents[1]) { continue; }
+	    if (bufferY <  dstExtents[2]) { continue; }
+	    if (bufferY >= dstExtents[3]) { continue; }
+	    
+	    int srcIndex = (bufferY-srcExtents[2]) * widthSrc * 4 + (bufferX-srcExtents[0]) * 4;
+	    int dstIndex = (bufferY-dstExtents[2]) * widthDst * 4 + (bufferX-dstExtents[0]) * 4;
 
-			int srcIndex = (_y-srcExtents[2]) * widthSrc * 4 + (_x-srcExtents[0]) * 4;
-			int dstIndex = (_y-dstExtents[2]) * widthDst * 4 + (_x-dstExtents[0]) * 4;
-
-			// back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-			float alpha = 1.0 - dstImage[dstIndex+3];
-			dstImage[dstIndex+0] = clamp( (srcImage[srcIndex+0] * alpha) + dstImage[dstIndex+0] );
-			dstImage[dstIndex+1] = clamp( (srcImage[srcIndex+1] * alpha) + dstImage[dstIndex+1] );
-			dstImage[dstIndex+2] = clamp( (srcImage[srcIndex+2] * alpha) + dstImage[dstIndex+2] );
-			dstImage[dstIndex+3] = clamp( (srcImage[srcIndex+3] * alpha) + dstImage[dstIndex+3] );
-		}
+	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
+	    float alpha = 1.0 - dstImage[dstIndex+3];
+	    dstImage[dstIndex+0] = clamp( (srcImage[srcIndex+0] * alpha) + dstImage[dstIndex+0] );
+	    dstImage[dstIndex+1] = clamp( (srcImage[srcIndex+1] * alpha) + dstImage[dstIndex+1] );
+	    dstImage[dstIndex+2] = clamp( (srcImage[srcIndex+2] * alpha) + dstImage[dstIndex+2] );
+	    dstImage[dstIndex+3] = clamp( (srcImage[srcIndex+3] * alpha) + dstImage[dstIndex+3] );
+	}
+    }
 }
 
 
@@ -322,26 +329,33 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int bl
 void
 avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4])
 {
-	int widthSrc, heightSrc, widthDst;
-	widthSrc  = srcExtents[1] - srcExtents[0];
-	heightSrc = srcExtents[3] - srcExtents[2];
+    int widthSrc, heightSrc, widthDst;
+    widthSrc  = srcExtents[1] - srcExtents[0];
+    heightSrc = srcExtents[3] - srcExtents[2];
 
-	widthDst  = dstExtents[1] - dstExtents[0];
+    widthDst  = dstExtents[1] - dstExtents[0];
 
-	for (int _y=blendExtents[2]; _y<blendExtents[3]; _y++)
-		for (int _x=blendExtents[0]; _x<blendExtents[1]; _x++)
-		{
+    for (int bufferY=blendExtents[2]; bufferY<blendExtents[3]; bufferY++)
+    {
+	for (int bufferX=blendExtents[0]; bufferX<blendExtents[1]; bufferX++)
+	{
 
-			int srcIndex = (_y-srcExtents[2]) * widthSrc * 4 + (_x-srcExtents[0]) * 4;
-			int dstIndex = (_y-dstExtents[2]) * widthDst * 4 + (_x-dstExtents[0]) * 4;
+	    if (bufferX <  dstExtents[0]) { continue; }
+	    if (bufferX >= dstExtents[1]) { continue; }
+	    if (bufferY <  dstExtents[2]) { continue; }
+	    if (bufferY >= dstExtents[3]) { continue; }
 
-			// back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-			float alpha = 1.0 - srcImage[srcIndex+3];
-			dstImage[dstIndex+0] = clamp( (dstImage[dstIndex+0] * alpha) + srcImage[srcIndex+0] );
-			dstImage[dstIndex+1] = clamp( (dstImage[dstIndex+1] * alpha) + srcImage[srcIndex+1] );
-			dstImage[dstIndex+2] = clamp( (dstImage[dstIndex+2] * alpha) + srcImage[srcIndex+2] );
-			dstImage[dstIndex+3] = clamp( (dstImage[dstIndex+3] * alpha) + srcImage[srcIndex+3] );
-		}
+	    int srcIndex = (bufferY-srcExtents[2]) * widthSrc * 4 + (bufferX-srcExtents[0]) * 4;
+	    int dstIndex = (bufferY-dstExtents[2]) * widthDst * 4 + (bufferX-dstExtents[0]) * 4;
+
+	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
+	    float alpha = 1.0 - srcImage[srcIndex+3];
+	    dstImage[dstIndex+0] = clamp( (dstImage[dstIndex+0] * alpha) + srcImage[srcIndex+0] );
+	    dstImage[dstIndex+1] = clamp( (dstImage[dstIndex+1] * alpha) + srcImage[srcIndex+1] );
+	    dstImage[dstIndex+2] = clamp( (dstImage[dstIndex+2] * alpha) + srcImage[srcIndex+2] );
+	    dstImage[dstIndex+3] = clamp( (dstImage[dstIndex+3] * alpha) + srcImage[srcIndex+3] );
+	}
+    }
 }
 
 // ****************************************************************************
@@ -359,36 +373,39 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int bl
 void
 avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
-	int widthSrc, heightSrc, widthDst;
-	widthSrc  = srcExtents[1] - srcExtents[0];
-	heightSrc = srcExtents[3] - srcExtents[2];
+    int widthSrc, heightSrc, widthDst;
+    widthSrc  = srcExtents[1] - srcExtents[0];
+    heightSrc = srcExtents[3] - srcExtents[2];
+    widthDst  = dstExtents[1] - dstExtents[0];
 
-	widthDst  = dstExtents[1] - dstExtents[0];
+    for (int patchY=0; patchY<heightSrc; patchY++)
+    {
+	for (int patchX=0; patchX<widthSrc; patchX++)
+	{
+	    const int startingX = srcExtents[0];
+	    const int startingY = srcExtents[2];
 
-	for (int _y=0; _y<heightSrc; _y++)
-		for (int _x=0; _x<widthSrc; _x++)
-		{
-			int startingX = srcExtents[0];
-			int startingY = srcExtents[2];
+	    const int bufferX = startingX + patchX + 1;
+	    const int bufferY = startingY + patchY + 1;
 
-			if ((startingX + _x) > dstExtents[1])
-				continue;
+	    if (bufferX <  dstExtents[0]) { continue; }
+	    if (bufferX >= dstExtents[1]) { continue; }
+	    if (bufferY <  dstExtents[2]) { continue; }
+	    if (bufferY >= dstExtents[3]) { continue; }
 
-			if ((startingY + _y) > dstExtents[3])
-				continue;
+	    int srcIndex = (widthSrc * patchY + patchX) * 4;                                     // index in the subimage
+	    int dstIndex = ((bufferY - dstExtents[2]) * widthDst + bufferX - dstExtents[0]) * 4; // index in the big buffer
 
-			int srcIndex = widthSrc*_y*4 + _x*4;                                                                  // index in the subimage
-			int dstIndex = ( (startingY+_y - dstExtents[2])*widthDst*4  + (startingX+_x - dstExtents[0])*4 );     // index in the big buffer
+	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
+	    float alpha = 1.0f - dstImage[dstIndex+3];
+	    dstImage[dstIndex+0] = clamp((srcImage[srcIndex + 0] * alpha) + dstImage[dstIndex + 0]);
+	    dstImage[dstIndex+1] = clamp((srcImage[srcIndex + 1] * alpha) + dstImage[dstIndex + 1]);
+	    dstImage[dstIndex+2] = clamp((srcImage[srcIndex + 2] * alpha) + dstImage[dstIndex + 2]);
+	    dstImage[dstIndex+3] = clamp((srcImage[srcIndex + 3] * alpha) + dstImage[dstIndex + 3]);
+	}
+    }
 
-			// back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-			float alpha = 1.0 - dstImage[dstIndex+3];
-			dstImage[dstIndex+0] = clamp( (srcImage[srcIndex+0] * alpha) + dstImage[dstIndex+0] );
-			dstImage[dstIndex+1] = clamp( (srcImage[srcIndex+1] * alpha) + dstImage[dstIndex+1] );
-			dstImage[dstIndex+2] = clamp( (srcImage[srcIndex+2] * alpha) + dstImage[dstIndex+2] );
-			dstImage[dstIndex+3] = clamp( (srcImage[srcIndex+3] * alpha) + dstImage[dstIndex+3] );
-		}
 }
-
 
 // ****************************************************************************
 //  Method: avtImgCommunicator::
@@ -405,34 +422,37 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float 
 void
 avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
-	int widthSrc, heightSrc, widthDst;
-	widthSrc  = srcExtents[1] - srcExtents[0];
-	heightSrc = srcExtents[3] - srcExtents[2];
+    int widthSrc, heightSrc, widthDst;
+    widthSrc  = srcExtents[1] - srcExtents[0];
+    heightSrc = srcExtents[3] - srcExtents[2];
 
-	widthDst  = dstExtents[1] - dstExtents[0];
+    widthDst  = dstExtents[1] - dstExtents[0];
 
-	for (int _y=0; _y<heightSrc; _y++)
-		for (int _x=0; _x<widthSrc; _x++)
-		{
-			int startingX = srcExtents[0];
-			int startingY = srcExtents[2];
+    for (int patchY=0; patchY<heightSrc; patchY++) {
+	for (int patchX=0; patchX<widthSrc; patchX++)
+	{
+	    const int startingX = srcExtents[0];
+	    const int startingY = srcExtents[2];
 
-			if ((startingX + _x) > dstExtents[1])
-				continue;
+	    const int bufferX = startingX + patchX + 1;
+	    const int bufferY = startingY + patchY + 1;
 
-			if ((startingY + _y) > dstExtents[3])
-				continue;
+	    if (bufferX <  dstExtents[0]) { continue; }
+	    if (bufferX >= dstExtents[1]) { continue; }
+	    if (bufferY <  dstExtents[2]) { continue; }
+	    if (bufferY >= dstExtents[3]) { continue; }
 
-			int srcIndex = widthSrc*_y*4 + _x*4;                                                                  // index in the subimage
-			int dstIndex = ( (startingY+_y - dstExtents[2])*widthDst*4  + (startingX+_x - dstExtents[0])*4 );     // index in the big buffer
+	    int srcIndex = (widthSrc * patchY + patchX) * 4;                                     // index in the subimage
+	    int dstIndex = ((bufferY - dstExtents[2]) * widthDst + bufferX - dstExtents[0]) * 4; // index in the big buffer
 
-			// back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-			float alpha = 1.0 - srcImage[srcIndex+3];
-			dstImage[dstIndex+0] = clamp( (dstImage[dstIndex+0] * alpha) + srcImage[srcIndex+0] );
-			dstImage[dstIndex+1] = clamp( (dstImage[dstIndex+1] * alpha) + srcImage[srcIndex+1] );
-			dstImage[dstIndex+2] = clamp( (dstImage[dstIndex+2] * alpha) + srcImage[srcIndex+2] );
-			dstImage[dstIndex+3] = clamp( (dstImage[dstIndex+3] * alpha) + srcImage[srcIndex+3] );
-		}
+	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
+	    float alpha = 1.0f - srcImage[srcIndex+3];
+	    dstImage[dstIndex+0] = clamp( (dstImage[dstIndex+0] * alpha) + srcImage[srcIndex+0] );
+	    dstImage[dstIndex+1] = clamp( (dstImage[dstIndex+1] * alpha) + srcImage[srcIndex+1] );
+	    dstImage[dstIndex+2] = clamp( (dstImage[dstIndex+2] * alpha) + srcImage[srcIndex+2] );
+	    dstImage[dstIndex+3] = clamp( (dstImage[dstIndex+3] * alpha) + srcImage[srcIndex+3] );
+	}
+    }
 }
 
 // ****************************************************************************
@@ -1099,7 +1119,8 @@ avtImgCommunicator::computeRegionExtents(int numRanks, int height)
 //
 // **************************************************************************
 int
-avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4])
+avtImgCommunicator::parallelDirectSendManyPatches
+(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
 	int myRegionHeight = 0;
   #ifdef PARALLEL
@@ -1431,9 +1452,8 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
 		intermediateImageBB[1] = intermediateImageExtents[1] = fullImageExtents[1];
 		intermediateImageBB[2] = intermediateImageExtents[2] = myStartingHeight;
 		intermediateImageBB[3] = intermediateImageExtents[3] = myEndingHeight;
-
-		intermediateImage = new float[width * (myEndingHeight-myStartingHeight) * 4]();
-
+		intermediateImage = new float[width * (myEndingHeight - myStartingHeight) * 4]();
+		debug5 << "intermediate image size " << width << ", " << (myEndingHeight - myStartingHeight) << std::endl;
 
 		//
 		// Blend
@@ -1446,15 +1466,13 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
 			_extents[1] = recvInfoBuffer[_id*6 + 2];
 			_extents[2] = recvInfoBuffer[_id*6 + 3];
 			_extents[3] = recvInfoBuffer[_id*6 + 4];
-
-			blendFrontToBack(&recvDataBuffer[ patchOffset[_id] ], _extents, _extents, intermediateImage, intermediateImageExtents);
-
-			//writeArrayToPPM("/home/pascal/Desktop/debugImages/blending_" + toStr(my_id) + "_"+ toStr(numBlends), intermediateImage, intermediateImageExtents[1]-intermediateImageExtents[0], intermediateImageExtents[3]-intermediateImageExtents[2]);
+			blendFrontToBack(&recvDataBuffer[patchOffset[_id]], _extents, _extents, intermediateImage, intermediateImageExtents);
 			numBlends++;
 		}
 
-		if (numBlends == 0)
-			intermediateImageBB[0]=intermediateImageBB[1]=intermediateImageBB[2]=intermediateImageBB[3] = 0;
+		if (numBlends == 0) {
+		        intermediateImageBB[0]=intermediateImageBB[1]=intermediateImageBB[2]=intermediateImageBB[3] = 0;
+		}
 	}
 
 
@@ -1528,9 +1546,6 @@ avtImgCommunicator::parallelDirectSendManyPatches(std::multimap<int, imgData> im
   #endif
 	return myRegionHeight;
 }
-
-
-
 
 // ****************************************************************************
 //  Method: avtImgCommunicator::gatherImages

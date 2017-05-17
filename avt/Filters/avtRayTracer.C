@@ -1038,7 +1038,7 @@ avtRayTracer::Execute(void)
 	    int renderedWidth  = fullImageExtents[1] - fullImageExtents[0];
 	    int renderedHeight = fullImageExtents[3] - fullImageExtents[2];
 	    float *composedData = NULL;
-	    composedData = new float[renderedWidth * renderedHeight * 4]{0};
+	    composedData = new float[renderedWidth * renderedHeight * 4]();
 
 	    debug5 << "total num of patches " << numPatches << std::endl;
 	    debug5 << "composedData size " << renderedWidth << ", " << renderedHeight << std::endl;
@@ -1072,8 +1072,9 @@ avtRayTracer::Execute(void)
 			const int bufferX = startingX + patchX + 1;
 			const int bufferY = startingY + patchY + 1;
 			
+	    		if (bufferX <  fullImageExtents[0]) { continue; }
 	    		if (bufferX >= fullImageExtents[1]) { continue; }
-
+	    		if (bufferY <  fullImageExtents[2]) { continue; }
 	    		if (bufferY >= fullImageExtents[3]) { continue; }
 
 	    		// index in the subimage
@@ -1082,8 +1083,8 @@ avtRayTracer::Execute(void)
 	    		int bufferIndex = ((bufferY - fullImageExtents[2]) * renderedWidth
 					   + bufferX - fullImageExtents[0]) * 4;
 			
-			// debug5 << " X = " << bufferX - fullImageExtents[0] 
-			//        << " Y = " << bufferY - fullImageExtents[2] << std::endl;  
+			debug5 << " X = " << bufferX - fullImageExtents[0] 
+			       << " Y = " << bufferY - fullImageExtents[2] << std::endl;  
 
 	    		if (composedData[bufferIndex+3] < 1.0)
 	    		{
@@ -1321,9 +1322,9 @@ avtRayTracer::Execute(void)
 	    // Get the metadata for all patches
 	    //
 	    std::vector<imgMetaData> allImgMetaData; // contains the metadata to composite the image
-	    int numPatches = extractor.getImgPatchSize(); // get the number of patches
+	    int numPatches = extractor.getImgPatchSize(); // get the number of patches for current rank
 
-	    int imgExtents[4] = {0,0,0,0}; // minX, maxX,  minY, maxY
+	    int imgExtents[4] = {0,0,0,0}; // minX, maxX, minY, maxY
 	    int imgSize[2];                // x, y
 	    float *composedData = NULL;
 	    float *localPatchesDepth = NULL;
@@ -1364,7 +1365,7 @@ avtRayTracer::Execute(void)
 	    int tags[2] = {1081, 1681};
 	    int tagGather = 2681;
 	    int numMPIRanks = imgComm.GetNumProcs();
-	    int *regions =  new int[numMPIRanks]();
+	    int *regions =  new int[numMPIRanks](); // 0 initialized array
 
 	    imgComm.regionAllocation(numMPIRanks, regions);
 	    debug5 << "regionAllocation done!" << std::endl;
