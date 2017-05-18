@@ -300,7 +300,7 @@ protected:
 	float            dot(float vecA[3], float vecB[3])
 	{ return ((vecA[0]*vecB[0]) + (vecA[1]*vecB[1]) + (vecA[2]*vecB[2])); }
 	void             unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height);
-	double           project(double _worldCoordinates[3], int pos2D[2], int _width, int _height, float* fpos2D = nullptr);
+	double           project(double _worldCoordinates[3], int pos2D[2], int _width, int _height);
 	void             computePixelColor(double source_rgb[4], double dest_rgb[4], float _gradient[3]);
 	//
 	// added for raycasting slivr

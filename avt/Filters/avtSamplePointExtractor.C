@@ -1089,7 +1089,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 		tmpImageDataHash.procId = tmpImageMetaPatch.procId;
 		tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
 		tmpImageDataHash.imagePatch = 
-		    new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] * 4 ];
+		    new float[tmpImageMetaPatch.dims[0] * tmpImageMetaPatch.dims[1] * 4];
 		massVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
 		imgDataHashMap.insert
 		    (std::pair<int, imgData>(tmpImageDataHash.patchNumber, tmpImageDataHash));

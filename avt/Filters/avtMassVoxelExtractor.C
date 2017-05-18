@@ -2200,48 +2200,96 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     xMax = yMax = std::numeric_limits<int>::min();
 
     float coordinates[8][3];
-    coordinates[0][0] = X[0];          
-    coordinates[0][1] = Y[0];          
-    coordinates[0][2] = Z[0];
-	
-    coordinates[1][0] = X[dims[0]-1];
-    coordinates[1][1] = Y[0];   
-    coordinates[1][2] = Z[0];
-	
-    coordinates[2][0] = X[dims[0]-1];
-    coordinates[2][1] = Y[dims[1]-1];
-    coordinates[2][2] = Z[0];
-	
-    coordinates[3][0] = X[0];
-    coordinates[3][1] = Y[dims[1]-1];
-    coordinates[3][2] = Z[0];
-
-    coordinates[4][0] = X[0];
-    coordinates[4][1] = Y[0];
-    coordinates[4][2] = Z[dims[2]-1];
-	
-    coordinates[5][0] = X[dims[0]-1];
-    coordinates[5][1] = Y[0];
-    coordinates[5][2] = Z[dims[2]-1];
-	
-    coordinates[6][0] = X[dims[0]-1];
-    coordinates[6][1] = Y[dims[1]-1];
-    coordinates[6][2] = Z[dims[2]-1];
-	
-    coordinates[7][0] = X[0];
-    coordinates[7][1] = Y[dims[1]-1];
-    coordinates[7][2] = Z[dims[2]-1];
-    
     //
     // Compute z order for blending patches
     //
     double _center[3];
-    _center[0] = (X[0] + X[dims[0]-1])/2.0;
-    _center[1] = (Y[0] + Y[dims[1]-1])/2.0;
-    _center[2] = (Z[0] + Z[dims[2]-1])/2.0;
-    double _depth = sqrt( (_center[0]-view.camera[0])*(_center[0]-view.camera[0]) +  
-			  (_center[1]-view.camera[1])*(_center[1]-view.camera[1]) + 
-			  (_center[2]-view.camera[2])*(_center[2]-view.camera[2]) );
+    if (ncell_arrays > 0)
+    {
+	coordinates[0][0] = X[0];          
+	coordinates[0][1] = Y[0];          
+	coordinates[0][2] = Z[0];
+	
+	coordinates[1][0] = X[dims[0]-2];
+	coordinates[1][1] = Y[0];   
+	coordinates[1][2] = Z[0];
+	
+	coordinates[2][0] = X[dims[0]-2];
+	coordinates[2][1] = Y[dims[1]-2];
+	coordinates[2][2] = Z[0];
+	
+	coordinates[3][0] = X[0];
+	coordinates[3][1] = Y[dims[1]-2];
+	coordinates[3][2] = Z[0];
+
+	coordinates[4][0] = X[0];
+	coordinates[4][1] = Y[0];
+	coordinates[4][2] = Z[dims[2]-2];
+	
+	coordinates[5][0] = X[dims[0]-2];
+	coordinates[5][1] = Y[0];
+	coordinates[5][2] = Z[dims[2]-2];
+	
+	coordinates[6][0] = X[dims[0]-2];
+	coordinates[6][1] = Y[dims[1]-2];
+	coordinates[6][2] = Z[dims[2]-2];
+	
+	coordinates[7][0] = X[0];
+	coordinates[7][1] = Y[dims[1]-2];
+	coordinates[7][2] = Z[dims[2]-2];
+
+	_center[0] = (X[0] + X[dims[0]-2])/2.0;
+	_center[1] = (Y[0] + Y[dims[1]-2])/2.0;
+	_center[2] = (Z[0] + Z[dims[2]-2])/2.0;
+
+    }
+    else {
+	coordinates[0][0] = X[0];          
+	coordinates[0][1] = Y[0];          
+	coordinates[0][2] = Z[0];
+	
+	coordinates[1][0] = X[dims[0]-1];
+	coordinates[1][1] = Y[0];   
+	coordinates[1][2] = Z[0];
+	
+	coordinates[2][0] = X[dims[0]-1];
+	coordinates[2][1] = Y[dims[1]-1];
+	coordinates[2][2] = Z[0];
+	
+	coordinates[3][0] = X[0];
+	coordinates[3][1] = Y[dims[1]-1];
+	coordinates[3][2] = Z[0];
+
+	coordinates[4][0] = X[0];
+	coordinates[4][1] = Y[0];
+	coordinates[4][2] = Z[dims[2]-1];
+	
+	coordinates[5][0] = X[dims[0]-1];
+	coordinates[5][1] = Y[0];
+	coordinates[5][2] = Z[dims[2]-1];
+	
+	coordinates[6][0] = X[dims[0]-1];
+	coordinates[6][1] = Y[dims[1]-1];
+	coordinates[6][2] = Z[dims[2]-1];
+	
+	coordinates[7][0] = X[0];
+	coordinates[7][1] = Y[dims[1]-1];
+	coordinates[7][2] = Z[dims[2]-1];
+
+	_center[0] = (X[0] + X[dims[0]-1])/2.0;
+	_center[1] = (Y[0] + Y[dims[1]-1])/2.0;
+	_center[2] = (Z[0] + Z[dims[2]-1])/2.0;
+	
+    }
+
+    debug5 << "VAR: patch data bounds: " << std::endl
+	   << "\t" << X[0] << " " << X[dims[0] - 2] << std::endl
+	   << "\t" << Y[0] << " " << Y[dims[1] - 2] << std::endl
+	   << "\t" << Z[0] << " " << Z[dims[2] - 2] << std::endl;   
+    
+    double _depth = sqrt((_center[0]-view.camera[0])*(_center[0]-view.camera[0])+
+			 (_center[1]-view.camera[1])*(_center[1]-view.camera[1])+
+			 (_center[2]-view.camera[2])*(_center[2]-view.camera[2]));
     eyeSpaceDepth = _depth;
 
     double _clipSpaceZ = 0;
@@ -2259,10 +2307,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	tempZ = project(_world, pos2D, fullImgWidth, fullImgHeight);
 
 	// Clamp values
-	pos2D[0] = std::min( std::max(pos2D[0], 0), w_max-1);
-	pos2D[0] = std::min( std::max(pos2D[0], 0), w_max-1);
-	pos2D[1] = std::min( std::max(pos2D[1], 0), h_max-1);
-	pos2D[1] = std::min( std::max(pos2D[1], 0), h_max-1);
+	pos2D[0] = std::min(std::max(pos2D[0], 0), w_max-1);
+	pos2D[1] = std::min(std::max(pos2D[1], 0), h_max-1);
 
 	// Get min max
 	xMin = std::min(xMin, pos2D[0]);
@@ -2311,15 +2357,15 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	unsigned long m_size, m_rss;
 	void* ospVolumePointer;
 	int ospVolumeDataType;
-	if (npt_arrays > 0) {
-	    std::cerr << "[ospray] Point Dataset " << std::endl;
-	    ospVolumePointer = pt_arrays[0];
-	    ospVolumeDataType = pt_vartypes[0];
-	}
-	else if (ncell_arrays > 0){
+	if (ncell_arrays > 0){
 	    std::cerr << "[ospray] Cell Dataset " << std::endl;
 	    ospVolumePointer = cell_arrays[0];
 	    ospVolumeDataType = cell_vartypes[0];
+	}
+	else if (npt_arrays > 0) {
+	    std::cerr << "[ospray] Point Dataset " << std::endl;
+	    ospVolumePointer = pt_arrays[0];
+	    ospVolumeDataType = pt_vartypes[0];	
 	} else {
 	    std::cerr << "WARNING: Empty dataset " << std::endl;
 	}
@@ -2382,6 +2428,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgDims[0] = imgWidth;       imgDims[1] = imgHeight;
     imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
     imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
+    debug5 << "patch screen dim: " << xMin << " " << xMax << " | " << yMin << " " << yMax << " size " << imgWidth << "x" << imgHeight << std::endl;
 
     for (int _x = xMin ; _x < xMax ; _x++)
     {
@@ -3016,7 +3063,7 @@ avtMassVoxelExtractor::reflect(float vec[3], float normal[3], float refl[3])
 
 double
 avtMassVoxelExtractor::project
-(double _worldCoordinates[3], int pos2D[2], int _screenWidth, int _screenHeight, float* fpos2D)
+(double _worldCoordinates[3], int pos2D[2], int _screenWidth, int _screenHeight)
 {
     double normDevCoord[4];
     double worldCoordinates[4] = {0,0,0,1};
@@ -3046,11 +3093,6 @@ avtMassVoxelExtractor::project
     normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
     normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
     normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
-
-    if (fpos2D != nullptr) {
-	fpos2D[0] = normDevCoord[0] * 0.5 + 0.5;
-	fpos2D[1] = normDevCoord[1] * 0.5 + 0.5;	
-    }
 
     // Screen coordinates
     pos2D[0] = round( normDevCoord[0]*(_screenWidth/2.)  + (_screenWidth/2.)  );

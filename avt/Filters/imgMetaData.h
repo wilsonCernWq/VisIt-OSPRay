@@ -51,6 +51,7 @@
 
 #include <avtOpacityMap.h>
 #include <avtMemory.h>
+#include <avtParallel.h>
 #include <DebugStream.h>
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
@@ -232,12 +233,12 @@ struct VolumeInfo
 	ospSetObject(volume, "transferFunction", transferfcn);
 	// commit volume
 	ospSetVec3f(volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
-	ospSetVec3f(volume, 
-		    "volumeClippingBoxLower",
-		    (const osp::vec3f&)regionLowerClip);
-	ospSetVec3f(volume,
-		    "volumeClippingBoxUpper",
-		    (const osp::vec3f&)regionUpperClip);
+	/* ospSetVec3f(volume,  */
+	/* 	    "volumeClippingBoxLower", */
+	/* 	    (const osp::vec3f&)regionLowerClip); */
+	/* ospSetVec3f(volume, */
+	/* 	    "volumeClippingBoxUpper", */
+	/* 	    (const osp::vec3f&)regionUpperClip); */
 	ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)regionSpacing);
 	ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)regionStart);
 	ospSetVec3i(volume, "dimensions",  (const osp::vec3i&)regionSize);
@@ -713,6 +714,18 @@ inline void writeArrayToPPM( std::string filename , float * image, int dimX, int
     }
  
     outputFile.close();
+}
+
+
+inline void CheckMemoryHere(std::string message)
+{
+    unsigned long m_size, m_rss;
+    avtMemory::GetMemorySize(m_size, m_rss);
+    debug5 << message << std::endl << "\t"
+	   << " Rank " << PAR_Rank()
+	   << " Memory use begin " << m_size 
+	   << " rss " << m_rss/(1024*1024) << " (MB)"
+	   << std::endl;
 }
 
 #endif

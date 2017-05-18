@@ -1054,10 +1054,10 @@ avtRayTracer::Execute(void)
 			const int bufferX = startingX + patchX;
 			const int bufferY = startingY + patchY;
 			
-	    		if (bufferX <  fullImageExtents[0]) { continue; }
-	    		if (bufferX >= fullImageExtents[1]) { continue; }
-	    		if (bufferY <  fullImageExtents[2]) { continue; }
-	    		if (bufferY >= fullImageExtents[3]) { continue; }
+	    		if (bufferX < fullImageExtents[0]) { continue; }
+	    		if (bufferX > fullImageExtents[1]) { continue; }
+	    		if (bufferY < fullImageExtents[2]) { continue; }
+	    		if (bufferY > fullImageExtents[3]) { continue; }
 
 	    		// index in the subimage
 	    		int patchIndex = (patchY * currentPatch.dims[0] + patchX) * 4;
