@@ -385,8 +385,8 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float 
 	    const int startingX = srcExtents[0];
 	    const int startingY = srcExtents[2];
 
-	    const int bufferX = startingX + patchX + 1;
-	    const int bufferY = startingY + patchY + 1;
+	    const int bufferX = startingX + patchX;
+	    const int bufferY = startingY + patchY;
 
 	    if (bufferX <  dstExtents[0]) { continue; }
 	    if (bufferX >= dstExtents[1]) { continue; }
@@ -425,27 +425,31 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float 
     int widthSrc, heightSrc, widthDst;
     widthSrc  = srcExtents[1] - srcExtents[0];
     heightSrc = srcExtents[3] - srcExtents[2];
-
     widthDst  = dstExtents[1] - dstExtents[0];
 
-    for (int patchY=0; patchY<heightSrc; patchY++) {
+    for (int patchY=0; patchY<heightSrc; patchY++) 
+    {
 	for (int patchX=0; patchX<widthSrc; patchX++)
 	{
 	    const int startingX = srcExtents[0];
 	    const int startingY = srcExtents[2];
 
-	    const int bufferX = startingX + patchX + 1;
-	    const int bufferY = startingY + patchY + 1;
+	    const int bufferX = startingX + patchX;
+	    const int bufferY = startingY + patchY;
 
 	    if (bufferX <  dstExtents[0]) { continue; }
 	    if (bufferX >= dstExtents[1]) { continue; }
 	    if (bufferY <  dstExtents[2]) { continue; }
 	    if (bufferY >= dstExtents[3]) { continue; }
 
-	    int srcIndex = (widthSrc * patchY + patchX) * 4;                                     // index in the subimage
-	    int dstIndex = ((bufferY - dstExtents[2]) * widthDst + bufferX - dstExtents[0]) * 4; // index in the big buffer
+	    // index in the subimage
+	    int srcIndex = (widthSrc * patchY + patchX) * 4;
+	    // index in the big buffer
+	    int dstIndex = ((bufferY - dstExtents[2]) * widthDst + bufferX - dstExtents[0]) * 4;
 
-	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
+	    // back to Front compositing:
+	    //   composited_i = composited_i-1 * (1.0 - alpha_i) + incoming;
+	    //   alpha = alpha_i-1 * (1- alpha_i)
 	    float alpha = 1.0f - srcImage[srcIndex+3];
 	    dstImage[dstIndex+0] = clamp( (dstImage[dstIndex+0] * alpha) + srcImage[srcIndex+0] );
 	    dstImage[dstIndex+1] = clamp( (dstImage[dstIndex+1] * alpha) + srcImage[srcIndex+1] );

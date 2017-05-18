@@ -496,8 +496,8 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2],
 //
 // ****************************************************************************
 void
-avtRayTracer::project3Dto2D(double _3Dextents[6], int width, int height, 
-			    vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
+avtRayTracer::project3Dto2D
+(double _3Dextents[6], int width, int height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
 {
 	double _world[3];
 	int _xMin, _xMax, _yMin, _yMax;
@@ -688,23 +688,11 @@ double deg2rad (double degrees) {
 void
 avtRayTracer::Execute(void)
 {
-    // check memory
-    unsigned long m_size, m_rss;
-    avtMemory::GetMemorySize(m_size, m_rss);
-    debug5 << PAR_Rank()
-	   << " ~ Memory use begin: " << m_size 
-	   << "  rss (MB): " << m_rss/(1024*1024) 
-	   <<  "  ... avtRayTracer::Execute@!!!" << std::endl;
+    // check memory    
+    CheckMemoryHere("avtRayTracer::Execute");
 
     // initialize current time
     int timingIndex = visitTimer->StartTimer();
-
-    // // initialize ospray
-    // static OSPContext ospray;
-    // if (rayCastingSLIVR && avtCallback::UseOSPRay())
-    // {
-    // 	ospray.InitOSP(refreshData, false, 1);
-    // }
 
     //
     // start of original pipeline
@@ -885,16 +873,18 @@ avtRayTracer::Execute(void)
 	double depthExtents[2];
 	GetSpatialExtents(dbounds);
 	project3Dto2D(dbounds, screen[0], screen[1], pvm, fullImageExtents, depthExtents);
+	
+	debug5 << "VAR: data bounds: " << std::endl
+	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
+	       << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
+	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl;
 
 	//
 	// ospray stuffs
 	//
 	// -----------------------------
 	if (avtCallback::UseOSPRay()) {
-	    avtMemory::GetMemorySize(m_size, m_rss);
-	    debug5 << PAR_Rank() 
-		   << " ~ Memory use before ospray: " << m_size
-		   << "  rss (MB): " << m_rss/(1024*1024) << std::endl;
+	    CheckMemoryHere("avtRayTracer::Execute before ospray");
 	    // camera
 	    debug5 << "make ospray camera" << std::endl;
 	    ospray->InitCamera(OSP_PERSPECTIVE);
@@ -920,10 +910,7 @@ avtRayTracer::Execute(void)
 	    ospray->InitRenderer();
 	    ospray->SetRenderer(false, materialProperties, view.camera);
 	    // check memory
-	    avtMemory::GetMemorySize(m_size, m_rss);
-	    debug5 << PAR_Rank() << " ~ Memory use after: " << m_size
-		   << " rss (MB): " << m_rss/(1024*1024)
-		   << std::endl;
+	    CheckMemoryHere("avtRayTracer::Execute after ospray");
 	}
 	// -----------------------------
 
@@ -975,13 +962,8 @@ avtRayTracer::Execute(void)
     }
 
     // Qi debug
-    avtMemory::GetMemorySize(m_size, m_rss);
-    debug5 << "Raytracing setup done! " << std::endl
-	   << PAR_Rank() 
-	   << " ~ Memory use after: " << m_size 
-	   << "  rss (MB): " << m_rss/(1024*1024)
-	   << std::endl;
-	
+    CheckMemoryHere("avtRayTracer::Execute raytracing setup done");
+    
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
 
@@ -1069,8 +1051,8 @@ avtRayTracer::Execute(void)
 	    		const int startingX = currentPatch.screen_ll[0];
 	    		const int startingY = currentPatch.screen_ll[1];
 
-			const int bufferX = startingX + patchX + 1;
-			const int bufferY = startingY + patchY + 1;
+			const int bufferX = startingX + patchX;
+			const int bufferY = startingY + patchY;
 			
 	    		if (bufferX <  fullImageExtents[0]) { continue; }
 	    		if (bufferX >= fullImageExtents[1]) { continue; }
@@ -1126,11 +1108,7 @@ avtRayTracer::Execute(void)
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
-	    avtMemory::GetMemorySize(m_size, m_rss);
-	    debug5 << PAR_Rank() 
-		   << " ~ Memory use: " << m_size
-		   << "  rss (MB): " << m_rss/(1024*1024)
-		   << std::endl;
+	    CheckMemoryHere("avtRayTracer::Execute serial compositing done");
 	    debug5 << "Final image compositing start!" << std::endl;
 
 	    //
@@ -1300,11 +1278,7 @@ avtRayTracer::Execute(void)
 
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
-	    avtMemory::GetMemorySize(m_size, m_rss);
-	    debug5 << PAR_Rank()
-		   << " ~ Memory use: " << m_size
-		   << "  rss (MB): " << m_rss/(1024*1024)
-		   << std::endl;
+	    CheckMemoryHere("avtRayTracer::Execute final compositing done");
 
 	    // time compositing
 	    visitTimer->StopTimer(timingCompositinig, "Compositing");
@@ -1331,7 +1305,14 @@ avtRayTracer::Execute(void)
 
 	    // Qi debug
 	    debug5 << "Number of patches: " << numPatches << std::endl;
-	    
+	    debug5 << "VAR: fullImageExtents: "
+		   << fullImageExtents[0] << ", " 
+		   << fullImageExtents[1] << ", " 
+		   << fullImageExtents[2] << ", " 
+		   << fullImageExtents[3] << std::endl
+		   << "VAR: fullImageWidth  " << fullImageExtents[1] - fullImageExtents[0] << std::endl
+		   << "VAR: fullImageHeight " << fullImageExtents[3] - fullImageExtents[2] << std::endl;		
+
 	    for (int i=0; i<numPatches; i++)
 	    {
 		imgMetaData temp;
@@ -1346,8 +1327,8 @@ avtRayTracer::Execute(void)
 		imgSize[0] = imgExtents[1]-imgExtents[0];
 		imgSize[1] = imgExtents[3]-imgExtents[2];
 
-		debug5 << "i: " << i << " image (minX, maxX  minY , maxY): "
-		       << imgExtents[0] << ", " << imgExtents[1] << "  "
+		debug5 << "i: " << i << " image (minX, maxX | minY , maxY): "
+		       << imgExtents[0] << ", " << imgExtents[1] << " | "
 		       << imgExtents[2] << ", " << imgExtents[3] 
 		       << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
 	    }
