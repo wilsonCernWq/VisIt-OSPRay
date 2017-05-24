@@ -2380,16 +2380,38 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      << std::endl;
 	}
 	auto volume = ospray->GetPatch(patch);
-	if (npt_arrays > 0) {
-	    volume->Set(ospVolumePointer, ospVolumeDataType, 
-			X, Y, Z, dims[0], dims[1], dims[2],
-			(float)rendererSampleRate);	    
-	}
-	else if (ncell_arrays > 0){
+	if (ncell_arrays > 0){
+	    int nX = dims[0] - 1, nY = dims[1] - 1, nZ = dims[2] - 1;
+	    bool ghosts_info[6] = {false};
+	    if (ghosts != NULL)
+	    {
+		ghosts_info[0] = ghosts[nY*nX+nX+0] == 0; // [0,1,1]
+		ghosts_info[1] = ghosts[nY*nX+   1] == 0; // [1,0,1]
+		ghosts_info[2] = ghosts[      nX+1] == 0; // [1,1,0]
+		ghosts_info[3] = ghosts[(nZ-2)*nY*nX+(nY-2)*nX+(nX-1)] == 0;
+		ghosts_info[4] = ghosts[(nZ-2)*nY*nX+(nY-1)*nX+(nX-2)] == 0;
+		ghosts_info[5] = ghosts[(nZ-1)*nY*nX+(nY-2)*nX+(nX-2)] == 0;
+	    }
 	    volume->Set(ospVolumePointer, ospVolumeDataType, 
 			X, Y, Z, dims[0]-1, dims[1]-1, dims[2]-1,
-			(float)rendererSampleRate);	    
+			(float)rendererSampleRate, ghosts_info);	    
 	}
+	else if (npt_arrays > 0) {
+	    int nX = dims[0], nY = dims[1], nZ = dims[2];
+	    bool ghosts_info[6] = {false};
+	    if (ghosts != NULL)
+	    {
+		ghosts_info[0] = ghosts[nY*nX+nX+0] == 0; // [0,1,1]
+		ghosts_info[1] = ghosts[nY*nX+   1] == 0; // [1,0,1]
+		ghosts_info[2] = ghosts[      nX+1] == 0; // [1,1,0]
+		ghosts_info[3] = ghosts[(nZ-2)*nY*nX+(nY-2)*nX+(nX-1)] == 0;
+		ghosts_info[4] = ghosts[(nZ-2)*nY*nX+(nY-1)*nX+(nX-2)] == 0;
+		ghosts_info[5] = ghosts[(nZ-1)*nY*nX+(nY-2)*nX+(nX-2)] == 0;
+	    }
+	    volume->Set(ospVolumePointer, ospVolumeDataType, 
+			X, Y, Z, dims[0], dims[1], dims[2],
+			(float)rendererSampleRate, ghosts_info);	    
+	} 
 	if ((scalarRange[1] >= tFVisibleRange[0]) 
 	    && (scalarRange[0] <= tFVisibleRange[1]))
 	{

@@ -120,7 +120,8 @@ struct VolumeInfo
     // other function
     void Set(void* ptr, int type,
 	     double *X, double *Y, double *Z,
-	     int nX, int nY, int nZ, float sr)  {
+	     int nX, int nY, int nZ, float sr, 
+	     bool ghosts[6])  {
 	if (!isComplete) {
 	    worldType = OSP_INVALID;
 	    volumeType = OSP_INVALID;
@@ -128,7 +129,7 @@ struct VolumeInfo
 	InitWorld();
 	InitVolume();
 	if (!isComplete) { 
-	    SetVolume(ptr, type, X, Y, Z, nX, nY, nZ); 
+	    SetVolume(ptr, type, X, Y, Z, nX, nY, nZ, ghosts); 
 	}
 	if (samplingRate != sr) {
 	    samplingRate = sr;
@@ -162,6 +163,7 @@ struct VolumeInfo
     void CleanWorld() {
  	if (world != nullptr) {	    
 	    ospRelease(world);
+	    world = nullptr;
 	}
 	worldType = OSP_INVALID;
     }
@@ -188,7 +190,7 @@ struct VolumeInfo
 	}
     }
     OSPVolume GetVolume() { return volume; }
-    void SetVolume(void* ptr, int type, double *X, double *Y, double *Z, int nX, int nY, int nZ) {
+    void SetVolume(void* ptr, int type, double *X, double *Y, double *Z, int nX, int nY, int nZ, bool ghosts[6]) {
 	// refresh existing data
 	if (voxelData != nullptr) { 
 	    ospRelease(voxelData); 
@@ -222,8 +224,42 @@ struct VolumeInfo
 	regionSize    = vec3i(nX, nY, nZ);
 	regionSpacing = (regionStop - regionStart)/
 	    ((ospcommon::vec3f)regionSize - 1.0f);
-	regionUpperClip = vec3f(X[0],Y[0],Z[0]);
-	regionLowerClip = vec3f(X[nX-2], Y[nY-2], Z[nZ-2]);
+
+	if (ghosts[0]) {
+	    regionLowerClip.x = X[1];
+	} else {	
+	    regionLowerClip.x = X[0];
+	}
+	if (ghosts[1]) {
+	    regionLowerClip.y = Y[1];
+	} else {	
+	    regionLowerClip.y = Y[0];
+	}
+	if (ghosts[2]) {
+	    regionLowerClip.z = Z[1];
+	} else {	
+	    regionLowerClip.z = Z[0];
+	}
+
+	if (ghosts[3]) {
+	    regionUpperClip.x = X[nX - 2];
+	} else {	
+	    regionUpperClip.x = X[nX - 1];
+	}
+	if (ghosts[4]) {
+	    regionUpperClip.y = Y[nY - 2];
+	} else {	
+	    regionUpperClip.y = Y[nY - 1];
+	}
+	if (ghosts[5]) {
+	    regionUpperClip.z = Z[nZ - 2];
+	} else {	
+	    regionUpperClip.z = Z[nZ - 1];
+	}
+
+	//regionUpperClip = vec3f(X[0],Y[0],Z[0]);
+	//regionLowerClip = vec3f(X[nX-2], Y[nY-2], Z[nZ-2]);
+
 	// commit data
 	voxelSize = nX * nY * nZ;
 	voxelData = ospNewData(voxelSize, voxelDataType, 
@@ -233,12 +269,12 @@ struct VolumeInfo
 	ospSetObject(volume, "transferFunction", transferfcn);
 	// commit volume
 	ospSetVec3f(volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
-	/* ospSetVec3f(volume,  */
-	/* 	    "volumeClippingBoxLower", */
-	/* 	    (const osp::vec3f&)regionLowerClip); */
-	/* ospSetVec3f(volume, */
-	/* 	    "volumeClippingBoxUpper", */
-	/* 	    (const osp::vec3f&)regionUpperClip); */
+	ospSetVec3f(volume,
+	            "volumeClippingBoxLower",
+	            (const osp::vec3f&)regionLowerClip);
+	ospSetVec3f(volume,
+		    "volumeClippingBoxUpper",
+		    (const osp::vec3f&)regionUpperClip);
 	ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)regionSpacing);
 	ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)regionStart);
 	ospSetVec3i(volume, "dimensions",  (const osp::vec3i&)regionSize);
@@ -349,7 +385,7 @@ struct OSPContext
 	    }
 	    ospDeviceCommit(device);
 	    ospSetCurrentDevice(device);
-	    ospDeviceSetErrorMsgFunc
+	    ospDeviceSetStatusFunc
 		(device, [](const char *msg) { debug5 << msg; });
 	    ospDeviceCommit(device);
 	}
