@@ -40,7 +40,7 @@
         <Field name="launchArgsSet" type="bool">false</Field>
         <Field name="launchArgs" type="string"></Field>
         <Field name="sublaunchArgsSet" type="bool">true</Field>
-        <Field name="sublaunchArgs" type="string">"-f $PBS_NODEFILE -genv I_MPI_DEVICE ssm"</Field>
+        <Field name="sublaunchArgs" type="string">"-f $PBS_NODEFILE"</Field>
         <Field name="sublaunchPreCmdSet" type="bool">false</Field>
         <Field name="sublaunchPreCmd" type="string"></Field>
         <Field name="sublaunchPostCmdSet" type="bool">false</Field>
@@ -59,45 +59,5 @@
         <Field name="allowableProcs" type="intVector"></Field>
         <Field name="profileName" type="string">Kepler Default</Field>
     </Object>
-    <Object name="LaunchProfile">
-        <Field name="timeout" type="int">480</Field>
-        <Field name="numProcessors" type="int">16</Field>
-        <Field name="numNodesSet" type="bool">true</Field>
-        <Field name="numNodes" type="int">2</Field>
-        <Field name="partitionSet" type="bool">false</Field>
-        <Field name="partition" type="string"></Field>
-        <Field name="bankSet" type="bool">false</Field>
-        <Field name="bank" type="string"></Field>
-        <Field name="timeLimitSet" type="bool">false</Field>
-        <Field name="timeLimit" type="string"></Field>
-        <Field name="launchMethodSet" type="bool">true</Field>
-        <Field name="launchMethod" type="string">qsub/mpirun</Field>
-        <Field name="forceStatic" type="bool">true</Field>
-        <Field name="forceDynamic" type="bool">false</Field>
-        <Field name="active" type="bool">false</Field>
-        <Field name="arguments" type="stringVector"></Field>
-        <Field name="parallel" type="bool">true</Field>
-        <Field name="launchArgsSet" type="bool">false</Field>
-        <Field name="launchArgs" type="string"></Field>
-        <Field name="sublaunchArgsSet" type="bool">true</Field>
-        <Field name="sublaunchArgs" type="string">"-f $PBS_NODEFILE -genv I_MPI_DEVICE ssm -genv I_MPI_PIN_DOMAIN auto:scatter"</Field>
-        <Field name="sublaunchPreCmdSet" type="bool">false</Field>
-        <Field name="sublaunchPreCmd" type="string"></Field>
-        <Field name="sublaunchPostCmdSet" type="bool">false</Field>
-        <Field name="sublaunchPostCmd" type="string"></Field>
-        <Field name="machinefileSet" type="bool">false</Field>
-        <Field name="machinefile" type="string"></Field>
-        <Field name="visitSetsUpEnv" type="bool">false</Field>
-        <Field name="canDoHWAccel" type="bool">false</Field>
-        <Field name="GPUsPerNode" type="int">2</Field>
-        <Field name="XArguments" type="string"></Field>
-        <Field name="launchXServers" type="bool">true</Field>
-        <Field name="XDisplay" type="string"></Field>
-        <Field name="numThreads" type="int">0</Field>
-        <Field name="constrainNodeProcs" type="bool">false</Field>
-        <Field name="allowableNodes" type="intVector"></Field>
-        <Field name="allowableProcs" type="intVector"></Field>
-        <Field name="profileName" type="string">Kepler Pin Thread</Field>
-    </Object>
-    <Field name="activeProfile" type="int">1</Field>
+    <Field name="activeProfile" type="int">0</Field>
 </Object>
