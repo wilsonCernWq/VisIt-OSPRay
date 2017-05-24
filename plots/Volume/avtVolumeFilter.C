@@ -103,9 +103,9 @@ avtVolumeFilter::avtVolumeFilter()
 {
     unsigned long m_size, m_rss;
     avtMemory::GetMemorySize(m_size, m_rss);
-    std::cout << "~ Memory usage before instantiating avtVolumeFilter: " << m_size 
-	      << " rss (MB): " << m_rss/(1024*1024) 
-	      << std::endl;    
+    debug5 << "~ Memory usage before instantiating avtVolumeFilter: " << m_size 
+	   << " rss (MB): " << m_rss/(1024*1024) 
+	   << std::endl;    
     primaryVariable = NULL;
     osprayRefresh = true;
 }
@@ -133,10 +133,10 @@ avtVolumeFilter::~avtVolumeFilter()
     }
     unsigned long m_size, m_rss;
     avtMemory::GetMemorySize(m_size, m_rss);
-    std::cout << "Parallel rank = " << PAR_Rank()
-	      << " ~ Memory usage after instantiating avtVolumeFilter: " << m_size 
-	      << " rss (MB): " << m_rss/(1024*1024) 
-	      << std::endl;    
+    debug5 << "Parallel rank = " << PAR_Rank()
+	   << " ~ Memory usage after instantiating avtVolumeFilter: " << m_size 
+	   << " rss (MB): " << m_rss/(1024*1024) 
+	   << std::endl;    
 }
 
 
@@ -362,8 +362,8 @@ avtImage_p
 avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 					    const WindowAttributes &window)
 {
-    std::cout << "Running: avtVolumeFilter::RendererImageRaycastingSLIVR" << std::endl;
-    std::cout << "         --- Instantiating a new avtRayTracer" << std::endl;
+    std::cout << "Running: avtVolumeFilter::RendererImageRaycastingSLIVR"
+	      << " (Instantiating a new avtRayTracer) " << std::endl;
     //
     // We need to create a dummy pipeline with the volume renderer that we
     // can force to execute within our "Execute".  Start with the source.
