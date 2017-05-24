@@ -225,21 +225,22 @@ struct VolumeInfo
 	regionSpacing = (regionStop - regionStart)/
 	    ((ospcommon::vec3f)regionSize - 1.0f);
 
-	if (ghosts[0]) {
-	    regionLowerClip.x = X[1];
-	} else {	
-	    regionLowerClip.x = X[0];
-	}
-	if (ghosts[1]) {
-	    regionLowerClip.y = Y[1];
-	} else {	
-	    regionLowerClip.y = Y[0];
-	}
-	if (ghosts[2]) {
-	    regionLowerClip.z = Z[1];
-	} else {	
-	    regionLowerClip.z = Z[0];
-	}
+	// if (ghosts[0]) {
+	//     regionLowerClip.x = X[1];
+	// } else {
+	//     regionLowerClip.x = X[0];
+        // }
+	// if (ghosts[1]) {
+	//     regionLowerClip.y = Y[1];
+	// } else {
+	//     regionLowerClip.y = Y[0];
+	// }
+	// if (ghosts[2]) {
+	//     regionLowerClip.z = Z[1];
+	// } else {
+	//     regionLowerClip.z = Z[0];
+	// }
+	regionLowerClip = vec3f(X[0],Y[0],Z[0]);
 
 	if (ghosts[3]) {
 	    regionUpperClip.x = X[nX - 2];
@@ -256,9 +257,6 @@ struct VolumeInfo
 	} else {	
 	    regionUpperClip.z = Z[nZ - 1];
 	}
-
-	//regionUpperClip = vec3f(X[0],Y[0],Z[0]);
-	//regionLowerClip = vec3f(X[nX-2], Y[nY-2], Z[nZ-2]);
 
 	// commit data
 	voxelSize = nX * nY * nZ;
