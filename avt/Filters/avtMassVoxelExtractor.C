@@ -138,7 +138,8 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
     ind_buffer    = new int[3*depth];
     valid_sample  = new bool[depth];
     lighting = false;
-    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0; lightPosition[3] = 1.0;
+    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
+    lightPosition[3] = 1.0;
     materialProperties[0] = 0.4; 
     materialProperties[1] = 0.75;
     materialProperties[2] = 0.0; 
@@ -2167,217 +2168,219 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
  std::vector<std::string> &varnames, 
  std::vector<int> &varsize)
 {
-   
+    //========================================================================//
+    // Initialization
+    //========================================================================//
+    using namespace slivr;
+    // Flag to indicate if the patch is drawn
     patchDrawn = 0;
+    
+    //========================================================================//
+    // Register data and early skipping
+    //========================================================================//
 
-    //
     // Some of our sampling routines need a chance to pre-process the data.
     // Register the grid here so we can do that.
-    //
+    // Stores the values in a structure so that it can be used
     RegisterGrid(rgrid, varnames, varsize);
-    // stores the values in a structure so that it can be used
 
-    //
     // Determine what range we are dealing with on this iteration.
-    //
     int w_min = restrictedMinWidth;
-    int w_max = restrictedMaxWidth+1;
+    int w_max = restrictedMaxWidth + 1;
     int h_min = restrictedMinHeight;
-    int h_max = restrictedMaxHeight+1;
+    int h_max = restrictedMaxHeight + 1;
     imgWidth = imgHeight = 0;
 
-    //
     // Let's find out if this range can even intersect the dataset.
     // If not, just skip it.
-    //
-    if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max))
-	return;
+    if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max)) { return; }
 
+    //========================================================================//
     //
+    //========================================================================//
+    // Calculate patch dimensions for point array and cell array
+    //   This is to check if the patch is a cell data or a point data
+    //   I have to assume cell dataset has a higher priority
+    void* volumePointer = nullptr;
+    int   volumeDataType;
+    int nX = 0, nY = 0, nZ = 0;
+    if (ncell_arrays > 0){
+	debug5 << "[avtMassVoxelExtractor] Cell Dataset " << std::endl;
+	nX = dims[0] - 1;
+	nY = dims[1] - 1;
+	nZ = dims[2] - 1;
+	volumePointer = cell_arrays[0];
+	volumeDataType = cell_vartypes[0];
+    }
+    else if (npt_arrays > 0) {
+	debug5 << "[avtMassVoxelExtractor] Point Dataset " << std::endl;
+	nX = dims[0];
+	nY = dims[1];
+	nZ = dims[2];
+	volumePointer = pt_arrays[0];
+	volumeDataType = pt_vartypes[0];	
+    } else {
+	std::cerr << "WARNING: Empty dataset " << std::endl;
+    }
+
+    // Calculate ghost region boundaries
+    //   ghost_boundaries is an array to indicate if the patch contains
+    //   any ghost regions in six different directions
+    // Here I assume the patch is larger than 3-cube
+    // If not then you might want to dig into this code and see if
+    // there will be any special boundary cases
+    bool ghost_boundaries[6] = {false};
+    if (ghosts != NULL)
+    {
+	ghost_boundaries[0] = ghosts[nY*nX+nX+0] != 0; // [0,1,1]
+	ghost_boundaries[3] = ghosts[(nZ-2)*nY*nX+(nY-2)*nX+(nX-1)] != 0;	
+	ghost_boundaries[1] = ghosts[nY*nX+   1] != 0; // [1,0,1]
+	ghost_boundaries[4] = ghosts[(nZ-2)*nY*nX+(nY-1)*nX+(nX-2)] != 0;
+	ghost_boundaries[2] = ghosts[      nX+1] != 0; // [1,1,0]
+	ghost_boundaries[5] = ghosts[(nZ-1)*nY*nX+(nY-2)*nX+(nX-2)] != 0;
+    }
+    // the name is a bit ugly but easier to read for debugging
+    // non-ghost data index range
+    int X0 = ghost_boundaries[0] ?    1 :    0,
+	X1 = ghost_boundaries[3] ? nX-2 : nX-1,
+	Y0 = ghost_boundaries[1] ?    1 :    0,
+	Y1 = ghost_boundaries[4] ? nY-2 : nY-1,
+	Z0 = ghost_boundaries[2] ?    1 :    0,
+	Z1 = ghost_boundaries[5] ? nZ-2 : nZ-1;
+    double dX = X[1]-X[0], dY = Y[1]-Y[0], dZ = Z[1]-Z[0];
+    //========================================================================//
+    //
+    //========================================================================//
     // Determine the screen size of the patch being processed
-    //
     xMin = yMin = std::numeric_limits<int>::max();
     xMax = yMax = std::numeric_limits<int>::min();
 
-    float coordinates[8][3];
-    //
     // Compute z order for blending patches
-    //
-    double _center[3];
-    if (ncell_arrays > 0)
-    {
-	coordinates[0][0] = X[0];          
-	coordinates[0][1] = Y[0];          
-	coordinates[0][2] = Z[0];
-	
-	coordinates[1][0] = X[dims[0]-2];
-	coordinates[1][1] = Y[0];   
-	coordinates[1][2] = Z[0];
-	
-	coordinates[2][0] = X[dims[0]-2];
-	coordinates[2][1] = Y[dims[1]-2];
-	coordinates[2][2] = Z[0];
-	
-	coordinates[3][0] = X[0];
-	coordinates[3][1] = Y[dims[1]-2];
-	coordinates[3][2] = Z[0];
+    double coordinates[8][3];
+    // -- corner [0,0,0]
+    coordinates[0][0] = X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0);
+    coordinates[0][1] = Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0);
+    coordinates[0][2] = Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0);
+    // -- corner [1,0,0]
+    coordinates[1][0] = X[X1] + (ncell_arrays > 0 ? dX : dX/2.0);
+    coordinates[1][1] = Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0);
+    coordinates[1][2] = Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0);
+    // -- corner [1,1,0]
+    coordinates[2][0] = X[X1] + (ncell_arrays > 0 ? dX : dX/2.0);
+    coordinates[2][1] = Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0);
+    coordinates[2][2] = Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0);
+    // -- corner [0,1,0]
+    coordinates[3][0] = X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0);
+    coordinates[3][1] = Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0);
+    coordinates[3][2] = Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0);
+    // -- corner [0,0,1]
+    coordinates[4][0] = X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0);
+    coordinates[4][1] = Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0);
+    coordinates[4][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
+    // -- corner [1,0,1]
+    coordinates[5][0] = X[X1] + (ncell_arrays > 0 ? dX : dX/2.0);
+    coordinates[5][1] = Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0);
+    coordinates[5][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
+    // -- corner [0,1,1]
+    coordinates[6][0] = X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0);
+    coordinates[6][1] = Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0);
+    coordinates[6][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
+    // -- corner [1,1,1]
+    coordinates[7][0] = X[X1] + (ncell_arrays > 0 ? dX : dX/2.0);
+    coordinates[7][1] = Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0);
+    coordinates[7][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
 
-	coordinates[4][0] = X[0];
-	coordinates[4][1] = Y[0];
-	coordinates[4][2] = Z[dims[2]-2];
-	
-	coordinates[5][0] = X[dims[0]-2];
-	coordinates[5][1] = Y[0];
-	coordinates[5][2] = Z[dims[2]-2];
-	
-	coordinates[6][0] = X[dims[0]-2];
-	coordinates[6][1] = Y[dims[1]-2];
-	coordinates[6][2] = Z[dims[2]-2];
-	
-	coordinates[7][0] = X[0];
-	coordinates[7][1] = Y[dims[1]-2];
-	coordinates[7][2] = Z[dims[2]-2];
-
-	_center[0] = (X[0] + X[dims[0]-2])/2.0;
-	_center[1] = (Y[0] + Y[dims[1]-2])/2.0;
-	_center[2] = (Z[0] + Z[dims[2]-2])/2.0;
-
-    }
-    else {
-	coordinates[0][0] = X[0];          
-	coordinates[0][1] = Y[0];          
-	coordinates[0][2] = Z[0];
-	
-	coordinates[1][0] = X[dims[0]-1];
-	coordinates[1][1] = Y[0];   
-	coordinates[1][2] = Z[0];
-	
-	coordinates[2][0] = X[dims[0]-1];
-	coordinates[2][1] = Y[dims[1]-1];
-	coordinates[2][2] = Z[0];
-	
-	coordinates[3][0] = X[0];
-	coordinates[3][1] = Y[dims[1]-1];
-	coordinates[3][2] = Z[0];
-
-	coordinates[4][0] = X[0];
-	coordinates[4][1] = Y[0];
-	coordinates[4][2] = Z[dims[2]-1];
-	
-	coordinates[5][0] = X[dims[0]-1];
-	coordinates[5][1] = Y[0];
-	coordinates[5][2] = Z[dims[2]-1];
-	
-	coordinates[6][0] = X[dims[0]-1];
-	coordinates[6][1] = Y[dims[1]-1];
-	coordinates[6][2] = Z[dims[2]-1];
-	
-	coordinates[7][0] = X[0];
-	coordinates[7][1] = Y[dims[1]-1];
-	coordinates[7][2] = Z[dims[2]-1];
-
-	_center[0] = (X[0] + X[dims[0]-1])/2.0;
-	_center[1] = (Y[0] + Y[dims[1]-1])/2.0;
-	_center[2] = (Z[0] + Z[dims[2]-1])/2.0;
-	
-    }
-
-    debug5 << "VAR: patch data bounds: " << std::endl
-	   << "\t" << X[0] << " " << X[dims[0] - 2] << std::endl
-	   << "\t" << Y[0] << " " << Y[dims[1] - 2] << std::endl
-	   << "\t" << Z[0] << " " << Z[dims[2] - 2] << std::endl;   
+    // check for debug
+    std::cout << "VAR: patch data bounds:" 
+	      << "   " << X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0)
+	      << " "   << X[X1] + (ncell_arrays > 0 ? dX : dX/2.0)
+	      << " | " << Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0)
+	      << " "   << Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0)
+	      << " | " << Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0)
+	      << " "   << Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0)
+	      << std::endl;   
+    std::cout << "VAR: patch ghost bounds:"
+	      << "   " << ghost_boundaries[0] << " " << ghost_boundaries[3] 
+	      << " | " << ghost_boundaries[1] << " " << ghost_boundaries[4] 
+	      << " | " << ghost_boundaries[2] << " " << ghost_boundaries[5]
+	      << std::endl;   
     
-    double _depth = sqrt((_center[0]-view.camera[0])*(_center[0]-view.camera[0])+
-			 (_center[1]-view.camera[1])*(_center[1]-view.camera[1])+
-			 (_center[2]-view.camera[2])*(_center[2]-view.camera[2]));
-    eyeSpaceDepth = _depth;
-
-    double _clipSpaceZ = 0;
-    double _world[3];
-
-    for (int i=0; i<8; i++) // to search for the patch size on screen
+    double patch_center[3];
+    patch_center[0] = (coordinates[0][0] + coordinates[7][0])/2.0;
+    patch_center[1] = (coordinates[0][1] + coordinates[7][1])/2.0;
+    patch_center[2] = (coordinates[0][2] + coordinates[7][2])/2.0;        
+    double patch_depth = // use the norm of patch center as patch depth
+	std::sqrt((patch_center[0]-view.camera[0])*
+		  (patch_center[0]-view.camera[0])+
+		  (patch_center[1]-view.camera[1])*
+		  (patch_center[1]-view.camera[1])+
+		  (patch_center[2]-view.camera[2])*
+		  (patch_center[2]-view.camera[2]));
+    eyeSpaceDepth = patch_depth;
+    
+    // calculate patch boundaries
+    double clip_space_depth = 0;
+    for (int i=0; i<8; ++i) // to search for the patch size on screen
     {
-	int pos2D[2];
-	float tempZ;
+	// get world coordinate
+	double world_pos[3];
+	world_pos[0] = coordinates[i][0];
+	world_pos[1] = coordinates[i][1];
+	world_pos[2] = coordinates[i][2];
 
-	_world[0] = coordinates[i][0];
-	_world[1] = coordinates[i][1];
-	_world[2] = coordinates[i][2];
-
-	tempZ = project(_world, pos2D, fullImgWidth, fullImgHeight);
+	// get screen coordinate
+	int point_pos[2];
+	double point_depth = 
+	    MyProjectWorldToScreen(world_pos, fullImgWidth, fullImgHeight,
+				   panPercentage, imageZoom, modelViewProj,
+				   point_pos);
 
 	// Clamp values
-	pos2D[0] = std::min(std::max(pos2D[0], 0), w_max-1);
-	pos2D[1] = std::min(std::max(pos2D[1], 0), h_max-1);
+	point_pos[0] = std::min(std::max(point_pos[0], 0), w_max-1);
+	point_pos[1] = std::min(std::max(point_pos[1], 0), h_max-1);
 
 	// Get min max
-	xMin = std::min(xMin, pos2D[0]);
-	xMax = std::max(xMax, pos2D[0]);
-	yMin = std::min(yMin, pos2D[1]);
-	yMax = std::max(yMax, pos2D[1]);
+	xMin = std::min(xMin, point_pos[0]);
+	xMax = std::max(xMax, point_pos[0]);
+	yMin = std::min(yMin, point_pos[1]);
+	yMax = std::max(yMax, point_pos[1]);
 
 	if (i == 0)
 	{
-	    _clipSpaceZ = tempZ;
-	    renderingDepthsExtents[0] = tempZ;
-	    renderingDepthsExtents[1] = tempZ;
+	    clip_space_depth = point_depth;
+	    renderingDepthsExtents[0] = point_depth;
+	    renderingDepthsExtents[1] = point_depth;
 	}
 	else
 	{
-	    if ( _clipSpaceZ > tempZ )
-		_clipSpaceZ = tempZ;
-
-	    if (renderingDepthsExtents[0] > tempZ)      // min z
-		renderingDepthsExtents[0] = tempZ;
-
-	    if (renderingDepthsExtents[1] < tempZ)      // max z
-		renderingDepthsExtents[1] = tempZ;
+	    clip_space_depth = std::min(point_depth, clip_space_depth);
+	    renderingDepthsExtents[0] = 
+		std::min(point_depth, renderingDepthsExtents[0]);
+	    renderingDepthsExtents[1] = 
+		std::max(point_depth, renderingDepthsExtents[1]);
 	};
     }
 
-    renderingAreaExtents[0] = xMin;
-    renderingAreaExtents[1] = xMax;
-    renderingAreaExtents[2] = yMin;
-    renderingAreaExtents[3] = yMax;
-
-    clipSpaceDepth = _clipSpaceZ;
-
+    //========================================================================//
+    //
+    //========================================================================//
+    // assign data to the class
+    xMin-=10;
+    yMin-=10;
+    xMax+=10;
+    yMax+=10;
+    clipSpaceDepth = clip_space_depth;
     imgWidth  = xMax-xMin;
     imgHeight = yMax-yMin;
 
-    //
-    // Initialize memory
-    //
+    // Initialize memory (framebuffer)
     imgArray =  new float[((imgWidth)*4) * imgHeight](); // framebuffer
 
-    //
-    // OSPRay
-    //
+    //========================================================================//
+    // Render using OSPRay
+    //========================================================================//
     if (ospray->IsEnabled()) {
-	void* ospVolumePointer = nullptr;
-	int ospVolumeDataType;
-	int nX = 0, nY = 0, nZ = 0;
-	if (ncell_arrays > 0){
-	    debug5 << "[ospray] Cell Dataset " << std::endl;
-	    nX = dims[0] - 1;
-	    nY = dims[1] - 1;
-	    nZ = dims[2] - 1;
-	    ospVolumePointer = cell_arrays[0];
-	    ospVolumeDataType = cell_vartypes[0];
-	}
-	else if (npt_arrays > 0) {
-	    debug5 << "[ospray] Point Dataset " << std::endl;
-	    nX = dims[0];
-	    nY = dims[1];
-	    nZ = dims[2];
-	    ospVolumePointer = pt_arrays[0];
-	    ospVolumeDataType = pt_vartypes[0];	
-	} else {
-	    std::cerr << "WARNING: Empty dataset " << std::endl;
-	}
-	if ((npt_arrays > 0 && ncell_arrays > 0) || 
-	    npt_arrays > 1 || 
-	    ncell_arrays > 1)
+	if (!((npt_arrays == 1)^(ncell_arrays == 1)))
 	{
 	    std::cerr << "WARNING: Multiple data found within one patch, " 
 		      << " We don't know what to do !! " 
@@ -2385,22 +2388,35 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      << "         One of the dataset might be missing "
 		      << std::endl;
 	}
-	bool ghosts_info[6] = {false};
-	if (ghosts != NULL)
-	{
-	    ghosts_info[0] = ghosts[nY*nX+nX+0] != 0; // [0,1,1]
-	    ghosts_info[1] = ghosts[nY*nX+   1] != 0; // [1,0,1]
-	    ghosts_info[2] = ghosts[      nX+1] != 0; // [1,1,0]
-	    ghosts_info[3] = ghosts[(nZ-2)*nY*nX+(nY-2)*nX+(nX-1)] != 0;
-	    ghosts_info[4] = ghosts[(nZ-2)*nY*nX+(nY-1)*nX+(nX-2)] != 0;
-	    ghosts_info[5] = ghosts[(nZ-1)*nY*nX+(nY-2)*nX+(nX-2)] != 0;
-	}
 	auto volume = ospray->GetPatch(patch);
-	volume->Set(ospVolumePointer, ospVolumeDataType, 
+	// shift grid and make it cel centered for cell data
+	// double volumePBox[6] = {
+	//     X[0]+(ncell_arrays > 0 ? dX/2.0 : 0.0), 
+	//     Y[0]+(ncell_arrays > 0 ? dY/2.0 : 0.0), 
+	//     Z[0]+(ncell_arrays > 0 ? dZ/2.0 : 0.0),
+	//     X[nX-1]+(ncell_arrays > 0 ? dX/2.0 : 0.0),
+	//     Y[nY-1]+(ncell_arrays > 0 ? dY/2.0 : 0.0), 
+	//     Z[nZ-1]+(ncell_arrays > 0 ? dZ/2.0 : 0.0)
+	// };
+	double volumePBox[6] = {
+	    X[0], Y[0], Z[0],
+	    X[nX-1], Y[nY-1], Z[nZ-1]
+	};
+	double volumeBBox[6] = {
+	    X[X0]+(ncell_arrays <= 0 ? -dX/2.0 : 0.0),
+	    Y[X0]+(ncell_arrays <= 0 ? -dY/2.0 : 0.0),
+	    Z[X0]+(ncell_arrays <= 0 ? -dZ/2.0 : 0.0),
+	    X[X1]+(ncell_arrays <= 0 ? dX/2.0 : dX),
+	    Y[Y1]+(ncell_arrays <= 0 ? dY/2.0 : dY),
+	    Z[Z1]+(ncell_arrays <= 0 ? dZ/2.0 : dZ)
+	};  
+	volume->Set(volumePointer, volumeDataType,
 		    X, Y, Z, nX, nY, nZ,
-		    (float)rendererSampleRate, ghosts_info);	    
-	if ((scalarRange[1] >= tFVisibleRange[0]) 
-	    && (scalarRange[0] <= tFVisibleRange[1]))
+		    (float)rendererSampleRate, 
+		    volumePBox, volumeBBox);
+
+	if ((scalarRange[1] >= tFVisibleRange[0]) &&
+	    (scalarRange[0] <= tFVisibleRange[1]))
 	{
 	    // start timing
 	    int renderIndex = visitTimer->StartTimer();
@@ -2426,35 +2442,42 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	volume->CleanFB();
     }
 
-    //
+    //========================================================================//
     // Send rays
-    //
-    imgDims[0] = imgWidth;       imgDims[1] = imgHeight;
-    imgLowerLeft[0] = xMin;      imgLowerLeft[1] = yMin;
-    imgUpperRight[0] = xMax;     imgUpperRight[1] = yMax;
-    debug5 << "patch screen dim: " << xMin << " " << xMax << " | " << yMin << " " << yMax << " size " << imgWidth << "x" << imgHeight << std::endl;
+    //========================================================================//
+    imgDims[0] = imgWidth;
+    imgDims[1] = imgHeight;
+    imgLowerLeft[0] = xMin;
+    imgLowerLeft[1] = yMin;
+    imgUpperRight[0] = xMax; 
+    imgUpperRight[1] = yMax;
+    std::cout << "VAR: patch screen dim:   " 
+	      << xMin << " " << xMax << " | " 
+	      << yMin << " " << yMax << " | "
+	      << "(" << imgWidth << "x" << imgHeight << ")" << std::endl;
 
-    for (int _x = xMin ; _x < xMax ; _x++)
+    for (int _x = xMin; _x < xMax ; _x++)
     {
-    	for (int _y = yMin ; _y < yMax ; _y++)
+    	for (int _y = yMin; _y < yMax ; _y++)
     	{
     	    int index = (_y-yMin)*imgWidth + (_x-xMin);
             // outside visible range
-    	    if ( (scalarRange[1] < tFVisibleRange[0]) || (scalarRange[0] > tFVisibleRange[1]) )	
+    	    if ((scalarRange[1] < tFVisibleRange[0]) ||
+		(scalarRange[0] > tFVisibleRange[1]))	
     	    {
-    		int fullIndex = ((_y-bufferExtents[2])*(bufferExtents[1]-bufferExtents[0])+(_x-bufferExtents[0]));
-    		if ( depthBuffer[fullIndex] != 1)
-    		{
-    		    double clipDepth = depthBuffer[fullIndex]*2 - 1;
-    		    if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
-    		    {
-    			patchDrawn = 1;
-    			imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0]/255.0;
-    			imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1]/255.0;
-    			imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2]/255.0;
-    			imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 3] = 1.0;
-    		    }
-    		}
+    		// int fullIndex = ((_y-bufferExtents[2])*(bufferExtents[1]-bufferExtents[0])+(_x-bufferExtents[0]));
+    		// if ( depthBuffer[fullIndex] != 1)
+    		// {
+    		//     double clipDepth = depthBuffer[fullIndex]*2 - 1;
+    		//     if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
+    		//     {
+    		// 	patchDrawn = 1;
+    		// 	imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0]/255.0;
+    		// 	imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1]/255.0;
+    		// 	imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2]/255.0;
+    		// 	imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 3] = 1.0;
+    		//     }
+    		// }
     	    }
     	    else
     	    {
@@ -2477,14 +2500,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     	}
     }
 
-    //
+    //========================================================================//
     // Deallocate memory if not used
-    //
+    //========================================================================//
     if (patchDrawn == 0)
-    {
-    	if (imgArray != NULL) { delete []imgArray; }
-    	imgArray = NULL;
-    } 
+    { if (imgArray != NULL) { delete []imgArray; imgArray = NULL; } } 
 
 }
 
@@ -3170,10 +3190,13 @@ avtMassVoxelExtractor::getImageDimensions
 (int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth)
 {
     inUse = patchDrawn;
-    dims[0] = imgDims[0];    dims[1] = imgDims[1];
-    screen_ll[0] = imgLowerLeft[0];     screen_ll[1] = imgLowerLeft[1];
-    screen_ur[0] = imgUpperRight[0];    screen_ur[1] = imgUpperRight[1];
-    eyeDepth = eyeSpaceDepth;
+    dims[0] = imgDims[0];   
+    dims[1] = imgDims[1];
+    screen_ll[0] = imgLowerLeft[0];     
+    screen_ll[1] = imgLowerLeft[1];
+    screen_ur[0] = imgUpperRight[0];    
+    screen_ur[1] = imgUpperRight[1];
+    eyeDepth  = eyeSpaceDepth;
     clipDepth = clipSpaceDepth;
 }
 
@@ -3194,10 +3217,10 @@ avtMassVoxelExtractor::getImageDimensions
 void
 avtMassVoxelExtractor::getComputedImage(float *image)
 {
-    memcpy(image, imgArray, imgDims[0]*4*imgDims[1]*sizeof(float));
-
-    if (imgArray != NULL)
+    memcpy(image, imgArray, 4*imgDims[0]*imgDims[1]*sizeof(float));
+    if (imgArray != NULL) {
 	delete []imgArray;
+    }
     imgArray = NULL;
 }
 

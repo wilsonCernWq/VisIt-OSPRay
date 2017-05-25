@@ -908,7 +908,7 @@ avtRayTracer::Execute(void)
 	    // renderer
 	    debug5 << "make ospray renderer" << std::endl;
 	    ospray->InitRenderer();
-	    ospray->SetRenderer(false, materialProperties, view.camera);
+	    ospray->SetRenderer(lighting, materialProperties, view.camera);
 	    // check memory
 	    CheckMemoryHere("avtRayTracer::Execute after ospray");
 	}
@@ -1023,7 +1023,9 @@ avtRayTracer::Execute(void)
 	    composedData = new float[renderedWidth * renderedHeight * 4]();
 
 	    debug5 << "total num of patches " << numPatches << std::endl;
-	    debug5 << "composedData size " << renderedWidth << ", " << renderedHeight << std::endl;
+	    debug5 << "composedData size " 
+		   << renderedWidth << ", " 
+		   << renderedHeight << std::endl;
 	    debug5 << "fullImageExtents " 
 		   << fullImageExtents[0] << " "
 		   << fullImageExtents[1] << " "
@@ -1035,11 +1037,14 @@ avtRayTracer::Execute(void)
 	    	imgMetaData currentPatch = allImgMetaData[i];		
 	    	imgData tempImgData;
 	    	tempImgData.imagePatch = NULL;
-	    	tempImgData.imagePatch = new float[currentPatch.dims[0] * currentPatch.dims[1] * 4];
+	    	tempImgData.imagePatch = new float[currentPatch.dims[0] * 
+						   currentPatch.dims[1] * 4];
 	    	extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
 
 		debug5 << "current patch id = " << i << std::endl;
-		debug5 << "current patch size = " << currentPatch.dims[0] << ", " <<  currentPatch.dims[1] << std::endl;
+		debug5 << "current patch size = " 
+		       << currentPatch.dims[0] << ", " 
+		       <<  currentPatch.dims[1] << std::endl;
 		debug5 << "current patch starting" 
 		       << " X = " << currentPatch.screen_ll[0] 
 		       << " Y = " << currentPatch.screen_ll[1] << std::endl;
@@ -1054,10 +1059,10 @@ avtRayTracer::Execute(void)
 			const int bufferX = startingX + patchX;
 			const int bufferY = startingY + patchY;
 			
-	    		if (bufferX < fullImageExtents[0]) { continue; }
-	    		if (bufferX > fullImageExtents[1]) { continue; }
-	    		if (bufferY < fullImageExtents[2]) { continue; }
-	    		if (bufferY > fullImageExtents[3]) { continue; }
+	    		if (bufferX <  fullImageExtents[0]) { continue; }
+	    		if (bufferX >= fullImageExtents[1]) { continue; }
+	    		if (bufferY <  fullImageExtents[2]) { continue; }
+	    		if (bufferY >= fullImageExtents[3]) { continue; }
 
 	    		// index in the subimage
 	    		int patchIndex = (patchY * currentPatch.dims[0] + patchX) * 4;

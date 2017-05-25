@@ -277,7 +277,7 @@ protected:
 	int              bufferExtents[4];      // extents of the buffer(minX, maxX, minY, maxY)
 	//
 	// Rendering
-	int              renderingAreaExtents[4];
+	// int              renderingAreaExtents[4];
 	double           renderingDepthsExtents[2];
 	//
 	// Patch details for one image

@@ -48,8 +48,11 @@
 #include "ospray/ospcommon/math.h"
 
 #include <vtkType.h>
+#include <vtkMatrix3x3.h>
+#include <vtkMatrix4x4.h>
 
 #include <avtOpacityMap.h>
+
 #include <avtMemory.h>
 #include <avtParallel.h>
 #include <DebugStream.h>
@@ -73,7 +76,6 @@ typedef ospcommon::vec4i vec4i;
 // this struct will contain informations related to one volume
 struct VolumeInfo 
 {
-
     // meta info
     int           patchId = -1;
     bool          isComplete = false;
@@ -118,10 +120,11 @@ struct VolumeInfo
     }
     
     // other function
-    void Set(void* ptr, int type,
+    void Set(void *ptr, int type,
 	     double *X, double *Y, double *Z,
 	     int nX, int nY, int nZ, float sr, 
-	     bool ghosts[6])  {
+	     double volumePBox[6],
+	     double volumeBBox[6]) {
 	if (!isComplete) {
 	    worldType = OSP_INVALID;
 	    volumeType = OSP_INVALID;
@@ -129,7 +132,7 @@ struct VolumeInfo
 	InitWorld();
 	InitVolume();
 	if (!isComplete) { 
-	    SetVolume(ptr, type, X, Y, Z, nX, nY, nZ, ghosts); 
+	    SetVolume(ptr, type, X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox); 
 	}
 	if (samplingRate != sr) {
 	    samplingRate = sr;
@@ -190,7 +193,11 @@ struct VolumeInfo
 	}
     }
     OSPVolume GetVolume() { return volume; }
-    void SetVolume(void* ptr, int type, double *X, double *Y, double *Z, int nX, int nY, int nZ, bool ghosts[6]) {
+    void SetVolume(void *ptr, int type, 
+		   double *X, double *Y, double *Z, 
+		   int nX, int nY, int nZ,
+		   double volumePBox[6], 
+		   double volumeBBox[6]) {
 	// refresh existing data
 	if (voxelData != nullptr) { 
 	    ospRelease(voxelData); 
@@ -219,60 +226,37 @@ struct VolumeInfo
 	// assign data pointer
 	dataPtr = ptr;
 	// assign structure
-	regionStart   = vec3f(X[0],    Y[0],    Z[0]);
-	regionStop    = vec3f(X[nX-1], Y[nY-1], Z[nZ-1]);
+	regionStart   = vec3f(volumePBox[0], volumePBox[1], volumePBox[2]);
+	regionStop    = vec3f(volumePBox[3], volumePBox[4], volumePBox[5]);
 	regionSize    = vec3i(nX, nY, nZ);
-	regionSpacing = (regionStop - regionStart)/
-	    ((ospcommon::vec3f)regionSize - 1.0f);
+	// regionSpacing = vec3f(X[1]-X[0], Y[1]-Y[0], Z[1]-Z[0]);
+	regionSpacing = (regionStop-regionStart)/
+	    ((ospcommon::vec3f)regionSize-1.0f);
 
-	// if (ghosts[0]) {
-	//     regionLowerClip.x = X[1];
-	// } else {
-	//     regionLowerClip.x = X[0];
-        // }
-	// if (ghosts[1]) {
-	//     regionLowerClip.y = Y[1];
-	// } else {
-	//     regionLowerClip.y = Y[0];
-	// }
-	// if (ghosts[2]) {
-	//     regionLowerClip.z = Z[1];
-	// } else {
-	//     regionLowerClip.z = Z[0];
-	// }
-	regionLowerClip = vec3f(X[0],Y[0],Z[0]);
+	regionLowerClip.x = volumeBBox[0];
+	regionLowerClip.y = volumeBBox[1];
+	regionLowerClip.z = volumeBBox[2];
 
-	if (ghosts[3]) {
-	    regionUpperClip.x = X[nX - 2];
-	} else {	
-	    regionUpperClip.x = X[nX - 1];
-	}
-	if (ghosts[4]) {
-	    regionUpperClip.y = Y[nY - 2];
-	} else {	
-	    regionUpperClip.y = Y[nY - 1];
-	}
-	if (ghosts[5]) {
-	    regionUpperClip.z = Z[nZ - 2];
-	} else {	
-	    regionUpperClip.z = Z[nZ - 1];
-	}
+	regionUpperClip.x = volumeBBox[3];
+	regionUpperClip.y = volumeBBox[4];
+	regionUpperClip.z = volumeBBox[5];
 
 	// commit data
 	voxelSize = nX * nY * nZ;
-	voxelData = ospNewData(voxelSize, voxelDataType, 
+	voxelData = ospNewData(voxelSize, voxelDataType,
 			       dataPtr, OSP_DATA_SHARED_BUFFER);
 	ospSetData(volume, "voxelData", voxelData);
 	ospSetString(volume, "voxelType", dataType.c_str());
 	ospSetObject(volume, "transferFunction", transferfcn);
+
 	// commit volume
 	ospSetVec3f(volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
 	ospSetVec3f(volume,
-	            "volumeClippingBoxLower",
-	            (const osp::vec3f&)regionLowerClip);
+	           "volumeClippingBoxLower",
+	           (const osp::vec3f&)regionLowerClip);
 	ospSetVec3f(volume,
-		    "volumeClippingBoxUpper",
-		    (const osp::vec3f&)regionUpperClip);
+	 	      "volumeClippingBoxUpper",
+		      (const osp::vec3f&)regionUpperClip);
 	ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)regionSpacing);
 	ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)regionStart);
 	ospSetVec3i(volume, "dimensions",  (const osp::vec3i&)regionSize);
@@ -419,10 +403,10 @@ struct OSPContext
 	ospSetObject(renderer, "camera", camera);
 	ospSet1i(renderer, "backgroundEnabled", 0);
 	ospSet1i(renderer, "oneSidedLighting", 0);
-	ospSet1i(renderer, "aoSamples", 0);
-	if (lighting == true)
+	ospSet1i(renderer, "aoSamples", 16);
+	if (false && lighting == true)
 	{
-	    ospSet1i(renderer, "shadowsEnabled", 0);
+	    ospSet1i(renderer, "shadowsEnabled", 1);
 	    OSPLight aLight = ospNewLight(renderer, "AmbientLight");
 	    ospSet1f(aLight, "intensity", material[0]);
 	    ospCommit(aLight);
@@ -535,6 +519,65 @@ struct OSPContext
         ospCommit(transferfcn);
     }
 
+};
+
+namespace slivr {
+    inline double MyProjectWorldToScreen
+	(const double world_pos[3], 
+	 const int screenWidth, 
+	 const int screenHeight,	 
+	 const double panPercentage[2],
+	 const double imageZoom,
+	 vtkMatrix4x4 *mvp,
+	 int screen_pos[2])
+    {
+	// world space coordinate in homogeneous coordinate
+	double worldHCoord[4] = {
+	    world_pos[0],
+	    world_pos[1],
+	    world_pos[2],
+	    1.0
+	};
+
+	// world to clip space (-1 ~ 1)
+	double clipHCoord[4];
+	mvp->MultiplyPoint(worldHCoord, clipHCoord);
+	if (clipHCoord[3] == 0.0)
+	{
+	    std::cerr << "avtMassVoxelExtractor::Zero Division During Projection" 
+		      << endl;
+	    std::cerr << "world coordinates: (" 
+		      << worldHCoord[0] << ", " 
+		      << worldHCoord[1] << ", " 
+		      << worldHCoord[2] << ", " 
+		      << worldHCoord[3] << ")" << std::endl
+		      << "clip space coordinate: ("
+		      << clipHCoord[0] << ", " 
+		      << clipHCoord[1] << ", " 
+		      << clipHCoord[2] << ", "
+		      << clipHCoord[3] << std::endl;
+	    std::cerr << "Matrix: " << *mvp << endl;
+	    EXCEPTION1(VisItException, "Zero Division During Projection");
+	}
+
+	// normalize clip space coordinate
+	double clip_pos[3] = {
+	    clipHCoord[0]/clipHCoord[3],
+	    clipHCoord[1]/clipHCoord[3],
+	    clipHCoord[2]/clipHCoord[3]
+	};
+
+	// screen coordinates (int integer)
+	screen_pos[0] = round(clip_pos[0]*(screenWidth /2.0)+(screenWidth /2.0));
+	screen_pos[1] = round(clip_pos[1]*(screenHeight/2.0)+(screenHeight/2.0));
+
+	// add panning
+	screen_pos[0] += round(screenWidth  * panPercentage[0] * imageZoom);
+	screen_pos[1] += round(screenHeight * panPercentage[1] * imageZoom); 
+
+	// return point depth
+	return clip_pos[2];
+    }
 };
 
 // ****************************************************************************
@@ -762,4 +805,4 @@ inline void CheckMemoryHere(std::string message)
 	   << std::endl;
 }
 
-#endif
+#endif//IMG_METADATA_H

@@ -294,10 +294,10 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int bl
 	for (int bufferX=blendExtents[0]; bufferX<blendExtents[1]; bufferX++)
 	{
 	    
-	    if (bufferX < dstExtents[0]) { continue; }
-	    if (bufferX > dstExtents[1]) { continue; }
-	    if (bufferY < dstExtents[2]) { continue; }
-	    if (bufferY > dstExtents[3]) { continue; }
+	    if (bufferX <  dstExtents[0]) { continue; }
+	    if (bufferX >= dstExtents[1]) { continue; }
+	    if (bufferY <  dstExtents[2]) { continue; }
+	    if (bufferY >= dstExtents[3]) { continue; }
 	    
 	    int srcIndex = (bufferY-srcExtents[2]) * widthSrc * 4 + (bufferX-srcExtents[0]) * 4;
 	    int dstIndex = (bufferY-dstExtents[2]) * widthDst * 4 + (bufferX-dstExtents[0]) * 4;
@@ -340,10 +340,10 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int bl
 	for (int bufferX=blendExtents[0]; bufferX<blendExtents[1]; bufferX++)
 	{
 
-	    if (bufferX < dstExtents[0]) { continue; }
-	    if (bufferX > dstExtents[1]) { continue; }
-	    if (bufferY < dstExtents[2]) { continue; }
-	    if (bufferY > dstExtents[3]) { continue; }
+	    if (bufferX <  dstExtents[0]) { continue; }
+	    if (bufferX >= dstExtents[1]) { continue; }
+	    if (bufferY <  dstExtents[2]) { continue; }
+	    if (bufferY >= dstExtents[3]) { continue; }
 
 	    int srcIndex = (bufferY-srcExtents[2]) * widthSrc * 4 + (bufferX-srcExtents[0]) * 4;
 	    int dstIndex = (bufferY-dstExtents[2]) * widthDst * 4 + (bufferX-dstExtents[0]) * 4;
@@ -388,10 +388,10 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float 
 	    const int bufferX = startingX + patchX;
 	    const int bufferY = startingY + patchY;
 
-	    if (bufferX < dstExtents[0]) { continue; }
-	    if (bufferX > dstExtents[1]) { continue; }
-	    if (bufferY < dstExtents[2]) { continue; }
-	    if (bufferY > dstExtents[3]) { continue; }
+	    if (bufferX <  dstExtents[0]) { continue; }
+	    if (bufferX >= dstExtents[1]) { continue; }
+	    if (bufferY <  dstExtents[2]) { continue; }
+	    if (bufferY >= dstExtents[3]) { continue; }
 
 	    int srcIndex = (widthSrc * patchY + patchX) * 4;                                     // index in the subimage
 	    int dstIndex = ((bufferY - dstExtents[2]) * widthDst + bufferX - dstExtents[0]) * 4; // index in the big buffer
@@ -437,10 +437,10 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float 
 	    const int bufferX = startingX + patchX;
 	    const int bufferY = startingY + patchY;
 
-	    if (bufferX < dstExtents[0]) { continue; }
-	    if (bufferX > dstExtents[1]) { continue; }
-	    if (bufferY < dstExtents[2]) { continue; }
-	    if (bufferY > dstExtents[3]) { continue; }
+	    if (bufferX <  dstExtents[0]) { continue; }
+	    if (bufferX >= dstExtents[1]) { continue; }
+	    if (bufferY <  dstExtents[2]) { continue; }
+	    if (bufferY >= dstExtents[3]) { continue; }
 
 	    // index in the subimage
 	    int srcIndex = (widthSrc * patchY + patchX) * 4;
