@@ -2291,19 +2291,19 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     coordinates[7][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
 
     // check for debug
-    std::cout << "VAR: patch data bounds:" 
-	      << "   " << X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0)
-	      << " "   << X[X1] + (ncell_arrays > 0 ? dX : dX/2.0)
-	      << " | " << Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0)
-	      << " "   << Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0)
-	      << " | " << Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0)
-	      << " "   << Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0)
-	      << std::endl;   
-    std::cout << "VAR: patch ghost bounds:"
-	      << "   " << ghost_boundaries[0] << " " << ghost_boundaries[3] 
-	      << " | " << ghost_boundaries[1] << " " << ghost_boundaries[4] 
-	      << " | " << ghost_boundaries[2] << " " << ghost_boundaries[5]
-	      << std::endl;   
+    debug5 << "VAR: patch data bounds:" 
+	   << "   " << X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0)
+	   << " "   << X[X1] + (ncell_arrays > 0 ? dX : dX/2.0)
+	   << " | " << Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0)
+	   << " "   << Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0)
+	   << " | " << Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0)
+	   << " "   << Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0)
+	   << std::endl;   
+    debug5 << "VAR: patch ghost bounds:"
+	   << "   " << ghost_boundaries[0] << " " << ghost_boundaries[3] 
+	   << " | " << ghost_boundaries[1] << " " << ghost_boundaries[4] 
+	   << " | " << ghost_boundaries[2] << " " << ghost_boundaries[5]
+	   << std::endl;   
     
     double patch_center[3];
     patch_center[0] = (coordinates[0][0] + coordinates[7][0])/2.0;
@@ -2365,10 +2365,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //
     //========================================================================//
     // assign data to the class
-    xMin-=10;
-    yMin-=10;
-    xMax+=10;
-    yMax+=10;
+    xMin-=1; yMin-=1;
+    xMax+=1; yMax+=1;
     clipSpaceDepth = clip_space_depth;
     imgWidth  = xMax-xMin;
     imgHeight = yMax-yMin;
@@ -2390,14 +2388,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	}
 	auto volume = ospray->GetPatch(patch);
 	// shift grid and make it cel centered for cell data
-	// double volumePBox[6] = {
-	//     X[0]+(ncell_arrays > 0 ? dX/2.0 : 0.0), 
-	//     Y[0]+(ncell_arrays > 0 ? dY/2.0 : 0.0), 
-	//     Z[0]+(ncell_arrays > 0 ? dZ/2.0 : 0.0),
-	//     X[nX-1]+(ncell_arrays > 0 ? dX/2.0 : 0.0),
-	//     Y[nY-1]+(ncell_arrays > 0 ? dY/2.0 : 0.0), 
-	//     Z[nZ-1]+(ncell_arrays > 0 ? dZ/2.0 : 0.0)
-	// };
 	double volumePBox[6] = {
 	    X[0], Y[0], Z[0],
 	    X[nX-1], Y[nY-1], Z[nZ-1]
@@ -2451,50 +2441,50 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgLowerLeft[1] = yMin;
     imgUpperRight[0] = xMax; 
     imgUpperRight[1] = yMax;
-    std::cout << "VAR: patch screen dim:   " 
-	      << xMin << " " << xMax << " | " 
-	      << yMin << " " << yMax << " | "
-	      << "(" << imgWidth << "x" << imgHeight << ")" << std::endl;
+    debug5 << "VAR: patch screen dim:   " 
+	   << xMin << " " << xMax << " | " 
+	   << yMin << " " << yMax << " | "
+	   << "(" << imgWidth << "x" << imgHeight << ")" << std::endl;
 
-    for (int _x = xMin; _x < xMax ; _x++)
-    {
-    	for (int _y = yMin; _y < yMax ; _y++)
-    	{
-    	    int index = (_y-yMin)*imgWidth + (_x-xMin);
-            // outside visible range
-    	    if ((scalarRange[1] < tFVisibleRange[0]) ||
-		(scalarRange[0] > tFVisibleRange[1]))	
-    	    {
-    		// int fullIndex = ((_y-bufferExtents[2])*(bufferExtents[1]-bufferExtents[0])+(_x-bufferExtents[0]));
-    		// if ( depthBuffer[fullIndex] != 1)
-    		// {
-    		//     double clipDepth = depthBuffer[fullIndex]*2 - 1;
-    		//     if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
-    		//     {
-    		// 	patchDrawn = 1;
-    		// 	imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0]/255.0;
-    		// 	imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1]/255.0;
-    		// 	imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2]/255.0;
-    		// 	imgArray[(_y-yMin)*(imgWidth*4)+(_x-xMin)*4 + 3] = 1.0;
-    		//     }
-    		// }
-    	    }
-    	    else
-    	    {
-		if (!ospray->IsEnabled()) {
+    if (!ospray->IsEnabled()) {    
+	for (int patchX = xMin; patchX < xMax ; patchX++)
+	{
+	    for (int patchY = yMin; patchY < yMax ; patchY++)
+	    {
+		int index = (patchY-yMin)*imgWidth + (patchX-xMin);
+		// outside visible range
+		if ((scalarRange[1] < tFVisibleRange[0]) ||
+		    (scalarRange[0] > tFVisibleRange[1]))	
+		{
+		    // int fullIndex = ((patchY-bufferExtents[2])*(bufferExtents[1]-bufferExtents[0])+(patchX-bufferExtents[0]));
+		    // if ( depthBuffer[fullIndex] != 1)
+		    // {
+		    //     double clipDepth = depthBuffer[fullIndex]*2 - 1;
+		    //     if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
+		    //     {
+		    // 	patchDrawn = 1;
+		    // 	imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0]/255.0;
+		    // 	imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1]/255.0;
+		    // 	imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2]/255.0;
+		    // 	imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 3] = 1.0;
+		    //     }
+		    // }
+		}
+		else
+		{
 		    debug5 << "using CPU version raytracer" << std::endl;
 		    patchDrawn = 1;
 		    double _origin[3], _terminus[3];
 		    double origin[4]  = {0,0,0,1}; // starting point where we start sampling
 		    double terminus[4]= {0,0,0,1}; // ending point where we stop sampling
 		    // find the starting point & ending point of the ray
-		    GetSegmentRCSLIVR(_x, _y, fullVolumeDepthExtents, _origin, _terminus);   
+		    GetSegmentRCSLIVR(patchX, patchY, fullVolumeDepthExtents, _origin, _terminus);   
 		    for (int i=0; i<3; i++){
 			origin[i] = _origin[i];
 			terminus[i] = _terminus[i];
 		    }
 		    // Go get the segments along this ray and store them in
-		    SampleAlongSegment(origin, terminus, _x, _y);
+		    SampleAlongSegment(origin, terminus, patchX, patchY);
 		}
     	    }
     	}
