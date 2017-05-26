@@ -120,29 +120,11 @@ struct VolumeInfo
     }
     
     // other function
-    void Set(void *ptr, int type,
-	     double *X, double *Y, double *Z,
-	     int nX, int nY, int nZ, float sr, 
-	     double volumePBox[6],
-	     double volumeBBox[6]) {
-	if (!isComplete) {
-	    worldType = OSP_INVALID;
-	    volumeType = OSP_INVALID;
-	}
-	InitWorld();
-	InitVolume();
-	if (!isComplete) { 
-	    SetVolume(ptr, type, X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox); 
-	}
-	if (samplingRate != sr) {
-	    samplingRate = sr;
-	    SetSamplingRate(samplingRate);
-	}
-	if (!isComplete) { 
-	    SetWorld();
-	}
-	isComplete = true;	
-    }
+    void Set
+    (void *ptr, int type, double *X, double *Y, double *Z,
+     int nX, int nY, int nZ, float sr, 
+     double volumePBox[6], double volumeBBox[6]);
+
     bool GetCompleteFlag() { return isComplete; }
     void SetCompleteFlag(bool f) { isComplete = f; } 
     void SetTransferFunction(OSPTransferFunction tf) { transferfcn = tf; }

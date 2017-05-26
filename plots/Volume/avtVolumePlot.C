@@ -233,6 +233,7 @@ avtVolumePlot::PlotIsImageBased(void)
 {
     return (atts.GetRendererType() == VolumeAttributes::RayCasting ||
             atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
+	    atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR ||
             atts.GetRendererType() == VolumeAttributes::RayCastingIntegration);
 }
 
@@ -686,6 +687,7 @@ avtVolumePlot::ApplyRenderingTransformation(avtDataObject_p input)
 
     if (atts.GetRendererType() == VolumeAttributes::RayCasting ||
         atts.GetRendererType() == VolumeAttributes::RayCastingIntegration ||
+        atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR ||
         atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR)
     {
 #ifdef ENGINE

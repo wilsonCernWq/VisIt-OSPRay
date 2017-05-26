@@ -1054,7 +1054,7 @@ void QvisVolumePlotWindow::CreateSamplingGroups(QWidget *parent, QLayout *pLayou
         QGridLayout *raycastingLayout = new QGridLayout(raycastingGroup);
         // raycastingLayoutV->setSpacing(0);
         // raycastingLayoutV->setMargin(0);
-        //6 x 2 layout: 
+        // 6 x 2 layout: 
         // (0,0) Sampling method  (0,1) Rasterization   (0,2) Kernel Based       (0,4) Trilinear
         //                        (0,1) Samples per ray (0,2) sprSpinBox         (0,4) Sampling rate  (0,5) srSpinBox
         samplesPerRayWidget         = new QWidget(                          raycastingGroup);
@@ -1314,6 +1314,22 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
         sobelButton->setEnabled(false);
         break;
 
+    case VolumeAttributes::OSPRaySLIVR:
+        EnableSLIVRGroup();
+        resampleGroup->setEnabled(false);
+        raycastingGroup->setVisible(false);
+        UpdateLowGradientGroup(false);
+        materialProperties->setEnabled(volumeAtts->GetRendererType()==VolumeAttributes::OSPRaySLIVR);
+        EnableSamplingMethods(true);
+        samplesPerRayWidget->setEnabled(volumeAtts->GetRendererType()!=VolumeAttributes::OSPRaySLIVR);
+        rendererSamplesWidget->setEnabled(volumeAtts->GetRendererType()==VolumeAttributes::OSPRaySLIVR);
+        rendererSamplesSLIVRLabel->setEnabled(true);
+        rendererSamplesSLIVR->setEnabled(true);
+        centeredDiffButton->setEnabled(true);
+        centeredDiffButton->setChecked(true);
+        sobelButton->setEnabled(false);
+        break;
+
     default:
         EXCEPTION1(ImproperUseException, "No such renderer type.");
     }        
@@ -1357,6 +1373,7 @@ QvisVolumePlotWindow::CreateRendererOptionsGroup(int maxWidth)
 #ifdef HAVE_LIBSLIVR
     rendererTypesComboBox->addItem(tr("SLIVR"));
     rendererTypesComboBox->addItem(tr("Ray casting: SLIVR"));
+    rendererTypesComboBox->addItem(tr("Ray casting: OSPRay SLIVR"));
 #endif
     connect(rendererTypesComboBox, SIGNAL(activated(int)),
             this, SLOT(rendererTypeChanged(int)));
@@ -1921,6 +1938,12 @@ QvisVolumePlotWindow::UpdateWindow(bool doAll)
                 int idx=std::max(1,rendererTypesComboBox->findText("Ray casting: SLIVR"));
                 rendererTypesComboBox->setCurrentIndex(idx);
             }
+            else if (volumeAtts->GetRendererType() == VolumeAttributes::OSPRaySLIVR)
+            {
+                int idx=std::max(1,rendererTypesComboBox->findText("Ray casting: OSPRay SLIVR"));
+                rendererTypesComboBox->setCurrentIndex(idx);
+            }
+
 
 
             // Just for now, disable the opacity variable if we are using the
@@ -3790,6 +3813,7 @@ QvisVolumePlotWindow::rendererTypeChanged(int val)
       case 4:
       case 5:
       case 6:
+      case 7:
       {
           if (rendererTypesComboBox->findText("Tuvok") == val)
               volumeAtts->SetRendererType(VolumeAttributes::Tuvok);
@@ -3797,6 +3821,9 @@ QvisVolumePlotWindow::rendererTypeChanged(int val)
               volumeAtts->SetRendererType(VolumeAttributes::SLIVR);
           else if (rendererTypesComboBox->findText("Ray casting: SLIVR") == val)
               volumeAtts->SetRendererType(VolumeAttributes::RayCastingSLIVR);
+          else if (rendererTypesComboBox->findText("Ray casting: OSPRay SLIVR") == val)
+              volumeAtts->SetRendererType(VolumeAttributes::OSPRaySLIVR);
+
           break;
       }
       default:

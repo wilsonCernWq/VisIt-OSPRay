@@ -374,7 +374,13 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     // Set up the volume renderer.
     //
     // this needs to be fixed
-    avtCallback::SetOSPRayMode(true);
+    if (atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
+	avtCallback::SetOSPRayMode(true);
+	std::cout << "runing with OSPRay backend" << std::endl;
+    } else {
+	avtCallback::SetOSPRayMode(false);
+	std::cout << "runing with CPU Raycasting backend" << std::endl;
+    }
     // initialize ospray
     if (avtCallback::UseOSPRay()) 
     {
@@ -640,8 +646,9 @@ avtImage_p
 avtVolumeFilter::RenderImage(avtImage_p opaque_image,
 			     const WindowAttributes &window)
 {
-    	if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR){
-		return RenderImageRaycastingSLIVR(opaque_image,window);
+    	if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
+	    atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR){
+	    return RenderImageRaycastingSLIVR(opaque_image,window);
 	}
 
 	//
@@ -1214,7 +1221,8 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
     if (atts.GetScaling() == VolumeAttributes::Linear)
     {
 #ifdef HAVE_LIBSLIVR
-        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
+        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
+	    atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
             ds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
 	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
 		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {	    
@@ -1242,7 +1250,8 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
                                ds->GetTimestep(), ds->GetRestriction());
         nds->AddSecondaryVariable(var);
 #ifdef HAVE_LIBSLIVR
-        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
+        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
+	    atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
             nds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
 	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
 		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {	    
@@ -1263,7 +1272,8 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
                                ds->GetTimestep(), ds->GetRestriction());
         nds->AddSecondaryVariable(var);
 #ifdef HAVE_LIBSLIVR
-        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
+        if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
+	    atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
 	    nds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
 	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
 		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {

@@ -2239,6 +2239,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ghost_boundaries[2] = ghosts[      nX+1] != 0; // [1,1,0]
 	ghost_boundaries[5] = ghosts[(nZ-1)*nY*nX+(nY-2)*nX+(nX-2)] != 0;
     }
+
     // the name is a bit ugly but easier to read for debugging
     // non-ghost data index range
     int X0 = ghost_boundaries[0] ?    1 :    0,
@@ -2248,12 +2249,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	Z0 = ghost_boundaries[2] ?    1 :    0,
 	Z1 = ghost_boundaries[5] ? nZ-2 : nZ-1;
     double dX = X[1]-X[0], dY = Y[1]-Y[0], dZ = Z[1]-Z[0];
-    //========================================================================//
-    //
+
     //========================================================================//
     // Determine the screen size of the patch being processed
-    xMin = yMin = std::numeric_limits<int>::max();
-    xMax = yMax = std::numeric_limits<int>::min();
+    //========================================================================//
+    xMin = yMin = std::numeric_limits<int>::max(); 
+    xMax = yMax = std::numeric_limits<int>::min(); // upper boundary not included
 
     // Compute z order for blending patches
     double coordinates[8][3];
@@ -2358,15 +2359,15 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		std::min(point_depth, renderingDepthsExtents[0]);
 	    renderingDepthsExtents[1] = 
 		std::max(point_depth, renderingDepthsExtents[1]);
-	};
+	}
     }
 
     //========================================================================//
     //
     //========================================================================//
     // assign data to the class
-    xMin-=1; yMin-=1;
-    xMax+=1; yMax+=1;
+    xMin-=1; yMin-=1; // I think those two lines can be removed. But since it
+    xMax+=1; yMax+=1; // is working now and it is not wrong, I am leaving it.
     clipSpaceDepth = clip_space_depth;
     imgWidth  = xMax-xMin;
     imgHeight = yMax-yMin;
