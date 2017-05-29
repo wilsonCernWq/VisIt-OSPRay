@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <Object name="MachineProfile">
-    <Field name="hostNickname" type="string">"SCI Kepler"</Field>
+    <Field name="hostNickname" type="string">kepler</Field>
     <Field name="host" type="string">wopr.sci.utah.edu</Field>
     <Field name="userName" type="string">qwu</Field>
-    <Field name="hostAliases" type="string"></Field>
+    <Field name="hostAliases" type="string">kepler##</Field>
     <Field name="directory" type="string">/home/sci/qwu/software/visitospray-kepler/visit2.12.0/build</Field>
     <Field name="shareOneBatchJob" type="bool">false</Field>
     <Field name="sshPortSpecified" type="bool">false</Field>
     <Field name="sshPort" type="int">22</Field>
     <Field name="sshCommandSpecified" type="bool">false</Field>
-    <Field name="sshCommand" type="stringVector">"ssh" </Field>
+    <Field name="sshCommand" type="stringVector"></Field>
     <Field name="useGateway" type="bool">false</Field>
     <Field name="gatewayHost" type="string"></Field>
     <Field name="clientHostDetermination" type="string">MachineName</Field>
@@ -37,10 +37,10 @@
         <Field name="active" type="bool">false</Field>
         <Field name="arguments" type="stringVector"></Field>
         <Field name="parallel" type="bool">true</Field>
-        <Field name="launchArgsSet" type="bool">false</Field>
-        <Field name="launchArgs" type="string"></Field>
-        <Field name="sublaunchArgsSet" type="bool">true</Field>
-        <Field name="sublaunchArgs" type="string">"-f $PBS_NODEFILE"</Field>
+        <Field name="launchArgsSet" type="bool">true</Field>
+        <Field name="launchArgs" type="string">"-V"</Field>
+        <Field name="sublaunchArgsSet" type="bool">false</Field>
+        <Field name="sublaunchArgs" type="string"></Field>
         <Field name="sublaunchPreCmdSet" type="bool">false</Field>
         <Field name="sublaunchPreCmd" type="string"></Field>
         <Field name="sublaunchPostCmdSet" type="bool">false</Field>
@@ -52,7 +52,7 @@
         <Field name="GPUsPerNode" type="int">2</Field>
         <Field name="XArguments" type="string"></Field>
         <Field name="launchXServers" type="bool">true</Field>
-        <Field name="XDisplay" type="string"></Field>
+        <Field name="XDisplay" type="string">:%l</Field>
         <Field name="numThreads" type="int">0</Field>
         <Field name="constrainNodeProcs" type="bool">false</Field>
         <Field name="allowableNodes" type="intVector"></Field>
