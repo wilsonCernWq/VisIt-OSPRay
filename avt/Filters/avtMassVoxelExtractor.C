@@ -2171,7 +2171,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //========================================================================//
     // Initialization
     //========================================================================//
-    using namespace slivr;
     // Flag to indicate if the patch is drawn
     patchDrawn = 0;
     
@@ -2306,6 +2305,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	   << " | " << ghost_boundaries[2] << " " << ghost_boundaries[5]
 	   << std::endl;   
     
+    // calculate patch depth
     double patch_center[3];
     patch_center[0] = (coordinates[0][0] + coordinates[7][0])/2.0;
     patch_center[1] = (coordinates[0][1] + coordinates[7][1])/2.0;
@@ -2332,9 +2332,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// get screen coordinate
 	int point_pos[2];
 	double point_depth = 
-	    MyProjectWorldToScreen(world_pos, fullImgWidth, fullImgHeight,
-				   panPercentage, imageZoom, modelViewProj,
-				   point_pos);
+	    slivr::ProjectWorldToScreen(world_pos, fullImgWidth, fullImgHeight,
+					panPercentage, imageZoom, modelViewProj,
+					point_pos);
 
 	// Clamp values
 	point_pos[0] = std::min(std::max(point_pos[0], 0), w_max-1);
@@ -2363,7 +2363,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     }
 
     //========================================================================//
-    //
+    // create framebuffer
     //========================================================================//
     // assign data to the class
     xMin-=1; yMin-=1; // I think those two lines can be removed. But since it
@@ -2447,43 +2447,46 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	   << yMin << " " << yMax << " | "
 	   << "(" << imgWidth << "x" << imgHeight << ")" << std::endl;
 
-    if (!ospray->IsEnabled()) {    
+    if (!ospray->IsEnabled()) 
+    {
+        #pragma omp parallel for collapse(2)
 	for (int patchX = xMin; patchX < xMax ; patchX++)
 	{
 	    for (int patchY = yMin; patchY < yMax ; patchY++)
 	    {
-		int index = (patchY-yMin)*imgWidth + (patchX-xMin);
+		debug5 << "using CPU version raytracer" << std::endl;
+		int pIndex = (patchY-yMin)*imgWidth + (patchX-xMin);
+		int fIndex = ((patchY-bufferExtents[2])*(bufferExtents[1]-bufferExtents[0])+(patchX-bufferExtents[0]));
 		// outside visible range
 		if ((scalarRange[1] < tFVisibleRange[0]) ||
 		    (scalarRange[0] > tFVisibleRange[1]))	
 		{
-		    // int fullIndex = ((patchY-bufferExtents[2])*(bufferExtents[1]-bufferExtents[0])+(patchX-bufferExtents[0]));
-		    // if ( depthBuffer[fullIndex] != 1)
-		    // {
-		    //     double clipDepth = depthBuffer[fullIndex]*2 - 1;
-		    //     if ( clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
-		    //     {
-		    // 	patchDrawn = 1;
-		    // 	imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 0] = rgbColorBuffer[fullIndex*3 + 0]/255.0;
-		    // 	imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 1] = rgbColorBuffer[fullIndex*3 + 1]/255.0;
-		    // 	imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 2] = rgbColorBuffer[fullIndex*3 + 2]/255.0;
-		    // 	imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 3] = 1.0;
-		    //     }
-		    // }
+		    if (depthBuffer[fIndex] != 1)
+		    {
+		        double clipDepth = depthBuffer[fIndex]*2 - 1;
+		        if (clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
+		        {
+			    patchDrawn = 1;
+			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 0] = rgbColorBuffer[fIndex*3 + 0]/255.0;
+			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 1] = rgbColorBuffer[fIndex*3 + 1]/255.0;
+			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 2] = rgbColorBuffer[fIndex*3 + 2]/255.0;
+			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 3] = 1.0;
+		        }
+		    }
 		}
 		else
 		{
-		    debug5 << "using CPU version raytracer" << std::endl;
 		    patchDrawn = 1;
-		    double _origin[3], _terminus[3];
-		    double origin[4]  = {0,0,0,1}; // starting point where we start sampling
-		    double terminus[4]= {0,0,0,1}; // ending point where we stop sampling
+		    // double _origin[3], _terminus[3];
+		    double origin[4]   = {0,0,0,1}; // starting point where we start sampling
+		    double terminus[4] = {0,0,0,1}; // ending point where we stop sampling
 		    // find the starting point & ending point of the ray
-		    GetSegmentRCSLIVR(patchX, patchY, fullVolumeDepthExtents, _origin, _terminus);   
-		    for (int i=0; i<3; i++){
-			origin[i] = _origin[i];
-			terminus[i] = _terminus[i];
-		    }
+		    // GetSegmentRCSLIVR(patchX, patchY, fullVolumeDepthExtents, _origin, _terminus);   
+		    GetSegmentRCSLIVR(patchX, patchY, fullVolumeDepthExtents, origin, terminus); 
+		    // for (int i=0; i<3; i++){
+		    // 	origin[i] = _origin[i];
+		    // 	terminus[i] = _terminus[i];
+		    // }
 		    // Go get the segments along this ray and store them in
 		    SampleAlongSegment(origin, terminus, patchX, patchY);
 		}
