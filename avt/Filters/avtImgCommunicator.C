@@ -68,30 +68,21 @@ enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 //  Modifications:
 //
 // ****************************************************************************
-avtImgCommunicator::avtImgCommunicator()
+avtImgCommunicator::avtImgCommunicator() : 
+    intermediateImageExtents{0},
+    intermediateImageBB{0}
 {
-  #ifdef PARALLEL
-	MPI_Comm_size(VISIT_MPI_COMM, &num_procs);
-	MPI_Comm_rank(VISIT_MPI_COMM, &my_id);
-
-  #else
-	num_procs = 1;
-	my_id = 0;
-  #endif
-
-	totalPatches = 0;
-
-	intermediateImage = NULL;
-	imgBuffer = NULL;
-
-	for (int i=0; i<4; i++)
-	{
-		intermediateImageExtents[i] = 0;
-		intermediateImageBB[i] = 0;
-	}
+#ifdef PARALLEL
+    MPI_Comm_size(VISIT_MPI_COMM, &num_procs);
+    MPI_Comm_rank(VISIT_MPI_COMM, &my_id);
+#else
+    num_procs = 1;
+    my_id = 0;
+#endif
+    totalPatches = 0;
+    intermediateImage = NULL;
+    imgBuffer = NULL;
 }
-
-
 
 // ****************************************************************************
 //  Method: avtImgCommunicator::~avtImgCommunicator
