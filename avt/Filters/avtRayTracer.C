@@ -688,15 +688,18 @@ double deg2rad (double degrees) {
 void
 avtRayTracer::Execute(void)
 {
-    // check memory    
-    CheckMemoryHere("avtRayTracer::Execute");
+    //========================================================================//
+    // Initialization and Debug
+    //========================================================================//
+    // check memory in the beginning
+    slivr::CheckMemoryHere("avtRayTracer::Execute");
 
     // initialize current time
     int timingIndex = visitTimer->StartTimer();
 
-    //
+    //========================================================================//
     // start of original pipeline
-    //
+    //========================================================================//
     bool parallelOn = (imgComm.GetNumProcs() == 1) ? false : true;
     if (rayfoo == NULL)
     {
@@ -817,8 +820,7 @@ avtRayTracer::Execute(void)
 	       << "  aspect: " << aspect << std::endl;
 	
 	// clip planes
-	double _clip[2];
-	_clip[0]=oldNearPlane;  _clip[1]=oldFarPlane;
+	double oldclip[2] = {oldNearPlane, oldFarPlane};
 	panPercentage[0] = view.imagePan[0];
 	panPercentage[1] = view.imagePan[1];
 	// Scaling
@@ -884,7 +886,7 @@ avtRayTracer::Execute(void)
 	//
 	// -----------------------------
 	if (avtCallback::UseOSPRay()) {
-	    CheckMemoryHere("avtRayTracer::Execute before ospray");
+	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
 	    // camera
 	    debug5 << "make ospray camera" << std::endl;
 	    ospray->InitCamera(OSP_PERSPECTIVE);
@@ -910,7 +912,7 @@ avtRayTracer::Execute(void)
 	    ospray->InitRenderer();
 	    ospray->SetRenderer(lighting, materialProperties, view.camera);
 	    // check memory
-	    CheckMemoryHere("avtRayTracer::Execute after ospray");
+	    slivr::CheckMemoryHere("avtRayTracer::Execute after ospray");
 	}
 	// -----------------------------
 
@@ -926,8 +928,8 @@ avtRayTracer::Execute(void)
 	extractor.SetMatProperties(materialProperties);
 	extractor.SetViewDirection(viewDirection);
 	extractor.SetTransferFn(transferFn1D);
-	extractor.SetClipPlanes(_clip);
-	extractor.SetPanPercentages(view.imagePan); // ??? disabled
+	extractor.SetClipPlanes(oldclip);
+	extractor.SetPanPercentages(view.imagePan);
 	extractor.SetImageZoom(view.imageZoom); 
 	extractor.SetRendererSampleRate(rendererSampleRate); 
 	extractor.SetDepthExtents(depthExtents);
@@ -962,7 +964,7 @@ avtRayTracer::Execute(void)
     }
 
     // Qi debug
-    CheckMemoryHere("avtRayTracer::Execute raytracing setup done");
+    slivr::CheckMemoryHere("avtRayTracer::Execute raytracing setup done");
     
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
@@ -1113,7 +1115,7 @@ avtRayTracer::Execute(void)
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
-	    CheckMemoryHere("avtRayTracer::Execute serial compositing done");
+	    slivr::CheckMemoryHere("avtRayTracer::Execute serial compositing done");
 	    debug5 << "Final image compositing start!" << std::endl;
 
 	    //
@@ -1283,7 +1285,7 @@ avtRayTracer::Execute(void)
 
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
-	    CheckMemoryHere("avtRayTracer::Execute final compositing done");
+	    slivr::CheckMemoryHere("avtRayTracer::Execute final compositing done");
 
 	    // time compositing
 	    visitTimer->StopTimer(timingCompositinig, "Compositing");
