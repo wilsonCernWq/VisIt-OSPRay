@@ -142,7 +142,8 @@ avtRayTracer::avtRayTracer()
     convexHullOnRCSLIVR = false;
     // lighting properties
     lighting = false;
-    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0; lightPosition[3] = 1.0;
+    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
+    lightPosition[3] = 1.0;
     materialProperties[0] = 0.4; 
     materialProperties[1] = 0.75;
     materialProperties[3] = 0.0;
@@ -891,7 +892,7 @@ avtRayTracer::Execute(void)
 	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
 	    // initialize ospray
 	    // -- multi-threading enabled
-	    ospray->InitOSP(osprayRefresh /*refresh data flag*/, false, 1);
+	    ospray->InitOSP(osprayRefresh /*refresh data flag*/, false, -1);
 	    // camera
 	    debug5 << "make ospray camera" << std::endl;
 	    ospray->InitCamera(OSP_PERSPECTIVE);
