@@ -62,3 +62,54 @@ VolumeInfo::Set
     }
     isComplete = true;	
 }
+
+// ****************************************************************************
+//  Namespace:  slivr
+//
+//  Purpose:
+//    
+//
+//  Programmer:  
+//  Creation:   
+//
+// ****************************************************************************
+
+void slivr::CheckMemoryHere(const std::string& message, std::string debugN)
+{
+    if (debugN.compare("debug5") == 0) {
+	if (DebugStream::Level5()) {
+	    slivr::CheckMemoryHere(message, DebugStream::Stream5());
+	}       
+    }
+    else if (debugN.compare("debug4") == 0) {
+	if (DebugStream::Level4()) {
+	    slivr::CheckMemoryHere(message, DebugStream::Stream4());
+	}       
+    }
+    else if (debugN.compare("debug3") == 0) {
+	if (DebugStream::Level3()) {
+	    slivr::CheckMemoryHere(message, DebugStream::Stream3());
+	}       
+    }
+    else if (debugN.compare("debug2") == 0) {
+	if (DebugStream::Level2()) {
+	    slivr::CheckMemoryHere(message, DebugStream::Stream2());
+	}       
+    }
+    else if (debugN.compare("debug1") == 0) {
+	if (DebugStream::Level1()) {
+	    slivr::CheckMemoryHere(message, DebugStream::Stream1());
+	}       
+    }
+}
+
+void slivr::CheckMemoryHere(const std::string& message, std::ostream& out)
+{
+    unsigned long m_size, m_rss;
+    avtMemory::GetMemorySize(m_size, m_rss);
+    out << message << std::endl << "\t"
+	<< " Rank " << PAR_Rank()
+	<< " Memory use begin " << m_size 
+	<< " rss " << m_rss/(1024*1024) << " (MB)"
+	<< std::endl;
+}

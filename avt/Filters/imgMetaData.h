@@ -504,14 +504,16 @@ struct OSPContext
 };
 
 namespace slivr {
-    inline double MyProjectWorldToScreen
-	(const double world_pos[3], 
-	 const int screenWidth, 
-	 const int screenHeight,	 
-	 const double panPercentage[2],
-	 const double imageZoom,
-	 vtkMatrix4x4 *mvp,
-	 int screen_pos[2])
+    void CheckMemoryHere(const std::string& message, 
+			 std::string debugN = "debug5");
+    void CheckMemoryHere(const std::string& message, 
+			 std::ostream& out);
+
+    inline double ProjectWorldToScreen
+	(const double world_pos[3],
+	 const int screenWidth, const int screenHeight,
+	 const double panPercentage[2], const double imageZoom,
+	 vtkMatrix4x4 *mvp, int screen_pos[2])
     {
 	// world space coordinate in homogeneous coordinate
 	double worldHCoord[4] = {
@@ -560,6 +562,7 @@ namespace slivr {
 	// return point depth
 	return clip_pos[2];
     }
+
 };
 
 // ****************************************************************************
@@ -773,18 +776,6 @@ inline void writeArrayToPPM( std::string filename , float * image, int dimX, int
     }
  
     outputFile.close();
-}
-
-
-inline void CheckMemoryHere(std::string message)
-{
-    unsigned long m_size, m_rss;
-    avtMemory::GetMemorySize(m_size, m_rss);
-    debug5 << message << std::endl << "\t"
-	   << " Rank " << PAR_Rank()
-	   << " Memory use begin " << m_size 
-	   << " rss " << m_rss/(1024*1024) << " (MB)"
-	   << std::endl;
 }
 
 #endif//IMG_METADATA_H
