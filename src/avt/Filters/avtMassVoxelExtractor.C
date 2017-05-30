@@ -42,11 +42,14 @@
 
 #include <avtMassVoxelExtractor.h>
 
-#include <float.h>
-
 #include <avtAccessor.h>
 #include <avtCellList.h>
 #include <avtVolume.h>
+#include <avtSLIVRImgMetaData.h>
+
+#include <avtMemory.h>
+#include <DebugStream.h>
+#include <TimingsManager.h>
 
 #include <vtkDataArray.h>
 #include <vtkCamera.h>
@@ -57,23 +60,17 @@
 #include <vtkTemplateAliasMacro.h>
 #include <vtkUnsignedCharArray.h>
 
-#include <DebugStream.h>
-#include <avtMemory.h>
-#include <TimingsManager.h>
-
-#include <ImgMetaData.h>
-
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <float.h>
 #include <time.h>
-
+#include <math.h>
+#include <algorithm>
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <sstream>
-#include <algorithm>
+#include <string>
 #include <limits>
-#include <math.h>
 
 // ****************************************************************************
 //  Method: avtMassVoxelExtractor constructor

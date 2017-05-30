@@ -24,11 +24,8 @@ if [ "$3" == "source" ]; then
 	--exclude '*.txt'   \
 	--exclude '*.cmake' \
 	--exclude '*.in'    \
-	--exclude '*.sh'    \
 	--exclude '.*'      \
-	--exclude 'README*' \
-	--exclude 'exclude' \
-	${WORKSRC}/* ${VISITSRC}
+	${WORKSRC}/src/* ${VISITSRC}
 
 elif [ "$3" == "cmake" ]; then 
 
@@ -42,10 +39,13 @@ elif [ "$3" == "cmake" ]; then
 	--exclude '*.xml'   \
 	--exclude '*.code'   \
 	--exclude '*.java'   \
-	--exclude '*.sh'    \
 	--exclude '.*'      \
-	--exclude 'README*' \
-	--exclude 'exclude' \
-	${WORKSRC}/* ${VISITSRC}
+	${WORKSRC}/src/* ${VISITSRC}
+
+elif [ "$3" == "clean" ]; then 
+
+    rm -r ${VISITSRC}/avt/Plotter/OSPRay
+    rm ${VISITSRC}/avt/Filters/imgMetaData.*
+    rm ${VISITSRC}/avt/Filters/avtImgCommunicator.*
 
 fi

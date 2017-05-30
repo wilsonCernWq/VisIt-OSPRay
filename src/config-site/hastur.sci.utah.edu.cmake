@@ -31,16 +31,16 @@ VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/impi/2017.2.174/bin64/mpicc T
 VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
 
 ##
-## OSPRay                                                                       
-## -- VTK 6.1.0 forces to use python 2.7.6, need to manually change it          
-## -- recommend to remove tbb libraries inside embree and ospray binary folder  
-##                                                                              
-SET(OSPRAY_USE_EXTERNAL_EMBREE ON)                                              
+## OSPRa
+## -- VTK 6.1.0 forces to use python 2.7.6, need to manually change it
+## -- recommend to remove tbb libraries inside embree and ospray binary folder
+##                                                                             
+SET(OSPRAY_USE_EXTERNAL_EMBREE ON)
 SET(ospray_DIR /home/sci/qwu/software/ospray-qwu-23.05.2017/lib64/cmake/ospray-1.3.0)
 SET(embree_DIR /home/sci/qwu/software/embree-2.14.0.x86_64.linux/lib/cmake/embree-2.14.0)
-SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)                          
-SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)                     
-VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)  
+SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
+SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
 
 ##
 ## PIDX
