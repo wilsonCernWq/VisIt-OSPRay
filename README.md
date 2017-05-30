@@ -74,3 +74,18 @@ export PAR_INCLUDE="-I/uufs/kingspeak.peaks/sys/pkg/mvapich2/1.9/include"
 
 ## Building OSPRay
 ## Building VisIt
+## How to create patch
+Add the files going to be removed into `removelist.txt`
+Create a patch
+```
+./makeref.sh /path/to/visit/src/
+diff -Naur src-ref src > patch.txt
+cd /path/to/visit/src/
+patch -p1  < ../working/patch.txt
+```
+Revert a patch
+```
+cd /path/to/visit/src/
+patch -p1 -R  < ../working/patch.txt
+```
+Remember to revert the previous patch before applying a new one

@@ -1,11 +1,12 @@
 #!/bin/bash
 
 VISITSRC=${1}
-WORKSRC=${2}
+OPTION=${2}
+WORKSRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 HELP()
 {
-    echo "Usage: bash deploy.sh <destination-dir> <source-dir>"
+    echo "Usage: bash deploy.sh <destination-dir> <option>"
 }
 
 if [ "${VISITSRC}" == "" ]; then
@@ -13,12 +14,7 @@ if [ "${VISITSRC}" == "" ]; then
     exit
 fi
 
-if [ "${WORKSRC}" == "" ]; then
-    HELP
-    exit
-fi
-
-if [ "$3" == "source" ]; then 
+if [ "$OPTION" == "source" ]; then 
 
     rsync -vr \
 	--exclude '*.txt'   \
@@ -27,7 +23,7 @@ if [ "$3" == "source" ]; then
 	--exclude '.*'      \
 	${WORKSRC}/src/* ${VISITSRC}
 
-elif [ "$3" == "cmake" ]; then 
+elif [ "$OPTION" == "cmake" ]; then 
 
     rsync -vr \
 	--exclude '*.C'     \
@@ -42,7 +38,7 @@ elif [ "$3" == "cmake" ]; then
 	--exclude '.*'      \
 	${WORKSRC}/src/* ${VISITSRC}
 
-elif [ "$3" == "clean" ]; then 
+elif [ "$OPTION" == "clean" ]; then 
 
     rm -r ${VISITSRC}/avt/Plotter/OSPRay
     rm ${VISITSRC}/avt/Filters/imgMetaData.*
