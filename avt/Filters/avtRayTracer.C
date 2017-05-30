@@ -68,6 +68,7 @@
 #include <avtWorldSpaceToImageSpaceTransform.h>
 #include <avtMemory.h>
 #include <avtCallback.h>
+#include <avtSLIVRImgMetaData.h>
 #ifdef PARALLEL
 #  include <avtImageCommunicator.h>
 #  include <avtSamplePointCommunicator.h>
@@ -75,7 +76,6 @@
 #include <DebugStream.h>
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
-#include <ImgMetaData.h>
 
 using std::vector;
 

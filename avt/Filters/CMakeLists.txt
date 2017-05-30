@@ -74,7 +74,7 @@
 
 SET(AVTFILTERS_SOURCES
 avtSLIVROSPRayFilter.C
-ImgMetaData.C
+avtSLIVRImgMetaData.C
 avtActualExtentsFilter.C
 avtCondenseDatasetFilter.C
 avtContourFilter.C

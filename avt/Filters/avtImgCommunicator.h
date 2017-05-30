@@ -46,10 +46,10 @@
 #include <filters_exports.h>
 #include <pipeline_exports.h>
 #include <avtSamplePointExtractor.h>
+#include <avtSLIVRImgMetaData.h>
+
 #include <algorithm>
 #include <string>
-
-#include <ImgMetaData.h>
 
 #ifdef PARALLEL
 #   include <mpi.h>

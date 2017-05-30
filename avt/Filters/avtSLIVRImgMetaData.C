@@ -36,7 +36,7 @@
 *
 *****************************************************************************/
 
-#include "ImgMetaData.h"
+#include "avtSLIVRImgMetaData.h"
 
 #include <avtMemory.h>
 #include <avtParallel.h>

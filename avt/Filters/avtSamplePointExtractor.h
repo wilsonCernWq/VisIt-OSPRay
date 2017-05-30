@@ -51,7 +51,7 @@
 #include <avtOpacityMap.h>
 #include <avtSLIVROSPRayFilter.h>
 #include <avtImgCommunicator.h>
-#include <ImgMetaData.h>
+#include <avtSLIVRImgMetaData.h>
 
 #include <vtkCamera.h>
 #include <vtkMatrix4x4.h>
