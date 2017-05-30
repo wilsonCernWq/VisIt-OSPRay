@@ -44,16 +44,18 @@
 #define AVT_RAY_TRACER_H
 
 #include <filters_exports.h>
+
 #include <avtDatasetToImageFilter.h>
 #include <avtViewInfo.h>
 #include <avtOpacityMap.h>
-#include <avtOSPRayFilter.h>
+#include <avtSLIVROSPRayFilter.h>
 #include <avtImgCommunicator.h>
+
+#include <vtkCamera.h>
 
 #include <map>
 #include <limits>
 #include <vector>
-#include <vtkCamera.h>
 
 class   avtRayFunction;
 class   vtkMatrix4x4;

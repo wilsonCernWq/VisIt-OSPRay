@@ -46,16 +46,13 @@
 #include <avtDatasetToDatasetFilter.h>
 
 #include <VolumeAttributes.h>
-
 #include <avtImage.h>
+#include <avtSLIVROSPRayFilter.h> // ospray integration
+
 #include <vtkMatrix4x4.h>
 #include <vtkCamera.h>
 
-// ospray integration
-#include <avtOSPRayFilter.h>
-
 class     WindowAttributes;
-
 
 // ****************************************************************************
 //  Class: avtVolumeFilter

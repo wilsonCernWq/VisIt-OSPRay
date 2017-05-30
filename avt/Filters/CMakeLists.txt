@@ -73,7 +73,7 @@
 #****************************************************************************/
 
 SET(AVTFILTERS_SOURCES
-avtOSPRayFilter.C
+avtSLIVROSPRayFilter.C
 ImgMetaData.C
 avtActualExtentsFilter.C
 avtCondenseDatasetFilter.C

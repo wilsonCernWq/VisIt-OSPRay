@@ -39,14 +39,11 @@
 #ifndef IMG_METADATA_H
 #define IMG_METADATA_H
 
+#include <vtkMatrix4x4.h>
 #include <stdio.h>
 #include <string>
 #include <iostream>
 #include <limits>
-
-#include <vtkMatrix4x4.h>
-
-#include <avtOSPRayFilter.h>
 
 // ****************************************************************************
 //  Namespace:  slivr
@@ -61,7 +58,8 @@
 namespace slivr
 {
     double ProjectWorldToScreen
-	(const double world_pos[3], const int screenWidth, const int screenHeight,	 
+	(const double world_pos[3], 
+	 const int screenWidth, const int screenHeight,	 
 	 const double panPercentage[2], const double imageZoom,
 	 vtkMatrix4x4 *mvp, int screen_pos[2]);
 };

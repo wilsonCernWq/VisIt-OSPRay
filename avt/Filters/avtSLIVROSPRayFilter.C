@@ -36,7 +36,7 @@
 *
 *****************************************************************************/
 
-#include "avtOSPRayFilter.h"
+#include "avtSLIVROSPRayFilter.h"
 
 #include <avtMemory.h>
 #include <avtParallel.h>

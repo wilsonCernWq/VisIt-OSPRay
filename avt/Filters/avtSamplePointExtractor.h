@@ -48,20 +48,19 @@
 #include <avtDatasetToSamplePointsFilter.h>
 #include <avtVolume.h>
 #include <avtViewInfo.h>
-#include <avtImgCommunicator.h>
 #include <avtOpacityMap.h>
-#include <avtOSPRayFilter.h>
-
+#include <avtSLIVROSPRayFilter.h>
+#include <avtImgCommunicator.h>
 #include <ImgMetaData.h>
+
+#include <vtkCamera.h>
+#include <vtkMatrix4x4.h>
 
 #include <fstream>
 #include <vector>
 #include <map>
 #include <algorithm>
 #include <utility>
-
-#include <vtkCamera.h>
-#include <vtkMatrix4x4.h>
 
 class  vtkDataArray;
 class  vtkDataSet;

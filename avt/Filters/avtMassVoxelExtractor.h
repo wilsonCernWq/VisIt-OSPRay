@@ -43,28 +43,27 @@
 #ifndef AVT_MASS_VOXEL_EXTRACTOR_H
 #define AVT_MASS_VOXEL_EXTRACTOR_H
 
-#include "ospray/ospray.h"
-#include "ospray/ospcommon/vec.h"
-
 #include <filters_exports.h>
 
 #include <avtExtractor.h>
 #include <avtViewInfo.h>
-
 #include <avtOpacityMap.h>
-
+#include <avtSLIVROSPRayFilter.h>
 #include <DebugStream.h>
-class     vtkRectilinearGrid;
-class     vtkMatrix4x4;
+
+#include "ospray/ospray.h"
+#include "ospray/ospcommon/vec.h"
 
 #include <vtkMatrix3x3.h>
 #include <vtkMatrix4x4.h>
 #include <vtkCamera.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <algorithm>
 
-#include <avtOSPRayFilter.h>
+class     vtkRectilinearGrid;
+class     vtkMatrix4x4;
 
 // ****************************************************************************
 //  Class: avtMassVoxelExtractor
