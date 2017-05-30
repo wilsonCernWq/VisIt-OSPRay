@@ -50,7 +50,9 @@
 #include <avtViewInfo.h>
 #include <avtImgCommunicator.h>
 #include <avtOpacityMap.h>
-#include <imgMetaData.h>
+#include <avtOSPRayFilter.h>
+
+#include <ImgMetaData.h>
 
 #include <fstream>
 #include <vector>

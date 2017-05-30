@@ -63,7 +63,8 @@ class     vtkMatrix4x4;
 #include <stdlib.h>
 #include <stdio.h>
 #include <algorithm>
-#include "imgMetaData.h"
+
+#include <avtOSPRayFilter.h>
 
 // ****************************************************************************
 //  Class: avtMassVoxelExtractor

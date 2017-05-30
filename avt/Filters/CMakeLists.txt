@@ -73,7 +73,8 @@
 #****************************************************************************/
 
 SET(AVTFILTERS_SOURCES
-imgMetaData.C
+avtOSPRayFilter.C
+ImgMetaData.C
 avtActualExtentsFilter.C
 avtCondenseDatasetFilter.C
 avtContourFilter.C
@@ -166,7 +167,6 @@ ADD_LIBRARY(avtfilters_ser ${AVTFILTERS_SOURCES})
 TARGET_COMPILE_OPTIONS(avtfilters_ser PUBLIC "$<$<CONFIG:DEBUG>:-std=c++11>")
 TARGET_COMPILE_OPTIONS(avtfilters_ser PUBLIC "$<$<CONFIG:RELEASE>:-std=c++11>")
 TARGET_LINK_LIBRARIES(avtfilters_ser visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_ser avtdatabase_ser avtdbatts ${EAVL_LIB} ${VTKM_LIB} vtkFiltersModeling ${OSPRAY_LIBRARIES})
-INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
 VISIT_INSTALL_TARGETS(avtfilters_ser)
 
 #********************************* PARALLEL **********************************
@@ -175,6 +175,5 @@ IF(VISIT_PARALLEL)
     TARGET_COMPILE_OPTIONS(avtfilters_par PUBLIC "$<$<CONFIG:DEBUG>:-std=c++11>")
     TARGET_COMPILE_OPTIONS(avtfilters_par PUBLIC "$<$<CONFIG:RELEASE>:-std=c++11>")
     TARGET_LINK_LIBRARIES(avtfilters_par visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_par avtdatabase_par avtdbatts ${EAVL_LIB} ${VTKM_LIB} vtkFiltersModeling ${OSPRAY_LIBRARIES})
-    INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
     VISIT_INSTALL_TARGETS(avtfilters_par)
 ENDIF(VISIT_PARALLEL)

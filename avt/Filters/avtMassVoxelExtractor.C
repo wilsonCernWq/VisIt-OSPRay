@@ -61,6 +61,8 @@
 #include <avtMemory.h>
 #include <TimingsManager.h>
 
+#include <ImgMetaData.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

@@ -381,18 +381,17 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
 	avtCallback::SetOSPRayMode(false);
 	debug1 << "runing with CPU Raycasting backend" << std::endl;
     }
-    // initialize ospray
-    if (avtCallback::UseOSPRay()) 
-    {
-	ospray.InitOSP(osprayRefresh /*refresh data flag*/, false, -1); // multi-threading enabled
-	osprayRefresh = false;
-    }
     avtRayTracer *software = new avtRayTracer;
     software->SetRayCastingSLIVR(true);
     software->SetTrilinear(false);
     software->SetInput(termsrc.GetOutput());
     software->InsertOpaqueImage(opaque_image);
     software->SetOSPRay(&ospray);
+    software->SetOSPRayRefresh(osprayRefresh);
+    if (avtCallback::UseOSPRay()) 
+    {
+	osprayRefresh = false;
+    }
     //
     // Set up the transfer function
     //
