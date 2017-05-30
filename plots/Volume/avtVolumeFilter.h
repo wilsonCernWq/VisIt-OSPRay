@@ -52,7 +52,7 @@
 #include <vtkCamera.h>
 
 // ospray integration
-#include <imgMetaData.h>
+#include <avtOSPRayFilter.h>
 
 class     WindowAttributes;
 
@@ -89,11 +89,11 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
 
     void                     SetAttributes(const VolumeAttributes &);
     virtual const char      *GetType(void) { return "avtVolumeFilter"; };
-    virtual const char      *GetDescription(void)
-                                  { return "Volume rendering"; };
+    virtual const char      *GetDescription(void) { return "Volume rendering"; };
 
     avtImage_p               RenderImage(avtImage_p, const WindowAttributes &);
-    avtImage_p               RenderImageRaycastingSLIVR(avtImage_p opaque_image, const WindowAttributes &);
+    avtImage_p               RenderImageRaycastingSLIVR(avtImage_p opaque_image, 
+							const WindowAttributes &);
     int                      GetNumberOfStages(const WindowAttributes &);    
 
   protected:

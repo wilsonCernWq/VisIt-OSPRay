@@ -75,6 +75,7 @@
 #include <DebugStream.h>
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
+#include <ImgMetaData.h>
 
 using std::vector;
 
@@ -148,6 +149,7 @@ avtRayTracer::avtRayTracer()
     materialProperties[3] = 15.0;
     // ospray
     ospray = NULL;
+    osprayRefresh = true;
 }
 
 // ****************************************************************************
@@ -887,6 +889,9 @@ avtRayTracer::Execute(void)
 	// -----------------------------
 	if (avtCallback::UseOSPRay()) {
 	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
+	    // initialize ospray
+	    // -- multi-threading enabled
+	    ospray->InitOSP(osprayRefresh /*refresh data flag*/, false, 1);
 	    // camera
 	    debug5 << "make ospray camera" << std::endl;
 	    ospray->InitCamera(OSP_PERSPECTIVE);
@@ -903,10 +908,10 @@ avtRayTracer::Execute(void)
 	    // transfer function
 	    debug5  << "make ospray transfer function" << std::endl;
 	    ospray->InitTransferFunction();
-	    ospray->SetTransferFunction(transferFn1D->GetTableFloat(), 
-				       transferFn1D->GetNumberOfTableEntries(),
-				       (float)transferFn1D->GetMin(),
-				       (float)transferFn1D->GetMax());
+	    ospray->SetTransferFunction((OSPContext::OSPColor*)transferFn1D->GetTableFloat(), 
+					transferFn1D->GetNumberOfTableEntries(),
+					(float)transferFn1D->GetMin(),
+					(float)transferFn1D->GetMax());
 	    // renderer
 	    debug5 << "make ospray renderer" << std::endl;
 	    ospray->InitRenderer();

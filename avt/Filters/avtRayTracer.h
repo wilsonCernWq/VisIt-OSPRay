@@ -47,14 +47,13 @@
 #include <avtDatasetToImageFilter.h>
 #include <avtViewInfo.h>
 #include <avtOpacityMap.h>
+#include <avtOSPRayFilter.h>
 #include <avtImgCommunicator.h>
 
 #include <map>
 #include <limits>
 #include <vector>
 #include <vtkCamera.h>
-
-#include <imgMetaData.h>
 
 class   avtRayFunction;
 class   vtkMatrix4x4;
@@ -106,7 +105,7 @@ class   vtkMatrix4x4;
 
 class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
 {
-  public:
+public:
                           avtRayTracer();
     virtual              ~avtRayTracer();
 
@@ -145,12 +144,13 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
     { rayCastingSLIVR = _rayCastingSLIVR; };
     void                  SetRendererSampleRate(double r) { rendererSampleRate = r; }
     // ospray
-    void                     SetOSPRay(OSPContext *ptr) { ospray = ptr; }
-
-  protected:
+    void                  SetOSPRay(OSPContext *ptr) { ospray = ptr; }
+    void                  SetOSPRayRefresh(bool flag) { osprayRefresh = flag; }
+protected:
     
     // ospray integration
     OSPContext *ospray;
+    bool        osprayRefresh;
 
     avtImgCommunicator    imgComm;
     avtViewInfo           view;
