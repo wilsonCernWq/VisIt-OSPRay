@@ -37,7 +37,7 @@
 *****************************************************************************/
 
 // ************************************************************************* //
-//                          avtImgCommunicator.h                             //
+//                          avtSLIVRImgCommunicator.h                             //
 // ************************************************************************* //
 
 #ifndef AVT_IMG_COMMUNICATOR_H
@@ -77,7 +77,7 @@ struct imageBuffer{
 //
 // ****************************************************************************
 
-class avtImgCommunicator
+class avtSLIVRImgCommunicator
 {
     int num_procs;
     int my_id;
@@ -129,10 +129,10 @@ public:
     int intermediateImageExtents[4];
     int intermediateImageBB[4];
 
-    avtImgCommunicator();
-    ~avtImgCommunicator();
+    avtSLIVRImgCommunicator();
+    ~avtSLIVRImgCommunicator();
 
-    virtual const char *GetType(void) { return "avtImgCommunicator"; };
+    virtual const char *GetType(void) { return "avtSLIVRImgCommunicator"; };
     virtual const char *GetDescription(void) { return "Doing compositing for ray casting SLIVR";};
 
     int clamp(int value, int _min, int _max){ return std::max( std::min(value,_max), _min); }

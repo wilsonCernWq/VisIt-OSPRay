@@ -49,7 +49,7 @@
 #include <avtViewInfo.h>
 #include <avtOpacityMap.h>
 #include <avtSLIVROSPRayFilter.h>
-#include <avtImgCommunicator.h>
+#include <avtSLIVRImgCommunicator.h>
 
 #include <vtkCamera.h>
 
@@ -154,8 +154,8 @@ protected:
     OSPContext *ospray;
     bool        osprayRefresh;
 
-    avtImgCommunicator    imgComm;
-    avtViewInfo           view;
+    avtSLIVRImgCommunicator imgComm;
+    avtViewInfo             view;
 
     int                   screen[2];
     int                   samplesPerRay;

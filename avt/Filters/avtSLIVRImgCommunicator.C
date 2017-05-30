@@ -37,7 +37,7 @@
 *****************************************************************************/
 
 // ************************************************************************* //
-//                         avtImgCommunicator.C                              //
+//                         avtSLIVRImgCommunicator.C                              //
 // ************************************************************************* //
 #include <cmath>
 #include <avtParallel.h>
@@ -48,7 +48,7 @@
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
 
-#include <avtImgCommunicator.h>
+#include <avtSLIVRImgCommunicator.h>
 #include <fstream>
 #include <DebugStream.h>
 #include <limits>
@@ -58,7 +58,7 @@
 enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::avtImgCommunicator
+//  Method: avtSLIVRImgCommunicator::avtSLIVRImgCommunicator
 //
 //  Purpose: Constructor
 //
@@ -68,7 +68,7 @@ enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 //  Modifications:
 //
 // ****************************************************************************
-avtImgCommunicator::avtImgCommunicator() : 
+avtSLIVRImgCommunicator::avtSLIVRImgCommunicator() : 
     intermediateImageExtents{0},
     intermediateImageBB{0}
 {
@@ -85,7 +85,7 @@ avtImgCommunicator::avtImgCommunicator() :
 }
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::~avtImgCommunicator
+//  Method: avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator
 //
 //  Purpose:
 //
@@ -95,7 +95,7 @@ avtImgCommunicator::avtImgCommunicator() :
 //  Modifications:
 //
 // ****************************************************************************
-avtImgCommunicator::~avtImgCommunicator()
+avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 {
 	if (my_id == 0)
 	{
@@ -107,7 +107,7 @@ avtImgCommunicator::~avtImgCommunicator()
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::
+//  Method: avtSLIVRImgCommunicator::
 //
 //  Purpose:
 //    Barrier, useful for debugging
@@ -118,7 +118,7 @@ avtImgCommunicator::~avtImgCommunicator()
 //  Modifications:
 //
 // ****************************************************************************
-void avtImgCommunicator::barrier(){
+void avtSLIVRImgCommunicator::barrier(){
   #ifdef PARALLEL
 	MPI_Barrier( MPI_COMM_WORLD );
   #endif
@@ -127,7 +127,7 @@ void avtImgCommunicator::barrier(){
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::getcompositedImage
+//  Method: avtSLIVRImgCommunicator::getcompositedImage
 //
 //  Purpose:
 //      Returns the whole image if needed
@@ -138,7 +138,7 @@ void avtImgCommunicator::barrier(){
 //  Modifications:
 //
 // ****************************************************************************
-void avtImgCommunicator::getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage)
+void avtSLIVRImgCommunicator::getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage)
 {
 	for (int i=0; i< imgBufferHeight; i++)
 		for (int j=0; j<imgBufferWidth; j++){
@@ -158,7 +158,7 @@ void avtImgCommunicator::getcompositedImage(int imgBufferWidth, int imgBufferHei
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::
+//  Method: avtSLIVRImgCommunicator::
 //
 //  Purpose:
 //       Fills an image with a specific color
@@ -170,7 +170,7 @@ void avtImgCommunicator::getcompositedImage(int imgBufferWidth, int imgBufferHei
 //
 // ****************************************************************************
 void
-avtImgCommunicator::colorImage(float *& srcImage, int widthSrc, int heightSrc, float _color[4])
+avtSLIVRImgCommunicator::colorImage(float *& srcImage, int widthSrc, int heightSrc, float _color[4])
 {
 	for (int _y=0; _y<heightSrc; _y++)
 		for (int _x=0; _x<widthSrc; _x++)
@@ -187,7 +187,7 @@ avtImgCommunicator::colorImage(float *& srcImage, int widthSrc, int heightSrc, f
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::placeInImage
+//  Method: avtSLIVRImgCommunicator::placeInImage
 //
 //  Purpose:
 //      Puts srcImage into dstImage
@@ -199,7 +199,7 @@ avtImgCommunicator::colorImage(float *& srcImage, int widthSrc, int heightSrc, f
 //
 // ****************************************************************************
 void
-avtImgCommunicator::placeInImage(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
+avtSLIVRImgCommunicator::placeInImage(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
 	int widthSrc, heightSrc, widthDst;
 	widthSrc  = srcExtents[1] - srcExtents[0];
@@ -226,7 +226,7 @@ avtImgCommunicator::placeInImage(float * srcImage, int srcExtents[4], float *& d
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::blendWithBackground
+//  Method: avtSLIVRImgCommunicator::blendWithBackground
 //
 //  Purpose:
 //      Blends _image with the backgroundColor
@@ -238,7 +238,7 @@ avtImgCommunicator::placeInImage(float * srcImage, int srcExtents[4], float *& d
 //
 // **************************************************************************
 void
-avtImgCommunicator::blendWithBackground(float *_image, int extents[4], float backgroundColor[4])
+avtSLIVRImgCommunicator::blendWithBackground(float *_image, int extents[4], float backgroundColor[4])
 {
 	int numPixels = (extents[3]-extents[2]) * (extents[1]-extents[0]);
 
@@ -257,7 +257,7 @@ avtImgCommunicator::blendWithBackground(float *_image, int extents[4], float bac
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::
+//  Method: avtSLIVRImgCommunicator::
 //
 //  Purpose:
 //      Blends tow patches in a front to back manner
@@ -269,7 +269,7 @@ avtImgCommunicator::blendWithBackground(float *_image, int extents[4], float bac
 //
 // **************************************************************************
 void
-avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4])
+avtSLIVRImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4])
 {
     int widthSrc, heightSrc, widthDst;
     widthSrc  = srcExtents[1] - srcExtents[0];
@@ -306,7 +306,7 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int bl
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::
+//  Method: avtSLIVRImgCommunicator::
 //
 //  Purpose:
 //      Blends tow patches in a back to front manner
@@ -318,7 +318,7 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], int bl
 //
 // **************************************************************************
 void
-avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4])
+avtSLIVRImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4])
 {
     int widthSrc, heightSrc, widthDst;
     widthSrc  = srcExtents[1] - srcExtents[0];
@@ -350,7 +350,7 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int bl
 }
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::
+//  Method: avtSLIVRImgCommunicator::
 //
 //  Purpose:
 //      Blends tow patches in a front to back manner
@@ -362,7 +362,7 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], int bl
 //
 // **************************************************************************
 void
-avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
+avtSLIVRImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
     int widthSrc, heightSrc, widthDst;
     widthSrc  = srcExtents[1] - srcExtents[0];
@@ -399,7 +399,7 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float 
 }
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::
+//  Method: avtSLIVRImgCommunicator::
 //
 //  Purpose:
 //      Blends tow patches in a back to front manner
@@ -411,7 +411,7 @@ avtImgCommunicator::blendFrontToBack(float * srcImage, int srcExtents[4], float 
 //
 // **************************************************************************
 void
-avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
+avtSLIVRImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4])
 {
     int widthSrc, heightSrc, widthDst;
     widthSrc  = srcExtents[1] - srcExtents[0];
@@ -451,7 +451,7 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float 
 }
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::regionAllocation
+//  Method: avtSLIVRImgCommunicator::regionAllocation
 //
 //  Purpose:
 //      Arbitrarily allocates regions to MPI ranks
@@ -463,7 +463,7 @@ avtImgCommunicator::blendBackToFront(float * srcImage, int srcExtents[4], float 
 //
 // ***************************************************************************
 void
-avtImgCommunicator::regionAllocation(int numMPIRanks, int *& regions)
+avtSLIVRImgCommunicator::regionAllocation(int numMPIRanks, int *& regions)
 {
 	regions = new int[numMPIRanks];
 	// Initial allocation: partition for section rank
@@ -472,7 +472,7 @@ avtImgCommunicator::regionAllocation(int numMPIRanks, int *& regions)
 }
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::
+//  Method: avtSLIVRImgCommunicator::
 //
 //  Purpose:
 //
@@ -483,7 +483,7 @@ avtImgCommunicator::regionAllocation(int numMPIRanks, int *& regions)
 //
 // **************************************************************************
 void
-avtImgCommunicator::updateBoundingBox(int currentBoundingBox[4], int imageExtents[4])
+avtSLIVRImgCommunicator::updateBoundingBox(int currentBoundingBox[4], int imageExtents[4])
 {
 	if ( (currentBoundingBox[0] == 0 && currentBoundingBox[1] == 0) && (currentBoundingBox[2] == 0 && currentBoundingBox[3] == 0))
 	{
@@ -510,7 +510,7 @@ avtImgCommunicator::updateBoundingBox(int currentBoundingBox[4], int imageExtent
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::gatherDepthAtRoot
+//  Method: avtSLIVRImgCommunicator::gatherDepthAtRoot
 //
 //  Purpose:
 //      Used by Serial Direct Send
@@ -522,7 +522,7 @@ avtImgCommunicator::updateBoundingBox(int currentBoundingBox[4], int imageExtent
 //
 // **************************************************************************
 void
-avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth)
+avtSLIVRImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth)
 {
   #ifdef PARALLEL
 	//
@@ -572,7 +572,7 @@ avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDe
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::serialDirectSend
+//  Method: avtSLIVRImgCommunicator::serialDirectSend
 //
 //  Purpose:
 //      A very simple compositing that we can fall back to if Parallel direct send is buggy.
@@ -585,7 +585,7 @@ avtImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDe
 //
 // **************************************************************************
 void
-avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height)
+avtSLIVRImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height)
 {
   #ifdef PARALLEL
 	//debug5 << "serialDirectSend" << std::endl;
@@ -708,7 +708,7 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::parallelDirectSend
+//  Method: avtSLIVRImgCommunicator::parallelDirectSend
 //
 //  Purpose:
 //      Parallel Direct Send rendering that can blend convex patches from each MPI rank.
@@ -721,7 +721,7 @@ avtImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, i
 //
 // **************************************************************************
 void
-avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4])
+avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
   #ifdef PARALLEL
 	//
@@ -1007,7 +1007,7 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::findRegionsForPatch
+//  Method: avtSLIVRImgCommunicator::findRegionsForPatch
 //
 //  Purpose:
 //      Needed by Parallel Direct Send to determine the regions a patch will overlap
@@ -1019,7 +1019,7 @@ avtImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int re
 //
 // **************************************************************************
 int
-avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int screenProjectedExtents[4], int numRegions, int &from, int &to)
+avtSLIVRImgCommunicator::findRegionsForPatch(int patchExtents[4], int screenProjectedExtents[4], int numRegions, int &from, int &to)
 {
 	from = to = 0;
 	if (patchExtents[1]-patchExtents[0] <=0 || patchExtents[3]-patchExtents[2] <=0)
@@ -1060,7 +1060,7 @@ avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int screenProjected
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::computeRegionExtents
+//  Method: avtSLIVRImgCommunicator::computeRegionExtents
 //
 //  Purpose:
 //      Compute extents for each region
@@ -1072,7 +1072,7 @@ avtImgCommunicator::findRegionsForPatch(int patchExtents[4], int screenProjected
 //
 // **************************************************************************
 void
-avtImgCommunicator::computeRegionExtents(int numRanks, int height)
+avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 {
 	int regionHeight = round((float)height/numRanks);
 	regularRegionSize = regionHeight;
@@ -1102,7 +1102,7 @@ avtImgCommunicator::computeRegionExtents(int numRanks, int height)
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::parallelDirectSendManyPatches
+//  Method: avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 //
 //  Purpose:
 //      Parallel Direct Send rendering that can blend individual patches
@@ -1114,7 +1114,7 @@ avtImgCommunicator::computeRegionExtents(int numRanks, int height)
 //
 // **************************************************************************
 int
-avtImgCommunicator::parallelDirectSendManyPatches
+avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 (std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
 	int myRegionHeight = 0;
@@ -1543,7 +1543,7 @@ avtImgCommunicator::parallelDirectSendManyPatches
 }
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::gatherImages
+//  Method: avtSLIVRImgCommunicator::gatherImages
 //
 //  Purpose:
 //      Gather images from Parallel Direct Send
@@ -1555,7 +1555,7 @@ avtImgCommunicator::parallelDirectSendManyPatches
 //
 // **************************************************************************
 void
-avtImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight)
+avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight)
 {
   #ifdef PARALLEL
 	debug5 << "gatherImages starting... totalNumRanks: " << totalNumRanks << ", compositingDone: " << compositingDone

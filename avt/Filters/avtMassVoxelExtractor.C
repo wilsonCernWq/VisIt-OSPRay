@@ -1193,7 +1193,7 @@ avtMassVoxelExtractor::getIndexandDistFromCenter
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::computeIndices
+//  Method: avtSLIVRImgCommunicator::computeIndices
 //
 //  Purpose:
 //      computing indices
@@ -1223,7 +1223,7 @@ avtMassVoxelExtractor::computeIndices(int dims[3], int indices[6], int returnInd
 }
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::computeIndicesVert
+//  Method: avtSLIVRImgCommunicator::computeIndicesVert
 //
 //  Purpose:
 //      Compute indices for vertices
@@ -1253,7 +1253,7 @@ avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int retur
 
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::trilinearInterpolate
+//  Method: avtSLIVRImgCommunicator::trilinearInterpolate
 //
 //  Purpose:
 //      Trilinear interpolation

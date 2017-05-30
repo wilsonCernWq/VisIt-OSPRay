@@ -75,6 +75,7 @@
 SET(AVTFILTERS_SOURCES
 avtSLIVROSPRayFilter.C
 avtSLIVRImgMetaData.C
+avtSLIVRImgCommunicator.C
 avtActualExtentsFilter.C
 avtCondenseDatasetFilter.C
 avtContourFilter.C
@@ -89,7 +90,6 @@ avtGhostZoneAndFacelistFilter.C
 avtGhostZoneFilter.C
 avtImageCommunicator.C
 avtImageCompositer.C
-avtImgCommunicator.C
 avtLinearTransformFilter.C
 avtLineoutFilter.C
 avtLineScanFilter.C
