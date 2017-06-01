@@ -44,6 +44,13 @@
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
 
+#include <cmath>
+
+// helper
+double slivr::deg2rad (double degrees) {
+    return degrees * 4.0 * atan (1.0) / 180.0;
+}
+
 // other function
 void 
 VolumeInfo::Set
@@ -352,6 +359,7 @@ void OSPContext::SetCamera(const double campos[3],
 			   const double camfocus[3], 
 			   const double camup [3], 
 			   const double camdir[3],
+			   const double sceneSize[2],
 			   const double aspect, 
 			   const double fovy, 
 			   const double zoomratio, 
@@ -365,20 +373,29 @@ void OSPContext::SetCamera(const double campos[3],
     const ospcommon::vec3f camPos(current[0], current[1], current[2]);
     const ospcommon::vec3f camDir(camdir[0], camdir[1], camdir[2]);
     const ospcommon::vec3f camUp (camup[0], camup[1], camup[2]);
-    ospSetf(camera, "aspect", aspect);
     ospSetVec3f(camera, "pos", (osp::vec3f&)camPos);
     ospSetVec3f(camera, "dir", (osp::vec3f&)camDir);
     ospSetVec3f(camera, "up",  (osp::vec3f&)camUp);
-    ospSet1f(camera, "fovy", fovy);
+    if (cameraType == OSP_PERSPECTIVE) {
+	ospSet1f(camera, "aspect", aspect);
+	ospSet1f(camera, "fovy", fovy);
+    }
+    else if (cameraType == OSP_ORTHOGRAPHIC) {
+	// std::cout << "fovy = " << fovy << std::endl;
+	// std::cout << "height = " << sceneSize[1] << std::endl;
+	ospSet1f(camera, "aspect", aspect);
+	ospSet1f(camera, "height", sceneSize[1]);
+    }
     r_panx = imagepan[0] * zoomratio;
     r_pany = imagepan[1] * zoomratio;
-    float r_xl = (float)imageExtents[0]/(float)screenExtents[0] - r_panx; 
-    float r_yl = (float)imageExtents[2]/(float)screenExtents[1] - r_pany; 
-    float r_xu = (float)imageExtents[1]/(float)screenExtents[0] - r_panx;
-    float r_yu = (float)imageExtents[3]/(float)screenExtents[1] - r_pany;
-    ospSetVec2f(camera, "imageStart", osp::vec2f{r_xl, r_yl});
-    ospSetVec2f(camera, "imageEnd",   osp::vec2f{r_xu, r_yu});
-    ospCommit(camera);
+    // float r_xl = (float)imageExtents[0]/(float)screenExtents[0] - r_panx; 
+    // float r_yl = (float)imageExtents[2]/(float)screenExtents[1] - r_pany; 
+    // float r_xu = (float)imageExtents[1]/(float)screenExtents[0] - r_panx;
+    // float r_yu = (float)imageExtents[3]/(float)screenExtents[1] - r_pany;
+    // ospSetVec2f(camera, "imageStart", osp::vec2f{r_xl, r_yl});
+    // ospSetVec2f(camera, "imageEnd",   osp::vec2f{r_xu, r_yu});
+    // ospCommit(camera);
+    this->SetSubCamera(imageExtents[0], imageExtents[1], imageExtents[2], imageExtents[3]);
     screenSize[0] = screenExtents[0];
     screenSize[1] = screenExtents[1];
 }

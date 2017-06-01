@@ -2227,6 +2227,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // Here I assume the patch is larger than 3-cube
     // If not then you might want to dig into this code and see if
     // there will be any special boundary cases
+    //
+    // debug5 << "VAR: ghost value " << (int)ghosts[0] << std::endl;
+    //
     bool ghost_boundaries[6] = {false};
     if (ghosts != NULL)
     {
@@ -2448,7 +2451,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
     if (!ospray->IsEnabled()) 
     {
-        #pragma omp parallel for collapse(2)
 	for (int patchX = xMin; patchX < xMax ; patchX++)
 	{
 	    for (int patchY = yMin; patchY < yMax ; patchY++)
@@ -2463,7 +2465,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		    if (depthBuffer[fIndex] != 1)
 		    {
 		        double clipDepth = depthBuffer[fIndex]*2 - 1;
-		        if (clipDepth >= renderingDepthsExtents[0] && clipDepth < renderingDepthsExtents[1])
+		        if (clipDepth >= renderingDepthsExtents[0] && 
+			    clipDepth < renderingDepthsExtents[1])
 		        {
 			    patchDrawn = 1;
 			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 0] = rgbColorBuffer[fIndex*3 + 0]/255.0;
@@ -2475,17 +2478,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		}
 		else
 		{
-		    patchDrawn = 1;
-		    // double _origin[3], _terminus[3];
+		    patchDrawn = 1;		    
 		    double origin[4]   = {0,0,0,1}; // starting point where we start sampling
 		    double terminus[4] = {0,0,0,1}; // ending point where we stop sampling
 		    // find the starting point & ending point of the ray
-		    // GetSegmentRCSLIVR(patchX, patchY, fullVolumeDepthExtents, _origin, _terminus);   
 		    GetSegmentRCSLIVR(patchX, patchY, fullVolumeDepthExtents, origin, terminus); 
-		    // for (int i=0; i<3; i++){
-		    // 	origin[i] = _origin[i];
-		    // 	terminus[i] = _terminus[i];
-		    // }
 		    // Go get the segments along this ray and store them in
 		    SampleAlongSegment(origin, terminus, patchX, patchY);
 		}
@@ -2516,10 +2513,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], double *_origin, double *_terminus)
+avtMassVoxelExtractor::GetSegmentRCSLIVR
+(int x, int y, double depthsExtents[2], double *origin, double *terminus)
 {
-    unProject(x,y, depthsExtents[0], _origin,   fullImgWidth, fullImgHeight);
-    unProject(x,y, depthsExtents[1], _terminus, fullImgWidth, fullImgHeight);
+    unProject(x,y, depthsExtents[0], origin,   fullImgWidth, fullImgHeight);
+    unProject(x,y, depthsExtents[1], terminus, fullImgWidth, fullImgHeight);
 }
 
 

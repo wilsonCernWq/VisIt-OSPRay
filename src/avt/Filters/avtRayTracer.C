@@ -684,10 +684,6 @@ avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
 //    Add the ray casting SLIVR code
 //
 // ****************************************************************************
-double deg2rad (double degrees) {
-    return degrees * 4.0 * atan (1.0) / 180.0;
-}
-
 void
 avtRayTracer::Execute(void)
 {
@@ -754,9 +750,9 @@ avtRayTracer::Execute(void)
     double dbounds[6];  // Extents of the volume in world coordinates
     vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
 
-    vtkImageData  *__opaqueImageVTK = NULL;
-    unsigned char *__opaqueImageData = NULL;
-    float         *__opaqueImageZB = NULL;
+    vtkImageData  *opaqueImageVTK = NULL;
+    unsigned char *opaqueImageData = NULL;
+    float         *opaqueImageZB = NULL;
 
     int fullImageExtents[4];
 
@@ -773,8 +769,7 @@ avtRayTracer::Execute(void)
 	//
 	float current[3];
 	for (int i = 0; i < 3; ++i) {
-	    current[i] = (view.camera[i] - view.focus[i]) / view.imageZoom
-		+ view.focus[i];
+	    current[i] = (view.camera[i] - view.focus[i]) / view.imageZoom + view.focus[i];
 	}
 	vtkCamera *sceneCam = vtkCamera::New();
 	sceneCam->SetPosition(current[0],current[1],current[2]);
@@ -782,10 +777,8 @@ avtRayTracer::Execute(void)
 	sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
 	sceneCam->SetViewAngle(view.viewAngle);
 	sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
-	if (view.orthographic)
-	    sceneCam->ParallelProjectionOn();
-	else
-	    sceneCam->ParallelProjectionOff();
+	if (view.orthographic) { sceneCam->ParallelProjectionOn(); }
+	else { sceneCam->ParallelProjectionOff(); }
 	sceneCam->SetParallelScale(view.parallelScale);
 	// debug
 	debug5 << "RT View settings: " << endl
@@ -848,22 +841,26 @@ avtRayTracer::Execute(void)
 	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
 	// The Z buffer that is passed from visit is in clip scape with z limits of -1 and 1
 	// (http://www.codinglabs.net/article_world_view_projection_matrix.aspx).
-	// However, using VTK, the
-	// z limits are withing nearz and farz.
+	// However, using VTK, the z limits are withing nearz and farz.
 	// So, the projection matrix from VTK is hijacked here and adjusted 
 	// to be within -1 and 1 too
 	// Same as in avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
+	double sceneSize[2];
 	if (!view.orthographic)
 	{
-	    p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
+	    p = sceneCam->GetProjectionTransformMatrix(aspect, oldNearPlane, oldFarPlane);
 	    p->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / (oldFarPlane-oldNearPlane));
 	    p->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / (oldFarPlane-oldNearPlane));
+	    sceneSize[0] = 2.0 * oldNearPlane / p->GetElement(0, 0);
+	    sceneSize[1] = 2.0 * oldNearPlane / p->GetElement(1, 1);
 	}
 	else
 	{
-	    p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
+	    p = sceneCam->GetProjectionTransformMatrix(aspect, oldNearPlane, oldFarPlane);
 	    p->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
-	    p->SetElement(2, 3, -(oldFarPlane + oldNearPlane) / (oldFarPlane-oldNearPlane));
+	    p->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / (oldFarPlane-oldNearPlane));
+	    sceneSize[0] = 2.0 / p->GetElement(0, 0);
+	    sceneSize[1] = 2.0 / p->GetElement(1, 1);
 	}
 	// compute pvm matrix
 	vtkMatrix4x4::Multiply4x4(p,vm,pvm);
@@ -892,20 +889,21 @@ avtRayTracer::Execute(void)
 	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
 	    // initialize ospray
 	    // -- multi-threading enabled
-	    ospray->InitOSP(osprayRefresh /*refresh data flag*/, false);
+	    ospray->InitOSP(osprayRefresh /*true if the data is changed*/);
 	    // camera
 	    debug5 << "make ospray camera" << std::endl;
-	    ospray->InitCamera(OSP_PERSPECTIVE);
-	    ospray->SetCamera(view.camera, 
-			     view.focus, 
-			     view.viewUp, 
-			     viewDirection,
-			     aspect, 
-			     view.viewAngle,
-			     view.imageZoom,
-			     view.imagePan,
-			     fullImageExtents,
-			     screen);
+	    if (!view.orthographic)
+	    {
+		ospray->InitCamera(OSP_PERSPECTIVE);
+	    }
+	    else 
+	    {
+		ospray->InitCamera(OSP_ORTHOGRAPHIC);
+	    }
+	    ospray->SetCamera
+		(view.camera,view.focus,view.viewUp,viewDirection,
+		 sceneSize, aspect, view.viewAngle, view.imageZoom,
+		 view.imagePan, fullImageExtents, screen);
 	    // transfer function
 	    debug5  << "make ospray transfer function" << std::endl;
 	    ospray->InitTransferFunction();
@@ -947,14 +945,13 @@ avtRayTracer::Execute(void)
 	//
 	// Capture background
 	//
-	__opaqueImageVTK  = opaqueImage->GetImage().GetImageVTK();
-	__opaqueImageData = (unsigned char *)__opaqueImageVTK->GetScalarPointer(0, 0, 0);
-	__opaqueImageZB   = opaqueImage->GetImage().GetZBuffer();
-	extractor.setDepthBuffer(__opaqueImageZB,   screen[0]*screen[1]);
-	extractor.setRGBBuffer  (__opaqueImageData, screen[0],screen[1]);
-	int _bufferExtents[4] = {0,0,0,0}; // xmin, xmax, ymin, ymax
-	_bufferExtents[1] = screen[0]; _bufferExtents[3] = screen[1];
-	extractor.setBufferExtents(_bufferExtents);
+	opaqueImageVTK  = opaqueImage->GetImage().GetImageVTK();
+	opaqueImageData = (unsigned char *)opaqueImageVTK->GetScalarPointer(0, 0, 0);
+	opaqueImageZB   = opaqueImage->GetImage().GetZBuffer();
+	extractor.setDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
+	extractor.setRGBBuffer  (opaqueImageData, screen[0],screen[1]);
+	int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
+	extractor.setBufferExtents(bufferScreenExtents);
     }
 
     //
@@ -1102,7 +1099,8 @@ avtRayTracer::Execute(void)
 		}
 
 		// debug write patch image into file		
-		// writeArrayToPPM("/home/sci/qwu/Desktop/debug/compisiting/patch_" + std::to_string(i), tempImgData.imagePatch, currentPatch.dims[0], currentPatch.dims[1]);		    
+		// writeArrayToPPM("/home/sci/qwu/Desktop/debug/compisiting/patch_" + std::to_string(i),
+		//                 tempImgData.imagePatch, currentPatch.dims[0], currentPatch.dims[1]);
 
 	    	//
 	    	// Clean up data
@@ -1178,17 +1176,17 @@ avtRayTracer::Execute(void)
 			if (composedData[indexComposited*4 + 3] == 0)
 			{
 			    // No data from rendering here!
-			    imgFinal[index*3 + 0] = __opaqueImageData[index*3 + 0];
-			    imgFinal[index*3 + 1] = __opaqueImageData[index*3 + 1];
-			    imgFinal[index*3 + 2] = __opaqueImageData[index*3 + 2];
+			    imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+			    imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+			    imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
 			}
 			else
 			{
-			    if (__opaqueImageZB[index] != 1)
+			    if (opaqueImageZB[index] != 1)
 			    {
 				// Might need to do some blending
 				double worldCoordinates[3];
-				float _tempZ = __opaqueImageZB[index] * 2 - 1;
+				float _tempZ = opaqueImageZB[index] * 2 - 1;
 				unProject(_x, _y, _tempZ, worldCoordinates,
 					  screen[0], screen[1], Inversepvm);
 
@@ -1204,15 +1202,15 @@ avtRayTracer::Execute(void)
 				    float alpha = composedData[indexComposited*4+3];
 				    float oneMinusAlpha = (1.0 - composedData[indexComposited*4+3]);
 				    imgFinal[index*3 + 0] = 
-					std::min((((float)__opaqueImageData[index*3 + 0]/255.0) 
+					std::min((((float)opaqueImageData[index*3 + 0]/255.0) 
 						  * oneMinusAlpha  
 						  + composedData[indexComposited*4 + 0]), 1.0) * 255;
 				    imgFinal[index*3 + 1] = 
-					std::min((((float)__opaqueImageData[index*3 + 1]/255.0) 
+					std::min((((float)opaqueImageData[index*3 + 1]/255.0) 
 						  * oneMinusAlpha
 						  + composedData[indexComposited*4 + 1]), 1.0) * 255;
 				    imgFinal[index*3 + 2] = 
-					std::min((((float)__opaqueImageData[index*3 + 2]/255.0) 
+					std::min((((float)opaqueImageData[index*3 + 2]/255.0) 
 						  * oneMinusAlpha 
 						  + composedData[indexComposited*4 + 2]), 1.0) * 255;
 				}
@@ -1233,18 +1231,18 @@ avtRayTracer::Execute(void)
 					    float alpha = composedData[indexComposited*4+3];
 					    float oneMinusAlpha = (1.0 - composedData[indexComposited*4+3]);
 					    imgFinal[index*3 + 0] = 
-						std::min((((float)__opaqueImageData[index*3 + 0]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 0]), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 0]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 0]), 1.0) * 255;
 					    imgFinal[index*3 + 1] = 
-						std::min((((float)__opaqueImageData[index*3 + 1]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 1]), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 1]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 1]), 1.0) * 255;
 					    imgFinal[index*3 + 2] = 
-						std::min((((float)__opaqueImageData[index*3 + 2]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 2]), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 2]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 2]), 1.0) * 255;
 					}
 					else
 					{
 					    // box infront
-					    imgFinal[index*3 + 0] = __opaqueImageData[index*3 + 0];
-					    imgFinal[index*3 + 1] = __opaqueImageData[index*3 + 1];
-					    imgFinal[index*3 + 2] = __opaqueImageData[index*3 + 2];
+					    imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+					    imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+					    imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
 					}
 				    }
 				    else
@@ -1261,20 +1259,20 @@ avtRayTracer::Execute(void)
 				float alpha = composedData[indexComposited*4+3];
 				float oneMinusAlpha = (1.0 - composedData[indexComposited*4+3]);
 				imgFinal[index*3 + 0] = 
-				    std::min((((float)__opaqueImageData[index*3 + 0]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 0]), 1.0) * 255;
+				    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 0]), 1.0) * 255;
 				imgFinal[index*3 + 1] = 
-				    std::min((((float)__opaqueImageData[index*3 + 1]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 1]), 1.0) * 255;
+				    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 1]), 1.0) * 255;
 				imgFinal[index*3 + 2] =
-				    std::min((((float)__opaqueImageData[index*3 + 2]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 2]), 1.0) * 255;
+				    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 2]), 1.0) * 255;
 			    }
 			}
 		    }
 		    else
 		    {
 			// Outside bounding box: Use the background - Good
-			imgFinal[index*3 + 0] = __opaqueImageData[index*3 + 0];
-			imgFinal[index*3 + 1] = __opaqueImageData[index*3 + 1];
-			imgFinal[index*3 + 2] = __opaqueImageData[index*3 + 2];
+			imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+			imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+			imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
 		    }
 		}
 	    }
@@ -1463,17 +1461,17 @@ avtRayTracer::Execute(void)
 			    if (imgComm.imgBuffer[indexComposited*4 + 3] == 0)
 			    {
 				// No data from rendering here! - Good
-				imgFinal[index*3 + 0] = __opaqueImageData[index*3 + 0];
-				imgFinal[index*3 + 1] = __opaqueImageData[index*3 + 1];
-				imgFinal[index*3 + 2] = __opaqueImageData[index*3 + 2];
+				imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+				imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+				imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
 			    }
 			    else
 			    {
-				if (__opaqueImageZB[index] != 1)
+				if (opaqueImageZB[index] != 1)
 				{
 				    // Might need to do some blending
 				    double worldCoordinates[3];
-				    float _tempZ = __opaqueImageZB[index] * 2 - 1;
+				    float _tempZ = opaqueImageZB[index] * 2 - 1;
 				    unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], Inversepvm);
 
 				    // Qi debug
@@ -1487,11 +1485,11 @@ avtRayTracer::Execute(void)
 					// Completely inside bounding box
 					float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
 					imgFinal[index*3 + 0] = 
-					    std::min((((float)__opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ),1.0) * 255;
+					    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ),1.0) * 255;
 					imgFinal[index*3 + 1] = 
-					    std::min((((float)__opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ),1.0) * 255;
+					    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ),1.0) * 255;
 					imgFinal[index*3 + 2] = 
-					    std::min((((float)__opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ),1.0) * 255;
+					    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ),1.0) * 255;
 				    }
 				    else
 				    {
@@ -1508,19 +1506,19 @@ avtRayTracer::Execute(void)
 					    {
 						float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
 						imgFinal[index*3 + 0] = 
-						    std::min((((float)__opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
+						    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
 						imgFinal[index*3 + 1] = 
-						    std::min((((float)__opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
+						    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
 						imgFinal[index*3 + 2] =
-						    std::min((((float)__opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
+						    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
 						// volume infront
 					    }
 					    else
 					    {
 						// box infront
-						imgFinal[index*3 + 0] = __opaqueImageData[index*3 + 0];
-						imgFinal[index*3 + 1] = __opaqueImageData[index*3 + 1];
-						imgFinal[index*3 + 2] = __opaqueImageData[index*3 + 2];
+						imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+						imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+						imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
 						//debug5 << "  intersection - box infront!" << endl;
 					    }
 					}
@@ -1528,24 +1526,24 @@ avtRayTracer::Execute(void)
 					{
 					    float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
 					    imgFinal[index*3 + 0] = 
-						std::min((((float)__opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
 					    imgFinal[index*3 + 1] = 
-						std::min((((float)__opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
 					    imgFinal[index*3 + 2] = 
-						std::min((((float)__opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
 					}
 				    }
 				}
 				else
 				{
-				    //__opaqueImageZB[index] == 1 - Only data, no background : Good
+				    //opaqueImageZB[index] == 1 - Only data, no background : Good
 				    float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
 				    imgFinal[index*3 + 0] = 
-					std::min((((float)__opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
+					std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
 				    imgFinal[index*3 + 1] = 
-					std::min((((float)__opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
+					std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
 				    imgFinal[index*3 + 2] = 
-					std::min((((float)__opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
+					std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
 				}
 			    }
 
@@ -1553,9 +1551,9 @@ avtRayTracer::Execute(void)
 			else
 			{
 			    // Outside bounding box: Use the background : Good
-			    imgFinal[index*3 + 0] = __opaqueImageData[index*3 + 0];
-			    imgFinal[index*3 + 1] = __opaqueImageData[index*3 + 1];
-			    imgFinal[index*3 + 2] = __opaqueImageData[index*3 + 2];
+			    imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+			    imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+			    imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
 			}
 
 		    }
