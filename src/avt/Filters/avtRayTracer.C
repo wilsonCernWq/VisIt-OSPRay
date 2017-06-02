@@ -881,10 +881,9 @@ avtRayTracer::Execute(void)
 	       << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
 	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl;
 
-	//
+	//========================================================================//
 	// ospray stuffs
-	//
-	// -----------------------------
+	//========================================================================//
 	if (avtCallback::UseOSPRay()) {
 	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
 	    // initialize ospray
@@ -901,7 +900,7 @@ avtRayTracer::Execute(void)
 		ospray->InitCamera(OSP_ORTHOGRAPHIC);
 	    }
 	    ospray->SetCamera
-		(view.camera,view.focus,view.viewUp,viewDirection,
+		(view.camera,view.focus, view.viewUp, viewDirection,
 		 sceneSize, aspect, view.viewAngle, view.imageZoom,
 		 view.imagePan, fullImageExtents, screen);
 	    // transfer function
@@ -914,11 +913,10 @@ avtRayTracer::Execute(void)
 	    // renderer
 	    debug5 << "make ospray renderer" << std::endl;
 	    ospray->InitRenderer();
-	    ospray->SetRenderer(lighting, materialProperties, view.camera);
+	    ospray->SetRenderer(lighting, materialProperties, viewDirection);
 	    // check memory
 	    slivr::CheckMemoryHere("avtRayTracer::Execute after ospray");
 	}
-	// -----------------------------
 
 	// 
 	// continuation of previous pipeline
@@ -990,7 +988,7 @@ avtRayTracer::Execute(void)
 	image->Update(GetGeneralContract()); // this will call the execute function
 
 	// time rendering
-	visitTimer->StopTimer(timingVolToImg, "OSPRayRendering");
+	visitTimer->StopTimer(timingVolToImg, "AllPatchRendering");
 	visitTimer->DumpTimings();
 	
 	//

@@ -3064,63 +3064,6 @@ avtMassVoxelExtractor::reflect(float vec[3], float normal[3], float refl[3])
 
 
 // ****************************************************************************
-//  Method: avtMassVoxelExtractor::project
-//
-//  Purpose:
-//      Convert from world coordinates to screen coordinates
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 14, 2016
-//
-//  Modifications:
-//
-// ****************************************************************************
-
-double
-avtMassVoxelExtractor::project
-(double _worldCoordinates[3], int pos2D[2], int _screenWidth, int _screenHeight)
-{
-    double normDevCoord[4];
-    double worldCoordinates[4] = {0,0,0,1};
-    worldCoordinates[0] = _worldCoordinates[0];
-    worldCoordinates[1] = _worldCoordinates[1];
-    worldCoordinates[2] = _worldCoordinates[2];
-
-    // World to Clip space (-1 - 1)
-    modelViewProj->MultiplyPoint(worldCoordinates, normDevCoord);
-
-    if (normDevCoord[3] == 0)
-    {
-	debug5 << "avtMassVoxelExtractor::project division by 0 error!" 
-	       << endl;
-	debug5 << "worldCoordinates: " 
-	       << worldCoordinates[0] << ", " 
-	       << worldCoordinates[1] << ", " 
-	       << worldCoordinates[2] << "   " 
-	       << normDevCoord[0] << ", " 
-	       << normDevCoord[1] << ", " 
-	       << normDevCoord[2] << endl;
-	debug5 << "Matrix: " << *modelViewProj << endl;
-    }
-
-    // NDC
-    normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
-    normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
-    normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
-    normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
-
-    // Screen coordinates
-    pos2D[0] = round( normDevCoord[0]*(_screenWidth/2.)  + (_screenWidth/2.)  );
-    pos2D[1] = round( normDevCoord[1]*(_screenHeight/2.) + (_screenHeight/2.) );
-
-    // Add panning
-    pos2D[0] += round(_screenWidth * panPercentage[0] * imageZoom);
-    pos2D[1] += round(_screenHeight * panPercentage[1] * imageZoom); 
-
-    return normDevCoord[2];
-}
-
-// ****************************************************************************
 //  Method: avtMassVoxelExtractor::unProject
 //
 //  Purpose:
@@ -3274,11 +3217,9 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
 	{
             // I * (ka + kd*abs(cos(angle)))           
 	    source_rgb[i] = 
-		((materialProperties[0]+materialProperties[1]*normal_dot_light) *
-		 source_rgb[i])+ 
-		(materialProperties[2] * pow((double)normal_dot_light,materialProperties[3]) *
-		 source_rgb[3] )  ;	
-
+		((materialProperties[0]+materialProperties[1]*normal_dot_light)*source_rgb[i])+ 
+		(materialProperties[2]*pow((double)normal_dot_light, materialProperties[3]) *
+		 source_rgb[3]);
 	}
     }
     for (int i=0; i<4; i++)

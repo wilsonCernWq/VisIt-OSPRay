@@ -176,7 +176,7 @@ void VolumeInfo::SetVolume(void *ptr, int type,
     ospSetObject(volume, "transferFunction", transferfcn);
 
     // commit volume
-    ospSetVec3f(volume, "specular", osp::vec3f{1.0f,1.0f,1.0f});
+    ospSetVec3f(volume, "specular", osp::vec3f{0.3f,0.3f,0.3f});
     ospSetVec3f(volume,
 		"volumeClippingBoxLower",
 		(const osp::vec3f&)regionLowerClip);
@@ -186,7 +186,7 @@ void VolumeInfo::SetVolume(void *ptr, int type,
     ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)regionSpacing);
     ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)regionStart);
     ospSetVec3i(volume, "dimensions",  (const osp::vec3i&)regionSize);
-    ospSet1i(volume, "gradientShadingEnabled", 0);
+    ospSet1i(volume, "gradientShadingEnabled", 1);
     ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 0);
     ospSet1i(volume, "singleShade", 1);
@@ -260,7 +260,8 @@ OSPContext::~OSPContext()
     slivr::CheckMemoryHere("OSPContext::~OSPContext after deleting OSPRay");
 }
 
-void OSPContext::InitOSP(bool flag, bool debug, int numThreads) { 
+void OSPContext::InitOSP(bool flag, bool debug, int numThreads) 
+{ 
     std::cout << "Initialize OSPRay (new data " << flag << ")" << std::endl;
     enabledOSPRay = true;
     OSPDevice device = ospGetCurrentDevice();
@@ -283,7 +284,8 @@ void OSPContext::InitOSP(bool flag, bool debug, int numThreads) {
     refreshData = flag;
 }
 
-void OSPContext::InitPatch(int id) {
+void OSPContext::InitPatch(int id) 
+{
     if (volumePatch.size() < id) {
 	debug1 << "ERROR: wrong patch index " << id << std::endl;
 	EXCEPTION1(VisItException, "ERROR: wrong patch index"); 
@@ -299,44 +301,53 @@ void OSPContext::InitPatch(int id) {
 }
 
 // ospRenderer component
-void OSPContext::InitRenderer() {
+void OSPContext::InitRenderer() 
+{
     if (rendererType == OSP_INVALID) {
 	renderer = ospNewRenderer("scivis");
 	rendererType = OSP_VALID;
     }
 }
 
-void OSPContext::SetRenderer(bool lighting, double material[4], double dir[3]) {
+void OSPContext::SetRenderer(bool lighting, double material[4], double dir[3]) 
+{
     ospSetObject(renderer, "camera", camera);
     ospSet1i(renderer, "backgroundEnabled", 0);
     ospSet1i(renderer, "oneSidedLighting", 0);
     ospSet1i(renderer, "aoSamples", 16);
-    if (false && lighting == true)
+    if (lighting)
     {
+	std::cout << "use lighting" << std::endl;
+	std::cout << "use material " 
+		  << material[0] << " "
+		  << material[1] << " "
+		  << material[2] << " "
+		  << material[3] << std::endl;
 	ospSet1i(renderer, "shadowsEnabled", 1);
 	OSPLight aLight = ospNewLight(renderer, "AmbientLight");
 	ospSet1f(aLight, "intensity", material[0]);
 	ospCommit(aLight);
 	OSPLight dLight = ospNewLight(renderer, "DirectionalLight");
-	ospSet1f(dLight, "intensity", material[2]);
+	ospSet1f(dLight, "intensity", material[1]);
 	ospSetVec3f(dLight, "direction", 
-		    osp::vec3f{(float)dir[0],(float)dir[1],(float)dir[2]});
+		    osp::vec3f{(float)-dir[0],(float)-dir[1],(float)-dir[2]});
 	ospCommit(dLight);
 	OSPLight lights[2] = { aLight, dLight };
-	ospSetData(renderer,"lights",
-		   ospNewData(2, OSP_OBJECT, lights));
+	ospSetData(renderer,"lights", ospNewData(2, OSP_OBJECT, lights));
     }
     ospCommit(renderer);
 }
 
-void OSPContext::SetModel(OSPModel world) {
+void OSPContext::SetModel(OSPModel world)
+{
     ospSetObject(renderer, "camera", camera);
     ospSetObject(renderer, "model",  world);
     ospCommit(renderer);
 }
 
 // ospCamera component
-void OSPContext::InitCamera(unsigned char type) {
+void OSPContext::InitCamera(unsigned char type) 
+{
     if (cameraType != type) {
 	cameraType = type;
 	if (camera != nullptr) { ospRelease(camera); }
@@ -365,7 +376,8 @@ void OSPContext::SetCamera(const double campos[3],
 			   const double zoomratio, 
 			   const double imagepan[2],
 			   const int imageExtents[4],
-			   const int screenExtents[2]) {
+			   const int screenExtents[2]) 
+{
     float current[3];
     for (int i = 0; i < 3; ++i) {
 	current[i] = (campos[i] - camfocus[i]) / zoomratio + camfocus[i];
@@ -381,26 +393,18 @@ void OSPContext::SetCamera(const double campos[3],
 	ospSet1f(camera, "fovy", fovy);
     }
     else if (cameraType == OSP_ORTHOGRAPHIC) {
-	// std::cout << "fovy = " << fovy << std::endl;
-	// std::cout << "height = " << sceneSize[1] << std::endl;
 	ospSet1f(camera, "aspect", aspect);
 	ospSet1f(camera, "height", sceneSize[1]);
     }
     r_panx = imagepan[0] * zoomratio;
     r_pany = imagepan[1] * zoomratio;
-    // float r_xl = (float)imageExtents[0]/(float)screenExtents[0] - r_panx; 
-    // float r_yl = (float)imageExtents[2]/(float)screenExtents[1] - r_pany; 
-    // float r_xu = (float)imageExtents[1]/(float)screenExtents[0] - r_panx;
-    // float r_yu = (float)imageExtents[3]/(float)screenExtents[1] - r_pany;
-    // ospSetVec2f(camera, "imageStart", osp::vec2f{r_xl, r_yl});
-    // ospSetVec2f(camera, "imageEnd",   osp::vec2f{r_xu, r_yu});
-    // ospCommit(camera);
     this->SetSubCamera(imageExtents[0], imageExtents[1], imageExtents[2], imageExtents[3]);
     screenSize[0] = screenExtents[0];
     screenSize[1] = screenExtents[1];
 }
 
-void OSPContext::SetSubCamera(float xMin, float xMax, float yMin, float yMax) {
+void OSPContext::SetSubCamera(float xMin, float xMax, float yMin, float yMax) 
+{
     float r_xl = xMin/screenSize[0] - r_panx; 
     float r_yl = yMin/screenSize[1] - r_pany; 
     float r_xu = xMax/screenSize[0] - r_panx;
@@ -411,7 +415,8 @@ void OSPContext::SetSubCamera(float xMin, float xMax, float yMin, float yMax) {
 }
 
 // ospTransferFunction component  
-void OSPContext::InitTransferFunction() {
+void OSPContext::InitTransferFunction() 
+{
     if (transferfcnType == OSP_INVALID) {
 	if (transferfcn != nullptr) { ospRelease(transferfcn); }
 	transferfcn = ospNewTransferFunction("piecewise_linear");
@@ -422,7 +427,8 @@ void OSPContext::InitTransferFunction() {
 void OSPContext::SetTransferFunction(const OSPColor *table,
 				     const unsigned int size, 
 				     const float datamin, 
-				     const float datamax) {
+				     const float datamax) 
+{
     std::vector<ospcommon::vec3f> colors;
     std::vector<float>            opacities;
     for (int i = 0; i < size; ++i) {
