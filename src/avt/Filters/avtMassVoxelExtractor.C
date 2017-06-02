@@ -2397,8 +2397,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	};
 	double volumeBBox[6] = {
 	    X[X0]+(ncell_arrays <= 0 ? -dX/2.0 : 0.0),
-	    Y[X0]+(ncell_arrays <= 0 ? -dY/2.0 : 0.0),
-	    Z[X0]+(ncell_arrays <= 0 ? -dZ/2.0 : 0.0),
+	    Y[Y0]+(ncell_arrays <= 0 ? -dY/2.0 : 0.0),
+	    Z[Z0]+(ncell_arrays <= 0 ? -dZ/2.0 : 0.0),
 	    X[X1]+(ncell_arrays <= 0 ? dX/2.0 : dX),
 	    Y[Y1]+(ncell_arrays <= 0 ? dY/2.0 : dY),
 	    Z[Z1]+(ncell_arrays <= 0 ? dZ/2.0 : dZ)

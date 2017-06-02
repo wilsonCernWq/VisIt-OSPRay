@@ -176,17 +176,15 @@ void VolumeInfo::SetVolume(void *ptr, int type,
     ospSetObject(volume, "transferFunction", transferfcn);
 
     // commit volume
-    ospSetVec3f(volume, "specular", osp::vec3f{0.3f,0.3f,0.3f});
-    ospSetVec3f(volume,
-		"volumeClippingBoxLower",
-		(const osp::vec3f&)regionLowerClip);
-    ospSetVec3f(volume,
-		"volumeClippingBoxUpper",
-		(const osp::vec3f&)regionUpperClip);
+    ospSetVec3f(volume, "specular", osp::vec3f{0.0f,0.0f,0.0f});
+    ospSetVec3f(volume, "volumeClippingBoxLower",
+    		(const osp::vec3f&)regionLowerClip);
+    ospSetVec3f(volume, "volumeClippingBoxUpper",
+    		(const osp::vec3f&)regionUpperClip);
     ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)regionSpacing);
     ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)regionStart);
     ospSetVec3i(volume, "dimensions",  (const osp::vec3i&)regionSize);
-    ospSet1i(volume, "gradientShadingEnabled", 1);
+    ospSet1i(volume, "gradientShadingEnabled", 0);
     ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 0);
     ospSet1i(volume, "singleShade", 1);
