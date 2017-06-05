@@ -15,8 +15,13 @@
 #include <cstdarg>
 #include <string>
 #include "pidx_idx_io.h"
-#include "PIDX.h"
-//#include "data_handle/PIDX_data_types.h"
+#include "data_handle/PIDX_data_types.h"
+
+typedef std::string String;
+
+bool debug = true;
+
+static int process_count = 1, rank = 0;
 
 static PIDX_point global_size, local_offset, local_size;
 static PIDX_file pidx_file;
@@ -26,10 +31,6 @@ static String input_filename;
 #if PIDX_HAVE_MPI
 static MPI_Comm NEW_COMM_WORLD;
 #endif
-
-bool debug = true;
-
-static int process_count = 1, rank = 0;
 
 static void terminate(int out)
 {
@@ -49,7 +50,7 @@ static void terminate_with_error_msg(const char *format, ...)
   terminate(-1);
 }
 
-void init_mpi()
+static void init_mpi()
 {
 
 #if PIDX_HAVE_MPI
@@ -122,13 +123,14 @@ bool PIDXIO::openDataset(const String filename){
   
   input_filename = filename;
   
-  ret = PIDX_file_open(filename.c_str(), PIDX_MODE_RDONLY, pidx_access, global_size, &pidx_file);
+  ret = PIDX_file_open(filename.c_str(), PIDX_MODE_RDONLY, pidx_access, &pidx_file);
   if (ret != PIDX_success)  terminate_with_error_msg("PIDX_file_open");
   
-  // if(use_raw)
-  //   PIDX_set_io_mode(pidx_file, PIDX_RAW_IO);
-  // else
-  //   PIDX_set_io_mode(pidx_file, PIDX_IDX_IO);
+  if(use_raw)
+    PIDX_enable_raw_io(pidx_file);
+  
+  ret = PIDX_get_dims(pidx_file, global_size);
+  if (ret != PIDX_success)  terminate_with_error_msg("PIDX_set_dims");
   
   (global_size[2] > 1) ? dims = 3 : dims = 2;
   
@@ -183,7 +185,7 @@ bool PIDXIO::openDataset(const String filename){
     ret = PIDX_get_next_variable(pidx_file, &variable[var]);
     if (ret != PIDX_success) terminate_with_error_msg("PIDX_get_next_variable");
     
-    int values_per_sample = variable[var]->vps;//values_per_sample;
+    int values_per_sample = variable[var]->values_per_sample;
     
     int bits_per_sample = 0;
     ret = PIDX_default_bits_per_datatype(variable[var]->type_name, &bits_per_sample);
@@ -281,19 +283,16 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
   local_offset[0] = (slice % sub_div[0]) * local_size[0];
   
 #else*/
-  // for(int i=0; i< dims; i++){
-  //     local_size[i] = (unsigned long long)(box.p2[i] - box.p1[i] + 1);
-  //     local_offset[i] = (unsigned long long)(box.p1[i]);
-  // }
+  for(int i=0; i< dims; i++){
+      local_size[i] = box.p2[i] - box.p1[i] + 1;
+      local_offset[i] = box.p1[i];
+  }
 //#endif
-  
-  PIDX_set_point(local_offset, box.p1[0], box.p1[1], box.p1[2]);
-  PIDX_set_point(local_size, (box.p2[0]-box.p1[0]+1), (box.p2[1]-box.p1[1]+1),(box.p2[2]-box.p1[2]+1));
 
-  // local_size[3] = 1;
-  // local_size[4] = 1;
-  // local_offset[3] = 0;
-  // local_offset[4] = 0;
+  local_size[3] = 1;
+  local_size[4] = 1;
+  local_offset[3] = 0;
+  local_offset[4] = 0;
   
   if(debug)
     printf("local box %lld %lld %lld size %lld %lld %lld time %d\n", local_offset[0],local_offset[1],local_offset[2], local_size[0],local_size[1],local_size[2], timestate);
@@ -303,12 +302,12 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
   PIDX_set_mpi_access(pidx_access, MPI_COMM_WORLD);
 #endif
 
-  ret = PIDX_file_open(input_filename.c_str(), PIDX_MODE_RDONLY, pidx_access, global_size, &pidx_file);
+  ret = PIDX_file_open(input_filename.c_str(), PIDX_MODE_RDONLY, pidx_access, &pidx_file);
   if (ret != PIDX_success)  terminate_with_error_msg("PIDX_file_create");
 
   int variable_count,time_step_count;
-  //ret = PIDX_get_dims(pidx_file, global_size);
-  //if (ret != PIDX_success)  terminate_with_error_msg("PIDX_set_dims");
+  ret = PIDX_get_dims(pidx_file, global_size);
+  if (ret != PIDX_success)  terminate_with_error_msg("PIDX_set_dims");
   
   ret = PIDX_get_variable_count(pidx_file, &variable_count);
   if (ret != PIDX_success)  terminate_with_error_msg("PIDX_set_variable_count");
@@ -316,8 +315,8 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
   if (variable_index >= variable_count) terminate_with_error_msg("Variable index more than variable count\n");
   
   // set RAW for now
-  // if(use_raw)
-  //   PIDX_set_io_mode(pidx_file, PIDX_RAW_IO);
+  if(use_raw)
+   PIDX_enable_raw_io(pidx_file);
 
   ret = PIDX_set_current_time_step(pidx_file, timestate);
   if (ret != PIDX_success) {
@@ -325,9 +324,6 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
     //terminate_with_error_msg("PIDX_set_current_time_step");
     return NULL;
   }
-
-  PIDX_query_box(pidx_file, global_size);
-
 //   PIDX_debug_output(pidx_file);
   PIDX_variable variable;
   
@@ -347,10 +343,8 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
   int v_per_sample = 0;
   PIDX_values_per_datatype(variable->type_name, &v_per_sample, &bits_per_sample);
 
-  int this_size = (int)(local_size[0] * local_size[1] * local_size[2]);
-
-  void *data = malloc((bits_per_sample/8) * this_size * v_per_sample);//variable->values_per_sample);
-  memset(data, 0, (bits_per_sample/8) * this_size * v_per_sample);//variable->values_per_sample);
+  void *data = malloc((bits_per_sample/8) * local_size[0] * local_size[1] * local_size[2]  * v_per_sample);//variable->values_per_sample);
+  memset(data, 0, (bits_per_sample/8) * local_size[0] * local_size[1] * local_size[2]  * v_per_sample);//variable->values_per_sample);
 
   ret = PIDX_variable_read_data_layout(variable, local_offset, local_size, data, PIDX_row_major);
   if (ret != PIDX_success)  terminate_with_error_msg("PIDX_variable_read_data_layout");
