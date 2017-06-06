@@ -197,6 +197,8 @@ avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
     
     depthBuffer = NULL;
     rgbColorBuffer = NULL;
+
+    ospray = NULL;
 }
 
 

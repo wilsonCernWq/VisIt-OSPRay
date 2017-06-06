@@ -101,12 +101,8 @@ static void CreateViewInfoFromViewAttributes(avtViewInfo &,
 
 avtVolumeFilter::avtVolumeFilter()
 {
-    unsigned long m_size, m_rss;
-    avtMemory::GetMemorySize(m_size, m_rss);
-    debug5 << "~ Memory usage before instantiating avtVolumeFilter: " << m_size 
-	   << " rss (MB): " << m_rss/(1024*1024) 
-	   << std::endl;    
     primaryVariable = NULL;
+    ospray = NULL;
     osprayRefresh = true;
 }
 
@@ -131,12 +127,9 @@ avtVolumeFilter::~avtVolumeFilter()
         delete [] primaryVariable;
         primaryVariable = NULL;
     }
-    unsigned long m_size, m_rss;
-    avtMemory::GetMemorySize(m_size, m_rss);
-    debug5 << "Parallel rank = " << PAR_Rank()
-	   << " ~ Memory usage after instantiating avtVolumeFilter: " << m_size 
-	   << " rss (MB): " << m_rss/(1024*1024) 
-	   << std::endl;    
+    if (ospray != NULL) {
+	delete ospray;
+    }
 }
 
 
@@ -386,10 +379,11 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     software->SetTrilinear(false);
     software->SetInput(termsrc.GetOutput());
     software->InsertOpaqueImage(opaque_image);
-    software->SetOSPRay(&ospray);
-    software->SetOSPRayRefresh(osprayRefresh);
     if (avtCallback::UseOSPRay()) 
     {
+	ospray = new OSPContext();
+	software->SetOSPRay(ospray);
+	software->SetOSPRayRefresh(osprayRefresh);
 	osprayRefresh = false;
     }
     //

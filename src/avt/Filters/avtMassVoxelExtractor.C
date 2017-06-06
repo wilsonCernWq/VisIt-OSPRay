@@ -156,6 +156,7 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
     depthBuffer = NULL;
     rgbColorBuffer = NULL;
 
+    ospray = NULL;
 }
 
 
