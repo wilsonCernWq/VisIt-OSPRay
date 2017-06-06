@@ -188,8 +188,17 @@ struct OSPContext
     int   screenSize[2];
     bool  enabledOSPRay = false;
     bool  enabledDVR = false; // Distributed Volume Renderer
-    
-    ~OSPContext();
+
+    // expose this in header
+    // because this will be called in other libraries
+    ~OSPContext() {
+	std::cout << "deleting ospray" << std::endl;
+	// clean stuffs
+	volumePatch.clear();
+	if (camera      != nullptr) { ospRelease(camera); }
+	if (renderer    != nullptr) { ospRelease(renderer); }
+	if (transferfcn != nullptr) { ospRelease(transferfcn); }
+    }
 
     // flags
     bool IsEnabled() { return enabledOSPRay; }

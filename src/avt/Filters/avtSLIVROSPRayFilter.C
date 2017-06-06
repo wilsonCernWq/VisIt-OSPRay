@@ -244,19 +244,6 @@ void VolumeInfo::CleanFB() {
 //  Creation:   
 //
 // ****************************************************************************
-OSPContext::~OSPContext() 
-{
-    std::cout << "deleting ospray" << std::endl;
-    // check memory
-    slivr::CheckMemoryHere("OSPContext::~OSPContext before deleting OSPRay");
-    // clean stuffs
-    volumePatch.clear();
-    if (camera      != nullptr) { ospRelease(camera); }
-    if (renderer    != nullptr) { ospRelease(renderer); }
-    if (transferfcn != nullptr) { ospRelease(transferfcn); }
-    // check memory again
-    slivr::CheckMemoryHere("OSPContext::~OSPContext after deleting OSPRay");
-}
 
 void OSPContext::InitOSP(bool flag, bool debug, int numThreads) 
 { 
