@@ -48,6 +48,7 @@
 #include <avtSLIVRImgMetaData.h>
 
 #include <avtMemory.h>
+#include <avtCallback.h>
 #include <DebugStream.h>
 #include <TimingsManager.h>
 
@@ -2381,7 +2382,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //========================================================================//
     // Render using OSPRay
     //========================================================================//
-    if (ospray->IsEnabled()) {
+    if (avtCallback::UseOSPRay()) {
 	if (!((npt_arrays == 1)^(ncell_arrays == 1)))
 	{
 	    std::cerr << "WARNING: Multiple data found within one patch, " 
@@ -2450,7 +2451,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	   << yMin << " " << yMax << " | "
 	   << "(" << imgWidth << "x" << imgHeight << ")" << std::endl;
 
-    if (!ospray->IsEnabled()) 
+    if (!avtCallback::UseOSPRay()) 
     {
 	for (int patchX = xMin; patchX < xMax ; patchX++)
 	{

@@ -62,6 +62,7 @@
 #include <vtkIdList.h>
 #include <vtkRectilinearGrid.h>
 
+#include <avtCallback.h>
 #include <avtCellList.h>
 #include <avtDatasetExaminer.h>
 #include <avtHexahedronExtractor.h>
@@ -740,7 +741,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 			 (!(ch->HasData()))))
 			continue;
 		    nodes.push(new datatree_childindex(ch->GetChild(i),i));
-		    if (rayCastingSLIVR == true)
+		    if (rayCastingSLIVR == true && avtCallback::UseOSPRay())
 		    {
 			ospray->InitPatch(i);
 		    }	
