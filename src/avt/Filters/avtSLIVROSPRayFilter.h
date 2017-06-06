@@ -132,7 +132,13 @@ struct VolumeInfo
     OSPModel GetWorld() { return world; }
     void InitWorld();
     void SetWorld();
-    void CleanWorld();
+    void CleanWorld() {
+	if (world != nullptr) {	    
+	    ospRelease(world);
+	    world = nullptr;
+	}
+	worldType = OSP_INVALID;
+    }
 	
     // ospVolume component
     void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME); 
@@ -143,14 +149,32 @@ struct VolumeInfo
 		   double volumePBox[6], 
 		   double volumeBBox[6]);
     void SetSamplingRate(float r);
-    void CleanVolume();
+    void CleanVolume() {	
+	if (voxelData != nullptr) { 
+	    ospRelease(voxelData);
+	    voxelData = nullptr; 
+	}
+	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
+	volumeType = OSP_INVALID;
+    }
 
     // framebuffer component     
     void InitFB(unsigned int width, unsigned int height);
     void RenderFB();
     float* GetFBData();
-    void CleanFBData();
-    void CleanFB();
+    void CleanFBData() {
+	if (framebufferData != nullptr) { 
+	    ospUnmapFrameBuffer(framebufferData, framebuffer); 
+	    framebufferData = nullptr;
+	}
+    }
+    void CleanFB() {	   
+	if (framebuffer != nullptr) { 
+	    ospFreeFrameBuffer(framebuffer); 	    
+	    framebuffer = nullptr;
+	}	
+    }
+
 };
 
 // ****************************************************************************

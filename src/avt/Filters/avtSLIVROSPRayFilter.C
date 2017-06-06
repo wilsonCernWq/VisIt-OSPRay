@@ -90,13 +90,6 @@ void VolumeInfo::SetWorld() {
 	ospCommit(world);
     }
 }
-void VolumeInfo::CleanWorld() {
-    if (world != nullptr) {	    
-	ospRelease(world);
-	world = nullptr;
-    }
-    worldType = OSP_INVALID;
-}
 
 // ospVolume component
 void VolumeInfo::InitVolume(unsigned char type) {
@@ -197,14 +190,6 @@ void VolumeInfo::SetSamplingRate(float r) {
     ospSet1f(volume, "samplingRate", r);
     ospCommit(volume);
 }
-void VolumeInfo::CleanVolume() {	
-    if (voxelData != nullptr) { 
-	ospRelease(voxelData);
-	voxelData = nullptr; 
-    }
-    if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
-    volumeType = OSP_INVALID;
-}
 
 // framebuffer component     
 void VolumeInfo::InitFB(unsigned int width, unsigned int height) {
@@ -222,18 +207,7 @@ void VolumeInfo::RenderFB() {
 float* VolumeInfo::GetFBData() {
     return framebufferData;
 }
-void VolumeInfo::CleanFBData() {
-    if (framebufferData != nullptr) { 
-	ospUnmapFrameBuffer(framebufferData, framebuffer); 
-	framebufferData = nullptr;
-    }
-}
-void VolumeInfo::CleanFB() {	   
-    if (framebuffer != nullptr) { 
-	ospFreeFrameBuffer(framebuffer); 	    
-	framebuffer = nullptr;
-    }	
-}
+
 // ****************************************************************************
 //  Struct:  OSPContext
 //
