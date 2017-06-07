@@ -148,9 +148,9 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
 
     proc = patch = 0;
     patchDrawn = 0;
-    imgDims[0] = imgDims[1] = 0;                // size of the patch
-    imgLowerLeft[0] = imgLowerLeft[1] = 0;      // coordinates in the whole image
-    imgUpperRight[0] = imgUpperRight[1] = 0;    //
+    imgDims[0] = imgDims[1] = 0;             // size of the patch
+    imgLowerLeft[0] = imgLowerLeft[1] = 0;   // coordinates in the whole image
+    imgUpperRight[0] = imgUpperRight[1] = 0; //
     eyeSpaceDepth = -1;
     clipSpaceDepth = -1;
     imgArray = NULL;                            // the image data
@@ -719,8 +719,8 @@ avtMassVoxelExtractor::RegisterGrid(vtkRectilinearGrid *rgrid,
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::GetSegment(int w, int h, double *origin, double *terminus)
-    const
+avtMassVoxelExtractor::GetSegment
+(int w, int h, double *origin, double *terminus) const
 {
     double view[4];
 
@@ -2169,15 +2169,15 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
  std::vector<std::string> &varnames, 
  std::vector<int> &varsize)
 {
-    //========================================================================//
+    //=======================================================================//
     // Initialization
-    //========================================================================//
+    //=======================================================================//
     // Flag to indicate if the patch is drawn
     patchDrawn = 0;
     
-    //========================================================================//
+    //=======================================================================//
     // Register data and early skipping
-    //========================================================================//
+    //=======================================================================//
 
     // Some of our sampling routines need a chance to pre-process the data.
     // Register the grid here so we can do that.
@@ -2195,9 +2195,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // If not, just skip it.
     if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max)) { return; }
 
-    //========================================================================//
+    //=======================================================================//
     //
-    //========================================================================//
+    //=======================================================================//
     // Calculate patch dimensions for point array and cell array
     //   This is to check if the patch is a cell data or a point data
     //   I have to assume cell dataset has a higher priority
@@ -2236,7 +2236,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     if (ghosts != NULL)
     {
 	ghost_boundaries[0] = ghosts[nY*nX+nX+0] != 0; // [0,1,1]
-	ghost_boundaries[3] = ghosts[(nZ-2)*nY*nX+(nY-2)*nX+(nX-1)] != 0;	
+	ghost_boundaries[3] = ghosts[(nZ-2)*nY*nX+(nY-2)*nX+(nX-1)] != 0;
 	ghost_boundaries[1] = ghosts[nY*nX+   1] != 0; // [1,0,1]
 	ghost_boundaries[4] = ghosts[(nZ-2)*nY*nX+(nY-1)*nX+(nX-2)] != 0;
 	ghost_boundaries[2] = ghosts[      nX+1] != 0; // [1,1,0]
@@ -2253,11 +2253,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	Z1 = ghost_boundaries[5] ? nZ-2 : nZ-1;
     double dX = X[1]-X[0], dY = Y[1]-Y[0], dZ = Z[1]-Z[0];
 
-    //========================================================================//
+    //=======================================================================//
     // Determine the screen size of the patch being processed
-    //========================================================================//
+    //=======================================================================//
     xMin = yMin = std::numeric_limits<int>::max(); 
-    xMax = yMax = std::numeric_limits<int>::min(); // upper boundary not included
+    xMax = yMax = std::numeric_limits<int>::min(); 
+    // upper boundary not included
 
     // Compute z order for blending patches
     double coordinates[8][3];
@@ -2335,11 +2336,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
 	// get screen coordinate
 	int point_pos[2];
-	double point_depth = 
-	    slivr::ProjectWorldToScreen(world_pos, fullImgWidth, fullImgHeight,
-					panPercentage, imageZoom, modelViewProj,
-					point_pos);
-
+	double point_depth = slivr::ProjectWorldToScreen
+	    (world_pos, fullImgWidth, fullImgHeight, panPercentage, 
+	     imageZoom, modelViewProj, point_pos);
+	
 	// Clamp values
 	point_pos[0] = std::min(std::max(point_pos[0], 0), w_max-1);
 	point_pos[1] = std::min(std::max(point_pos[1], 0), h_max-1);
@@ -2366,12 +2366,13 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	}
     }
 
-    //========================================================================//
+    //=======================================================================//
     // create framebuffer
-    //========================================================================//
+    //=======================================================================//
     // assign data to the class
-    xMin-=1; yMin-=1; // I think those two lines can be removed. But since it
-    xMax+=1; yMax+=1; // is working now and it is not wrong, I am leaving it.
+    xMax+=1; yMax+=1;
+    if (xMax > fullImageExtents[1]) { xMax = fullImageExtents[1]; }
+    if (yMax > fullImageExtents[3]) { yMax = fullImageExtents[3]; }
     clipSpaceDepth = clip_space_depth;
     imgWidth  = xMax-xMin;
     imgHeight = yMax-yMin;
@@ -2379,9 +2380,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // Initialize memory (framebuffer)
     imgArray =  new float[((imgWidth)*4) * imgHeight](); // framebuffer
 
-    //========================================================================//
+    //=======================================================================//
     // Render using OSPRay
-    //========================================================================//
+    //=======================================================================//
     if (avtCallback::UseOSPRay()) {
 	if (!((npt_arrays == 1)^(ncell_arrays == 1)))
 	{
@@ -2436,10 +2437,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	}
 	volume->CleanFB();
     }
-
-    //========================================================================//
+    //=======================================================================//
     // Send rays
-    //========================================================================//
+    //=======================================================================//
     imgDims[0] = imgWidth;
     imgDims[1] = imgHeight;
     imgLowerLeft[0] = xMin;
@@ -2458,33 +2458,42 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    for (int patchY = yMin; patchY < yMax ; patchY++)
 	    {
 		debug5 << "using CPU version raytracer" << std::endl;
-		int pIndex = (patchY-yMin)*imgWidth + (patchX-xMin);
-		int fIndex = ((patchY-bufferExtents[2])*(bufferExtents[1]-bufferExtents[0])+(patchX-bufferExtents[0]));
+		const int pIndex = (patchY-yMin)*imgWidth + (patchX-xMin);
+		const int fIndex = ((patchY-bufferExtents[2])*
+				    (bufferExtents[1]-bufferExtents[0])+
+				    (patchX-bufferExtents[0]));
 		// outside visible range
 		if ((scalarRange[1] < tFVisibleRange[0]) ||
 		    (scalarRange[0] > tFVisibleRange[1]))	
 		{
 		    if (depthBuffer[fIndex] != 1)
 		    {
-		        double clipDepth = depthBuffer[fIndex]*2 - 1;
+		        const double clipDepth = depthBuffer[fIndex]*2 - 1;
 		        if (clipDepth >= renderingDepthsExtents[0] && 
 			    clipDepth < renderingDepthsExtents[1])
 		        {
 			    patchDrawn = 1;
-			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 0] = rgbColorBuffer[fIndex*3 + 0]/255.0;
-			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 1] = rgbColorBuffer[fIndex*3 + 1]/255.0;
-			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 2] = rgbColorBuffer[fIndex*3 + 2]/255.0;
-			    imgArray[(patchY-yMin)*(imgWidth*4)+(patchX-xMin)*4 + 3] = 1.0;
+			    const int imgID = pIndex * 4;
+			    imgArray[imgID + 0] = 
+				rgbColorBuffer[fIndex*3 + 0]/255.0;
+			    imgArray[imgID + 1] = 
+				rgbColorBuffer[fIndex*3 + 1]/255.0;
+			    imgArray[imgID + 2] = 
+				rgbColorBuffer[fIndex*3 + 2]/255.0;
+			    imgArray[imgID + 3] = 1.0;
 		        }
 		    }
 		}
 		else
 		{
 		    patchDrawn = 1;		    
-		    double origin[4]   = {0,0,0,1}; // starting point where we start sampling
-		    double terminus[4] = {0,0,0,1}; // ending point where we stop sampling
+                    // starting point where we start sampling
+		    double origin[4]   = {0,0,0,1};
+		    // ending point where we stop sampling 
+		    double terminus[4] = {0,0,0,1};
 		    // find the starting point & ending point of the ray
-		    GetSegmentRCSLIVR(patchX, patchY, fullVolumeDepthExtents, origin, terminus); 
+		    GetSegmentRCSLIVR(patchX, patchY, fullVolumeDepthExtents,
+				      origin, terminus); 
 		    // Go get the segments along this ray and store them in
 		    SampleAlongSegment(origin, terminus, patchX, patchY);
 		}
@@ -2492,11 +2501,16 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     	}
     }
 
-    //========================================================================//
+    //=======================================================================//
     // Deallocate memory if not used
-    //========================================================================//
+    //=======================================================================//
     if (patchDrawn == 0)
-    { if (imgArray != NULL) { delete []imgArray; imgArray = NULL; } } 
+    { 
+	if (imgArray != NULL) 
+	{ 
+	    delete []imgArray; imgArray = NULL; 
+	} 
+    } 
 
 }
 

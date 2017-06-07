@@ -174,7 +174,15 @@ public:
 	{ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
 	void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
 	void             SetOSPRayContext(OSPContext* o) { ospray = o; }
+	void             SetFullImageExtents(int extents[4]) 
+	{
+	    fullImageExtents[0] = extents[0];
+	    fullImageExtents[1] = extents[1];
+	    fullImageExtents[2] = extents[2];	
+	    fullImageExtents[3] = extents[3];
+	}
 protected:
+	int fullImageExtents[4];
 	bool             gridsAreInWorldSpace;
 	bool             pretendGridsAreInWorldSpace;
 	avtViewInfo      view;

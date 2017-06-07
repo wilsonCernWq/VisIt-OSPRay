@@ -228,7 +228,13 @@ public:
     // Qi add for ospray  
     void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
     void             SetOSPRayContext(OSPContext* o) { ospray = o; }
-    
+    void             SetFullImageExtents(int extents[4]) 
+    {
+	fullImageExtents[0] = extents[0];
+	fullImageExtents[1] = extents[1];
+	fullImageExtents[2] = extents[2];	
+	fullImageExtents[3] = extents[3];
+    }
 public:
     typedef std::multimap<int, imgData>::iterator iter_t;
 
@@ -238,6 +244,7 @@ public:
     std::multimap<int, imgData> imgDataHashMap;
 
 protected:
+    int fullImageExtents[4];
     int                       width,       height,       depth;
     int                       currentNode, totalNodes;
     int                       widthMin,    widthMax;

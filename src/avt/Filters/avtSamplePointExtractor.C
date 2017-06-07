@@ -1061,7 +1061,8 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->SetMatProperties(materialProperties);
 	    massVoxelExtractor->SetTransferFn(transferFn1D);
 	    // pass reference to ospray
-	    massVoxelExtractor->SetOSPRayContext(ospray);	    
+	    massVoxelExtractor->SetOSPRayContext(ospray);
+	    massVoxelExtractor->SetFullImageExtents(fullImageExtents);
 	}
 
 	massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
