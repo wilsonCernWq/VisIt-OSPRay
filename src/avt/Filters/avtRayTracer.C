@@ -687,18 +687,18 @@ avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
 void
 avtRayTracer::Execute(void)
 {
-    //========================================================================//
+    //=======================================================================//
     // Initialization and Debug
-    //========================================================================//
+    //=======================================================================//
     // check memory in the beginning
     slivr::CheckMemoryHere("avtRayTracer::Execute");
 
     // initialize current time
     int timingIndex = visitTimer->StartTimer();
 
-    //========================================================================//
+    //=======================================================================//
     // start of original pipeline
-    //========================================================================//
+    //=======================================================================//
     bool parallelOn = (imgComm.GetNumProcs() == 1) ? false : true;
     if (rayfoo == NULL)
     {
@@ -717,13 +717,13 @@ avtRayTracer::Execute(void)
     }
     double scale[3] = {1,1,1};
     vtkMatrix4x4 *transform = vtkMatrix4x4::New();
-    avtWorldSpaceToImageSpaceTransform::CalculateTransform(view, transform, scale, aspect);
+    avtWorldSpaceToImageSpaceTransform::CalculateTransform
+	(view, transform, scale, aspect);
     double newNearPlane, newFarPlane, oldNearPlane, oldFarPlane;
     TightenClippingPlanes(view, transform, newNearPlane, newFarPlane);
     oldNearPlane = view.nearPlane;  oldFarPlane  = view.farPlane;
     view.nearPlane = newNearPlane;  view.farPlane  = newFarPlane;
     transform->Delete();
-
     avtWorldSpaceToImageSpaceTransform trans(view, aspect);
     trans.SetInput(GetInput());
 
@@ -733,14 +733,14 @@ avtRayTracer::Execute(void)
     debug5 << "create extractor" << std::endl;
     avtSamplePointExtractor extractor(screen[0], screen[1], samplesPerRay);
     bool doKernel = kernelBasedSampling;
-    if (trans.GetOutput()->GetInfo().GetAttributes().GetTopologicalDimension() == 0)
+    if (trans.GetOutput()->
+	GetInfo().GetAttributes().GetTopologicalDimension() == 0) {
 	doKernel = true;
-
+    }
     extractor.SetKernelBasedSampling(doKernel);
     extractor.RegisterRayFunction(rayfoo);
     extractor.SetJittering(true);
     extractor.SetInput(trans.GetOutput());
-
     if (trilinearInterpolation)
 	extractor.SetTrilinear(true);
 
@@ -749,11 +749,9 @@ avtRayTracer::Execute(void)
     //
     double dbounds[6];  // Extents of the volume in world coordinates
     vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
-
     vtkImageData  *opaqueImageVTK = NULL;
     unsigned char *opaqueImageData = NULL;
     float         *opaqueImageZB = NULL;
-
     int fullImageExtents[4];
 
     //
@@ -769,7 +767,8 @@ avtRayTracer::Execute(void)
 	//
 	float current[3];
 	for (int i = 0; i < 3; ++i) {
-	    current[i] = (view.camera[i] - view.focus[i]) / view.imageZoom + view.focus[i];
+	    current[i] = (view.camera[i] - view.focus[i]) / 
+		view.imageZoom + view.focus[i];
 	}
 	vtkCamera *sceneCam = vtkCamera::New();
 	sceneCam->SetPosition(current[0],current[1],current[2]);
@@ -804,8 +803,8 @@ avtRayTracer::Execute(void)
 	       << "  setScale: " << view.setScale << std::endl
 	       << "  nearPlane: " << view.nearPlane << std::endl
 	       << "  farPlane:  " << view.farPlane  << std::endl
-	       << "  imagePan[0]: " << view.imagePan[0] << std::endl // this is a fraction!!!
-	       << "  imagePan[1]: " << view.imagePan[1] << std::endl // this is a fraction!!!
+	       << "  imagePan[0]: " << view.imagePan[0] << std::endl 
+	       << "  imagePan[1]: " << view.imagePan[1] << std::endl
 	       << "  imageZoom:   " << view.imageZoom   << std::endl
 	       << "  orthographic: " << view.orthographic << std::endl
 	       << "  shear[0]: " << view.shear[0] << std::endl
@@ -837,28 +836,36 @@ avtRayTracer::Execute(void)
 	vtkMatrix4x4::Multiply4x4(vmInit, scaletrans, tmp);
 	vtkMatrix4x4::Multiply4x4(tmp, imageZoomAndPan, vm);
 	vm->Transpose();
-	// Projection: http://www.codinglabs.net/article_world_view_projection_matrix.aspx
-	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix(aspect,oldNearPlane, oldFarPlane);
-	// The Z buffer that is passed from visit is in clip scape with z limits of -1 and 1
-	// (http://www.codinglabs.net/article_world_view_projection_matrix.aspx).
+	// Projection: 
+        // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
+	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix
+	    (aspect,oldNearPlane, oldFarPlane);
+	// The Z buffer that is passed from visit is in clip scape with z
+	// limits of -1 and 1	
 	// However, using VTK, the z limits are withing nearz and farz.
 	// So, the projection matrix from VTK is hijacked here and adjusted 
 	// to be within -1 and 1 too
-	// Same as in avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
+	// Same as in 
+	// avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
 	double sceneSize[2];
 	if (!view.orthographic)
 	{
-	    p = sceneCam->GetProjectionTransformMatrix(aspect, oldNearPlane, oldFarPlane);
-	    p->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / (oldFarPlane-oldNearPlane));
-	    p->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / (oldFarPlane-oldNearPlane));
+	    p = sceneCam->GetProjectionTransformMatrix
+		(aspect, oldNearPlane, oldFarPlane);
+	    p->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
+			  (oldFarPlane-oldNearPlane));
+	    p->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
+			  (oldFarPlane-oldNearPlane));
 	    sceneSize[0] = 2.0 * oldNearPlane / p->GetElement(0, 0);
 	    sceneSize[1] = 2.0 * oldNearPlane / p->GetElement(1, 1);
 	}
 	else
 	{
-	    p = sceneCam->GetProjectionTransformMatrix(aspect, oldNearPlane, oldFarPlane);
+	    p = sceneCam->GetProjectionTransformMatrix
+		(aspect, oldNearPlane, oldFarPlane);
 	    p->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
-	    p->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / (oldFarPlane-oldNearPlane));
+	    p->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
+			  (oldFarPlane-oldNearPlane));
 	    sceneSize[0] = 2.0 / p->GetElement(0, 0);
 	    sceneSize[1] = 2.0 / p->GetElement(1, 1);
 	}
@@ -874,16 +881,17 @@ avtRayTracer::Execute(void)
 	// get the full image extents of the volume
 	double depthExtents[2];
 	GetSpatialExtents(dbounds);
-	project3Dto2D(dbounds, screen[0], screen[1], pvm, fullImageExtents, depthExtents);
+	project3Dto2D(dbounds, screen[0], screen[1], pvm, 
+		      fullImageExtents, depthExtents);
 	
 	debug5 << "VAR: data bounds: " << std::endl
 	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
 	       << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
 	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl;
 
-	//========================================================================//
+	//===================================================================//
 	// ospray stuffs
-	//========================================================================//
+	//===================================================================//
 	if (avtCallback::UseOSPRay()) {
 	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
 	    // initialize ospray
@@ -906,10 +914,11 @@ avtRayTracer::Execute(void)
 	    // transfer function
 	    debug5  << "make ospray transfer function" << std::endl;
 	    ospray->InitTransferFunction();
-	    ospray->SetTransferFunction((OSPContext::OSPColor*)transferFn1D->GetTableFloat(), 
-					transferFn1D->GetNumberOfTableEntries(),
-					(float)transferFn1D->GetMin(),
-					(float)transferFn1D->GetMax());
+	    ospray->SetTransferFunction
+		((OSPContext::OSPColor*)transferFn1D->GetTableFloat(), 
+		 transferFn1D->GetNumberOfTableEntries(),
+		 (float)transferFn1D->GetMin(),
+		 (float)transferFn1D->GetMax());
 	    // renderer
 	    debug5 << "make ospray renderer" << std::endl;
 	    ospray->InitRenderer();
@@ -936,7 +945,7 @@ avtRayTracer::Execute(void)
 	extractor.SetRendererSampleRate(rendererSampleRate); 
 	extractor.SetDepthExtents(depthExtents);
 	extractor.SetMVPMatrix(pvm);
-	
+	extractor.SetFullImageExtents(fullImageExtents);
 	// sending ospray
 	extractor.SetOSPRayContext(ospray);
 
@@ -944,7 +953,8 @@ avtRayTracer::Execute(void)
 	// Capture background
 	//
 	opaqueImageVTK  = opaqueImage->GetImage().GetImageVTK();
-	opaqueImageData = (unsigned char *)opaqueImageVTK->GetScalarPointer(0, 0, 0);
+	opaqueImageData = 
+	    (unsigned char *)opaqueImageVTK->GetScalarPointer(0, 0, 0);
 	opaqueImageZB   = opaqueImage->GetImage().GetZBuffer();
 	extractor.setDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
 	extractor.setRGBBuffer  (opaqueImageData, screen[0],screen[1]);
@@ -975,7 +985,8 @@ avtRayTracer::Execute(void)
     //
     if (rayCastingSLIVR == true)
     {
-	// only required to force an update - Need to find a way to get rid of that!!!!
+	// only required to force an update 
+	// Need to find a way to get rid of that!!!!
 	avtRayCompositer rc(rayfoo);
 	rc.SetInput(samples);
 	avtImage_p image  = rc.GetTypedOutput();
@@ -985,7 +996,8 @@ avtRayTracer::Execute(void)
 	timingVolToImg = visitTimer->StartTimer(); 
 	
 	// execute rendering
-	image->Update(GetGeneralContract()); // this will call the execute function
+        // this will call the execute function
+	image->Update(GetGeneralContract()); 
 
 	// time rendering
 	visitTimer->StopTimer(timingVolToImg, "AllPatchRendering");
@@ -1002,8 +1014,10 @@ avtRayTracer::Execute(void)
 
 	    //
 	    // Get the metadata for all patches
-	    std::vector<imgMetaData> allImgMetaData; // contains the metadata to composite the image
-	    int numPatches = extractor.getImgPatchSize(); // get the number of patches
+            // contains the metadata to composite the image
+	    std::vector<imgMetaData> allImgMetaData;
+	    // get the number of patches
+	    int numPatches = extractor.getImgPatchSize(); 
 								       
 	    for (int i=0; i<numPatches; i++)
 	    {
@@ -1015,7 +1029,9 @@ avtRayTracer::Execute(void)
 	    //
 	    // Sort with the largest z first
 	    //
-	    std::sort(allImgMetaData.begin(), allImgMetaData.end(), &sortImgMetaDataByEyeSpaceDepth);
+	    std::sort(allImgMetaData.begin(), 
+		      allImgMetaData.end(), 
+		      &sortImgMetaDataByEyeSpaceDepth);
 
 	    //
 	    // Blend images
@@ -1042,7 +1058,8 @@ avtRayTracer::Execute(void)
 	    	tempImgData.imagePatch = NULL;
 	    	tempImgData.imagePatch = new float[currentPatch.dims[0] * 
 						   currentPatch.dims[1] * 4];
-	    	extractor.getnDelImgData(currentPatch.patchNumber, tempImgData);
+	    	extractor.getnDelImgData
+		    (currentPatch.patchNumber, tempImgData);
 
 		debug5 << "current patch id = " << i << std::endl;
 		debug5 << "current patch size = " 
@@ -1052,9 +1069,13 @@ avtRayTracer::Execute(void)
 		       << " X = " << currentPatch.screen_ll[0] 
 		       << " Y = " << currentPatch.screen_ll[1] << std::endl;
 
-	    	for (int patchY = 0; patchY < currentPatch.dims[1]; patchY++) 
+	    	for (int patchY = 0; 
+		     patchY < currentPatch.dims[1]; 
+		     patchY++) 
 		{
-	    	    for (int patchX = 0; patchX < currentPatch.dims[0]; patchX++)
+	    	    for (int patchX = 0; 
+			 patchX < currentPatch.dims[0]; 
+			 patchX++)
 	    	    {
 	    		const int startingX = currentPatch.screen_ll[0];
 	    		const int startingY = currentPatch.screen_ll[1];
@@ -1068,37 +1089,44 @@ avtRayTracer::Execute(void)
 	    		if (bufferY >= fullImageExtents[3]) { continue; }
 
 	    		// index in the subimage
-	    		int patchIndex = (patchY * currentPatch.dims[0] + patchX) * 4;
+	    		int patchIndex = (patchY * currentPatch.dims[0] + 
+					  patchX) * 4;
 	    		// index in the big buffer
-	    		int bufferIndex = ((bufferY - fullImageExtents[2]) * renderedWidth
-					   + bufferX - fullImageExtents[0]) * 4;
+	    		int bufferIndex = 
+			    ((bufferY - fullImageExtents[2]) * renderedWidth
+			     + bufferX - fullImageExtents[0]) * 4;
 			
 			debug5 << " X = " << bufferX - fullImageExtents[0] 
-			       << " Y = " << bufferY - fullImageExtents[2] << std::endl;  
+			       << " Y = " << bufferY - fullImageExtents[2]
+			       << std::endl;  
 
 	    		if (composedData[bufferIndex+3] < 1.0)
 	    		{
 	    		    // back to Front compositing: 
-	    		    float alpha = (1.0 - tempImgData.imagePatch[patchIndex + 3]);
-	    		    composedData[bufferIndex + 0] = 
-				imgComm.clamp((composedData[bufferIndex + 0] * alpha) 
-					      + tempImgData.imagePatch[patchIndex + 0]);
-	    		    composedData[bufferIndex + 1] = 
-				imgComm.clamp((composedData[bufferIndex + 1] * alpha) 
-					      + tempImgData.imagePatch[patchIndex + 1]);
-	    		    composedData[bufferIndex + 2] = 
-				imgComm.clamp((composedData[bufferIndex + 2] * alpha)
-					      + tempImgData.imagePatch[patchIndex + 2]);
-	    		    composedData[bufferIndex + 3] = 
-				imgComm.clamp((composedData[bufferIndex + 3] * alpha) 
-					      + tempImgData.imagePatch[patchIndex + 3]);
+	    		    float alpha = 
+				(1.0 - tempImgData.imagePatch[patchIndex + 3]);
+	    		    composedData[bufferIndex + 0] = imgComm.clamp
+				((composedData[bufferIndex + 0] * alpha) 
+				 + tempImgData.imagePatch[patchIndex + 0]);
+	    		    composedData[bufferIndex + 1] = imgComm.clamp
+				((composedData[bufferIndex + 1] * alpha) 
+				 + tempImgData.imagePatch[patchIndex + 1]);
+	    		    composedData[bufferIndex + 2] = imgComm.clamp
+				((composedData[bufferIndex + 2] * alpha)
+				 + tempImgData.imagePatch[patchIndex + 2]);
+	    		    composedData[bufferIndex + 3] = imgComm.clamp
+				((composedData[bufferIndex + 3] * alpha) 
+				 + tempImgData.imagePatch[patchIndex + 3]);
 	    		}
 	    	    }
 		}
 
-		// debug write patch image into file		
-		// writeArrayToPPM("/home/sci/qwu/Desktop/debug/compisiting/patch_" + std::to_string(i),
-		//                 tempImgData.imagePatch, currentPatch.dims[0], currentPatch.dims[1]);
+		// // debug write patch image into file		
+		// writeArrayToPPM
+		//     ("/home/sci/qwu/Desktop/debug/compisiting/patch_" + 
+		//      std::to_string(i),
+		//      tempImgData.imagePatch, 
+		//      currentPatch.dims[0], currentPatch.dims[1]);
 
 	    	//
 	    	// Clean up data
@@ -1110,14 +1138,17 @@ avtRayTracer::Execute(void)
 		tempImgData.imagePatch = NULL;
 	    }
 
-	    // writeArrayToPPM("/home/sci/qwu/Desktop/debug/compisiting/composed", composedData, renderedWidth, renderedHeight);
+	    // writeArrayToPPM
+	    // 	("/home/sci/qwu/Desktop/debug/compisiting/composed", 
+	    // 	 composedData, renderedWidth, renderedHeight);
 
 	    debug5 << "Clear allImageMetaData" << std::endl;
 	    allImgMetaData.clear();
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
-	    slivr::CheckMemoryHere("avtRayTracer::Execute serial compositing done");
+	    slivr::CheckMemoryHere
+		("avtRayTracer::Execute serial compositing done");
 	    debug5 << "Final image compositing start!" << std::endl;
 
 	    //
@@ -1126,7 +1157,8 @@ avtRayTracer::Execute(void)
 	    avtImage_p whole_image;
 	    whole_image = new avtImage(this);
 
-	    vtkImageData *img = avtImageRepresentation::NewImage(screen[0], screen[1]);
+	    vtkImageData *img = 
+		avtImageRepresentation::NewImage(screen[0], screen[1]);
 	    whole_image->GetImage() = img;
 
 	    unsigned char *imgFinal = NULL;
@@ -1139,14 +1171,18 @@ avtRayTracer::Execute(void)
 	    vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
 	    vtkMatrix4x4::Invert(pvm, Inversepvm);
 
-	    int compositedImageWidth  = fullImageExtents[1] - fullImageExtents[0];
-	    int compositedImageHeight = fullImageExtents[3] - fullImageExtents[2];
+	    int compositedImageWidth  = 
+		fullImageExtents[1] - fullImageExtents[0];
+	    int compositedImageHeight = 
+		fullImageExtents[3] - fullImageExtents[2];
 
-	    // Having to adjust the dataset bounds by a arbitrary magic number here. 
+	    // Having to adjust the dataset bounds by a arbitrary magic 
+	    // number here. 
 	    // Needs to be sorted out at some point!
-	    dbounds[5] = dbounds[5]-0.025;
+	    // dbounds[5] = dbounds[5]-0.025;
 
-	    debug5 << "Place in image ~ screen "  <<  screen[0] << ", " << screen[1] 
+	    debug5 << "Place in image ~ screen "  
+		   <<  screen[0] << ", " << screen[1] 
 		   << "  compositedImageWidth:  " << compositedImageWidth 
 		   << "  compositedImageHeight: " << compositedImageHeight
 		   << "  fullImageExtents: " 
@@ -1162,21 +1198,27 @@ avtRayTracer::Execute(void)
 
 		    int index = _y*screen[0] + _x;
 		    int indexComposited = 
-			(_y-fullImageExtents[2])*compositedImageWidth + (_x-fullImageExtents[0]);
+			(_y-fullImageExtents[2]) * compositedImageWidth + 
+			(_x-fullImageExtents[0]);
 
 		    bool insideComposited = false;
-		    if (_x >= fullImageExtents[0] && _x < fullImageExtents[1])
-		     	if (_y >= fullImageExtents[2] && _y < fullImageExtents[3])
+		    if (_x >= fullImageExtents[0] && 
+			_x < fullImageExtents[1])
+		     	if (_y >= fullImageExtents[2] && 
+			    _y < fullImageExtents[3])
 		     	    insideComposited = true;
 
-		    if ( insideComposited )
+		    if (insideComposited)
 		    {
 			if (composedData[indexComposited*4 + 3] == 0)
 			{
 			    // No data from rendering here!
-			    imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
-			    imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
-			    imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
+			    imgFinal[index*3 + 0] = 
+				opaqueImageData[index*3 + 0];
+			    imgFinal[index*3 + 1] = 
+				opaqueImageData[index*3 + 1];
+			    imgFinal[index*3 + 2] = 
+				opaqueImageData[index*3 + 2];
 			}
 			else
 			{
@@ -1188,17 +1230,14 @@ avtRayTracer::Execute(void)
 				unProject(_x, _y, _tempZ, worldCoordinates,
 					  screen[0], screen[1], Inversepvm);
 
-				// debug5 << "x, y, z: " << _x << ", " << _y << ", " << _tempZ 
-				//        << "   wordld: " 
-				//        << worldCoordinates[0] << ", " 
-				//        << worldCoordinates[1] << ", " 
-				//        << worldCoordinates[2] << std::endl;
-
-				if ( checkInBounds(dbounds, worldCoordinates) )
+				if (checkInBounds(dbounds, worldCoordinates))
 				{
 				    // Completely inside bounding box
-				    float alpha = composedData[indexComposited*4+3];
-				    float oneMinusAlpha = (1.0 - composedData[indexComposited*4+3]);
+				    float alpha =
+					composedData[indexComposited*4+3];
+				    float oneMinusAlpha = 
+					(1.0 - 
+					 composedData[indexComposited*4+3]);
 				    imgFinal[index*3 + 0] = 
 					std::min((((float)opaqueImageData[index*3 + 0]/255.0) 
 						  * oneMinusAlpha  
@@ -1287,7 +1326,8 @@ avtRayTracer::Execute(void)
 
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
-	    slivr::CheckMemoryHere("avtRayTracer::Execute final compositing done");
+	    slivr::CheckMemoryHere
+		("avtRayTracer::Execute final compositing done");
 
 	    // time compositing
 	    visitTimer->StopTimer(timingCompositinig, "Compositing");
@@ -1304,8 +1344,10 @@ avtRayTracer::Execute(void)
 	    //
 	    // Get the metadata for all patches
 	    //
-	    std::vector<imgMetaData> allImgMetaData; // contains the metadata to composite the image
-	    int numPatches = extractor.getImgPatchSize(); // get the number of patches for current rank
+	    // contains the metadata to composite the image
+	    std::vector<imgMetaData> allImgMetaData; 
+	    // get the number of patches for current rank
+	    int numPatches = extractor.getImgPatchSize(); 
 
 	    int imgExtents[4] = {0,0,0,0}; // minX, maxX, minY, maxY
 	    int imgSize[2];                // x, y
@@ -1319,29 +1361,35 @@ avtRayTracer::Execute(void)
 		   << fullImageExtents[1] << ", " 
 		   << fullImageExtents[2] << ", " 
 		   << fullImageExtents[3] << std::endl
-		   << "VAR: fullImageWidth  " << fullImageExtents[1] - fullImageExtents[0] << std::endl
-		   << "VAR: fullImageHeight " << fullImageExtents[3] - fullImageExtents[2] << std::endl;		
+		   << "VAR: fullImageWidth  " 
+		   << fullImageExtents[1] - fullImageExtents[0] << std::endl
+		   << "VAR: fullImageHeight " 
+		   << fullImageExtents[3] - fullImageExtents[2] << std::endl;
 
-	    for (int i=0; i<numPatches; i++)
+	    if (DebugStream::Level5())
 	    {
-		imgMetaData temp;
-		temp = extractor.getImgMetaPatch(i);
+		for (int i=0; i<numPatches; i++)
+		{
+		    imgMetaData temp;
+		    temp = extractor.getImgMetaPatch(i);
 
-		imgExtents[0]=temp.screen_ll[0];   // minX
-		imgExtents[1]=temp.screen_ur[0];   // maxX
+		    imgExtents[0]=temp.screen_ll[0];   // minX
+		    imgExtents[1]=temp.screen_ur[0];   // maxX
 
-		imgExtents[2]=temp.screen_ll[1];   // minY
-		imgExtents[3]=temp.screen_ur[1];   // maxY
+		    imgExtents[2]=temp.screen_ll[1];   // minY
+		    imgExtents[3]=temp.screen_ur[1];   // maxY
 
-		imgSize[0] = imgExtents[1]-imgExtents[0];
-		imgSize[1] = imgExtents[3]-imgExtents[2];
+		    imgSize[0] = imgExtents[1]-imgExtents[0];
+		    imgSize[1] = imgExtents[3]-imgExtents[2];
 
-		debug5 << "i: " << i << " image (minX, maxX | minY , maxY): "
-		       << imgExtents[0] << ", " << imgExtents[1] << " | "
-		       << imgExtents[2] << ", " << imgExtents[3] 
-		       << "  size: " << imgSize[0] << " x " << imgSize[1] << std::endl;
+		    debug5 << "i: " << i 
+			   << " image (minX, maxX | minY , maxY): "
+			   << imgExtents[0] << ", " << imgExtents[1] << " | "
+			   << imgExtents[2] << ", " << imgExtents[3] 
+			   << "  size: " << imgSize[0] << " x " << imgSize[1] 
+			   << std::endl;
+		}
 	    }
-
 	    //
 	    // Compositing
 	    //
@@ -1374,14 +1422,14 @@ avtRayTracer::Execute(void)
 	    //
 	    // Some cleanup
 	    //
+	    debug5 << "cleaning start!" << std::endl;
 	    if (regions != NULL)
 		delete []regions;
 	    regions = NULL;
-
 	    if (imgComm.intermediateImage != NULL)
 		delete []imgComm.intermediateImage;
-	    imgComm.intermediateImage = NULL;
-		
+	    imgComm.intermediateImage = NULL;		
+	    debug5 << "cleaning done!" << std::endl;
 	    imgComm.barrier();
 	    debug5 << "Global compositing done!" << std::endl;
 		
@@ -1395,7 +1443,8 @@ avtRayTracer::Execute(void)
 		avtImage_p whole_image;
 		whole_image = new avtImage(this);
 
-		vtkImageData *img = avtImageRepresentation::NewImage(screen[0], screen[1]);
+		vtkImageData *img = 
+		    avtImageRepresentation::NewImage(screen[0], screen[1]);
 		whole_image->GetImage() = img;
 
 		unsigned char *imgFinal = NULL;
@@ -1413,7 +1462,8 @@ avtRayTracer::Execute(void)
 		int compositedImageHeight = imgComm.finalImageExtents[3] 
 		    - imgComm.finalImageExtents[2];
 
-		debug5 << "Place in image ~ screen " <<  screen[0] << ", " << screen[1] 
+		debug5 << "Place in image ~ screen " 
+		       <<  screen[0] << ", " << screen[1] 
 		       << "  compositedImageWidth: " << compositedImageWidth 
 		       << "  compositedImageHeight: " << compositedImageHeight
 		       << "  fullImageExtents: "
