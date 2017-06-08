@@ -1,0 +1,209 @@
+/*****************************************************************************
+*
+* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+* Produced at the Lawrence Livermore National Laboratory
+* LLNL-CODE-442911
+* All rights reserved.
+*
+* This file is  part of VisIt. For  details, see https://visit.llnl.gov/.  The
+* full copyright notice is contained in the file COPYRIGHT located at the root
+* of the VisIt distribution or at http://www.llnl.gov/visit/copyright.html.
+*
+* Redistribution  and  use  in  source  and  binary  forms,  with  or  without
+* modification, are permitted provided that the following conditions are met:
+*
+*  - Redistributions of  source code must  retain the above  copyright notice,
+*    this list of conditions and the disclaimer below.
+*  - Redistributions in binary form must reproduce the above copyright notice,
+*    this  list of  conditions  and  the  disclaimer (as noted below)  in  the
+*    documentation and/or other materials provided with the distribution.
+*  - Neither the name of  the LLNS/LLNL nor the names of  its contributors may
+*    be used to endorse or promote products derived from this software without
+*    specific prior written permission.
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT  HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR  IMPLIED WARRANTIES, INCLUDING,  BUT NOT  LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND  FITNESS FOR A PARTICULAR  PURPOSE
+* ARE  DISCLAIMED. IN  NO EVENT  SHALL LAWRENCE  LIVERMORE NATIONAL  SECURITY,
+* LLC, THE  U.S.  DEPARTMENT OF  ENERGY  OR  CONTRIBUTORS BE  LIABLE  FOR  ANY
+* DIRECT,  INDIRECT,   INCIDENTAL,   SPECIAL,   EXEMPLARY,  OR   CONSEQUENTIAL
+* DAMAGES (INCLUDING, BUT NOT  LIMITED TO, PROCUREMENT OF  SUBSTITUTE GOODS OR
+* SERVICES; LOSS OF  USE, DATA, OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER
+* CAUSED  AND  ON  ANY  THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT
+* LIABILITY, OR TORT  (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN ANY  WAY
+* OUT OF THE  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+* DAMAGE.
+*
+*****************************************************************************/
+
+// ************************************************************************* //
+//                                 avtRayTracer.h                            //
+// ************************************************************************* //
+
+#ifndef AVT_RAY_TRACER_H
+#define AVT_RAY_TRACER_H
+
+#include <filters_exports.h>
+
+#include <avtDatasetToImageFilter.h>
+#include <avtViewInfo.h>
+#include <avtOpacityMap.h>
+#include <avtSLIVROSPRayFilter.h>
+#include <avtSLIVRImgCommunicator.h>
+
+#include <vtkCamera.h>
+
+#include <map>
+#include <limits>
+#include <vector>
+
+class   avtRayFunction;
+class   vtkMatrix4x4;
+
+// ****************************************************************************
+//  Class: avtRayTracer
+//
+//  Purpose:
+//      Performs ray tracing, taking in a dataset as a source and has an
+//      image as an output.
+//
+//  Programmer: Hank Childs
+//  Creation:   November 27, 2000
+//
+//  Modifications:
+//
+//    Hank Childs, Mon Jan  8 16:52:26 PST 2001
+//    Added "Get" functions.
+//
+//    Hank Childs, Sat Feb  3 20:37:01 PST 2001
+//    Removed pixelizer and added mechanism to change background color.
+//
+//    Hank Childs, Tue Feb 13 15:15:50 PST 2001
+//    Added ability to insert an opaque image into the rendering.
+//
+//    Brad Whitlock, Wed Dec 5 11:13:18 PDT 2001
+//    Added gradient backgrounds.
+//
+//    Hank Childs, Thu Feb  5 17:11:06 PST 2004
+//    Moved inlined destructor definition to .C file because certain compilers
+//    have problems with them.
+//
+//    Hank Childs, Sun Dec  4 18:00:55 PST 2005
+//    Add method that estimates number of stages.
+//
+//    Hank Childs, Mon Jan 16 11:11:47 PST 2006
+//    Add support for kernel based sampling.
+//
+//    Jeremy Meredith, Thu Feb 15 11:44:28 EST 2007
+//    Added support for rectilinear grids with an inherent transform.
+//
+//    Hank Childs, Wed Dec 24 14:17:03 PST 2008
+//    Add method TightenClippingPlanes.
+//
+//    Pascal Grosset, Fri Sep 20 2013
+//    Added ray casting slivr & trilinear interpolation
+//
+// ****************************************************************************
+
+class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
+{
+public:
+                          avtRayTracer();
+    virtual              ~avtRayTracer();
+
+    virtual const char   *GetType(void) { return "avtRayTracer"; };
+    virtual const char   *GetDescription(void) { return "Ray tracing"; };
+    virtual void          ReleaseData(void);
+
+    static int            GetNumberOfStages(int, int, int);
+    void                  SetView(const avtViewInfo &);
+    void                  InsertOpaqueImage(avtImage_p);
+    void                  SetRayFunction(avtRayFunction *);
+    void                  SetScreen(int, int);
+    void                  SetSamplesPerRay(int);
+    void                  SetBackgroundColor(const unsigned char [3]);
+    void                  SetBackgroundMode(int mode);
+    void                  SetGradientBackgroundColors(const double [3],
+                                                      const double [3]);
+    int                   GetSamplesPerRay(void)  { return samplesPerRay; };
+    const int            *GetScreen(void)         { return screen; };
+    void                  blendImages(float *src, int dimsSrc[2], int posSrc[2], 
+				      float *dst, int dimsDst[2], int posDst[2]);
+    void                  SetKernelBasedSampling(bool v) { kernelBasedSampling = v; };
+    void                  SetLighting(bool l) { lighting = l; };
+    void                  SetLightPosition(double _lightPos[4])
+    { for (int i=0;i<4;i++) lightPosition[i] = _lightPos[i]; }
+    void                  SetLightDirection(double _lightDir[3]) 
+    { for (int i=0;i<3;i++) lightDirection[i] = _lightDir[i]; }
+    void                  SetMatProperties(double _matProp[4]) 
+    { for (int i=0;i<4;i++) materialProperties[i] = _matProp[i]; }
+    void                  SetTransferFn(avtOpacityMap *_transferFn1D) 
+    { transferFn1D = _transferFn1D; };
+    void                  SetViewDirection(double *vd)
+    { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; }
+    void                  SetTrilinear(bool t) { trilinearInterpolation = t; };
+    void                  SetRayCastingSLIVR(bool _rayCastingSLIVR)
+    { rayCastingSLIVR = _rayCastingSLIVR; };
+    void                  SetRendererSampleRate(double r) { rendererSampleRate = r; }
+    // ospray
+    void                  SetOSPRay(OSPContext *ptr) { ospray = ptr; }
+    void                  SetOSPRayRefresh(bool flag) { osprayRefresh = flag; }
+protected:
+    
+    // ospray integration
+    OSPContext *ospray;
+    bool        osprayRefresh;
+
+    avtSLIVRImgCommunicator imgComm;
+    avtViewInfo             view;
+
+    int                   screen[2];
+    int                   samplesPerRay;
+    double                rendererSampleRate;
+    bool                  kernelBasedSampling;
+    bool                  trilinearInterpolation;
+    int                   backgroundMode;
+    unsigned char         background[3];
+    double                gradBG1[3];
+    double                gradBG2[3];
+    avtRayFunction       *rayfoo;
+    
+    bool                  lighting;
+    double                lightPosition[4];
+    
+    double                lightDirection[3];
+    double                materialProperties[4];
+    double                viewDirection[3];
+    double                panPercentage[2];
+    avtOpacityMap         *transferFn1D;
+
+    bool                  rayCastingSLIVR;
+    bool                  convexHullOnRCSLIVR;
+    avtImage_p            opaqueImage;
+
+    virtual void          Execute(void);
+    virtual avtContract_p ModifyContract(avtContract_p);
+    static int            GetNumberOfDivisions(int, int, int);
+    virtual bool          FilterUnderstandsTransformedRectMesh();
+    void                  TightenClippingPlanes(const avtViewInfo &view,
+                                                vtkMatrix4x4 *,
+                                                double &, double &);
+
+    double                project(double _worldCoordinates[3], int pos2D[2], 
+				  int _width, int _height, vtkMatrix4x4 *_mvp);
+    void                  unProject(int _x, int _y, float _z, double _worldCoordinates[3], 
+				    int _width, int _height, vtkMatrix4x4 *invModelViewProj);
+    void                  project3Dto2D(double _3Dextents[6], int width, int height, 
+					vtkMatrix4x4 *_mvp, 
+					int _2DExtents[4], double depthExtents[2]);
+    void                  computeRay(double camera[3], double position[3], double ray[3]);
+    bool                  checkInBounds(double volBounds[6], double coord[3]);
+    bool                  intersect(double bounds[6], double ray[3], 
+				    double cameraPos[3], double &tMin, double &tMax);
+
+};
+
+
+#endif
+
+
