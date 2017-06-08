@@ -1054,7 +1054,7 @@ void QvisVolumePlotWindow::CreateSamplingGroups(QWidget *parent, QLayout *pLayou
         QGridLayout *raycastingLayout = new QGridLayout(raycastingGroup);
         // raycastingLayoutV->setSpacing(0);
         // raycastingLayoutV->setMargin(0);
-        // 6 x 2 layout: 
+        //6 x 2 layout: 
         // (0,0) Sampling method  (0,1) Rasterization   (0,2) Kernel Based       (0,4) Trilinear
         //                        (0,1) Samples per ray (0,2) sprSpinBox         (0,4) Sampling rate  (0,5) srSpinBox
         samplesPerRayWidget         = new QWidget(                          raycastingGroup);
