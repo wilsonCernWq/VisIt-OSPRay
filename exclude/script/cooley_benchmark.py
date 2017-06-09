@@ -25,7 +25,8 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
 
 def makePlot(machine, atts, numThreads, numNodes):
     dirpath = "n" + str(numNodes) + "p" + str(numThreads)
-    os.makedirs(dirpath)
+    if not os.path.isdir(dirpath):
+        os.makedirs(dirpath)
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
@@ -73,9 +74,9 @@ def makePlot(machine, atts, numThreads, numNodes):
             DrawPlots()
             SaveWindow()
     #drawPlots(atts, atts.OSPRaySLIVR)
-    drawPlots(atts, atts.RayCastingSLIVR)
+    #drawPlots(atts, atts.RayCastingSLIVR)
     drawPlots(atts, atts.RayCasting)
-    # drawPlots(atts, atts.RayCastingIntegration)
+    #drawPlots(atts, atts.RayCastingIntegration)
     # close all
     DeleteActivePlots()
     CloseDatabase(hostname + ":" + database)
@@ -155,11 +156,12 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 #---------------------------------------------------------------------------------------------------------------
 # open remote
 m = GetMachineProfile(hostname)
+#makePlot(m, VolumeAtts, 12, 4)
 #makePlot(m, VolumeAtts, 12, 8)
 #makePlot(m, VolumeAtts, 12, 16)
-makePlot(m, VolumeAtts, 1, 4)
-makePlot(m, VolumeAtts, 1, 8)
-makePlot(m, VolumeAtts, 1, 16)
+#makePlot(m, VolumeAtts, 1, 4)
+#makePlot(m, VolumeAtts, 1, 8)
+#makePlot(m, VolumeAtts, 1, 16)
 makePlot(m, VolumeAtts, 1, 32)
 exit()
 
