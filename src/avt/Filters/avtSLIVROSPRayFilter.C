@@ -101,7 +101,7 @@ void VolumeInfo::InitVolume(unsigned char type) {
 	    volume = ospNewVolume("block_bricked_volume"); 
 	    break;
 	case (OSP_SHARED_STRUCTURED_VOLUME):
-	    volume = ospNewVolume("shared_structured_volume"); 
+	    volume = ospNewVolume("visit_shared_structured_volume"); 
 	    break;
 	default:
 	    debug1 << "ERROR: ospray volume not initialized"
@@ -239,6 +239,7 @@ void OSPContext::InitOSP(bool flag, bool debug, int numThreads)
 	ospDeviceSetStatusFunc
 	    (device, [](const char *msg) { debug5 << msg; });
 	ospDeviceCommit(device);
+	ospLoadModule("visit");
     }
     refreshData = flag;
 }
