@@ -157,7 +157,7 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 # open remote
 m = GetMachineProfile(hostname)
 #makePlot(m, VolumeAtts, 12, 4)
-#makePlot(m, VolumeAtts, 12, 8)
+makePlot(m, VolumeAtts, 12, 8)
 #makePlot(m, VolumeAtts, 12, 16)
 #makePlot(m, VolumeAtts, 1, 4)
 #makePlot(m, VolumeAtts, 1, 8)
