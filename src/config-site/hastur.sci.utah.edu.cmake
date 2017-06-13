@@ -45,7 +45,7 @@ VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
 ##
 ## PIDX
 ##
-SET(PIDX_DIR /home/sci/qwu/VisIt/visitOSPRayCPU/PIDX/release)
+SET(PIDX_DIR /home/sci/qwu/VisIt/visitOSPRayCPU/PIDX/install-master)
 
 ##############################################################
 ##
