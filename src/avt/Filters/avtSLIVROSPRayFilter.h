@@ -251,7 +251,8 @@ struct OSPContext
     // ospTransferFunction component  
     void InitTransferFunction();
     void SetTransferFunction
-    (const OSPColor* table, const unsigned int size, const float datamin, const float datamax);
+    (const OSPColor* table, const unsigned int size, 
+     const float datamin, const float datamax);
 
 };
 

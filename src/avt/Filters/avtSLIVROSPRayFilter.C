@@ -229,7 +229,7 @@ void OSPContext::InitOSP(bool flag, bool debug, int numThreads)
 	       << " debug: " << debug  
 	       << " numThreads: " << numThreads
 	       << std::endl;
-	device = ospCreateDevice();
+	device = ospNewDevice();
 	ospDeviceSet1i(device, "debug", debug ? 1 : 0);
 	if (numThreads != -1) {
 	    ospDeviceSet1i(device, "numThreads", numThreads);
