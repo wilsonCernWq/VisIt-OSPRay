@@ -3,7 +3,7 @@ from subprocess import call
 hostname = "cooley.alcf.anl.gov"
 database = "/home/derekhar/Harris/trunk/data/predIncite.pidx/t230278/l0/CCVars.idx"
 timestep = 230278
-prefix = "/gpfs/mira-home/qiwu/timings/visit"
+prefix = "/gpfs/mira-home/qiwu/timings/visit/nocell"
 field = "O2"
 
 #---------------------------------------------------------------------------------------------------------------
@@ -73,8 +73,8 @@ def makePlot(machine, atts, numThreads, numNodes):
             SetView3D(c[i % 4])
             DrawPlots()
             SaveWindow()
-    #drawPlots(atts, atts.OSPRaySLIVR)
-    #drawPlots(atts, atts.RayCastingSLIVR)
+    drawPlots(atts, atts.OSPRaySLIVR)
+    drawPlots(atts, atts.RayCastingSLIVR)
     drawPlots(atts, atts.RayCasting)
     #drawPlots(atts, atts.RayCastingIntegration)
     # close all
@@ -157,11 +157,11 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 # open remote
 m = GetMachineProfile(hostname)
 #makePlot(m, VolumeAtts, 12, 4)
-makePlot(m, VolumeAtts, 12, 8)
+#makePlot(m, VolumeAtts, 12, 8)
 #makePlot(m, VolumeAtts, 12, 16)
-#makePlot(m, VolumeAtts, 1, 4)
-#makePlot(m, VolumeAtts, 1, 8)
+makePlot(m, VolumeAtts, 1, 4)
+makePlot(m, VolumeAtts, 1, 8)
 #makePlot(m, VolumeAtts, 1, 16)
-makePlot(m, VolumeAtts, 1, 32)
+#makePlot(m, VolumeAtts, 1, 32)
 exit()
 
