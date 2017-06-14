@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2016, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -194,6 +194,7 @@ InitVTKRendering::Initialize(void)
     vtkVisItGraphicsFactory *factory = vtkVisItGraphicsFactory::New();
     vtkObjectFactory::RegisterFactory(factory);
     factory->Delete();
+
 
 #ifdef VISIT_MANTA
     if (avtCallback::UseManta())
