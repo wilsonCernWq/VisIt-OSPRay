@@ -3,7 +3,7 @@ from subprocess import call
 hostname = "cooley.alcf.anl.gov"
 database = "/home/derekhar/Harris/trunk/data/predIncite.pidx/t230278/l0/CCVars.idx"
 timestep = 230278
-prefix = "/gpfs/mira-home/qiwu/timings/visit/check"
+prefix = "/gpfs/mira-home/qiwu/timings/visit/nocell"
 field = "O2"
 
 #---------------------------------------------------------------------------------------------------------------
@@ -159,7 +159,7 @@ m = GetMachineProfile(hostname)
 #makePlot(m, VolumeAtts, 12, 4)
 #makePlot(m, VolumeAtts, 12, 8)
 #makePlot(m, VolumeAtts, 12, 16)
-#makePlot(m, VolumeAtts, 1, 4)
+makePlot(m, VolumeAtts, 1, 4)
 makePlot(m, VolumeAtts, 1, 8)
 #makePlot(m, VolumeAtts, 1, 16)
 #makePlot(m, VolumeAtts, 1, 32)
