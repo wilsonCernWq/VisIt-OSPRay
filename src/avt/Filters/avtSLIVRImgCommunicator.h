@@ -78,9 +78,9 @@ struct imageBuffer{
 // ****************************************************************************
 
 class avtSLIVRImgCommunicator
-{
-    int num_procs;
-    int my_id;
+{ 
+    int numProcs;
+    int myId;
     int totalPatches;
     bool compositingDone;
 
@@ -136,8 +136,8 @@ public:
 	
     void barrier();
 
-    int GetNumProcs(){ return num_procs;};
-    int GetMyId(){ return my_id;};
+    int GetNumProcs(){ return numProcs;};
+    int GetMyId(){ return myId;};
 
     void getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage);  // get the final composited image
     void regionAllocation(int numMPIRanks, int *& regions);
