@@ -39,22 +39,21 @@
 // ************************************************************************* //
 //                         avtSLIVRImgCommunicator.C                         //
 // ************************************************************************* //
-#include <cmath>
+
+#include <avtSLIVRImgCommunicator.h>
 #include <avtParallel.h>
 #include <ImproperUseException.h>
+#include <DebugStream.h>
 
+#include <cmath>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>     /* srand, rand */
 #include <time.h>       /* time */
-
-#include <avtSLIVRImgCommunicator.h>
 #include <fstream>
-#include <DebugStream.h>
 #include <limits>
 #include <algorithm>
 #include <set>
-
 
 #if defined (_MSC_VER) && (_MSC_VER < 1800) && !defined(round)
 inline double round(double x) {return (x-floor(x)) > 0.5 ? ceil(x) : floor(x);}
@@ -108,11 +107,11 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator() :
 // ****************************************************************************
 avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 {
-	if (my_id == 0)
-	{
-		if (imgBuffer != NULL)
-			delete []imgBuffer;
-	}
+    if (my_id == 0)
+    {
+	if (imgBuffer != NULL)
+	    delete []imgBuffer;
+    }
 }
 
 
@@ -130,9 +129,9 @@ avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 //
 // ****************************************************************************
 void avtSLIVRImgCommunicator::barrier(){
-  #ifdef PARALLEL
-	MPI_Barrier( MPI_COMM_WORLD );
-  #endif
+#ifdef PARALLEL
+    MPI_Barrier( MPI_COMM_WORLD );
+#endif
 }
 
 
@@ -536,7 +535,7 @@ avtSLIVRImgCommunicator::updateBoundingBox(int currentBoundingBox[4], int imageE
 void
 avtSLIVRImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth)
 {
-  #ifdef PARALLEL
+#ifdef PARALLEL
     //
     // Get how many patches are coming from each MPI rank
     totalPatches = 0;
@@ -578,7 +577,7 @@ avtSLIVRImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatc
             delete []patchesOffset;
 
     patchesOffset = NULL;
-  #endif
+#endif
 }
 
 
@@ -599,7 +598,7 @@ avtSLIVRImgCommunicator::gatherDepthAtRoot(int numlocalPatches, float *localPatc
 void
 avtSLIVRImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height)
 {
-  #ifdef PARALLEL
+#ifdef PARALLEL
     //debug5 << "serialDirectSend" << std::endl;
 
     float *recvImage = NULL;
@@ -702,7 +701,7 @@ avtSLIVRImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDep
     //
     // Cleanup
     if (patchesDepth != NULL)
-      delete []patchesDepth;
+	delete []patchesDepth;
 
     if (patchCountPerRank != NULL)
         delete []patchCountPerRank;
@@ -714,7 +713,7 @@ avtSLIVRImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDep
     patchCountPerRank = NULL;
     patchesDepth = NULL;
 
-  #endif
+#endif
 }
 
 
@@ -735,7 +734,7 @@ avtSLIVRImgCommunicator::serialDirectSend(int numPatches, float *localPatchesDep
 void
 avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4])
 {
-  #ifdef PARALLEL
+#ifdef PARALLEL
     //
     // Determine position in region (myPositionInRegion)
     int width =  fullImageExtents[1]-fullImageExtents[0];
@@ -1014,7 +1013,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], i
     sendImageRq = NULL;
     sendMetaSt = NULL;
     sendImageSt = NULL;
-  #endif
+#endif
 }
 
 
@@ -1088,30 +1087,30 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 {
     //debug5 << "computeRegionExtents height " << height << std::endl;
 
-	int regionHeight = round((float)height/numRanks);
-	regularRegionSize = regionHeight;
-	maxRegionHeight = 0;
-	regionRankExtents.resize(numRanks*3);
-	for (int i=0; i<numRanks; i++)
-	{
-		int startRegionExtents, endRegionExtents, _currentRegionHeight;
+    int regionHeight = round((float)height/numRanks);
+    regularRegionSize = regionHeight;
+    maxRegionHeight = 0;
+    regionRankExtents.resize(numRanks*3);
+    for (int i=0; i<numRanks; i++)
+    {
+	int startRegionExtents, endRegionExtents, _currentRegionHeight;
 
-		startRegionExtents = clamp(regionHeight * i, 0, height);
-		endRegionExtents = clamp(regionHeight * i + regionHeight, 0, height);
+	startRegionExtents = clamp(regionHeight * i, 0, height);
+	endRegionExtents = clamp(regionHeight * i + regionHeight, 0, height);
 
-		if ( i == numRanks -1 )
-			if ( endRegionExtents < height )
-				endRegionExtents = height;
+	if ( i == numRanks -1 )
+	    if ( endRegionExtents < height )
+		endRegionExtents = height;
 
-		_currentRegionHeight = clamp(endRegionExtents-startRegionExtents, 0, height);
-		maxRegionHeight = std::max(maxRegionHeight, _currentRegionHeight);
+	_currentRegionHeight = clamp(endRegionExtents-startRegionExtents, 0, height);
+	maxRegionHeight = std::max(maxRegionHeight, _currentRegionHeight);
 
-		regionRankExtents[i*3+0] = startRegionExtents;
-		regionRankExtents[i*3+1] = endRegionExtents;
-		regionRankExtents[i*3+2] = _currentRegionHeight;
+	regionRankExtents[i*3+0] = startRegionExtents;
+	regionRankExtents[i*3+1] = endRegionExtents;
+	regionRankExtents[i*3+2] = _currentRegionHeight;
 
-		debug5 << i << " : (start, end, region): " << startRegionExtents << ", " << endRegionExtents << ", " << _currentRegionHeight << std::endl;
-	}
+	debug5 << i << " : (start, end, region): " << startRegionExtents << ", " << endRegionExtents << ", " << _currentRegionHeight << std::endl;
+    }
 }
 
 
@@ -1591,99 +1590,99 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 void
 avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight)
 {
-  #ifdef PARALLEL
-	debug5 << "gatherImages starting... totalNumRanks: " << totalNumRanks << ", compositingDone: " << compositingDone
-		   << ", imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
+#ifdef PARALLEL
+    debug5 << "gatherImages starting... totalNumRanks: " << totalNumRanks << ", compositingDone: " << compositingDone
+	   << ", imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
 
-	for (int i=0; i<4; i++)
-		finalImageExtents[i] = finalBB[i] = 0;
+    for (int i=0; i<4; i++)
+	finalImageExtents[i] = finalBB[i] = 0;
 
-	if (my_id == 0)
+    if (my_id == 0)
+    {
+	int width =  fullImageExtents[1]-fullImageExtents[0];
+	int height = fullImageExtents[3]-fullImageExtents[2];
+
+	debug5 << "Gather Images at 0, final size: " << fullImageExtents[1]-fullImageExtents[0] << " x " << fullImageExtents[3]-fullImageExtents[2] << std::endl;
+
+	//
+	// Receive at root/display node!
+	imgBuffer = new float[width*height*4];
+	finalImageExtents[0] = fullImageExtents[0];
+	finalImageExtents[1] = fullImageExtents[1];
+	finalImageExtents[2] = fullImageExtents[2];
+	finalImageExtents[3] = fullImageExtents[3];
+
+	int numRegionsWithData = 0;
+	int numToRecv = 0;
+	for (int i=0; i<totalNumRanks; i++)
 	{
-		int width =  fullImageExtents[1]-fullImageExtents[0];
-		int height = fullImageExtents[3]-fullImageExtents[2];
+	    if (getRegionSize(i) != 0)
+		numRegionsWithData++;
+	}
+	numToRecv = numRegionsWithData;
 
-		debug5 << "Gather Images at 0, final size: " << fullImageExtents[1]-fullImageExtents[0] << " x " << fullImageExtents[3]-fullImageExtents[2] << std::endl;
+	// remove itself from the recv
+	if (getRegionSize(my_id) != 0) 
+	    numToRecv--;
 
-		//
-		// Receive at root/display node!
-		imgBuffer = new float[width*height*4];
-		finalImageExtents[0] = fullImageExtents[0];
-		finalImageExtents[1] = fullImageExtents[1];
-		finalImageExtents[2] = fullImageExtents[2];
-		finalImageExtents[3] = fullImageExtents[3];
 
-		int numRegionsWithData = 0;
-		int numToRecv = 0;
-		for (int i=0; i<totalNumRanks; i++)
+	//
+	// Create buffers for async reciving
+	MPI_Request *recvImageRq = new MPI_Request[ numToRecv ];
+	MPI_Status  *recvImageSt = new MPI_Status[ numToRecv ];
+
+	int lastBufferSize    = getRegionSize(totalNumRanks-1) * width * 4;
+	int regularBufferSize = regularRegionSize * width * 4;
+
+	debug5 << "numToRecv: " << numToRecv << ", numRegionsWithData: " << numRegionsWithData << std::endl;
+	debug5 << "regularBufferSize: " << regularBufferSize << ", lastBufferSize: " << lastBufferSize << std::endl;
+
+	// Async Recv
+	int recvCount=0;
+	for (int i=0; i<numRegionsWithData; i++)
+	{
+	    int src = regionGather[i];
+
+	    if (src == my_id)
+		continue;
+
+	    if (i == totalNumRanks-1)
+	    {
+		if (lastBufferSize != 0)
 		{
-			if (getRegionSize(i) != 0)
-				numRegionsWithData++;
+		    MPI_Irecv(&imgBuffer[i*regularBufferSize], lastBufferSize,     MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
 		}
-		numToRecv = numRegionsWithData;
-
-		// remove itself from the recv
-		if (getRegionSize(my_id) != 0) 
-			numToRecv--;
-
-
-		//
-		// Create buffers for async reciving
-		MPI_Request *recvImageRq = new MPI_Request[ numToRecv ];
-		MPI_Status  *recvImageSt = new MPI_Status[ numToRecv ];
-
-		int lastBufferSize    = getRegionSize(totalNumRanks-1) * width * 4;
-		int regularBufferSize = regularRegionSize * width * 4;
-
-		debug5 << "numToRecv: " << numToRecv << ", numRegionsWithData: " << numRegionsWithData << std::endl;
-		debug5 << "regularBufferSize: " << regularBufferSize << ", lastBufferSize: " << lastBufferSize << std::endl;
-
-		// Async Recv
-		int recvCount=0;
-		for (int i=0; i<numRegionsWithData; i++)
-		{
-			int src = regionGather[i];
-
-			if (src == my_id)
-				continue;
-
-			if (i == totalNumRanks-1)
-			{
-				if (lastBufferSize != 0)
-				{
-					MPI_Irecv(&imgBuffer[i*regularBufferSize], lastBufferSize,     MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
-				}
-			}
-			else
-				MPI_Irecv(&imgBuffer[i*regularBufferSize], regularBufferSize,  MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
+	    }
+	    else
+		MPI_Irecv(&imgBuffer[i*regularBufferSize], regularBufferSize,  MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
 			
 
-			debug5 << i << " ~ recvCount: " << recvCount << std::endl;
-			recvCount++;
-		}
-
-		if (compositingDone == false)   // If root has data for the final image
-			placeInImage(inputImg, imgExtents, imgBuffer, finalImageExtents);
-
-		MPI_Waitall(numToRecv, recvImageRq, recvImageSt);
-		compositingDone = true;
-
-		delete []recvImageRq;
-		recvImageRq = NULL;
-		delete []recvImageSt;
-		recvImageSt = NULL;
+	    debug5 << i << " ~ recvCount: " << recvCount << std::endl;
+	    recvCount++;
 	}
-	else
+
+	if (compositingDone == false)   // If root has data for the final image
+	    placeInImage(inputImg, imgExtents, imgBuffer, finalImageExtents);
+
+	MPI_Waitall(numToRecv, recvImageRq, recvImageSt);
+	compositingDone = true;
+
+	delete []recvImageRq;
+	recvImageRq = NULL;
+	delete []recvImageSt;
+	recvImageSt = NULL;
+    }
+    else
+    {
+	if (compositingDone == false)   
 	{
-		if (compositingDone == false)   
-		{
-			int imgSize = (imgExtents[1]-imgExtents[0]) * (imgExtents[3]-imgExtents[2]) * 4;
-			debug5 << "imgSize: " << imgSize << std::endl;
+	    int imgSize = (imgExtents[1]-imgExtents[0]) * (imgExtents[3]-imgExtents[2]) * 4;
+	    debug5 << "imgSize: " << imgSize << std::endl;
 
-			MPI_Send(inputImg, imgSize, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
-			compositingDone = true;
-		}
+	    MPI_Send(inputImg, imgSize, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+	    compositingDone = true;
 	}
+    }
 
-  #endif
+#endif
 }

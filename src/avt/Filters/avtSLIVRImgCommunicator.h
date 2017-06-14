@@ -55,15 +55,15 @@
 #   include <mpi.h>
 #endif
 
-#define MSG_DATA 100
+#define MSG_DATA   100
 #define MSG_RESULT 101
 
-const int SEND = 1;
+const int SEND    = 1;
 const int RECEIVE = 2;
 
 struct imageBuffer{
     float *image;
-    float depth;
+    float  depth;
 };
 
 // ****************************************************************************
@@ -101,9 +101,7 @@ class avtSLIVRImgCommunicator
 
     void blendFrontToBack(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4]);
     void blendBackToFront(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4]);
-
-	
-
+      
     void computeRegionExtents(int numRanks, int height);
 	
     int getRegularRegionSize(){ return regularRegionSize; } 
@@ -118,8 +116,6 @@ class avtSLIVRImgCommunicator
     int getScreenRegionEnd(int region, int screenImgMinY, int screenImgMaxY){
 	return clamp( getRegionEnd(region)+screenImgMinY, screenImgMinY, screenImgMaxY); 
     }
-
-	
 
 public:
     float *imgBuffer;                   // Final image is here
@@ -150,9 +146,9 @@ public:
 
     // Both currently unused but good for simple testing
     void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
-    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);
-	
-    int parallelDirectSendManyPatches(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4]);
+    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);	
+    int  parallelDirectSendManyPatches
+	(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4]);
     void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight);
 };
 

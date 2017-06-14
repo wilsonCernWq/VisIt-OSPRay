@@ -147,12 +147,6 @@ struct convexHull
 //  Creation:    
 //
 // ****************************************************************************
-// template <class T> 
-// inline std::string toStr(T x){
-//     std::ostringstream ss;
-//     ss << x;
-//     return ss.str();
-// }
 
 // ****************************************************************************
 //  Function:  
@@ -169,15 +163,15 @@ createColorPPM
 (std::string filename, unsigned char *data, int width, int height);
 
 void 
-writeOutputToFile(std::string filename, float * data, int dimX, int dimY);
+writeOutputToFile(std::string filename, float *data, int dimX, int dimY);
 
 void 
-writeOutputToFileByLine(std::string filename, float * data, int dimX, int dimY);
+writeOutputToFileByLine(std::string filename, float *data, int dimX, int dimY);
 
 void 
-writeDepthBufferToPPM(std::string filename , float * data, int dimX, int dimY);
+writeDepthBufferToPPM(std::string filename, float *data, int dimX, int dimY);
 
 void writeArrayToPPM
-(std::string filename , float * image, int dimX, int dimY);
+(std::string filename, float *image, int dimX, int dimY);
 
 #endif//IMG_METADATA_H
