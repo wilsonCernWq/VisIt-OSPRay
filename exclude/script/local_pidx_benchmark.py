@@ -1,12 +1,11 @@
 import os
 from subprocess import call
-hostname = "cooley.alcf.anl.gov"
-database = "/home/derekhar/Harris/trunk/data/predIncite.pidx/t230278/l0/CCVars.idx"
-timestep = 230278
-prefix = "/gpfs/mira-home/qiwu/timings/visit/nocell"
+hostname = "localhost"
+database = "/usr/sci/cedmav/data/pidx_uintah/CCVars.idx"
+timestep = 229829
 field = "O2"
 
-#---------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
     cPoint = ColorControlPoint()
@@ -23,30 +22,17 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(machine, atts, numThreads, numNodes):
-    dirpath = "n" + str(numNodes) + "p" + str(numThreads)
-    if not os.path.isdir(dirpath):
-        os.makedirs(dirpath)
-    machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
-    machine.GetLaunchProfiles(0).numNodes = numNodes
-    machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd = "bash enterVisItJobs.sh " + prefix + "/" + dirpath
-    machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = "bash exitVisItJobs.sh " + prefix + "/" + dirpath
-    OpenComputeEngine(machine)
+def makePlot(atts):
     OpenDatabase(hostname + ":" + database)
     SetTimeSliderState(timestep)
     AddPlot("Volume", field)
-    # atts.rendererType = atts.Splatting
-    # SetPlotOptions(atts)
-    # DrawPlots()
     def drawPlots(VolumeAtts, VolumeType):
-        # Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        # Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR
+        # RayCastingSLIVR, OSPRaySLIVR, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
         DrawPlots()
-        SaveWindow()
         # camera positions
         c = [GetView3D(), GetView3D(), GetView3D(), GetView3D(), GetView3D(), GetView3D()]
         # side views
@@ -64,35 +50,32 @@ def makePlot(machine, atts, numThreads, numNodes):
         c[5].viewNormal = (-1, 0, 0)
         c[5].viewUp = (0, 1, 0)
         # N front/back views
-        for i in range(4):
+        for i in range(2):
             SetView3D(c[i % 2 + 4])
             DrawPlots()
-            SaveWindow()
         # N side views
-        for i in range(8):
+        for i in range(4):
             SetView3D(c[i % 4])
             DrawPlots()
-            SaveWindow()
+    # do plots
     drawPlots(atts, atts.OSPRaySLIVR)
-    drawPlots(atts, atts.RayCastingSLIVR)
-    drawPlots(atts, atts.RayCasting)
+    #drawPlots(atts, atts.RayCastingSLIVR)
+    #drawPlots(atts, atts.RayCasting)
     #drawPlots(atts, atts.RayCastingIntegration)
     # close all
     DeleteActivePlots()
     CloseDatabase(hostname + ":" + database)
     CloseComputeEngine(hostname)
-    # clean up data
-    call("mv visit*.png " + dirpath, shell=True)
 
-#---------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
 # Set Default Option
 opt = GetDefaultFileOpenOptions("IDX")
-opt['Big Endian'] = 1
+opt['Big Endian'] = 0
 opt['Use RAW format'] = 1
 opt['Use extra cells'] = 1
 SetDefaultFileOpenOptions("IDX", opt)
 
-#---------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
 # setup VolumeAttribute
 # set TF
 VolumeAtts = VolumeAttributes()
@@ -153,15 +136,8 @@ VolumeAtts.lowGradientLightingClampFlag = 0
 VolumeAtts.lowGradientLightingClampValue = 1
 VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
-#---------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------------
 # open remote
-m = GetMachineProfile(hostname)
-#makePlot(m, VolumeAtts, 12, 4)
-#makePlot(m, VolumeAtts, 12, 8)
-#makePlot(m, VolumeAtts, 12, 16)
-makePlot(m, VolumeAtts, 1, 4)
-makePlot(m, VolumeAtts, 1, 8)
-#makePlot(m, VolumeAtts, 1, 16)
-#makePlot(m, VolumeAtts, 1, 32)
+makePlot(VolumeAtts)
 exit()
 
