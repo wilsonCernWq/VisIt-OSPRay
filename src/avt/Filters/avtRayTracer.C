@@ -77,12 +77,19 @@
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
 
-using std::vector;
+// ****************************************************************************
+//
+// Extra functions only in this source
+//
+// ****************************************************************************
 
-bool sortImgMetaDataByDepth(imgMetaData const& before, imgMetaData const& after)
+bool sortImgMetaDataByDepth
+(imgMetaData const& before, imgMetaData const& after)
 { return before.avg_z > after.avg_z; }
-bool sortImgMetaDataByEyeSpaceDepth(imgMetaData const& before, imgMetaData const& after)
+bool sortImgMetaDataByEyeSpaceDepth
+(imgMetaData const& before, imgMetaData const& after)
 { return before.eye_z > after.eye_z; }
+
 
 // ****************************************************************************
 //  Method: avtRayTracer constructor
@@ -152,6 +159,7 @@ avtRayTracer::avtRayTracer()
     ospray = NULL;
     osprayRefresh = true;
 }
+
 
 // ****************************************************************************
 //  Method: avtRayTracer destructor
@@ -327,35 +335,35 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 //
 // ****************************************************************************
 
-void
-avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2], 
-			  float *dst, int dimsDst[2], int posDst[2])
-{
-    for (int _y=0; _y<dimsSrc[1]; _y++)
-	for (int _x=0; _x<dimsSrc[0]; _x++)
-	{
-	    int startingX = posSrc[0];
-	    int startingY = posSrc[1];
+// void
+// avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2], 
+// 			  float *dst, int dimsDst[2], int posDst[2])
+// {
+//     for (int _y=0; _y<dimsSrc[1]; _y++)
+// 	for (int _x=0; _x<dimsSrc[0]; _x++)
+// 	{
+// 	    int startingX = posSrc[0];
+// 	    int startingY = posSrc[1];
 	    
-	    if ((startingX + _x) > (posDst[0]+dimsDst[0]))
-		continue;
+// 	    if ((startingX + _x) > (posDst[0]+dimsDst[0]))
+// 		continue;
 	    
-	    if ((startingY + _y) > (posDst[1]+dimsDst[1]))
-		continue;
+// 	    if ((startingY + _y) > (posDst[1]+dimsDst[1]))
+// 		continue;
 	    
-	    // index in the subimage
-	    int subImgIndex = dimsSrc[0]*_y*4 + _x*4;
-	      // index in the big buffer
-	    int bufferIndex = ( (startingY+_y - posDst[1])*dimsDst[0]*4  + 
-				(startingX+_x - posDst[0])*4 );
+// 	    // index in the subimage
+// 	    int subImgIndex = dimsSrc[0]*_y*4 + _x*4;
+// 	      // index in the big buffer
+// 	    int bufferIndex = ( (startingY+_y - posDst[1])*dimsDst[0]*4  + 
+// 				(startingX+_x - posDst[0])*4 );
 
-	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-	    dst[bufferIndex+0] = imgComm.clamp( (dst[bufferIndex+0] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+0] );
-	    dst[bufferIndex+1] = imgComm.clamp( (dst[bufferIndex+1] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+1] );
-	    dst[bufferIndex+2] = imgComm.clamp( (dst[bufferIndex+2] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+2] );
-	    dst[bufferIndex+3] = imgComm.clamp( (dst[bufferIndex+3] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+3] );
-	}
-}
+// 	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
+// 	    dst[bufferIndex+0] = imgComm.clamp( (dst[bufferIndex+0] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+0] );
+// 	    dst[bufferIndex+1] = imgComm.clamp( (dst[bufferIndex+1] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+1] );
+// 	    dst[bufferIndex+2] = imgComm.clamp( (dst[bufferIndex+2] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+2] );
+// 	    dst[bufferIndex+3] = imgComm.clamp( (dst[bufferIndex+3] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+3] );
+// 	}
+// }
 
 
 
@@ -1022,7 +1030,7 @@ avtRayTracer::Execute(void)
 	    for (int i=0; i<numPatches; i++)
 	    {
 	    	imgMetaData temp;
-	    	temp = extractor.getImgMetaPatch(i);
+	    	temp = extractor.getImgMetaPatch(i); //? avoid extra copy?
 	    	allImgMetaData.push_back(temp);
 	    }
 
@@ -1121,15 +1129,9 @@ avtRayTracer::Execute(void)
 	    	    }
 		}
 
-		// // debug write patch image into file		
-		// writeArrayToPPM
-		//     ("/home/sci/qwu/Desktop/debug/compisiting/patch_" + 
-		//      std::to_string(i),
-		//      tempImgData.imagePatch, 
-		//      currentPatch.dims[0], currentPatch.dims[1]);
-
 	    	//
 	    	// Clean up data
+		//
 	    	if (tempImgData.imagePatch != NULL) {
 		    debug5 << "Free patch data!" << std::endl;
 		    delete[] tempImgData.imagePatch;
@@ -1137,10 +1139,6 @@ avtRayTracer::Execute(void)
 		}
 		tempImgData.imagePatch = NULL;
 	    }
-
-	    // writeArrayToPPM
-	    // 	("/home/sci/qwu/Desktop/debug/compisiting/composed", 
-	    // 	 composedData, renderedWidth, renderedHeight);
 
 	    debug5 << "Clear allImageMetaData" << std::endl;
 	    allImgMetaData.clear();
@@ -1402,17 +1400,17 @@ avtRayTracer::Execute(void)
 	    //
 	    int tags[2] = {1081, 1681};
 	    int tagGather = 2681;
-	    int numMPIRanks = imgComm.GetNumProcs();
-	    int *regions =  new int[numMPIRanks](); // 0 initialized array
 
-	    imgComm.regionAllocation(numMPIRanks, regions);
-	    debug5 << "regionAllocation done!" << std::endl;
+	    int numProcs = imgComm.GetNumProcs();
+	    int *regions = NULL;
+	    imgComm.RegionAllocation(numProcs, regions);
+	    debug5 << "region allocation done!" << std::endl;
 
 	    int myRegionHeight =
 		imgComm.parallelDirectSendManyPatches
 		(extractor.imgDataHashMap, extractor.imageMetaPatchVector,
-		 numPatches, regions, numMPIRanks, tags, fullImageExtents);
-	    imgComm.gatherImages(regions, numMPIRanks, 
+		 numPatches, regions, numProcs, tags, fullImageExtents);
+	    imgComm.gatherImages(regions, numProcs, 
 				 imgComm.intermediateImage, 
 				 imgComm.intermediateImageExtents, 
 				 imgComm.intermediateImageExtents, 

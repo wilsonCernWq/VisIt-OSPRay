@@ -127,9 +127,11 @@ public:
                                                       const double [3]);
     int                   GetSamplesPerRay(void)  { return samplesPerRay; };
     const int            *GetScreen(void)         { return screen; };
-    void                  blendImages(float *src, int dimsSrc[2], int posSrc[2], 
-				      float *dst, int dimsDst[2], int posDst[2]);
-    void                  SetKernelBasedSampling(bool v) { kernelBasedSampling = v; };
+    /* void                  blendImages */
+    /* 	(float *src, int dimsSrc[2], int posSrc[2],  */
+    /* 	 float *dst, int dimsDst[2], int posDst[2]); */
+    void                  SetKernelBasedSampling(bool v)
+    { kernelBasedSampling = v; };
     void                  SetLighting(bool l) { lighting = l; };
     void                  SetLightPosition(double _lightPos[4])
     { for (int i=0;i<4;i++) lightPosition[i] = _lightPos[i]; }
@@ -144,7 +146,8 @@ public:
     void                  SetTrilinear(bool t) { trilinearInterpolation = t; };
     void                  SetRayCastingSLIVR(bool _rayCastingSLIVR)
     { rayCastingSLIVR = _rayCastingSLIVR; };
-    void                  SetRendererSampleRate(double r) { rendererSampleRate = r; }
+    void                  SetRendererSampleRate(double r)
+    { rendererSampleRate = r; }
     // ospray
     void                  SetOSPRay(OSPContext *ptr) { ospray = ptr; }
     void                  SetOSPRayRefresh(bool flag) { osprayRefresh = flag; }
