@@ -46,12 +46,12 @@
 #include <DebugStream.h>
 
 #include <cmath>
+#include <time.h>       /* time */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>     /* srand, rand */
-#include <time.h>       /* time */
-#include <fstream>
 #include <limits>
+#include <fstream>
 #include <algorithm>
 #include <set>
 
@@ -75,7 +75,7 @@ enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 
 avtSLIVRImgCommunicator::avtSLIVRImgCommunicator() : 
     intermediateImageExtents{0},
-    intermediateImageBB{0}
+    intermediateImageBBox{0}
 {
 #ifdef PARALLEL
     MPI_Comm_size(VISIT_MPI_COMM, &numProcs);
@@ -87,11 +87,6 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator() :
     totalPatches = 0;
     intermediateImage = NULL;
     imgBuffer = NULL;
-    // for (int i=0; i<4; i++)
-    // {
-    //     intermediateImageExtents[i] = 0;
-    //     intermediateImageBB[i] = 0;
-    // }
 }
 
 // ****************************************************************************
@@ -112,7 +107,7 @@ avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 }
 
 // ****************************************************************************
-//  Method: avtSLIVRImgCommunicator::
+//  Method: avtSLIVRImgCommunicator::Barrier
 //
 //  Purpose:
 //    Barrier, useful for debugging
@@ -124,41 +119,34 @@ avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 //
 // ****************************************************************************
 
-void avtSLIVRImgCommunicator::barrier() {
+void avtSLIVRImgCommunicator::Barrier() {
 #ifdef PARALLEL
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
 }
 
+
 // ****************************************************************************
-//  Method: avtSLIVRImgCommunicator::getcompositedImage
+//  Method: avtSLIVRImgCommunicator::regionAllocation
 //
 //  Purpose:
-//      Returns the whole image if needed
+//      Arbitrarily allocates regions to MPI ranks
 //
 //  Programmer: Pascal Grosset
-//  Creation: July 2013
+//  Creation:   August 19, 2016
 //
 //  Modifications:
 //
-// ****************************************************************************
+// ***************************************************************************
 
-void avtSLIVRImgCommunicator::getcompositedImage
-(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage)
+void
+avtSLIVRImgCommunicator::RegionAllocation(int numMPIRanks, int *& regions)
 {
-    for (int i=0; i< imgBufferHeight; i++) {
-        for (int j=0; j<imgBufferWidth; j++) {
-            int bufferIndex = (imgBufferWidth*4*i) + (j*4);
-            int wholeImgIndex = (imgBufferWidth*3*i) + (j*3);
-            wholeImage[wholeImgIndex+0] = (imgBuffer[bufferIndex+0] ) * 255;
-            wholeImage[wholeImgIndex+1] = (imgBuffer[bufferIndex+1] ) * 255;
-            wholeImage[wholeImgIndex+2] = (imgBuffer[bufferIndex+2] ) * 255;
-        }
-    }
-    if (imgBuffer != NULL)
-    { delete []imgBuffer; }
-    imgBuffer = NULL;
+    regions = new int[numMPIRanks];
+    // Initial allocation: partition for section rank
+    for (int i=0; i<numMPIRanks; i++) { regions[i] = i; }
 }
+
 
 // ****************************************************************************
 //  Method: avtSLIVRImgCommunicator::ColorImage
@@ -313,6 +301,7 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 (const float *srcImage, int srcExtents[4], int blendExtents[4], 
  float *&dstImage, int dstExtents[4])
 {  
+    debug5 << ">>> avtSLIVRImgCommunicator::BlendFrontToBack" << std::endl;
     // image sizes
     const int srcX = srcExtents[1] - srcExtents[0];
     const int srcY = srcExtents[3] - srcExtents[2];
@@ -324,9 +313,9 @@ avtSLIVRImgCommunicator::BlendFrontToBack
     const int startY = 
 	std::max(std::max(blendExtents[2], srcExtents[2]), dstExtents[2]);
     const int endX = 
-	std::min(std::max(blendExtents[1], srcExtents[1]), dstExtents[1]);
+	std::min(std::min(blendExtents[1], srcExtents[1]), dstExtents[1]);
     const int endY = 
-	std::min(std::max(blendExtents[3], srcExtents[3]), dstExtents[3]);
+	std::min(std::min(blendExtents[3], srcExtents[3]), dstExtents[3]);
 
     for (int y = startY; y < endY; ++y) {
 	for (int x = startX; x < endX; ++x) {	  	    
@@ -361,15 +350,21 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 	    int dstIndex = (dstX * (y-dstExtents[2]) + x-dstExtents[0]) * 4;
 
 	    // front to back compositing
-	    float trans = 1.0f - dstImage[dstIndex + 3];
-	    dstImage[dstIndex+0] = 
-		clamp((srcImage[srcIndex+0] * trans) + dstImage[dstIndex+0]);
-	    dstImage[dstIndex+1] = 
-		clamp((srcImage[srcIndex+1] * trans) + dstImage[dstIndex+1]);
-	    dstImage[dstIndex+2] = 
-		clamp((srcImage[srcIndex+2] * trans) + dstImage[dstIndex+2]);
-	    dstImage[dstIndex+3] = 
-		clamp((srcImage[srcIndex+3] * trans) + dstImage[dstIndex+3]);
+	    if (dstImage[dstIndex + 3] < 1.0f) {
+		float trans = 1.0f - dstImage[dstIndex + 3];
+		dstImage[dstIndex+0] = 
+		    slivr::Clamp(srcImage[srcIndex+0] * trans + 
+				 dstImage[dstIndex+0]);
+		dstImage[dstIndex+1] = 
+		    slivr::Clamp(srcImage[srcIndex+1] * trans + 
+				 dstImage[dstIndex+1]);
+		dstImage[dstIndex+2] = 
+		    slivr::Clamp(srcImage[srcIndex+2] * trans +
+				 dstImage[dstIndex+2]);
+		dstImage[dstIndex+3] = 
+		    slivr::Clamp(srcImage[srcIndex+3] * trans +
+				 dstImage[dstIndex+3]);
+	    }
 	}
     }
 }
@@ -393,6 +388,7 @@ avtSLIVRImgCommunicator::BlendBackToFront
 (const float *srcImage, int srcExtents[4], int blendExtents[4], 
  float *&dstImage, int dstExtents[4])
 {
+    debug5 << ">>> avtSLIVRImgCommunicator::BlendBackToFront" << std::endl;
     // image sizes
     const int srcX = srcExtents[1] - srcExtents[0];
     const int srcY = srcExtents[3] - srcExtents[2];
@@ -404,9 +400,9 @@ avtSLIVRImgCommunicator::BlendBackToFront
     const int startY = 
 	std::max(std::max(blendExtents[2], srcExtents[2]), dstExtents[2]);
     const int endX = 
-	std::min(std::max(blendExtents[1], srcExtents[1]), dstExtents[1]);
+	std::min(std::min(blendExtents[1], srcExtents[1]), dstExtents[1]);
     const int endY = 
-	std::min(std::max(blendExtents[3], srcExtents[3]), dstExtents[3]);
+	std::min(std::min(blendExtents[3], srcExtents[3]), dstExtents[3]);
 
     for (int y = startY; y < endY; ++y) {
 	for (int x = startX; x < endX; ++x) {	  	    
@@ -440,16 +436,20 @@ avtSLIVRImgCommunicator::BlendBackToFront
 	    int srcIndex = (srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4;
 	    int dstIndex = (dstX * (y-dstExtents[2]) + x-dstExtents[0]) * 4;
 
-	    // back to front compositing
-	    float trans = 1.0f - dstImage[dstIndex + 3];
+	    // back to front compositing	    
+	    float trans = 1.0f - srcImage[srcIndex + 3];
 	    dstImage[dstIndex+0] = 
-		clamp((dstImage[dstIndex+0] * trans) + srcImage[srcIndex+0]);
+		slivr::Clamp(dstImage[dstIndex+0] * trans +
+			     srcImage[srcIndex+0]);
 	    dstImage[dstIndex+1] = 
-		clamp((dstImage[dstIndex+1] * trans) + srcImage[srcIndex+1]);
+		slivr::Clamp(dstImage[dstIndex+1] * trans +
+			     srcImage[srcIndex+1]);
 	    dstImage[dstIndex+2] = 
-		clamp((dstImage[dstIndex+2] * trans) + srcImage[srcIndex+2]);
+		slivr::Clamp(dstImage[dstIndex+2] * trans +
+			     srcImage[srcIndex+2]);
 	    dstImage[dstIndex+3] = 
-		clamp((dstImage[dstIndex+3] * trans) + srcImage[srcIndex+3]);
+		slivr::Clamp(dstImage[dstIndex+3] * trans +
+			     srcImage[srcIndex+3]);
 	}
     }
 }
@@ -473,38 +473,6 @@ avtSLIVRImgCommunicator::BlendFrontToBack
  float *& dstImage, int dstExtents[4])
 {
     BlendFrontToBack(srcImage, srcExtents, srcExtents, dstImage, dstExtents);
-    // int widthSrc, heightSrc, widthDst;
-    // widthSrc  = srcExtents[1] - srcExtents[0];
-    // heightSrc = srcExtents[3] - srcExtents[2];
-    // widthDst  = dstExtents[1] - dstExtents[0];
-
-    // for (int patchY=0; patchY<heightSrc; patchY++)
-    // {
-    // 	for (int patchX=0; patchX<widthSrc; patchX++)
-    // 	{
-    // 	    const int startingX = srcExtents[0];
-    // 	    const int startingY = srcExtents[2];
-
-    // 	    const int bufferX = startingX + patchX;
-    // 	    const int bufferY = startingY + patchY;
-
-    // 	    if (bufferX <  dstExtents[0]) { continue; }
-    // 	    if (bufferX >= dstExtents[1]) { continue; }
-    // 	    if (bufferY <  dstExtents[2]) { continue; }
-    // 	    if (bufferY >= dstExtents[3]) { continue; }
-
-    // 	    int srcIndex = (widthSrc * patchY + patchX) * 4;                                     // index in the subimage
-    // 	    int dstIndex = ((bufferY - dstExtents[2]) * widthDst + bufferX - dstExtents[0]) * 4; // index in the big buffer
-
-    // 	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-    // 	    float alpha = 1.0f - dstImage[dstIndex+3];
-    // 	    dstImage[dstIndex+0] = clamp((srcImage[srcIndex + 0] * alpha) + dstImage[dstIndex + 0]);
-    // 	    dstImage[dstIndex+1] = clamp((srcImage[srcIndex + 1] * alpha) + dstImage[dstIndex + 1]);
-    // 	    dstImage[dstIndex+2] = clamp((srcImage[srcIndex + 2] * alpha) + dstImage[dstIndex + 2]);
-    // 	    dstImage[dstIndex+3] = clamp((srcImage[srcIndex + 3] * alpha) + dstImage[dstIndex + 3]);
-    // 	}
-    // }
-
 }
 
 
@@ -526,41 +494,6 @@ avtSLIVRImgCommunicator::BlendBackToFront
  float *& dstImage, int dstExtents[4])
 {
     BlendBackToFront(srcImage, srcExtents, srcExtents, dstImage, dstExtents);
-    // int widthSrc, heightSrc, widthDst;
-    // widthSrc  = srcExtents[1] - srcExtents[0];
-    // heightSrc = srcExtents[3] - srcExtents[2];
-    // widthDst  = dstExtents[1] - dstExtents[0];
-
-    // for (int patchY=0; patchY<heightSrc; patchY++) 
-    // {
-    // 	for (int patchX=0; patchX<widthSrc; patchX++)
-    // 	{
-    // 	    const int startingX = srcExtents[0];
-    // 	    const int startingY = srcExtents[2];
-
-    // 	    const int bufferX = startingX + patchX;
-    // 	    const int bufferY = startingY + patchY;
-
-    // 	    if (bufferX <  dstExtents[0]) { continue; }
-    // 	    if (bufferX >= dstExtents[1]) { continue; }
-    // 	    if (bufferY <  dstExtents[2]) { continue; }
-    // 	    if (bufferY >= dstExtents[3]) { continue; }
-
-    // 	    // index in the subimage
-    // 	    int srcIndex = (widthSrc * patchY + patchX) * 4;
-    // 	    // index in the big buffer
-    // 	    int dstIndex = ((bufferY - dstExtents[2]) * widthDst + bufferX - dstExtents[0]) * 4;
-
-    // 	    // back to Front compositing:
-    // 	    //   composited_i = composited_i-1 * (1.0 - alpha_i) + incoming;
-    // 	    //   alpha = alpha_i-1 * (1- alpha_i)
-    // 	    float alpha = 1.0f - srcImage[srcIndex+3];
-    // 	    dstImage[dstIndex+0] = clamp( (dstImage[dstIndex+0] * alpha) + srcImage[srcIndex+0] );
-    // 	    dstImage[dstIndex+1] = clamp( (dstImage[dstIndex+1] * alpha) + srcImage[srcIndex+1] );
-    // 	    dstImage[dstIndex+2] = clamp( (dstImage[dstIndex+2] * alpha) + srcImage[srcIndex+2] );
-    // 	    dstImage[dstIndex+3] = clamp( (dstImage[dstIndex+3] * alpha) + srcImage[srcIndex+3] );
-    // 	}
-    // }
 }
 
 
@@ -692,64 +625,58 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot
 // **************************************************************************
 
 void
-avtSLIVRImgCommunicator::SerialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height)
+avtSLIVRImgCommunicator::SerialDirectSend
+(int localNumPatches, float *localPatchesDepth, 
+ int *extents, float *imgData, float bgColor[4], int width, int height)
 {
 #ifdef PARALLEL
-    //debug5 << "serialDirectSend" << std::endl;
+    // print out 
+    debug5 << "-- Serial Direct Send --" << std::endl;
 
     float *recvImage = NULL;
-
     int tags[2] = {5781, 5782};
 
-    int totalPatches;
-    int *patchCountPerRank = NULL;
-    float *patchesDepth = NULL;
-    GatherDepthAtRoot(numPatches, localPatchesDepth, totalPatches, patchCountPerRank, patchesDepth);
+    // retrieve depth info through MPI
+    int    totalPatches; // total number of patches
+    int   *totalPatchCountsPerRank = NULL;
+    float *totalPatchDepths = NULL;
+    GatherDepthAtRoot(localNumPatches, localPatchesDepth,
+		      totalPatches, totalPatchCountsPerRank, totalPatchDepths);
 
     if (myRank == 0)
     {
-        //
         // Root
-        int srcSize[2], srcPos[2], dstSize[2], dstPos[2];
-        srcSize[0] = width;  srcSize[1] = height;
-        srcPos[0] = 0;       srcPos[1] = 0;
+        int srcSize[2] = {width, height};
+	int srcPos[2]  = {0, 0};
+	int dstSize[2], dstPos[2];
 
-        //
         // Sort patches we will receive
-        std::multimap<float,int> depthRankPatches;
+        std::multimap<float,int> sortedPatches;
 
-        int index = 0;
-        for (int i=0; i<numProcs; i++)
-            for (int j=0; j<patchCountPerRank[i]; j++)
-            {
-                depthRankPatches.insert( std::pair<float,int>(patchesDepth[index],i) );
-                index++;
+        int patchId = 0;
+        for (int i=0; i<numProcs; i++) {
+            for (int j=0; j<totalPatchCountsPerRank[i]; j++) {
+                sortedPatches.insert
+		    (std::make_pair(totalPatchDepths[patchId++],i));
             }
+	}
 
-
-        //
         // Create space for buffers
-        int recvParams[4];                          // minX, maxX, minY, maxY
-        int imgExtents[4];
-        imgExtents[0] = 0;  imgExtents[1] = width;
-        imgExtents[2] = 0;  imgExtents[3] = height;
+        int recvParams[4]; // minX, maxX, minY, maxY
+        int imgExtents[4] = {0,width,0,height};
 
         recvImage = new float[width*height*4]();
         imgBuffer = new float[width*height*4]();
 
         int localIndex = 0;
 
-        //
         // Compositing
-        for (std::multimap<float,int>::iterator it=depthRankPatches.begin(); it!=depthRankPatches.end(); ++it)
+        for (auto it = sortedPatches.begin(); it != sortedPatches.end(); ++it)
         {
             int rank = (*it).second;
-
-            //debug5 << "\nRecv and blend from " << rank << " depth: " << (*it).first << std::endl;
-
             if (rank != myRank)
             {
-                MPI_Recv(recvParams,             4, MPI_INT,   rank, tags[0],  MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // recv image info
+                MPI_Recv(recvParams, 4, MPI_INT, rank, tags[0], MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // recv image info
                 MPI_Recv(recvImage, width*height*4, MPI_FLOAT, rank, tags[1],  MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // recv image
 
                 dstPos[0]  = dstPos[0];                      dstPos[1]  = dstPos[1];
@@ -769,45 +696,37 @@ avtSLIVRImgCommunicator::SerialDirectSend(int numPatches, float *localPatchesDep
 
             BlendFrontToBack(recvImage, recvParams, imgBuffer, imgExtents);
         }
-        BlendWithBackground(imgBuffer, imgExtents, backgroundColor);
+        BlendWithBackground(imgBuffer, imgExtents, bgColor);
 
-        //writeArrayToPPM("/home/pascal/Desktop/debugImages/full_with back_" + toStr(__index), imgBuffer, imgExtents[1]-imgExtents[0], imgExtents[3]-imgExtents[2]);
     }
     else
     {
-        //
         // Sender
-        for (int i=0; i<numPatches; i++)
+        for (int i=0; i<localNumPatches; i++)
         {
             int imgSize = (extents[i*4 + 1] - extents[i*4 + 0]) * (extents[i*4 + 3] - extents[i*4 + 2]) * 4;
 
             if (imgSize > 0)
             {
-                //debug5 << "Sending: Extents " <<  extents[i*4 + 0] << ", " << extents[i*4 + 1] << ", " << extents[i*4 + 2] << ", " << extents[i*4 + 3] << std::endl;
-                //writeArrayToPPM("/home/pascal/Desktop/debugImages/sending_to_root_from_" + toStr(myRank), &imgData[i*(width*height*4)], (extents[i*4 + 1] - extents[i*4 + 0]), (extents[i*4 + 3] - extents[i*4 + 2]) );
-
                 MPI_Send( &extents[i*4],                       4, MPI_INT,   0, tags[0], MPI_COMM_WORLD);
                 MPI_Send( &imgData[i*(width*height*4)],  imgSize, MPI_FLOAT, 0, tags[1], MPI_COMM_WORLD);
             }
         }
     }
 
-    //debug5 << "Free memory" << std::endl;
-
-    //
     // Cleanup
-    if (patchesDepth != NULL)
-	delete []patchesDepth;
+    if (totalPatchDepths != NULL)
+	delete []totalPatchDepths;
 
-    if (patchCountPerRank != NULL)
-        delete []patchCountPerRank;
+    if (totalPatchCountsPerRank != NULL)
+        delete []totalPatchCountsPerRank;
 
     if (recvImage != NULL)
         delete []recvImage;
 
     recvImage = NULL;
-    patchCountPerRank = NULL;
-    patchesDepth = NULL;
+    totalPatchCountsPerRank = NULL;
+    totalPatchDepths = NULL;
 
 #endif
 }
@@ -999,8 +918,8 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], i
     int numBlends = 0;
     int countBlend = 0;
 
-    intermediateImageBB[0] = intermediateImageBB[2] = 0;
-    intermediateImageBB[1] = intermediateImageBB[3] = 0;
+    intermediateImageBBox[0] = intermediateImageBBox[2] = 0;
+    intermediateImageBBox[1] = intermediateImageBBox[3] = 0;
 
     if (inRegion)
     {
@@ -1042,7 +961,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], i
                     //writeArrayToPPM("/home/pascal/Desktop/debugImages/composited_AFTER_recv_from_" + toStr(regionVector[index]) + "_at_" + toStr(myRank), intermediateImage, intermediateImageExtents[1]-intermediateImageExtents[0], intermediateImageExtents[3]-intermediateImageExtents[2]);
 
 
-                    UpdateBoundingBox(intermediateImageBB, extentsSectionRecv);
+                    UpdateBoundingBox(intermediateImageBBox, extentsSectionRecv);
                     numBlends++;
                 }
             }
@@ -1066,7 +985,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], i
 
                     BlendFrontToBack(recvImageData, recvImageExtents, intermediateImage, intermediateImageExtents);
 
-                    UpdateBoundingBox(intermediateImageBB, recvImageExtents);
+                    UpdateBoundingBox(intermediateImageBBox, recvImageExtents);
                     numBlends++;
                 }
 
@@ -1088,7 +1007,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], i
 
 
     if (numBlends == 0)
-        intermediateImageBB[0]=intermediateImageBB[1]=intermediateImageBB[2]=intermediateImageBB[3] = 0;
+        intermediateImageBBox[0]=intermediateImageBBox[1]=intermediateImageBBox[2]=intermediateImageBBox[3] = 0;
 
     delete []recvMetaRq;
     delete []recvImageRq;
@@ -1191,14 +1110,14 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
     {
 	int startRegionExtents, endRegionExtents, _currentRegionHeight;
 
-	startRegionExtents = clamp(regionHeight * i, 0, height);
-	endRegionExtents = clamp(regionHeight * i + regionHeight, 0, height);
+	startRegionExtents = slivr::Clamp(regionHeight * i, 0, height);
+	endRegionExtents = slivr::Clamp(regionHeight * i + regionHeight, 0, height);
 
 	if ( i == numRanks -1 )
 	    if ( endRegionExtents < height )
 		endRegionExtents = height;
 
-	_currentRegionHeight = clamp(endRegionExtents-startRegionExtents, 0, height);
+	_currentRegionHeight = slivr::Clamp(endRegionExtents-startRegionExtents, 0, height);
 	maxRegionHeight = std::max(maxRegionHeight, _currentRegionHeight);
 
 	regionRankExtents[i*3+0] = startRegionExtents;
@@ -1224,8 +1143,8 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 // **************************************************************************
 int
 avtSLIVRImgCommunicator::parallelDirectSendManyPatches
-(std::multimap<int, imgData> imgDataHashMap, 
- std::vector<imgMetaData> imageMetaPatchVector, 
+(std::multimap<int, slivr::ImgData> imgDataHashMap, 
+ std::vector<slivr::ImgMetaData> imageMetaPatchVector, 
  int numPatches, int region[], int numRegions, 
  int tags[2], int fullImageExtents[4])
 {
@@ -1238,7 +1157,7 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
     for (int i=0; i<4; i++)
     {
 	intermediateImageExtents[i] = 0;
-	intermediateImageBB[i] = 0;
+	intermediateImageBBox[i] = 0;
     }
 
     //
@@ -1278,7 +1197,7 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
     int myEndingHeight   = getScreenRegionEnd
 	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
-    myRegionHeight = clamp( (myEndingHeight-myStartingHeight), 0, height);
+    myRegionHeight = slivr::Clamp( (myEndingHeight-myStartingHeight), 0, height);
 
     debug5 << "myStartingHeight: " << myStartingHeight 
 	   << ", myEndingHeight: " << myEndingHeight 
@@ -1308,7 +1227,7 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
     for (int i=0; i<numPatches; i++)
     {
 	int _patchExtents[4];
-	imgMetaData temp;
+	slivr::ImgMetaData temp;
 	temp = imageMetaPatchVector.at(i);
 
 	_patchExtents[0]=temp.screen_ll[0];   // minX
@@ -1316,7 +1235,7 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 	_patchExtents[2]=temp.screen_ll[1];   // minY
 	_patchExtents[3]=temp.screen_ur[1];   // maxY
 
-	std::multimap<int, imgData>::iterator it = imgDataHashMap.find( i );
+	std::multimap<int, slivr::ImgData>::iterator it = imgDataHashMap.find( i );
 
 	int from, to;
 	int numRegionIntescection = findRegionsForPatch(_patchExtents, fullImageExtents, numRegions, from, to);
@@ -1387,7 +1306,7 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 	for (int j=0; j<extentsPerPartiton[i].size(); j+=6)
 	{
 	    int _patchID = extentsPerPartiton[i][j + 0];
-	    std::multimap<int, imgData>::iterator it = imgDataHashMap.find( _patchID );
+	    std::multimap<int, slivr::ImgData>::iterator it = imgDataHashMap.find( _patchID );
 
 	    int _width = (extentsPerPartiton[i][j+2] - extentsPerPartiton[i][j+1]);
 	    int _bufferSize = _width * (extentsPerPartiton[i][j+4] - extentsPerPartiton[i][j+3]) * 4;
@@ -1572,10 +1491,10 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 
 	//
 	// Create buffer for current region
-	intermediateImageBB[0] = intermediateImageExtents[0] = fullImageExtents[0];
-	intermediateImageBB[1] = intermediateImageExtents[1] = fullImageExtents[1];
-	intermediateImageBB[2] = intermediateImageExtents[2] = myStartingHeight;
-	intermediateImageBB[3] = intermediateImageExtents[3] = myEndingHeight;
+	intermediateImageBBox[0] = intermediateImageExtents[0] = fullImageExtents[0];
+	intermediateImageBBox[1] = intermediateImageExtents[1] = fullImageExtents[1];
+	intermediateImageBBox[2] = intermediateImageExtents[2] = myStartingHeight;
+	intermediateImageBBox[3] = intermediateImageExtents[3] = myEndingHeight;
 	intermediateImage = new float[width * (myEndingHeight - myStartingHeight) * 4]();
 	debug5 << "intermediate image size " << width << ", " << (myEndingHeight - myStartingHeight) << std::endl;
 
@@ -1595,7 +1514,7 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 	}
 
 	if (numBlends == 0) {
-	    intermediateImageBB[0]=intermediateImageBB[1]=intermediateImageBB[2]=intermediateImageBB[3] = 0;
+	    intermediateImageBBox[0]=intermediateImageBBox[1]=intermediateImageBBox[2]=intermediateImageBBox[3] = 0;
 	}
     }
 
@@ -1782,23 +1701,33 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 
 #endif
 }
+
 // ****************************************************************************
-//  Method: avtSLIVRImgCommunicator::regionAllocation
+//  Method: avtSLIVRImgCommunicator::getcompositedImage
 //
 //  Purpose:
-//      Arbitrarily allocates regions to MPI ranks
+//      Returns the whole image if needed
 //
 //  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
+//  Creation: July 2013
 //
 //  Modifications:
 //
-// ***************************************************************************
+// ****************************************************************************
 
-void
-avtSLIVRImgCommunicator::RegionAllocation(int numMPIRanks, int *& regions)
+void avtSLIVRImgCommunicator::getcompositedImage
+(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage)
 {
-    regions = new int[numMPIRanks];
-    // Initial allocation: partition for section rank
-    for (int i=0; i<numMPIRanks; i++) { regions[i] = i; }
+    for (int i=0; i< imgBufferHeight; i++) {
+        for (int j=0; j<imgBufferWidth; j++) {
+            int bufferIndex = (imgBufferWidth*4*i) + (j*4);
+            int wholeImgIndex = (imgBufferWidth*3*i) + (j*3);
+            wholeImage[wholeImgIndex+0] = (imgBuffer[bufferIndex+0] ) * 255;
+            wholeImage[wholeImgIndex+1] = (imgBuffer[bufferIndex+1] ) * 255;
+            wholeImage[wholeImgIndex+2] = (imgBuffer[bufferIndex+2] ) * 255;
+        }
+    }
+    if (imgBuffer != NULL)
+    { delete []imgBuffer; }
+    imgBuffer = NULL;
 }

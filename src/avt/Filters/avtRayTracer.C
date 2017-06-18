@@ -84,10 +84,10 @@
 // ****************************************************************************
 
 bool sortImgMetaDataByDepth
-(imgMetaData const& before, imgMetaData const& after)
+(slivr::ImgMetaData const& before, slivr::ImgMetaData const& after)
 { return before.avg_z > after.avg_z; }
 bool sortImgMetaDataByEyeSpaceDepth
-(imgMetaData const& before, imgMetaData const& after)
+(slivr::ImgMetaData const& before, slivr::ImgMetaData const& after)
 { return before.eye_z > after.eye_z; }
 
 
@@ -358,10 +358,10 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 // 				(startingX+_x - posDst[0])*4 );
 
 // 	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-// 	    dst[bufferIndex+0] = imgComm.clamp( (dst[bufferIndex+0] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+0] );
-// 	    dst[bufferIndex+1] = imgComm.clamp( (dst[bufferIndex+1] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+1] );
-// 	    dst[bufferIndex+2] = imgComm.clamp( (dst[bufferIndex+2] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+2] );
-// 	    dst[bufferIndex+3] = imgComm.clamp( (dst[bufferIndex+3] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+3] );
+// 	    dst[bufferIndex+0] = slivr::Clamp( (dst[bufferIndex+0] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+0] );
+// 	    dst[bufferIndex+1] = slivr::Clamp( (dst[bufferIndex+1] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+1] );
+// 	    dst[bufferIndex+2] = slivr::Clamp( (dst[bufferIndex+2] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+2] );
+// 	    dst[bufferIndex+3] = slivr::Clamp( (dst[bufferIndex+3] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+3] );
 // 	}
 // }
 
@@ -1010,36 +1010,50 @@ avtRayTracer::Execute(void)
 	// time rendering
 	visitTimer->StopTimer(timingVolToImg, "AllPatchRendering");
 	visitTimer->DumpTimings();
-	
+
 	//
-	// SERIAL : Single Processor
+	// SERIAL: Image Composition
 	//
+	int  timingCompositinig = visitTimer->StartTimer();	
 	if (parallelOn == false)
 	{
-	    // Qi debug
-	    debug5 << "Serial compositing!" << std::endl;
-	    int  timingCompositinig = visitTimer->StartTimer();
+	    // SERIAL : Single Processor
+	    debug5 << "Serial Compositing!" << std::endl;
 
-	    //
 	    // Get the metadata for all patches
             // contains the metadata to composite the image
-	    std::vector<imgMetaData> allImgMetaData;
+	    std::vector<slivr::ImgMetaData> allPatchMeta;
+	    std::vector<slivr::ImgData>     allPatchData;
+
+	    //std::multimap<float,std::pair<slivr::ImgMetaData,slivr::ImgData>> 
+	    //  	allPatchInfo;
+
 	    // get the number of patches
 	    int numPatches = extractor.getImgPatchSize(); 
 								       
 	    for (int i=0; i<numPatches; i++)
 	    {
-	    	imgMetaData temp;
-	    	temp = extractor.getImgMetaPatch(i); //? avoid extra copy?
-	    	allImgMetaData.push_back(temp);
+		//slivr::ImgMetaData temp;
+	    	//temp = extractor.GetImgMetaPatch(i); //? avoid extra copy?
+	    	//allPatchMeta.push_back(temp);
+
+	    	allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
+
+		// slivr::ImgMetaData& currMeta = extractor.GetImgMetaPatch(i);
+	    	// slivr::ImgData currData;
+	    	// extractor.GetAndDelImgData /* do shallow copy inside */
+	    	//     (currMeta.patchNumber, currData);
+	    	// allPatchInfo.insert
+		//     (std::make_pair(currMeta.avg_z, 
+		// 		    std::make_pair(currMeta, currData)));
 	    }
 
 	    //
 	    // Sort with the largest z first
 	    //
-	    std::sort(allImgMetaData.begin(), 
-		      allImgMetaData.end(), 
-		      &sortImgMetaDataByEyeSpaceDepth);
+	    std::sort(allPatchMeta.begin(), 
+	    	      allPatchMeta.end(), 
+	    	      &sortImgMetaDataByEyeSpaceDepth);
 
 	    //
 	    // Blend images
@@ -1058,90 +1072,181 @@ avtRayTracer::Execute(void)
 		   << fullImageExtents[1] << " "
 		   << fullImageExtents[2] << " "
 		   << fullImageExtents[3] << std::endl;
+	    
+	    // int timingDebug;
+	    // for (int y = fullImageExtents[2]; y < fullImageExtents[3]; ++y) {
+	    // 	for (int x = fullImageExtents[0]; x < fullImageExtents[1]; ++x) {
+	    // 	    for (int i=0; i<numPatches; i++)
+	    // 	    {
+	    // 		timingDebug = visitTimer->StartTimer();
+	    // 		if (allPatchData.size() <= i) {
+	    // 		    slivr::ImgData currData;
+	    // 		    extractor.GetAndDelImgData /* do shallow copy inside */
+	    // 			(allPatchMeta[i].patchNumber, currData);
+	    // 		    allPatchData.push_back(currData);
+	    // 		}
+	    // 		// retrieve image data
+	    // 		slivr::ImgMetaData currPatchMeta = allPatchMeta[i];
+	    // 		slivr::ImgData     currPatchData = allPatchData[i];
+			
+            //             // time compositing
+	    // 		visitTimer->StopTimer(timingDebug, "Qi-retrieve data");
+	    // 		visitTimer->DumpTimings();			
+	    // 		timingDebug = visitTimer->StartTimer();
+			
+	    // 		// checking
+	    // 		debug5 << "current patch size = " 
+	    // 		       << currPatchMeta.dims[0] << ", " 
+	    // 		       << currPatchMeta.dims[1] << std::endl;
+	    // 		debug5 << "current patch position" 
+	    // 		       << " X_ll = " << currPatchMeta.screen_ll[0] 
+	    // 		       << " Y_ll = " << currPatchMeta.screen_ll[1] 
+	    // 		       << " X_ur = " << currPatchMeta.screen_ur[0] 
+	    // 		       << " Y_ur = " << currPatchMeta.screen_ur[1] 
+	    // 		       << std::endl;
+			
+	    // 		// compose image 
+	    // 		if (x >= currPatchMeta.screen_ll[0] &&
+	    // 		    y >= currPatchMeta.screen_ll[1] &&
+	    // 		    x <  currPatchMeta.screen_ur[0] &&
+	    // 		    y <  currPatchMeta.screen_ur[1]) 
+	    // 		{
+	    // 		    // index in the patch image
+	    // 		    int patchIndex =
+	    // 			((y - currPatchMeta.screen_ll[1]) * currPatchMeta.dims[0] + x - currPatchMeta.screen_ll[0]) * 4;
+	    // 		    // index in the final image
+	    // 		    int fullIndex =
+	    // 			((y - fullImageExtents[2]) * renderedWidth + x - fullImageExtents[0]) * 4;
+	    // 		    // compose
+	    // 		    if (composedData[fullIndex+3] < 1.0)
+	    // 		    {
+	    // 			// back to Front compositing: 
+	    // 			float alpha = 
+	    // 			    (1.0 - currPatchData.imagePatch[patchIndex + 3]);
+	    // 			composedData[fullIndex + 0] = slivr::Clamp
+	    // 			    ((composedData[fullIndex + 0] * alpha) 
+	    // 			     + currPatchData.imagePatch[patchIndex + 0]);
+	    // 			composedData[fullIndex + 1] = slivr::Clamp
+	    // 			    ((composedData[fullIndex + 1] * alpha) 
+	    // 			     + currPatchData.imagePatch[patchIndex + 1]);
+	    // 			composedData[fullIndex + 2] = slivr::Clamp
+	    // 			    ((composedData[fullIndex + 2] * alpha)
+	    // 			     + currPatchData.imagePatch[patchIndex + 2]);
+	    // 			composedData[fullIndex + 3] = slivr::Clamp
+	    // 			    ((composedData[fullIndex + 3] * alpha) 
+	    // 			     + currPatchData.imagePatch[patchIndex + 3]);
+	    // 		    }
+	    // 		}
+	    // 		visitTimer->StopTimer(timingDebug, "Qi-compose");
+	    // 		visitTimer->DumpTimings();			
+			
+	    // 	    }
+	    // 	}
+	    // }
+	    
+	    // for (int i=0; i<numPatches; i++)
+	    // {
+	    // 	if (allPatchData[i].imagePatch != NULL) {
+	    // 	    debug5 << "Free patch data!" << std::endl;
+	    // 	    delete[] allPatchData[i].imagePatch;
+	    // 	    allPatchData[i].imagePatch = NULL;
+	    // 	    debug5 << "Free patch data done!" << std::endl;
+	    // 	}
+	    // }
+	    
 
 	    for (int i=0; i<numPatches; i++)
 	    {
-	    	imgMetaData currentPatch = allImgMetaData[i];		
-	    	imgData tempImgData;
-	    	tempImgData.imagePatch = NULL;
-	    	tempImgData.imagePatch = new float[currentPatch.dims[0] * 
-						   currentPatch.dims[1] * 4];
-	    	extractor.getnDelImgData
-		    (currentPatch.patchNumber, tempImgData);
+	    	slivr::ImgMetaData currentPatch = allPatchMeta[i];
+	    	slivr::ImgData     tempImgData;
 
-		debug5 << "current patch id = " << i << std::endl;
+	    	tempImgData.imagePatch = NULL;
+	    	extractor.GetAndDelImgData /* do shallow copy inside */
+	    	    (currentPatch.patchNumber, tempImgData);
+
 		debug5 << "current patch size = " 
 		       << currentPatch.dims[0] << ", " 
-		       <<  currentPatch.dims[1] << std::endl;
-		debug5 << "current patch starting" 
+		       << currentPatch.dims[1] << std::endl;
+	    	debug5 << "current patch starting" 
 		       << " X = " << currentPatch.screen_ll[0] 
 		       << " Y = " << currentPatch.screen_ll[1] << std::endl;
+	    	debug5 << "current patch ending" 
+		       << " X = " << currentPatch.screen_ur[0] 
+		       << " Y = " << currentPatch.screen_ur[1] << std::endl;
 
-	    	for (int patchY = 0; 
-		     patchY < currentPatch.dims[1]; 
-		     patchY++) 
-		{
-	    	    for (int patchX = 0; 
-			 patchX < currentPatch.dims[0]; 
-			 patchX++)
-	    	    {
-	    		const int startingX = currentPatch.screen_ll[0];
-	    		const int startingY = currentPatch.screen_ll[1];
+		int currExtents[4] = 
+		    {currentPatch.screen_ll[0], currentPatch.screen_ur[0], 
+		     currentPatch.screen_ll[1], currentPatch.screen_ur[1]};
+		imgComm.BlendBackToFront
+		    (tempImgData.imagePatch, currExtents,
+		     composedData, fullImageExtents);
 
-			const int bufferX = startingX + patchX;
-			const int bufferY = startingY + patchY;
+	    	// for (int patchY = 0; 
+	    	//      patchY < currentPatch.dims[1]; 
+	    	//      patchY++) 
+	    	// {
+	    	//     for (int patchX = 0; 
+	    	// 	 patchX < currentPatch.dims[0]; 
+	    	// 	 patchX++)
+	    	//     {
+	    	// 	const int startingX = currentPatch.screen_ll[0];
+	    	// 	const int startingY = currentPatch.screen_ll[1];
+
+	    	// 	const int bufferX = startingX + patchX;
+	    	// 	const int bufferY = startingY + patchY;
 			
-	    		if (bufferX <  fullImageExtents[0]) { continue; }
-	    		if (bufferX >= fullImageExtents[1]) { continue; }
-	    		if (bufferY <  fullImageExtents[2]) { continue; }
-	    		if (bufferY >= fullImageExtents[3]) { continue; }
+	    	// 	if (bufferX <  fullImageExtents[0]) { continue; }
+	    	// 	if (bufferX >= fullImageExtents[1]) { continue; }
+	    	// 	if (bufferY <  fullImageExtents[2]) { continue; }
+	    	// 	if (bufferY >= fullImageExtents[3]) { continue; }
 
-	    		// index in the subimage
-	    		int patchIndex = (patchY * currentPatch.dims[0] + 
-					  patchX) * 4;
-	    		// index in the big buffer
-	    		int bufferIndex = 
-			    ((bufferY - fullImageExtents[2]) * renderedWidth
-			     + bufferX - fullImageExtents[0]) * 4;
+	    	// 	// index in the subimage
+	    	// 	int patchIndex = (patchY * currentPatch.dims[0] + 
+	    	// 			  patchX) * 4;
+	    	// 	// index in the big buffer
+	    	// 	int bufferIndex = 
+	    	// 	    ((bufferY - fullImageExtents[2]) * renderedWidth
+	    	// 	     + bufferX - fullImageExtents[0]) * 4;
 			
-			debug5 << " X = " << bufferX - fullImageExtents[0] 
-			       << " Y = " << bufferY - fullImageExtents[2]
-			       << std::endl;  
+	    	// 	debug5 << " X = " << bufferX - fullImageExtents[0] 
+	    	// 	       << " Y = " << bufferY - fullImageExtents[2]
+	    	// 	       << std::endl;  
 
-	    		if (composedData[bufferIndex+3] < 1.0)
-	    		{
-	    		    // back to Front compositing: 
-	    		    float alpha = 
-				(1.0 - tempImgData.imagePatch[patchIndex + 3]);
-	    		    composedData[bufferIndex + 0] = imgComm.clamp
-				((composedData[bufferIndex + 0] * alpha) 
-				 + tempImgData.imagePatch[patchIndex + 0]);
-	    		    composedData[bufferIndex + 1] = imgComm.clamp
-				((composedData[bufferIndex + 1] * alpha) 
-				 + tempImgData.imagePatch[patchIndex + 1]);
-	    		    composedData[bufferIndex + 2] = imgComm.clamp
-				((composedData[bufferIndex + 2] * alpha)
-				 + tempImgData.imagePatch[patchIndex + 2]);
-	    		    composedData[bufferIndex + 3] = imgComm.clamp
-				((composedData[bufferIndex + 3] * alpha) 
-				 + tempImgData.imagePatch[patchIndex + 3]);
-	    		}
-	    	    }
-		}
+	    	// 	if (composedData[bufferIndex+3] < 1.0)
+	    	// 	{
+	    	// 	    // back to Front compositing: 
+	    	// 	    float alpha = 
+	    	// 		(1.0 - tempImgData.imagePatch[patchIndex + 3]);
+	    	// 	    composedData[bufferIndex + 0] = slivr::Clamp
+	    	// 		((composedData[bufferIndex + 0] * alpha) 
+	    	// 		 + tempImgData.imagePatch[patchIndex + 0]);
+	    	// 	    composedData[bufferIndex + 1] = slivr::Clamp
+	    	// 		((composedData[bufferIndex + 1] * alpha) 
+	    	// 		 + tempImgData.imagePatch[patchIndex + 1]);
+	    	// 	    composedData[bufferIndex + 2] = slivr::Clamp
+	    	// 		((composedData[bufferIndex + 2] * alpha)
+	    	// 		 + tempImgData.imagePatch[patchIndex + 2]);
+	    	// 	    composedData[bufferIndex + 3] = slivr::Clamp
+	    	// 		((composedData[bufferIndex + 3] * alpha) 
+	    	// 		 + tempImgData.imagePatch[patchIndex + 3]);
+	    	// 	}
+	    	//     }
+	    	//    }
 
 	    	//
 	    	// Clean up data
-		//
+	    	//
 	    	if (tempImgData.imagePatch != NULL) {
-		    debug5 << "Free patch data!" << std::endl;
-		    delete[] tempImgData.imagePatch;
-		    debug5 << "Free patch data done!" << std::endl;
-		}
-		tempImgData.imagePatch = NULL;
+	    	    debug5 << "Free patch data!" << std::endl;
+	    	    delete[] tempImgData.imagePatch;
+	    	    debug5 << "Free patch data done!" << std::endl;
+	    	}
+	    	tempImgData.imagePatch = NULL;
 	    }
 
 	    debug5 << "Clear allImageMetaData" << std::endl;
-	    allImgMetaData.clear();
+	    //allPatchInfo.clear();
+	    allPatchMeta.clear();
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
@@ -1327,10 +1432,6 @@ avtRayTracer::Execute(void)
 	    slivr::CheckMemoryHere
 		("avtRayTracer::Execute final compositing done");
 
-	    // time compositing
-	    visitTimer->StopTimer(timingCompositinig, "Compositing");
-	    visitTimer->DumpTimings();
-
 	} else { 
 
 	    //
@@ -1343,7 +1444,7 @@ avtRayTracer::Execute(void)
 	    // Get the metadata for all patches
 	    //
 	    // contains the metadata to composite the image
-	    std::vector<imgMetaData> allImgMetaData; 
+	    std::vector<slivr::ImgMetaData> allImgMetaData; 
 	    // get the number of patches for current rank
 	    int numPatches = extractor.getImgPatchSize(); 
 
@@ -1368,8 +1469,8 @@ avtRayTracer::Execute(void)
 	    {
 		for (int i=0; i<numPatches; i++)
 		{
-		    imgMetaData temp;
-		    temp = extractor.getImgMetaPatch(i);
+		    slivr::ImgMetaData temp;
+		    temp = extractor.GetImgMetaPatch(i);
 
 		    imgExtents[0]=temp.screen_ll[0];   // minX
 		    imgExtents[1]=temp.screen_ur[0];   // maxX
@@ -1428,7 +1529,7 @@ avtRayTracer::Execute(void)
 		delete []imgComm.intermediateImage;
 	    imgComm.intermediateImage = NULL;		
 	    debug5 << "cleaning done!" << std::endl;
-	    imgComm.barrier();
+	    imgComm.Barrier();
 	    debug5 << "Global compositing done!" << std::endl;
 		
 	    //
@@ -1504,7 +1605,7 @@ avtRayTracer::Execute(void)
 
 			if ( insideComposited )
 			{
-			    if (imgComm.imgBuffer[indexComposited*4 + 3] == 0)
+			    if (imgComm.GetFinalImageBuffer()[indexComposited*4 + 3] == 0)
 			    {
 				// No data from rendering here! - Good
 				imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
@@ -1529,13 +1630,13 @@ avtRayTracer::Execute(void)
 				    if ( checkInBounds(dbounds, worldCoordinates) )
 				    {
 					// Completely inside bounding box
-					float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
+					float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
 					imgFinal[index*3 + 0] = 
-					    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ),1.0) * 255;
+					    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ),1.0) * 255;
 					imgFinal[index*3 + 1] = 
-					    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ),1.0) * 255;
+					    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ),1.0) * 255;
 					imgFinal[index*3 + 2] = 
-					    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ),1.0) * 255;
+					    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ),1.0) * 255;
 				    }
 				    else
 				    {
@@ -1550,13 +1651,13 @@ avtRayTracer::Execute(void)
 
 					    if (tMin <= tIntersect)
 					    {
-						float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
+						float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
 						imgFinal[index*3 + 0] = 
-						    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
+						    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
 						imgFinal[index*3 + 1] = 
-						    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
+						    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
 						imgFinal[index*3 + 2] =
-						    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
+						    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
 						// volume infront
 					    }
 					    else
@@ -1570,26 +1671,26 @@ avtRayTracer::Execute(void)
 					}
 					else
 					{
-					    float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
+					    float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
 					    imgFinal[index*3 + 0] = 
-						std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
 					    imgFinal[index*3 + 1] = 
-						std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
 					    imgFinal[index*3 + 2] = 
-						std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
+						std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
 					}
 				    }
 				}
 				else
 				{
 				    //opaqueImageZB[index] == 1 - Only data, no background : Good
-				    float alpha = (1.0 - imgComm.imgBuffer[indexComposited*4+3]);
+				    float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
 				    imgFinal[index*3 + 0] = 
-					std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 0] ), 1.0) * 255;
+					std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
 				    imgFinal[index*3 + 1] = 
-					std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 1] ), 1.0) * 255;
+					std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
 				    imgFinal[index*3 + 2] = 
-					std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.imgBuffer[indexComposited*4 + 2] ), 1.0) * 255;
+					std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
 				}
 			    }
 
@@ -1619,16 +1720,18 @@ avtRayTracer::Execute(void)
 		delete []localPatchesDepth;
 	    pvm->Delete();
 
-	    visitTimer->StopTimer(timingCompositinig, "Compositing");
-	    visitTimer->DumpTimings();
-
 	}
 
-	// check time
-	visitTimer->StopTimer(timingIndex, "Ray Tracing");
+	// time compositing
+	visitTimer->StopTimer(timingCompositinig, "Compositing");
 	visitTimer->DumpTimings();
+	
+	//// check time
+	//visitTimer->StopTimer(timingIndex, "Ray Tracing");
+	//visitTimer->DumpTimings();
 
-	return;
+	// end of SLIVR raycasting/OSPRay
+	//return;
 
     } else {
 
@@ -1776,9 +1879,11 @@ avtRayTracer::Execute(void)
 	//
 	SetOutput(image);
 
-	visitTimer->StopTimer(timingIndex, "Ray Tracing");
-	visitTimer->DumpTimings();
     }
+
+    visitTimer->StopTimer(timingIndex, "Ray Tracing");
+    visitTimer->DumpTimings();
+
 }
 
 

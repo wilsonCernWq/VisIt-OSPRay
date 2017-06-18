@@ -225,7 +225,7 @@ void OSPContext::InitOSP(bool flag, bool debug, int numThreads)
     enabledOSPRay = true;
     OSPDevice device = ospGetCurrentDevice();
     if (device == nullptr) {
-	debug5 << "Initializing OSPRay" 
+	debug5 << "Initialize OSPRay" 
 	       << " debug: " << debug  
 	       << " numThreads: " << numThreads
 	       << std::endl;
@@ -234,12 +234,16 @@ void OSPContext::InitOSP(bool flag, bool debug, int numThreads)
 	if (numThreads != -1) {
 	    ospDeviceSet1i(device, "numThreads", numThreads);
 	}
-	ospDeviceCommit(device);
-	ospSetCurrentDevice(device);
+	ospDeviceSetErrorFunc
+	    (device, [](OSPError, const char *msg) { std::cerr << msg; });
 	ospDeviceSetStatusFunc
 	    (device, [](const char *msg) { debug5 << msg; });
 	ospDeviceCommit(device);
-	ospLoadModule("visit");
+	ospSetCurrentDevice(device);
+	OSPError err = ospLoadModule("visit");
+	if (err != OSP_NO_ERROR) {
+	    std::cerr << "can't load visit module" << std::endl;
+	}
     }
     refreshData = flag;
 }

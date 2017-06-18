@@ -65,7 +65,7 @@ namespace slivr
 };
 
 // ****************************************************************************
-//  Struct:  imgMetaData
+//  Struct:  ImgMetaData
 //
 //  Purpose:
 //    Holds information about patches but not the image 
@@ -74,23 +74,25 @@ namespace slivr
 //  Creation:   
 //
 // ****************************************************************************
-struct imgMetaData
+namespace slivr
 {
-    int procId;       // processor that produced the patch
-    int patchNumber;  // id of the patch on that processor - with procId, acts as a key
-    int destProcId;   // destination proc where this patch gets composited
-    int inUse;        // whether the patch is composed locally or not
-    int dims[2];      // height, width
-    int screen_ll[2]; // position in the final image
-    int screen_ur[2];
-    float avg_z;      // camera space z = depth of the patch - used for compositing
-    float eye_z;      // camera space z
-    float clip_z;     // clip space z
+    struct ImgMetaData
+    {
+	int procId;       // processor that produced the patch
+	int patchNumber;  // id of the patch on that processor
+	int destProcId;   // destination proc where this patch gets composited
+	int inUse;        // whether the patch is composed locally or not
+	int dims[2];      // height, width
+	int screen_ll[2]; // (lower left)  position in the final image
+	int screen_ur[2]; // (upper right)
+	float avg_z;      // camera space depth of the patch (average)
+	float eye_z;      // camera space z
+	float clip_z;     // clip space z
+    };
 };
 
-
 // ****************************************************************************
-//  Struct:  imgData
+//  Struct:  ImgData
 //
 //  Purpose:
 //    Holds the image data generated
@@ -99,19 +101,19 @@ struct imgMetaData
 //  Creation:    
 //
 // ****************************************************************************
-struct imgData
+namespace slivr 
 {
-    int procId;         // processor that produced the patch
-    int patchNumber;
-    // id of the patch on that processor
-    // - with procId, acts as a key
-
-    float *imagePatch;  // the image data - RGBA
-
-    bool operator==(const imgData &a){
-        return (patchNumber == a.patchNumber);
-    }
-};
+    struct ImgData
+    {
+	// acts as a key
+	int procId;      // processor that produced the patch
+	int patchNumber; // id of the patch on that processor
+	float *imagePatch = NULL; // the image data - RGBA
+	bool operator==(const ImgData &a){
+	    return (patchNumber == a.patchNumber);
+	}
+    };
+}
 
 // ****************************************************************************
 //  Struct:  convexHull
@@ -147,6 +149,19 @@ struct convexHull
 //  Creation:    
 //
 // ****************************************************************************
+namespace slivr
+{
+
+    template<typename T>
+    T Clamp(T value, T vmin, T vmax)
+    { return std::max(std::min(value, vmax), vmin); }
+
+    template<typename T>
+    T Clamp(T x)
+    { return std::min(std::max(x, (T)0.0), (T)1.0); }
+
+};
+
 
 // ****************************************************************************
 //  Function:  
