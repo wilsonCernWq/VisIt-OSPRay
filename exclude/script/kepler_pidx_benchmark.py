@@ -1,10 +1,12 @@
 import os
 from subprocess import call
-hostname = "cooley.alcf.anl.gov"
-database = "/home/derekhar/Harris/trunk/data/predIncite.pidx/t230278/l0/CCVars.idx"
-timestep = 230278
-prefix = "/gpfs/mira-home/qiwu/timings/visit/check"
+hostname = "wopr.sci.utah.edu"
+database = "/usr/sci/cedmav/data/pidx_uintah/CCVars.idx"
+timestep = 229829
+prefix='/home/sci/qwu/Desktop/timing/06-18'
+script='/home/sci/qwu/VisIt/visitOSPRayCPU/working/exclude/script/tools/wopr'
 field = "O2"
+
 
 #---------------------------------------------------------------------------------------------------------------
 # functions
@@ -23,16 +25,16 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(machine, atts, numThreads, numNodes):
+def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True):
     dirpath = "n" + str(numNodes) + "p" + str(numThreads)
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd = "source enterVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPreCmd = "source " + script + "/enterVisItJobs.sh " + prefix + "/" + dirpath
     machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source exitVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source " + script + "/exitVisItJobs.sh " + prefix + "/" + dirpath
     OpenComputeEngine(machine)
     OpenDatabase(hostname + ":" + database)
     SetTimeSliderState(timestep)
@@ -73,10 +75,11 @@ def makePlot(machine, atts, numThreads, numNodes):
             SetView3D(c[i % 4])
             DrawPlots()
             SaveWindow()
-    drawPlots(atts, atts.OSPRaySLIVR)
+    if (useOSPRay):
+        drawPlots(atts, atts.OSPRaySLIVR)
     drawPlots(atts, atts.RayCastingSLIVR)
     drawPlots(atts, atts.RayCasting)
-    #drawPlots(atts, atts.RayCastingIntegration)
+    drawPlots(atts, atts.RayCastingIntegration)
     # close all
     DeleteActivePlots()
     CloseDatabase(hostname + ":" + database)
@@ -87,7 +90,7 @@ def makePlot(machine, atts, numThreads, numNodes):
 #---------------------------------------------------------------------------------------------------------------
 # Set Default Option
 opt = GetDefaultFileOpenOptions("IDX")
-opt['Big Endian'] = 1
+opt['Big Endian'] = 0
 opt['Use RAW format'] = 1
 opt['Use extra cells'] = 1
 SetDefaultFileOpenOptions("IDX", opt)
@@ -156,12 +159,15 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 #---------------------------------------------------------------------------------------------------------------
 # open remote
 m = GetMachineProfile(hostname)
-#makePlot(m, VolumeAtts, 12, 4)
-#makePlot(m, VolumeAtts, 12, 8)
-#makePlot(m, VolumeAtts, 12, 16)
-#makePlot(m, VolumeAtts, 1, 4)
+makePlot(m, VolumeAtts, 16, 2, False)
+makePlot(m, VolumeAtts, 16, 4, False)
+makePlot(m, VolumeAtts, 16, 8, False)
+makePlot(m, VolumeAtts, 16, 16, False)
+makePlot(m, VolumeAtts, 16, 32, False)
+makePlot(m, VolumeAtts, 1, 2)
+makePlot(m, VolumeAtts, 1, 4)
 makePlot(m, VolumeAtts, 1, 8)
-#makePlot(m, VolumeAtts, 1, 16)
-#makePlot(m, VolumeAtts, 1, 32)
+makePlot(m, VolumeAtts, 1, 16)
+makePlot(m, VolumeAtts, 1, 32)
 exit()
-
+call("mv *.vlog *.timings " + prefix, shell=True)
