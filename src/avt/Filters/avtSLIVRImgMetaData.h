@@ -125,18 +125,24 @@ namespace slivr
 //  Creation:    
 //
 // ****************************************************************************
-struct convexHull
+namespace slivr 
 {
-    int numPatches;
-    // [0] rows along x axis, [1] rows along y axis, [2] rows along z axis
-    int arrangement[3];
-    float extents[6];       // minX, maxX   minY, maxY   minZ, maxZ
-    float cellDims[3];      // x, y, z
-    float tolerance;  
-    // amount of overlap that is considered ok
-    // -- typically 2 cells for cell centered data
-    // 0: no overlap    1: overlpa in Z    2: overlap in Y    3: overlap in Z
-    int overlap(convexHull _hull);
+    struct ConvexHull
+    {
+	int numPatches;
+	// [0] rows along x axis, [1] rows along y axis, [2] rows along z axis
+	int arrangement[3];
+	float extents[6];       // minX, maxX   minY, maxY   minZ, maxZ
+	float cellDims[3];      // x, y, z
+	float tolerance;  
+	// amount of overlap that is considered ok
+	// -- typically 2 cells for cell centered data
+	// 0: no overlap  
+	// 1: overlpa in Z 
+	// 2: overlap in Y
+	// 3: overlap in Z
+	int Overlap(ConvexHull);
+    };
 };
 
 // ****************************************************************************

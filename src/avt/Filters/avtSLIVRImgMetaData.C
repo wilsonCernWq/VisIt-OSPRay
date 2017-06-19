@@ -173,7 +173,8 @@ writeOutputToFileByLine(std::string filename, float * data, int dimX, int dimY)
     outputFile.close();
 }
 
-void writeDepthBufferToPPM(std::string filename , float * data, int dimX, int dimY)
+void writeDepthBufferToPPM
+(std::string filename , float * data, int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
 			     std::ios::out | std::ios::binary);
@@ -224,7 +225,7 @@ void writeArrayToPPM(std::string filename , float * image, int dimX, int dimY)
 //  Creation:    
 //
 // ****************************************************************************
-int convexHull::overlap(convexHull _hull) 
+int slivr::ConvexHull::Overlap(ConvexHull _hull) 
 {
     if ( (_hull.extents[1] < extents[0]) || 
 	 (_hull.extents[0] > extents[1]) )   // No overlap in X

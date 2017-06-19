@@ -181,10 +181,9 @@ void VolumeInfo::SetVolume(void *ptr, int type,
     ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 0);
     ospSet1i(volume, "singleShade", 1);
-    int volumeInitIndex = visitTimer->StartTimer();
+    //int volumeInitIndex = visitTimer->StartTimer();
     ospCommit(volume);
-    visitTimer->StopTimer(volumeInitIndex, "Commit OSPRay patch");
-    visitTimer->DumpTimings();
+    //visitTimer->StopTimer(volumeInitIndex, "Commit OSPRay patch");
 }
 void VolumeInfo::SetSamplingRate(float r) {
     ospSet1f(volume, "samplingRate", r);

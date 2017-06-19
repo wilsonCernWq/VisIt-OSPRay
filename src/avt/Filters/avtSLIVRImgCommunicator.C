@@ -212,6 +212,7 @@ avtSLIVRImgCommunicator::PlaceImage
     const int endingX = std::min(srcExtents[1], dstExtents[1]);
     const int endingY = std::min(srcExtents[3], dstExtents[3]);
 
+    #pragma omp parallel for
     for (int y = startingY; y < endingY; y++) {
 	for (int x = startingX; x < endingX; x++) {
 	    // check error in debug

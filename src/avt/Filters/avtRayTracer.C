@@ -323,51 +323,6 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 
 
 // ****************************************************************************
-//  Function:
-//
-//  Purpose:
-//      Blend images
-//
-//  Programmer: August 14, 2016
-//  Creation:   Pascal Grosset
-//
-//  Modifications:
-//
-// ****************************************************************************
-
-// void
-// avtRayTracer::blendImages(float *src, int dimsSrc[2], int posSrc[2], 
-// 			  float *dst, int dimsDst[2], int posDst[2])
-// {
-//     for (int _y=0; _y<dimsSrc[1]; _y++)
-// 	for (int _x=0; _x<dimsSrc[0]; _x++)
-// 	{
-// 	    int startingX = posSrc[0];
-// 	    int startingY = posSrc[1];
-	    
-// 	    if ((startingX + _x) > (posDst[0]+dimsDst[0]))
-// 		continue;
-	    
-// 	    if ((startingY + _y) > (posDst[1]+dimsDst[1]))
-// 		continue;
-	    
-// 	    // index in the subimage
-// 	    int subImgIndex = dimsSrc[0]*_y*4 + _x*4;
-// 	      // index in the big buffer
-// 	    int bufferIndex = ( (startingY+_y - posDst[1])*dimsDst[0]*4  + 
-// 				(startingX+_x - posDst[0])*4 );
-
-// 	    // back to Front compositing: composited_i = composited_i-1 * (1.0 - alpha_i) + incoming; alpha = alpha_i-1 * (1- alpha_i)
-// 	    dst[bufferIndex+0] = slivr::Clamp( (dst[bufferIndex+0] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+0] );
-// 	    dst[bufferIndex+1] = slivr::Clamp( (dst[bufferIndex+1] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+1] );
-// 	    dst[bufferIndex+2] = slivr::Clamp( (dst[bufferIndex+2] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+2] );
-// 	    dst[bufferIndex+3] = slivr::Clamp( (dst[bufferIndex+3] * (1.0 - src[subImgIndex+3])) + src[subImgIndex+3] );
-// 	}
-// }
-
-
-
-// ****************************************************************************
 //  Method: avtRayTracer::unProject
 //
 //  Purpose:
@@ -384,30 +339,6 @@ double normVec(double vec[3])
     return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
 }
 
-void
-unProjectKeepPan(int _x, int _y, float _z, double _worldCoordinates[3], 
-		 int _width, int _height, vtkMatrix4x4 *invModelViewProj)
-{
-	double worldCoordinates[4] = {0,0,0,1};
-	double in[4] = {0,0,0,1};
-	in[0] = (_x - _width/2. )/(_width/2.);
-	in[1] = (_y - _height/2.)/(_height/2.);
-	in[2] = _z;
-
-	invModelViewProj->MultiplyPoint(in, worldCoordinates);
-
-	if (worldCoordinates[3] == 0)
-		debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
-
-	worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
-	worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
-	worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
-	worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
-
-	_worldCoordinates[0] = worldCoordinates[0];
-	_worldCoordinates[1] = worldCoordinates[1];
-	_worldCoordinates[2] = worldCoordinates[2];
-}
 
 void
 avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3],
@@ -456,40 +387,43 @@ double
 avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], 
 		      int _width, int _height, vtkMatrix4x4 *modelViewProj)
 {
-	double normDevCoord[4];
-	double worldCoordinates[4] = {0,0,0,1};
-	worldCoordinates[0] = _worldCoordinates[0];
-	worldCoordinates[1] = _worldCoordinates[1];
-	worldCoordinates[2] = _worldCoordinates[2];
+    return slivr::ProjectWorldToScreen
+	(_worldCoordinates, _width, _height, panPercentage, view.imageZoom, modelViewProj, pos2D);
+	// double normDevCoord[4];
+	// double worldCoordinates[4] = {0,0,0,1};
+	// worldCoordinates[0] = _worldCoordinates[0];
+	// worldCoordinates[1] = _worldCoordinates[1];
+	// worldCoordinates[2] = _worldCoordinates[2];
 
-	// World to Clip space (-1 - 1)
-	modelViewProj->MultiplyPoint(worldCoordinates, normDevCoord);
+	// // World to Clip space (-1 - 1)
+	// modelViewProj->MultiplyPoint(worldCoordinates, normDevCoord);
 
-	if (normDevCoord[3] == 0)
-	{
-		debug5 << "avtMassVoxelExtractor::project division by 0 error!" << endl;
-		debug5 << "worldCoordinates: " 
-		       << worldCoordinates[0] << ", " 
-		       << worldCoordinates[1] << ", " 
-		       << worldCoordinates[2] << "   " 
-		       << normDevCoord[0] << ", " 
-		       << normDevCoord[1] << ", " 
-		       << normDevCoord[2] << endl;
-		debug5 << "Matrix: " << *modelViewProj << endl;
-	}
+	// if (normDevCoord[3] == 0)
+	// {
+	// 	debug5 << "Err: avtMassVoxelExtractor::project "
+	// 	       << "Division by 0 error!" << endl;
+	// 	debug5 << "worldCoordinates: " 
+	// 	       << worldCoordinates[0] << ", " 
+	// 	       << worldCoordinates[1] << ", " 
+	// 	       << worldCoordinates[2] << "   " 
+	// 	       << normDevCoord[0] << ", " 
+	// 	       << normDevCoord[1] << ", " 
+	// 	       << normDevCoord[2] << endl;
+	// 	debug5 << "Matrix: " << *modelViewProj << endl;
+	// }
 
-	normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
-	normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
-	normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
-	normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
+	// normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
+	// normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
+	// normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
+	// normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
 
-	pos2D[0] = round( normDevCoord[0]*(_width/2.)  + (_width/2.)  );
-	pos2D[1] = round( normDevCoord[1]*(_height/2.) + (_height/2.) );
+	// pos2D[0] = round( normDevCoord[0]*(_width/2.)  + (_width/2.)  );
+	// pos2D[1] = round( normDevCoord[1]*(_height/2.) + (_height/2.) );
 
-	pos2D[0] += round(_width * panPercentage[0]  * view.imageZoom);
-	pos2D[1] += round(_height * panPercentage[1]  * view.imageZoom);
+	// pos2D[0] += round(_width * panPercentage[0]  * view.imageZoom);
+	// pos2D[1] += round(_height * panPercentage[1]  * view.imageZoom);
 
-	return normDevCoord[2];
+	// return normDevCoord[2];
 }
 
 
@@ -753,7 +687,7 @@ avtRayTracer::Execute(void)
 	extractor.SetTrilinear(true);
 
     //
-    // Ray casting: SLIVR ~ Before Rendering
+    // Before Rendering
     //
     double dbounds[6];  // Extents of the volume in world coordinates
     vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
@@ -968,6 +902,8 @@ avtRayTracer::Execute(void)
 	extractor.setRGBBuffer  (opaqueImageData, screen[0],screen[1]);
 	int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
 	extractor.setBufferExtents(bufferScreenExtents);
+	//writeDepthBufferToPPM
+	//    ("opaqueImageZB", opaqueImageZB, screen[0], screen[1]);
     }
 
     //
@@ -1000,8 +936,7 @@ avtRayTracer::Execute(void)
 	avtImage_p image  = rc.GetTypedOutput();
 
 	// start timing
-	int timingVolToImg = 0;
-	timingVolToImg = visitTimer->StartTimer(); 
+	int timingVolToImg = visitTimer->StartTimer(); 
 	
 	// execute rendering
         // this will call the execute function
@@ -1009,7 +944,6 @@ avtRayTracer::Execute(void)
 
 	// time rendering
 	visitTimer->StopTimer(timingVolToImg, "AllPatchRendering");
-	visitTimer->DumpTimings();
 
 	//
 	// SERIAL: Image Composition
@@ -1025,27 +959,12 @@ avtRayTracer::Execute(void)
 	    std::vector<slivr::ImgMetaData> allPatchMeta;
 	    std::vector<slivr::ImgData>     allPatchData;
 
-	    //std::multimap<float,std::pair<slivr::ImgMetaData,slivr::ImgData>> 
-	    //  	allPatchInfo;
-
 	    // get the number of patches
 	    int numPatches = extractor.getImgPatchSize(); 
 								       
 	    for (int i=0; i<numPatches; i++)
 	    {
-		//slivr::ImgMetaData temp;
-	    	//temp = extractor.GetImgMetaPatch(i); //? avoid extra copy?
-	    	//allPatchMeta.push_back(temp);
-
 	    	allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
-
-		// slivr::ImgMetaData& currMeta = extractor.GetImgMetaPatch(i);
-	    	// slivr::ImgData currData;
-	    	// extractor.GetAndDelImgData /* do shallow copy inside */
-	    	//     (currMeta.patchNumber, currData);
-	    	// allPatchInfo.insert
-		//     (std::make_pair(currMeta.avg_z, 
-		// 		    std::make_pair(currMeta, currData)));
 	    }
 
 	    //
@@ -1071,182 +990,48 @@ avtRayTracer::Execute(void)
 		   << fullImageExtents[0] << " "
 		   << fullImageExtents[1] << " "
 		   << fullImageExtents[2] << " "
-		   << fullImageExtents[3] << std::endl;
-	    
-	    // int timingDebug;
-	    // for (int y = fullImageExtents[2]; y < fullImageExtents[3]; ++y) {
-	    // 	for (int x = fullImageExtents[0]; x < fullImageExtents[1]; ++x) {
-	    // 	    for (int i=0; i<numPatches; i++)
-	    // 	    {
-	    // 		timingDebug = visitTimer->StartTimer();
-	    // 		if (allPatchData.size() <= i) {
-	    // 		    slivr::ImgData currData;
-	    // 		    extractor.GetAndDelImgData /* do shallow copy inside */
-	    // 			(allPatchMeta[i].patchNumber, currData);
-	    // 		    allPatchData.push_back(currData);
-	    // 		}
-	    // 		// retrieve image data
-	    // 		slivr::ImgMetaData currPatchMeta = allPatchMeta[i];
-	    // 		slivr::ImgData     currPatchData = allPatchData[i];
-			
-            //             // time compositing
-	    // 		visitTimer->StopTimer(timingDebug, "Qi-retrieve data");
-	    // 		visitTimer->DumpTimings();			
-	    // 		timingDebug = visitTimer->StartTimer();
-			
-	    // 		// checking
-	    // 		debug5 << "current patch size = " 
-	    // 		       << currPatchMeta.dims[0] << ", " 
-	    // 		       << currPatchMeta.dims[1] << std::endl;
-	    // 		debug5 << "current patch position" 
-	    // 		       << " X_ll = " << currPatchMeta.screen_ll[0] 
-	    // 		       << " Y_ll = " << currPatchMeta.screen_ll[1] 
-	    // 		       << " X_ur = " << currPatchMeta.screen_ur[0] 
-	    // 		       << " Y_ur = " << currPatchMeta.screen_ur[1] 
-	    // 		       << std::endl;
-			
-	    // 		// compose image 
-	    // 		if (x >= currPatchMeta.screen_ll[0] &&
-	    // 		    y >= currPatchMeta.screen_ll[1] &&
-	    // 		    x <  currPatchMeta.screen_ur[0] &&
-	    // 		    y <  currPatchMeta.screen_ur[1]) 
-	    // 		{
-	    // 		    // index in the patch image
-	    // 		    int patchIndex =
-	    // 			((y - currPatchMeta.screen_ll[1]) * currPatchMeta.dims[0] + x - currPatchMeta.screen_ll[0]) * 4;
-	    // 		    // index in the final image
-	    // 		    int fullIndex =
-	    // 			((y - fullImageExtents[2]) * renderedWidth + x - fullImageExtents[0]) * 4;
-	    // 		    // compose
-	    // 		    if (composedData[fullIndex+3] < 1.0)
-	    // 		    {
-	    // 			// back to Front compositing: 
-	    // 			float alpha = 
-	    // 			    (1.0 - currPatchData.imagePatch[patchIndex + 3]);
-	    // 			composedData[fullIndex + 0] = slivr::Clamp
-	    // 			    ((composedData[fullIndex + 0] * alpha) 
-	    // 			     + currPatchData.imagePatch[patchIndex + 0]);
-	    // 			composedData[fullIndex + 1] = slivr::Clamp
-	    // 			    ((composedData[fullIndex + 1] * alpha) 
-	    // 			     + currPatchData.imagePatch[patchIndex + 1]);
-	    // 			composedData[fullIndex + 2] = slivr::Clamp
-	    // 			    ((composedData[fullIndex + 2] * alpha)
-	    // 			     + currPatchData.imagePatch[patchIndex + 2]);
-	    // 			composedData[fullIndex + 3] = slivr::Clamp
-	    // 			    ((composedData[fullIndex + 3] * alpha) 
-	    // 			     + currPatchData.imagePatch[patchIndex + 3]);
-	    // 		    }
-	    // 		}
-	    // 		visitTimer->StopTimer(timingDebug, "Qi-compose");
-	    // 		visitTimer->DumpTimings();			
-			
-	    // 	    }
-	    // 	}
-	    // }
-	    
-	    // for (int i=0; i<numPatches; i++)
-	    // {
-	    // 	if (allPatchData[i].imagePatch != NULL) {
-	    // 	    debug5 << "Free patch data!" << std::endl;
-	    // 	    delete[] allPatchData[i].imagePatch;
-	    // 	    allPatchData[i].imagePatch = NULL;
-	    // 	    debug5 << "Free patch data done!" << std::endl;
-	    // 	}
-	    // }
-	    
+		   << fullImageExtents[3] << std::endl;	   	    
 
 	    for (int i=0; i<numPatches; i++)
 	    {
-	    	slivr::ImgMetaData currentPatch = allPatchMeta[i];
-	    	slivr::ImgData     tempImgData;
+	    	slivr::ImgMetaData currMeta = allPatchMeta[i];
+	    	slivr::ImgData     currData;
 
-	    	tempImgData.imagePatch = NULL;
+	    	currData.imagePatch = NULL;
 	    	extractor.GetAndDelImgData /* do shallow copy inside */
-	    	    (currentPatch.patchNumber, tempImgData);
+	    	    (currMeta.patchNumber, currData);
 
 		debug5 << "current patch size = " 
-		       << currentPatch.dims[0] << ", " 
-		       << currentPatch.dims[1] << std::endl;
+		       << currMeta.dims[0] << ", " 
+		       << currMeta.dims[1] << std::endl;
 	    	debug5 << "current patch starting" 
-		       << " X = " << currentPatch.screen_ll[0] 
-		       << " Y = " << currentPatch.screen_ll[1] << std::endl;
+		       << " X = " << currMeta.screen_ll[0] 
+		       << " Y = " << currMeta.screen_ll[1] << std::endl;
 	    	debug5 << "current patch ending" 
-		       << " X = " << currentPatch.screen_ur[0] 
-		       << " Y = " << currentPatch.screen_ur[1] << std::endl;
+		       << " X = " << currMeta.screen_ur[0] 
+		       << " Y = " << currMeta.screen_ur[1] << std::endl;
 
 		int currExtents[4] = 
-		    {currentPatch.screen_ll[0], currentPatch.screen_ur[0], 
-		     currentPatch.screen_ll[1], currentPatch.screen_ur[1]};
+		    {currMeta.screen_ll[0], currMeta.screen_ur[0], 
+		     currMeta.screen_ll[1], currMeta.screen_ur[1]};
 		imgComm.BlendBackToFront
-		    (tempImgData.imagePatch, currExtents,
+		    (currData.imagePatch, currExtents,
 		     composedData, fullImageExtents);
-
-	    	// for (int patchY = 0; 
-	    	//      patchY < currentPatch.dims[1]; 
-	    	//      patchY++) 
-	    	// {
-	    	//     for (int patchX = 0; 
-	    	// 	 patchX < currentPatch.dims[0]; 
-	    	// 	 patchX++)
-	    	//     {
-	    	// 	const int startingX = currentPatch.screen_ll[0];
-	    	// 	const int startingY = currentPatch.screen_ll[1];
-
-	    	// 	const int bufferX = startingX + patchX;
-	    	// 	const int bufferY = startingY + patchY;
-			
-	    	// 	if (bufferX <  fullImageExtents[0]) { continue; }
-	    	// 	if (bufferX >= fullImageExtents[1]) { continue; }
-	    	// 	if (bufferY <  fullImageExtents[2]) { continue; }
-	    	// 	if (bufferY >= fullImageExtents[3]) { continue; }
-
-	    	// 	// index in the subimage
-	    	// 	int patchIndex = (patchY * currentPatch.dims[0] + 
-	    	// 			  patchX) * 4;
-	    	// 	// index in the big buffer
-	    	// 	int bufferIndex = 
-	    	// 	    ((bufferY - fullImageExtents[2]) * renderedWidth
-	    	// 	     + bufferX - fullImageExtents[0]) * 4;
-			
-	    	// 	debug5 << " X = " << bufferX - fullImageExtents[0] 
-	    	// 	       << " Y = " << bufferY - fullImageExtents[2]
-	    	// 	       << std::endl;  
-
-	    	// 	if (composedData[bufferIndex+3] < 1.0)
-	    	// 	{
-	    	// 	    // back to Front compositing: 
-	    	// 	    float alpha = 
-	    	// 		(1.0 - tempImgData.imagePatch[patchIndex + 3]);
-	    	// 	    composedData[bufferIndex + 0] = slivr::Clamp
-	    	// 		((composedData[bufferIndex + 0] * alpha) 
-	    	// 		 + tempImgData.imagePatch[patchIndex + 0]);
-	    	// 	    composedData[bufferIndex + 1] = slivr::Clamp
-	    	// 		((composedData[bufferIndex + 1] * alpha) 
-	    	// 		 + tempImgData.imagePatch[patchIndex + 1]);
-	    	// 	    composedData[bufferIndex + 2] = slivr::Clamp
-	    	// 		((composedData[bufferIndex + 2] * alpha)
-	    	// 		 + tempImgData.imagePatch[patchIndex + 2]);
-	    	// 	    composedData[bufferIndex + 3] = slivr::Clamp
-	    	// 		((composedData[bufferIndex + 3] * alpha) 
-	    	// 		 + tempImgData.imagePatch[patchIndex + 3]);
-	    	// 	}
-	    	//     }
-	    	//    }
 
 	    	//
 	    	// Clean up data
 	    	//
-	    	if (tempImgData.imagePatch != NULL) {
+	    	if (currData.imagePatch != NULL) {
 	    	    debug5 << "Free patch data!" << std::endl;
-	    	    delete[] tempImgData.imagePatch;
+	    	    delete[] currData.imagePatch;
 	    	    debug5 << "Free patch data done!" << std::endl;
 	    	}
-	    	tempImgData.imagePatch = NULL;
+	    	currData.imagePatch = NULL;
 	    }
 
 	    debug5 << "Clear allImageMetaData" << std::endl;
-	    //allPatchInfo.clear();
 	    allPatchMeta.clear();
+	    allPatchData.clear();
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
@@ -1437,8 +1222,7 @@ avtRayTracer::Execute(void)
 	    //
 	    // Parallel
 	    //
-	    debug5 << "Parallel compositing" << std::endl; // Qi debug
-	    int  timingCompositinig = visitTimer->StartTimer();
+	    debug5 << "Parallel compositing" << std::endl; 
 
 	    //
 	    // Get the metadata for all patches
@@ -1528,7 +1312,6 @@ avtRayTracer::Execute(void)
 	    if (imgComm.intermediateImage != NULL)
 		delete []imgComm.intermediateImage;
 	    imgComm.intermediateImage = NULL;		
-	    debug5 << "cleaning done!" << std::endl;
 	    imgComm.Barrier();
 	    debug5 << "Global compositing done!" << std::endl;
 		
@@ -1719,20 +1502,12 @@ avtRayTracer::Execute(void)
 	    if (localPatchesDepth != NULL)
 		delete []localPatchesDepth;
 	    pvm->Delete();
-
+	    	    
 	}
 
 	// time compositing
 	visitTimer->StopTimer(timingCompositinig, "Compositing");
-	visitTimer->DumpTimings();
 	
-	//// check time
-	//visitTimer->StopTimer(timingIndex, "Ray Tracing");
-	//visitTimer->DumpTimings();
-
-	// end of SLIVR raycasting/OSPRay
-	//return;
-
     } else {
 
 #ifdef PARALLEL
@@ -1767,16 +1542,19 @@ avtRayTracer::Execute(void)
 	    bool convertToWBuffer = !view.orthographic;
 	    if (convertToWBuffer)
 	    {
-		float *opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
 		const int numpixels = screen[0]*screen[1];
-
-		vtkImageData  *_opaqueImageVTK = opaqueImage->GetImage().GetImageVTK();
-		unsigned char *_opaqueImageData = (unsigned char *)_opaqueImageVTK->GetScalarPointer(0, 0, 0);
+		float *opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
+		vtkImageData  *opaqueImageVTK = 
+		    opaqueImage->GetImage().GetImageVTK();
+		unsigned char *opaqueImageData = 
+		    (unsigned char*)opaqueImageVTK->GetScalarPointer(0, 0, 0);
 
 		for (int p = 0 ; p < numpixels ; p++)
 		{
-		    // The z value in clip space in the depth buifer is between 0 and 1 while it is normal for that
-		    // value to be between -1 and 1 instead. This is corrected here.
+		    // The z value in clip space in the depth buifer is
+		    // between 0 and 1 while it is normal for that
+		    // value to be between -1 and 1 instead. 
+		    // This is corrected here.
 		    double val = 2*opaqueImageZB[p]-1.0;
 
 		    // Map to actual distance from camera.
@@ -1789,8 +1567,10 @@ avtRayTracer::Execute(void)
 		    opaqueImageZB[p] = val;
 		}
 	    }
-	    else // orthographic and need to adjust for tightened clipping planes
+	    else 
 	    {
+                // orthographic and need to adjust for tightened clipping
+		// planes
 		float *opaqueImageZB  = opaqueImage->GetImage().GetZBuffer();
 		const int numpixels = screen[0]*screen[1];
 		for (int p = 0 ; p < numpixels ; p++)
@@ -1821,7 +1601,8 @@ avtRayTracer::Execute(void)
 	// The tiles are important to make sure that we never need too much
 	// memory.
 	//
-	int numDivisions = GetNumberOfDivisions(screen[0],screen[1],samplesPerRay);
+	int numDivisions = 
+	    GetNumberOfDivisions(screen[0],screen[1],samplesPerRay);
 
 	int IStep = screen[0] / numDivisions;
 	int JStep = screen[1] / numDivisions;
@@ -1864,7 +1645,8 @@ avtRayTracer::Execute(void)
 			for (int ii = IStart ; ii < IEnd ; ii++)
 			{
 			    int index = screen[0]*jj + ii;
-			    int index2 = (IEnd-IStart)*(jj-JStart) + (ii-IStart);
+			    int index2 = 
+				(IEnd-IStart)*(jj-JStart) + (ii-IStart);
 			    whole_rgb[3*index+0] = tile[3*index2+0];
 			    whole_rgb[3*index+1] = tile[3*index2+1];
 			    whole_rgb[3*index+2] = tile[3*index2+2];
@@ -1881,9 +1663,15 @@ avtRayTracer::Execute(void)
 
     }
 
+    //
+    // Stop timer 
+    //
     visitTimer->StopTimer(timingIndex, "Ray Tracing");
-    visitTimer->DumpTimings();
 
+    //
+    // write timing to file
+    //
+    visitTimer->DumpTimings();
 }
 
 

@@ -2415,7 +2415,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    (scalarRange[0] <= tFVisibleRange[1]))
 	{
 	    // start timing
-	    int renderIndex = visitTimer->StartTimer();
+	    // int renderIndex = visitTimer->StartTimer();
 
             // render frame
 	    ospray->SetSubCamera(xMin, xMax, yMin, yMax);
@@ -2424,8 +2424,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    volume->RenderFB();
 
 	    // end timing
-	    visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
-	    visitTimer->DumpTimings();
+	    // visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
 
 	    // copy data
 	    std::copy(volume->GetFBData(), 
