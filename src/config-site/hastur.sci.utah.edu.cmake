@@ -1,7 +1,7 @@
-#/home/sci/qwu/VisIt/visit/cmake/3.8.1/linux-x86_64_gcc-5.4/bin/cmake
+#/home/sci/qwu/VisIt/visit/cmake/3.8.1/linux-x86_64_gcc-4.8/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Sat Jun 17 16:11:15 MDT 2017
+## created: Sun Jun 18 04:01:25 MDT 2017
 ## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -9,7 +9,7 @@
 ## Setup VISITHOME & VISITARCH variables.
 ##
 SET(VISITHOME /home/sci/qwu/VisIt/visit)
-SET(VISITARCH linux-x86_64_gcc-5.4)
+SET(VISITARCH linux-x86_64_gcc-4.8)
 
 ## Compiler flags.
 ##
@@ -37,7 +37,7 @@ VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
 ##                                                                             
 SET(OSPRAY_USE_EXTERNAL_EMBREE ON)
 SET(ospray_DIR /home/sci/qwu/software/ospray-qwu-visit/lib64/cmake/ospray-1.3.0)
-SET(embree_DIR /home/sci/qwu/software/embree-2.14.0.x86_64.linux/lib/cmake/embree-2.14.0)
+SET(embree_DIR /home/sci/qwu/software/embree-2.15.0.x86_64.linux)
 SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
 SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
@@ -105,6 +105,11 @@ VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz
 ## Ice-T
 ##
 VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/1.0.0/${VISITARCH})
+
+##
+## LLVM
+##
+VISIT_OPTION_DEFAULT(VISIT_LLVM_DIR ${VISITHOME}/llvm/4.0.0/${VISITARCH})
 ##
 
 ##

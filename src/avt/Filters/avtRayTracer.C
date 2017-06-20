@@ -838,7 +838,7 @@ avtRayTracer::Execute(void)
 	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
 	    // initialize ospray
 	    // -- multi-threading enabled
-	    ospray->InitOSP(osprayRefresh /*true if the data is changed*/);
+	    ospray->InitOSP(osprayRefresh);
 	    // camera
 	    debug5 << "make ospray camera" << std::endl;
 	    if (!view.orthographic)

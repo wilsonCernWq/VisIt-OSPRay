@@ -218,21 +218,23 @@ float* VolumeInfo::GetFBData() {
 //
 // ****************************************************************************
 
-void OSPContext::InitOSP(bool flag, bool debug, int numThreads) 
+void OSPContext::InitOSP(bool flag, int numThreads) 
 { 
     std::cout << "Initialize OSPRay (new data " << flag << ")" << std::endl;
     enabledOSPRay = true;
     OSPDevice device = ospGetCurrentDevice();
     if (device == nullptr) {
-	debug5 << "Initialize OSPRay" 
-	       << " debug: " << debug  
-	       << " numThreads: " << numThreads
-	       << std::endl;
+	debug5 << "Initialize OSPRay";
 	device = ospNewDevice();
-	ospDeviceSet1i(device, "debug", debug ? 1 : 0);
-	if (numThreads != -1) {
+	if (DebugStream::Level5()) {
+	    debug5 << " debug mode";
+	    ospDeviceSet1i(device, "debug", 1);
+	}
+	if (numThreads > 0) {
+	    debug5 << " numThreads: " << numThreads;
 	    ospDeviceSet1i(device, "numThreads", numThreads);
 	}
+	debug5 << std::endl;
 	ospDeviceSetErrorFunc
 	    (device, [](OSPError, const char *msg) { std::cerr << msg; });
 	ospDeviceSetStatusFunc

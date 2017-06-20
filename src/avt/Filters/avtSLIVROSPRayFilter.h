@@ -230,7 +230,7 @@ struct OSPContext
     void setDVRMode(bool mode) { enabledDVR = mode; } 
 
     // patch 
-    void InitOSP(bool flag, bool debug = false, int numThreads = -1);
+    void InitOSP(bool flag, int numThreads = 0);
     void InitPatch(int id);
     VolumeInfo* GetPatch(int id) { return &volumePatch[id]; }
 

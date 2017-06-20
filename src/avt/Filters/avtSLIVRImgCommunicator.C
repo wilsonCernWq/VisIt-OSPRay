@@ -165,15 +165,6 @@ void
 avtSLIVRImgCommunicator::ColorImage
 (float *&srcImage, int widthSrc, int heightSrc, float color[4])
 {
-    // for (int y = 0; y < heightSrc; y++) {
-    //     for (int x = 0; x < widthSrc; x++) {
-    //         const int srcIndex = (widthSrc * y + x) * 4;
-    //         srcImage[srcIndex+0] = color[0];
-    //         srcImage[srcIndex+1] = color[1];
-    //         srcImage[srcIndex+2] = color[2];
-    //         srcImage[srcIndex+3] = color[3];
-    //     }
-    // }
     for (int i = 0; i < heightSrc * widthSrc; ++i) {
 	const int srcIndex = 4 * i;
 	srcImage[srcIndex+0] = color[0];
