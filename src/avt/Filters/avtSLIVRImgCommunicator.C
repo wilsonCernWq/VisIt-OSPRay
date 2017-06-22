@@ -203,7 +203,6 @@ avtSLIVRImgCommunicator::PlaceImage
     const int endingX = std::min(srcExtents[1], dstExtents[1]);
     const int endingY = std::min(srcExtents[3], dstExtents[3]);
 
-    #pragma omp parallel for
     for (int y = startingY; y < endingY; y++) {
 	for (int x = startingX; x < endingX; x++) {
 	    // check error in debug
@@ -480,6 +479,7 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 //  Modifications:
 //
 // **************************************************************************
+
 void
 avtSLIVRImgCommunicator::BlendBackToFront
 (const float * srcImage, int srcExtents[4], 
@@ -668,11 +668,17 @@ avtSLIVRImgCommunicator::SerialDirectSend
             int rank = (*it).second;
             if (rank != myRank)
             {
-                MPI_Recv(recvParams, 4, MPI_INT, rank, tags[0], MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // recv image info
-                MPI_Recv(recvImage, width*height*4, MPI_FLOAT, rank, tags[1],  MPI_COMM_WORLD, MPI_STATUS_IGNORE);  // recv image
+		// recv image info
+                MPI_Recv(recvParams, 4, MPI_INT, rank, 
+			 tags[0], MPI_COMM_WORLD, MPI_STATUS_IGNORE); 
+		// recv image
+                MPI_Recv(recvImage, width*height*4, MPI_FLOAT, rank,
+			 tags[1],  MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-                dstPos[0]  = dstPos[0];                      dstPos[1]  = dstPos[1];
-                dstSize[0] = recvParams[2]-recvParams[0];    dstSize[1] = recvParams[3]-recvParams[1];
+                dstPos[0]  = dstPos[0];                     
+		dstPos[1]  = dstPos[1];
+                dstSize[0] = recvParams[2]-recvParams[0];   
+		dstSize[1] = recvParams[3]-recvParams[1];
             }
             else
             {
@@ -696,12 +702,16 @@ avtSLIVRImgCommunicator::SerialDirectSend
         // Sender
         for (int i=0; i<localNumPatches; i++)
         {
-            int imgSize = (extents[i*4 + 1] - extents[i*4 + 0]) * (extents[i*4 + 3] - extents[i*4 + 2]) * 4;
-
+            int imgSize = 
+		(extents[i*4 + 1] - extents[i*4 + 0]) *
+		(extents[i*4 + 3] - extents[i*4 + 2]) * 4;
+	    
             if (imgSize > 0)
             {
-                MPI_Send( &extents[i*4],                       4, MPI_INT,   0, tags[0], MPI_COMM_WORLD);
-                MPI_Send( &imgData[i*(width*height*4)],  imgSize, MPI_FLOAT, 0, tags[1], MPI_COMM_WORLD);
+                MPI_Send(&extents[i*4],
+			 4, MPI_INT, 0, tags[0], MPI_COMM_WORLD);
+                MPI_Send(&imgData[i*(width*height*4)], 
+			 imgSize, MPI_FLOAT, 0, tags[1], MPI_COMM_WORLD);
             }
         }
     }

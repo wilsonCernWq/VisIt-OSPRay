@@ -44,11 +44,11 @@
 #  define _USE_MATH_DEFINES
 #  include <math.h> // M_PI
 #endif
-
-#include <avtRayTracer.h>
 #include <time.h>
 #include <vector>
-#include <sys/time.h>
+#include <chrono>
+
+#include <avtRayTracer.h>
 #include <visit-config.h>
 #include <vtkImageData.h>
 #include <vtkMatrix4x4.h>
@@ -334,40 +334,42 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 //  Modifications:
 //
 // ****************************************************************************
-double normVec(double vec[3])
-{
-    return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
-}
+// double normVec(double vec[3])
+// {
+//     return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+// }
 
 
-void
-avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3],
-			int _width, int _height, vtkMatrix4x4 *invModelViewProj)
-{
-	// remove panning
-	_x -= round(_width * panPercentage[0]  * view.imageZoom);
-	_y -= round(_height * panPercentage[1] * view.imageZoom); 
+// void
+// avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3],
+// 			int _width, int _height, vtkMatrix4x4 *invModelViewProj)
+// {
+//     int screenCoord[2] = {_x, _y};
+//     return slivr::ProjectScreenToWorld(screenCoord, _z, _width, _height, panPercentage, view.imageZoom, invModelViewProj, _worldCoordinates);
+// 	// // remove panning
+// 	// _x -= round(_width * panPercentage[0]  * view.imageZoom);
+// 	// _y -= round(_height * panPercentage[1] * view.imageZoom); 
 
-	double worldCoordinates[4] = {0,0,0,1};
-	double in[4] = {0,0,0,1};
-	in[0] = (_x - _width/2. )/(_width/2.);
-	in[1] = (_y - _height/2.)/(_height/2.);
-	in[2] = _z;
+// 	// double worldCoordinates[4] = {0,0,0,1};
+// 	// double in[4] = {0,0,0,1};
+// 	// in[0] = (_x - _width/2. )/(_width/2.);
+// 	// in[1] = (_y - _height/2.)/(_height/2.);
+// 	// in[2] = _z;
 
-	invModelViewProj->MultiplyPoint(in, worldCoordinates);
+// 	// invModelViewProj->MultiplyPoint(in, worldCoordinates);
 
-	if (worldCoordinates[3] == 0)
-		debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
+// 	// if (worldCoordinates[3] == 0)
+// 	// 	debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
 
-	worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
-	worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
-	worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
-	worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
+// 	// worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
+// 	// worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
+// 	// worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
+// 	// worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
 
-	_worldCoordinates[0] = worldCoordinates[0];
-	_worldCoordinates[1] = worldCoordinates[1];
-	_worldCoordinates[2] = worldCoordinates[2];
-}
+// 	// _worldCoordinates[0] = worldCoordinates[0];
+// 	// _worldCoordinates[1] = worldCoordinates[1];
+// 	// _worldCoordinates[2] = worldCoordinates[2];
+// }
 
 
 
@@ -383,48 +385,48 @@ avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3],
 //  Modifications:
 //
 // ****************************************************************************
-double
-avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], 
-		      int _width, int _height, vtkMatrix4x4 *modelViewProj)
-{
-    return slivr::ProjectWorldToScreen
-	(_worldCoordinates, _width, _height, panPercentage, view.imageZoom, modelViewProj, pos2D);
-	// double normDevCoord[4];
-	// double worldCoordinates[4] = {0,0,0,1};
-	// worldCoordinates[0] = _worldCoordinates[0];
-	// worldCoordinates[1] = _worldCoordinates[1];
-	// worldCoordinates[2] = _worldCoordinates[2];
+// double
+// avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], 
+// 		      int _width, int _height, vtkMatrix4x4 *modelViewProj)
+// {
+//     return slivr::ProjectWorldToScreen
+// 	(_worldCoordinates, _width, _height, panPercentage, view.imageZoom, modelViewProj, pos2D);
+// 	// double normDevCoord[4];
+// 	// double worldCoordinates[4] = {0,0,0,1};
+// 	// worldCoordinates[0] = _worldCoordinates[0];
+// 	// worldCoordinates[1] = _worldCoordinates[1];
+// 	// worldCoordinates[2] = _worldCoordinates[2];
 
-	// // World to Clip space (-1 - 1)
-	// modelViewProj->MultiplyPoint(worldCoordinates, normDevCoord);
+// 	// // World to Clip space (-1 - 1)
+// 	// modelViewProj->MultiplyPoint(worldCoordinates, normDevCoord);
 
-	// if (normDevCoord[3] == 0)
-	// {
-	// 	debug5 << "Err: avtMassVoxelExtractor::project "
-	// 	       << "Division by 0 error!" << endl;
-	// 	debug5 << "worldCoordinates: " 
-	// 	       << worldCoordinates[0] << ", " 
-	// 	       << worldCoordinates[1] << ", " 
-	// 	       << worldCoordinates[2] << "   " 
-	// 	       << normDevCoord[0] << ", " 
-	// 	       << normDevCoord[1] << ", " 
-	// 	       << normDevCoord[2] << endl;
-	// 	debug5 << "Matrix: " << *modelViewProj << endl;
-	// }
+// 	// if (normDevCoord[3] == 0)
+// 	// {
+// 	// 	debug5 << "Err: avtMassVoxelExtractor::project "
+// 	// 	       << "Division by 0 error!" << endl;
+// 	// 	debug5 << "worldCoordinates: " 
+// 	// 	       << worldCoordinates[0] << ", " 
+// 	// 	       << worldCoordinates[1] << ", " 
+// 	// 	       << worldCoordinates[2] << "   " 
+// 	// 	       << normDevCoord[0] << ", " 
+// 	// 	       << normDevCoord[1] << ", " 
+// 	// 	       << normDevCoord[2] << endl;
+// 	// 	debug5 << "Matrix: " << *modelViewProj << endl;
+// 	// }
 
-	// normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
-	// normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
-	// normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
-	// normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
+// 	// normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
+// 	// normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
+// 	// normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
+// 	// normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
 
-	// pos2D[0] = round( normDevCoord[0]*(_width/2.)  + (_width/2.)  );
-	// pos2D[1] = round( normDevCoord[1]*(_height/2.) + (_height/2.) );
+// 	// pos2D[0] = round( normDevCoord[0]*(_width/2.)  + (_width/2.)  );
+// 	// pos2D[1] = round( normDevCoord[1]*(_height/2.) + (_height/2.) );
 
-	// pos2D[0] += round(_width * panPercentage[0]  * view.imageZoom);
-	// pos2D[1] += round(_height * panPercentage[1]  * view.imageZoom);
+// 	// pos2D[0] += round(_width * panPercentage[0]  * view.imageZoom);
+// 	// pos2D[1] += round(_height * panPercentage[1]  * view.imageZoom);
 
-	// return normDevCoord[2];
-}
+// 	// return normDevCoord[2];
+// }
 
 
 
@@ -440,79 +442,85 @@ avtRayTracer::project(double _worldCoordinates[3], int pos2D[2],
 //  Modifications:
 //
 // ****************************************************************************
-void
-avtRayTracer::project3Dto2D
-(double _3Dextents[6], int width, int height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
-{
-	double _world[3];
-	int _xMin, _xMax, _yMin, _yMax;
-	double _zMin, _zMax;
-	_xMin = _yMin = std::numeric_limits<int>::max();
-	_xMax = _yMax = std::numeric_limits<int>::min();
+// void
+// avtRayTracer::project3Dto2D
+// (double _3Dextents[6], int _width, int _height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
+// {
 
-	_zMin = std::numeric_limits<double>::max();
-	_zMax = std::numeric_limits<double>::min();
+//     return slivr::ProjectWorldToScreenCube
+// 	(_3Dextents, _width, _height, 
+// 	 panPercentage, view.imageZoom, modelViewProj, 
+// 	 _2DExtents, depthExtents);
+    
+//     // double _world[3];
+// 	// int _xMin, _xMax, _yMin, _yMax;
+// 	// double _zMin, _zMax;
+// 	// _xMin = _yMin = std::numeric_limits<int>::max();
+// 	// _xMax = _yMax = std::numeric_limits<int>::min();
 
-	float coordinates[8][3];
-	coordinates[0][0] = _3Dextents[0];   
-	coordinates[0][1] = _3Dextents[2];   
-	coordinates[0][2] = _3Dextents[4];
+// 	// _zMin = std::numeric_limits<double>::max();
+// 	// _zMax = std::numeric_limits<double>::min();
+
+// 	// float coordinates[8][3];
+// 	// coordinates[0][0] = _3Dextents[0];   
+// 	// coordinates[0][1] = _3Dextents[2];   
+// 	// coordinates[0][2] = _3Dextents[4];
 	
-	coordinates[1][0] = _3Dextents[1];   
-	coordinates[1][1] = _3Dextents[2];   
-	coordinates[1][2] = _3Dextents[4];
+// 	// coordinates[1][0] = _3Dextents[1];   
+// 	// coordinates[1][1] = _3Dextents[2];   
+// 	// coordinates[1][2] = _3Dextents[4];
 	
-	coordinates[2][0] = _3Dextents[1];  
-	coordinates[2][1] = _3Dextents[3];
-	coordinates[2][2] = _3Dextents[4];
+// 	// coordinates[2][0] = _3Dextents[1];  
+// 	// coordinates[2][1] = _3Dextents[3];
+// 	// coordinates[2][2] = _3Dextents[4];
 	
-	coordinates[3][0] = _3Dextents[0]; 
-	coordinates[3][1] = _3Dextents[3]; 
-	coordinates[3][2] = _3Dextents[4];
+// 	// coordinates[3][0] = _3Dextents[0]; 
+// 	// coordinates[3][1] = _3Dextents[3]; 
+// 	// coordinates[3][2] = _3Dextents[4];
 
-	coordinates[4][0] = _3Dextents[0];
-	coordinates[4][1] = _3Dextents[2];
-	coordinates[4][2] = _3Dextents[5];
+// 	// coordinates[4][0] = _3Dextents[0];
+// 	// coordinates[4][1] = _3Dextents[2];
+// 	// coordinates[4][2] = _3Dextents[5];
 
-	coordinates[5][0] = _3Dextents[1]; 
-	coordinates[5][1] = _3Dextents[2]; 
-	coordinates[5][2] = _3Dextents[5];
+// 	// coordinates[5][0] = _3Dextents[1]; 
+// 	// coordinates[5][1] = _3Dextents[2]; 
+// 	// coordinates[5][2] = _3Dextents[5];
 	
-	coordinates[6][0] = _3Dextents[1]; 
-	coordinates[6][1] = _3Dextents[3];
-	coordinates[6][2] = _3Dextents[5];
+// 	// coordinates[6][0] = _3Dextents[1]; 
+// 	// coordinates[6][1] = _3Dextents[3];
+// 	// coordinates[6][2] = _3Dextents[5];
 
-	coordinates[7][0] = _3Dextents[0]; 
-	coordinates[7][1] = _3Dextents[3]; 
-	coordinates[7][2] = _3Dextents[5];
+// 	// coordinates[7][0] = _3Dextents[0]; 
+// 	// coordinates[7][1] = _3Dextents[3]; 
+// 	// coordinates[7][2] = _3Dextents[5];
 
-	int pos2D[2];
-	double _z;
-	for (int i=0; i<8; i++)
-	{
-		_world[0] = coordinates[i][0];
-		_world[1] = coordinates[i][1];
-		_world[2] = coordinates[i][2];
-		_z = project(_world, pos2D, width, height, modelViewProj);
+// 	// int pos2D[2];
+// 	// double _z;
+// 	// for (int i=0; i<8; i++)
+// 	// {
+// 	// 	_world[0] = coordinates[i][0];
+// 	// 	_world[1] = coordinates[i][1];
+// 	// 	_world[2] = coordinates[i][2];
+// 	// 	_z = project(_world, pos2D, width, height, modelViewProj);
 
-		// Get min max
-		_2DExtents[0] = _xMin = std::min(_xMin, pos2D[0]);
-		_2DExtents[1] = _xMax = std::max(_xMax, pos2D[0]);
-		_2DExtents[2] = _yMin = std::min(_yMin, pos2D[1]);
-		_2DExtents[3] = _yMax = std::max(_yMax, pos2D[1]);
+// 	// 	// Get min max
+// 	// 	_2DExtents[0] = _xMin = std::min(_xMin, pos2D[0]);
+// 	// 	_2DExtents[1] = _xMax = std::max(_xMax, pos2D[0]);
+// 	// 	_2DExtents[2] = _yMin = std::min(_yMin, pos2D[1]);
+// 	// 	_2DExtents[3] = _yMax = std::max(_yMax, pos2D[1]);
 
-		depthExtents[0] = _zMin = std::min(_zMin, _z);
-		depthExtents[1] = _zMax = std::max(_zMax, _z);
-	}
+// 	// 	depthExtents[0] = _zMin = std::min(_zMin, _z);
+// 	// 	depthExtents[1] = _zMax = std::max(_zMax, _z);
+// 	// }
 
 
-	debug5 << "_2DExtents " 
-	       << _2DExtents[0] << ", " 
-	       << _2DExtents[1] << "   "  
-	       << _2DExtents[2] << ", "  
-	       << _2DExtents[3] 
-	       << "     z: " << depthExtents[0] << ", " << depthExtents[1] << endl;
-}
+// 	// debug5 << "_2DExtents " 
+// 	//        << _2DExtents[0] << ", " 
+// 	//        << _2DExtents[1] << "   "  
+// 	//        << _2DExtents[2] << ", "  
+// 	//        << _2DExtents[3] 
+// 	//        << "     z: " << depthExtents[0] << ", " << depthExtents[1] << endl;
+// }
 
 
 // ****************************************************************************
@@ -780,15 +788,14 @@ avtRayTracer::Execute(void)
 	vm->Transpose();
 	// Projection: 
         // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
-	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix
-	    (aspect,oldNearPlane, oldFarPlane);
 	// The Z buffer that is passed from visit is in clip scape with z
-	// limits of -1 and 1	
-	// However, using VTK, the z limits are withing nearz and farz.
-	// So, the projection matrix from VTK is hijacked here and adjusted 
-	// to be within -1 and 1 too
+	// limits of -1 and 1. However, using VTK, the z limits are withing
+	// nearz and farz. So, the projection matrix from VTK is hijacked here
+	// and adjusted to be within -1 and 1 too.
 	// Same as in 
 	// avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
+	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix
+	    (aspect,oldNearPlane, oldFarPlane);
 	double sceneSize[2];
 	if (!view.orthographic)
 	{
@@ -823,8 +830,12 @@ avtRayTracer::Execute(void)
 	// get the full image extents of the volume
 	double depthExtents[2];
 	GetSpatialExtents(dbounds);
-	project3Dto2D(dbounds, screen[0], screen[1], pvm, 
-		      fullImageExtents, depthExtents);
+	slivr::ProjectWorldToScreenCube
+	    (dbounds, screen[0], screen[1], 
+	     panPercentage, view.imageZoom, pvm,
+	     fullImageExtents, depthExtents);
+	// project3Dto2D(dbounds, screen[0], screen[1], pvm, 
+	// 	      fullImageExtents, depthExtents);
 	
 	debug5 << "VAR: data bounds: " << std::endl
 	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
@@ -954,6 +965,12 @@ avtRayTracer::Execute(void)
 	    // SERIAL : Single Processor
 	    debug5 << "Serial Compositing!" << std::endl;
 
+	    // // test a different timer
+	    // std::chrono::time_point<std::chrono::system_clock> 
+	    // 	start_time, end_time;
+	    // std::chrono::duration<double> elapsed_seconds;
+	    // start_time = std::chrono::system_clock::now();
+
 	    // Get the metadata for all patches
             // contains the metadata to composite the image
 	    std::vector<slivr::ImgMetaData> allPatchMeta;
@@ -970,8 +987,7 @@ avtRayTracer::Execute(void)
 	    //
 	    // Sort with the largest z first
 	    //
-	    std::sort(allPatchMeta.begin(), 
-	    	      allPatchMeta.end(), 
+	    std::sort(allPatchMeta.begin(), allPatchMeta.end(), 
 	    	      &sortImgMetaDataByEyeSpaceDepth);
 
 	    //
@@ -996,7 +1012,6 @@ avtRayTracer::Execute(void)
 	    {
 	    	slivr::ImgMetaData currMeta = allPatchMeta[i];
 	    	slivr::ImgData     currData;
-
 	    	currData.imagePatch = NULL;
 	    	extractor.GetAndDelImgData /* do shallow copy inside */
 	    	    (currMeta.patchNumber, currData);
@@ -1004,10 +1019,10 @@ avtRayTracer::Execute(void)
 		debug5 << "current patch size = " 
 		       << currMeta.dims[0] << ", " 
 		       << currMeta.dims[1] << std::endl;
-	    	debug5 << "current patch starting" 
+		debug5 << "current patch starting" 
 		       << " X = " << currMeta.screen_ll[0] 
 		       << " Y = " << currMeta.screen_ll[1] << std::endl;
-	    	debug5 << "current patch ending" 
+		debug5 << "current patch ending" 
 		       << " X = " << currMeta.screen_ur[0] 
 		       << " Y = " << currMeta.screen_ur[1] << std::endl;
 
@@ -1018,9 +1033,7 @@ avtRayTracer::Execute(void)
 		    (currData.imagePatch, currExtents,
 		     composedData, fullImageExtents);
 
-	    	//
 	    	// Clean up data
-	    	//
 	    	if (currData.imagePatch != NULL) {
 	    	    debug5 << "Free patch data!" << std::endl;
 	    	    delete[] currData.imagePatch;
@@ -1032,6 +1045,13 @@ avtRayTracer::Execute(void)
 	    debug5 << "Clear allImageMetaData" << std::endl;
 	    allPatchMeta.clear();
 	    allPatchData.clear();
+
+	    // // stop time
+	    // end_time = std::chrono::system_clock::now(); 
+	    // elapsed_seconds = end_time - start_time; 
+	    // std::cout << "[Single Thread] " 
+	    // 	  << elapsed_seconds.count()
+	    // 	  << " seconds to finish" << std::endl;
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
@@ -1114,9 +1134,16 @@ avtRayTracer::Execute(void)
 			    {
 				// Might need to do some blending
 				double worldCoordinates[3];
-				float _tempZ = opaqueImageZB[index] * 2 - 1;
-				unProject(_x, _y, _tempZ, worldCoordinates,
-					  screen[0], screen[1], Inversepvm);
+				int screenCoord[2] = {_x, _y};
+				double screenDepth = opaqueImageZB[index] * 2 - 1;
+				slivr::ProjectScreenToWorld
+				    (screenCoord, screenDepth, 
+				     screen[0], screen[1],
+				     panPercentage, 
+				     view.imageZoom, 
+				     Inversepvm, worldCoordinates);
+				// unProject(_x, _y, _tempZ, worldCoordinates,
+				// 	  screen[0], screen[1], Inversepvm);
 
 				if (checkInBounds(dbounds, worldCoordinates))
 				{
@@ -1362,14 +1389,12 @@ avtRayTracer::Execute(void)
 		       << dbounds[4] << ", "
 		       << dbounds[5]  << std::endl;
 
-		dbounds[0] = dbounds[0]+0.00;
-		dbounds[1] = dbounds[1]-0.00;
-
-		dbounds[2] = dbounds[2]+0.00;
-		dbounds[3] = dbounds[3]-0.00;
-
-		dbounds[4] = dbounds[4]+0.00;
-		dbounds[5] = dbounds[5]-0.00;
+		// dbounds[0] = dbounds[0]+0.00;
+		// dbounds[1] = dbounds[1]-0.00;
+		// dbounds[2] = dbounds[2]+0.00;
+		// dbounds[3] = dbounds[3]-0.00;
+		// dbounds[4] = dbounds[4]+0.00;
+		// dbounds[5] = dbounds[5]-0.00;
 		      
 		for (int _y=0; _y<screen[1]; _y++)
 		{
@@ -1401,14 +1426,15 @@ avtRayTracer::Execute(void)
 				{
 				    // Might need to do some blending
 				    double worldCoordinates[3];
-				    float _tempZ = opaqueImageZB[index] * 2 - 1;
-				    unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], Inversepvm);
-
-				    // Qi debug
-				    debug5 << "x,y,z: "
-					   << _x << ", " << _y << ", " << _tempZ 
-					   << " wordld: " << worldCoordinates[0] << ", " << worldCoordinates[1] << ", " << worldCoordinates[2]
-					   << std::endl;
+				    int screenCoord[2] = {_x, _y};
+				    double screenDepth = opaqueImageZB[index] * 2 - 1;
+				    slivr::ProjectScreenToWorld
+					(screenCoord, screenDepth, 
+					 screen[0], screen[1],
+					 panPercentage, 
+					 view.imageZoom, 
+					 Inversepvm, worldCoordinates);
+				    //unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], Inversepvm);
 
 				    if ( checkInBounds(dbounds, worldCoordinates) )
 				    {

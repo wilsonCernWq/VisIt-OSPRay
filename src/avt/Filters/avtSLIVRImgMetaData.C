@@ -55,15 +55,15 @@
 //
 // ****************************************************************************
 double slivr::ProjectWorldToScreen
-(const double world_pos[3], const int screenWidth, const int screenHeight,
+(const double worldCoord[3], const int screenWidth, const int screenHeight,
  const double panPercentage[2], const double imageZoom,
- vtkMatrix4x4 *mvp, int screen_pos[2])
+ vtkMatrix4x4 *mvp, int screenCoord[2])
 {
     // world space coordinate in homogeneous coordinate
     double worldHCoord[4] = {
-	world_pos[0],
-	world_pos[1],
-	world_pos[2],
+	worldCoord[0],
+	worldCoord[1],
+	worldCoord[2],
 	1.0
     };
 
@@ -72,8 +72,9 @@ double slivr::ProjectWorldToScreen
     mvp->MultiplyPoint(worldHCoord, clipHCoord);
     if (clipHCoord[3] == 0.0)
     {
-	std::cerr << "avtMassVoxelExtractor::Zero Division During Projection" 
-		  << endl;
+	std::cerr << "slivr::ProjectWorldToScreen "
+		  << "Zero Division During Projection" 
+		  << std::endl;
 	std::cerr << "world coordinates: (" 
 		  << worldHCoord[0] << ", " 
 		  << worldHCoord[1] << ", " 
@@ -84,28 +85,131 @@ double slivr::ProjectWorldToScreen
 		  << clipHCoord[1] << ", " 
 		  << clipHCoord[2] << ", "
 		  << clipHCoord[3] << std::endl;
-	std::cerr << "Matrix: " << *mvp << endl;
+	std::cerr << "Matrix: " << *mvp << std::endl;
 	EXCEPTION1(VisItException, "Zero Division During Projection");
     }
 
     // normalize clip space coordinate
-    double clip_pos[3] = {
+    double clipCoord[3] = {
 	clipHCoord[0]/clipHCoord[3],
 	clipHCoord[1]/clipHCoord[3],
 	clipHCoord[2]/clipHCoord[3]
     };
 
     // screen coordinates (int integer)
-    screen_pos[0] = round(clip_pos[0]*(screenWidth /2.0)+(screenWidth /2.0));
-    screen_pos[1] = round(clip_pos[1]*(screenHeight/2.0)+(screenHeight/2.0));
+    screenCoord[0] = round(clipCoord[0]*(screenWidth /2.0)+(screenWidth /2.0));
+    screenCoord[1] = round(clipCoord[1]*(screenHeight/2.0)+(screenHeight/2.0));
 
     // add panning
-    screen_pos[0] += round(screenWidth  * panPercentage[0] * imageZoom);
-    screen_pos[1] += round(screenHeight * panPercentage[1] * imageZoom); 
+    screenCoord[0] += round(screenWidth  * panPercentage[0] * imageZoom);
+    screenCoord[1] += round(screenHeight * panPercentage[1] * imageZoom); 
 
     // return point depth
-    return clip_pos[2];
+    return clipCoord[2];
 }
+
+void
+slivr::ProjectScreenToWorld
+(const int screenCoord[2], const double z,
+ const int screenWidth, const int screenHeight, 
+ const double panPercentage[2], const double imageZoom,
+ vtkMatrix4x4 *imvp, double worldCoord[3])
+{
+    // remove panning
+    const int x = 
+	screenCoord[0] - round(screenWidth*panPercentage[0]*imageZoom);
+    const int y = 
+	screenCoord[1] - round(screenHeight*panPercentage[1]*imageZoom);
+    
+    // do projection
+    double worldHCoord[4] = {0,0,0,1};
+    double clipHCoord[4] = {
+	(x - screenWidth/2.0)/(screenWidth/2.0),
+	(y - screenHeight/2.0)/(screenHeight/2.0),
+	z, 1.0};
+    imvp->MultiplyPoint(clipHCoord, worldHCoord);
+    if (worldHCoord[3] == 0) {
+	debug5 << "slivr::ProjectScreenToWorld "
+	       << "Zero Division During Projection" 
+	       << std::endl;
+	std::cerr << "world coordinates: (" 
+		  << worldHCoord[0] << ", " 
+		  << worldHCoord[1] << ", " 
+		  << worldHCoord[2] << ", " 
+		  << worldHCoord[3] << ")" << std::endl
+		  << "clip space coordinate: ("
+		  << clipHCoord[0] << ", " 
+		  << clipHCoord[1] << ", " 
+		  << clipHCoord[2] << ", "
+		  << clipHCoord[3] << std::endl;
+	std::cerr << "Matrix: " << *imvp << std::endl;
+	EXCEPTION1(VisItException, "Zero Division During Projection");
+    }
+    
+    // normalize world space coordinate	
+    worldCoord[0] = worldHCoord[0]/worldHCoord[3];
+    worldCoord[1] = worldHCoord[1]/worldHCoord[3];
+    worldCoord[2] = worldHCoord[2]/worldHCoord[3];
+}
+
+void
+slivr::ProjectWorldToScreenCube
+(const double cube[6], const int screenWidth, const int screenHeight, 
+ const double panPercentage[2], const double imageZoom, vtkMatrix4x4 *mvp, 
+ int screenExtents[4], double depthExtents[2])
+{
+    int xMin = std::numeric_limits<int>::max();
+    int xMax = std::numeric_limits<int>::min();
+    int yMin = std::numeric_limits<int>::max();
+    int yMax = std::numeric_limits<int>::min();
+    double zMin = std::numeric_limits<double>::max();
+    double zMax = std::numeric_limits<double>::min();
+
+    float coordinates[8][3];
+    coordinates[0][0] = cube[0];   
+    coordinates[0][1] = cube[2];   
+    coordinates[0][2] = cube[4];	
+    coordinates[1][0] = cube[1];   
+    coordinates[1][1] = cube[2];   
+    coordinates[1][2] = cube[4];	
+    coordinates[2][0] = cube[1];  
+    coordinates[2][1] = cube[3];
+    coordinates[2][2] = cube[4];	
+    coordinates[3][0] = cube[0]; 
+    coordinates[3][1] = cube[3]; 
+    coordinates[3][2] = cube[4];
+    coordinates[4][0] = cube[0];
+    coordinates[4][1] = cube[2];
+    coordinates[4][2] = cube[5];
+    coordinates[5][0] = cube[1]; 
+    coordinates[5][1] = cube[2]; 
+    coordinates[5][2] = cube[5];	
+    coordinates[6][0] = cube[1]; 
+    coordinates[6][1] = cube[3];
+    coordinates[6][2] = cube[5];
+    coordinates[7][0] = cube[0]; 
+    coordinates[7][1] = cube[3]; 
+    coordinates[7][2] = cube[5];
+
+    double worldCoord[3];
+    int screenCoord[2]; double depth;
+    for (int i=0; i<8; i++)
+    {
+	worldCoord[0] = coordinates[i][0];
+	worldCoord[1] = coordinates[i][1];
+	worldCoord[2] = coordinates[i][2];
+	depth = slivr::ProjectWorldToScreen
+	    (worldCoord, screenWidth, screenHeight, 
+	     panPercentage, imageZoom, mvp, screenCoord);
+	screenExtents[0] = xMin = std::min(xMin, screenCoord[0]);
+	screenExtents[1] = xMax = std::max(xMax, screenCoord[0]);
+	screenExtents[2] = yMin = std::min(yMin, screenCoord[1]);
+	screenExtents[3] = yMax = std::max(yMax, screenCoord[1]);
+	depthExtents[0] = zMin = std::min(zMin, depth);
+	depthExtents[1] = zMax = std::max(zMax, depth);
+    }
+}
+
 
 // ****************************************************************************
 //  Function:  
