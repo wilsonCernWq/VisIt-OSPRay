@@ -376,8 +376,8 @@ avtImage_p
 avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
                              const WindowAttributes &window)
 {
-    std::cout << "Running: avtVolumeFilter::RendererImageRaycastingSLIVR"
-	      << " (Instantiating a new avtRayTracer) " << std::endl;
+    debug5 << "Running: avtVolumeFilter::RendererImageRaycastingSLIVR"
+	   << " (Instantiating a new avtRayTracer) " << std::endl;
     //
     // We need to create a dummy pipeline with the volume renderer that we
     // can force to execute within our "Execute".  Start with the source.

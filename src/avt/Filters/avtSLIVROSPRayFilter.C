@@ -44,7 +44,21 @@
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
 
-#include <cmath>
+#include "ospray/ospcommon/common.h"
+
+// output stream
+namespace slivr {
+    static std::ostream *osp_out = &DebugStream::Stream5();
+    static std::ostream *osp_err = &DebugStream::Stream1();
+    static bool OSPRAY_VERBOSE = false;
+};
+
+#define ospout \
+    if (!slivr::OSPRAY_VERBOSE && !DebugStream::Level5()) ; \
+    else (*slivr::osp_out)
+#define osperr \
+    if (!slivr::OSPRAY_VERBOSE && !DebugStream::Level1()) ; \
+    else (*slivr::osp_err)
 
 // helper
 double slivr::deg2rad (double degrees) {
@@ -220,33 +234,46 @@ float* VolumeInfo::GetFBData() {
 
 void OSPContext::InitOSP(bool flag, int numThreads) 
 { 
-    std::cout << "Initialize OSPRay (new data " << flag << ")" << std::endl;
-    enabledOSPRay = true;
     OSPDevice device = ospGetCurrentDevice();
     if (device == nullptr) {
-	debug5 << "Initialize OSPRay";
+	// initialize OSPRAY_VERBOSE
+	auto OSPRAY_VERBOSE_PAIR = ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
+	if (OSPRAY_VERBOSE_PAIR.first) {
+	    // std::cout << "#osp: verbose mode " 
+	    //           << OSPRAY_VERBOSE_PAIR.second << std::endl;
+	    slivr::OSPRAY_VERBOSE = OSPRAY_VERBOSE_PAIR.second > 0;
+	    slivr::osp_out = &std::cout;
+	    slivr::osp_err = &std::cerr;
+	}
+	// initialize ospray
+        ospout << "Initialize OSPRay";
+	enabledOSPRay = true;
 	device = ospNewDevice();
 	if (DebugStream::Level5()) {
-	    debug5 << " debug mode";
+	    ospout << " debug mode";
 	    ospDeviceSet1i(device, "debug", 1);
 	}
 	if (numThreads > 0) {
-	    debug5 << " numThreads: " << numThreads;
+	    ospout << " numThreads: " << numThreads;
 	    ospDeviceSet1i(device, "numThreads", numThreads);
 	}
-	debug5 << std::endl;
+	ospout << std::endl;
 	ospDeviceSetErrorFunc
-	    (device, [](OSPError, const char *msg) { std::cerr << msg; });
+	    (device, [](OSPError, const char *msg) { 	
+		osperr << msg;
+	    });
 	ospDeviceSetStatusFunc
-	    (device, [](const char *msg) { debug5 << msg; });
+	    (device, [](const char *msg) { ospout << msg; });
 	ospDeviceCommit(device);
 	ospSetCurrentDevice(device);
 	OSPError err = ospLoadModule("visit");
 	if (err != OSP_NO_ERROR) {
-	    std::cerr << "can't load visit module" << std::endl;
+	    osperr << "can't load visit module" << std::endl;
 	}
     }
     refreshData = flag;
+    ospout << "Initialize OSPRay (new data " << flag << ")" 
+	   << std::endl;    
 }
 
 void OSPContext::InitPatch(int id) 
@@ -282,12 +309,12 @@ void OSPContext::SetRenderer(bool lighting, double material[4], double dir[3])
     ospSet1i(renderer, "aoSamples", 16);
     if (lighting)
     {
-	std::cout << "use lighting" << std::endl;
-	std::cout << "use material " 
-		  << material[0] << " "
-		  << material[1] << " "
-		  << material[2] << " "
-		  << material[3] << std::endl;
+	ospout << "use lighting" 
+	       << "use material " 
+	       << material[0] << " "
+	       << material[1] << " "
+	       << material[2] << " "
+	       << material[3] << std::endl;
 	ospSet1i(renderer, "shadowsEnabled", 1);
 	OSPLight aLight = ospNewLight(renderer, "AmbientLight");
 	ospSet1f(aLight, "intensity", material[0]);
