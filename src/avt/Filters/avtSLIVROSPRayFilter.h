@@ -45,10 +45,12 @@
 #include <cmath>
 
 #include <vtkType.h>
+#include <DebugStream.h>
 
 #include "ospray/ospray.h"
 #include "ospray/ospcommon/vec.h"
 #include "ospray/ospcommon/math.h"
+#include "ospray/ospcommon/common.h"
 
 #define OSP_PERSPECTIVE              1
 #define OSP_ORTHOGRAPHIC             2
@@ -63,6 +65,31 @@ typedef ospcommon::vec3f vec3f;
 typedef ospcommon::vec3i vec3i;
 typedef ospcommon::vec4f vec4f;
 typedef ospcommon::vec4i vec4i;
+
+
+namespace slivr {
+    // output stream
+    static std::ostream *osp_out = &DebugStream::Stream5();
+    static std::ostream *osp_err = &DebugStream::Stream1();
+    static bool OSPRAY_VERBOSE = false;
+    // detect environmental variables
+    static void InitEnvVar() 
+    {
+	// initialize OSPRAY_VERBOSE
+	auto OSPRAY_VERBOSE_PAIR = ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
+	if (OSPRAY_VERBOSE_PAIR.first) {
+	    slivr::OSPRAY_VERBOSE = OSPRAY_VERBOSE_PAIR.second > 0;
+	    slivr::osp_out = &std::cout;
+	    slivr::osp_err = &std::cerr;
+	}	
+    }
+};
+#define ospout \
+    if (!slivr::OSPRAY_VERBOSE && !DebugStream::Level5()) ; \
+    else (*slivr::osp_out)
+#define osperr \
+    if (!slivr::OSPRAY_VERBOSE && !DebugStream::Level1()) ; \
+    else (*slivr::osp_err)
 
 // ****************************************************************************
 //  Struct:  VolumeInfo

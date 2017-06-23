@@ -40,25 +40,8 @@
 
 #include <avtMemory.h>
 #include <avtParallel.h>
-#include <DebugStream.h>
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
-
-#include "ospray/ospcommon/common.h"
-
-// output stream
-namespace slivr {
-    static std::ostream *osp_out = &DebugStream::Stream5();
-    static std::ostream *osp_err = &DebugStream::Stream1();
-    static bool OSPRAY_VERBOSE = false;
-};
-
-#define ospout \
-    if (!slivr::OSPRAY_VERBOSE && !DebugStream::Level5()) ; \
-    else (*slivr::osp_out)
-#define osperr \
-    if (!slivr::OSPRAY_VERBOSE && !DebugStream::Level1()) ; \
-    else (*slivr::osp_err)
 
 // helper
 double slivr::deg2rad (double degrees) {
@@ -235,16 +218,10 @@ float* VolumeInfo::GetFBData() {
 void OSPContext::InitOSP(bool flag, int numThreads) 
 { 
     OSPDevice device = ospGetCurrentDevice();
-    if (device == nullptr) {
-	// initialize OSPRAY_VERBOSE
-	auto OSPRAY_VERBOSE_PAIR = ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
-	if (OSPRAY_VERBOSE_PAIR.first) {
-	    // std::cout << "#osp: verbose mode " 
-	    //           << OSPRAY_VERBOSE_PAIR.second << std::endl;
-	    slivr::OSPRAY_VERBOSE = OSPRAY_VERBOSE_PAIR.second > 0;
-	    slivr::osp_out = &std::cout;
-	    slivr::osp_err = &std::cerr;
-	}
+    if (device == nullptr) 
+    {
+	// init environmental flags
+	slivr::InitEnvVar();
 	// initialize ospray
         ospout << "Initialize OSPRay";
 	enabledOSPRay = true;
