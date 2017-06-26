@@ -2409,7 +2409,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	volume->Set(volumePointer, volumeDataType,
 		    X, Y, Z, nX, nY, nZ,
 		    (float)rendererSampleRate, 
-		    volumePBox, volumeBBox);
+		    volumePBox, volumeBBox,
+		    lighting, materialProperties);
 
 	if ((scalarRange[1] >= tFVisibleRange[0]) &&
 	    (scalarRange[0] <= tFVisibleRange[1]))

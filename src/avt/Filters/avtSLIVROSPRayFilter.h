@@ -133,6 +133,9 @@ struct VolumeInfo
     vec3f regionUpperClip;
     vec3f regionLowerClip;
 
+    bool lightingFlag = false;
+    float specularColor = 0.0f;
+
     // constructor
     VolumeInfo(int id) : patchId(id) {}
     // destructor
@@ -149,7 +152,8 @@ struct VolumeInfo
     void Set
     (void *ptr, int type, double *X, double *Y, double *Z,
      int nX, int nY, int nZ, float sr, 
-     double volumePBox[6], double volumeBBox[6]);
+     double volumePBox[6], double volumeBBox[6],		  
+     bool lighting, double mtl[4]);
 
     bool GetCompleteFlag() { return isComplete; }
     void SetCompleteFlag(bool f) { isComplete = f; } 
@@ -177,6 +181,7 @@ struct VolumeInfo
 		   double volumePBox[6], 
 		   double volumeBBox[6]);
     void SetSamplingRate(float r);
+    void SetLighting(bool lighting, float Ks);
     void CleanVolume() {	
 	if (voxelData != nullptr) { 
 	    ospRelease(voxelData);
@@ -264,7 +269,7 @@ struct OSPContext
 
     // ospRenderer component
     void InitRenderer();
-    void SetRenderer(bool lighting, double material[4], double dir[3]);
+    void SetRenderer(bool lighting, double mtl[4], double dir[3]);
     void SetModel(OSPModel world);
 
     // ospCamera component

@@ -52,7 +52,9 @@ double slivr::deg2rad (double degrees) {
 void 
 VolumeInfo::Set
 (void *ptr, int type, double *X, double *Y, double *Z, 
- int nX, int nY, int nZ, float sr, double volumePBox[6], double volumeBBox[6])
+ int nX, int nY, int nZ, float sr, 
+ double volumePBox[6], double volumeBBox[6],
+ bool lighting, double mtl[4])
 {
     if (!isComplete) {
 	worldType = OSP_INVALID;
@@ -66,6 +68,9 @@ VolumeInfo::Set
     if (samplingRate != sr) {
 	samplingRate = sr;
 	SetSamplingRate(samplingRate);
+    }
+    if (lighting != lightingFlag || (float)mtl[2] != specularColor) {
+	SetLighting(lighting, (float)mtl[2]);
     }
     if (!isComplete) { 
 	SetWorld();
@@ -145,7 +150,6 @@ void VolumeInfo::SetVolume(void *ptr, int type,
     regionStart   = vec3f(volumePBox[0], volumePBox[1], volumePBox[2]);
     regionStop    = vec3f(volumePBox[3], volumePBox[4], volumePBox[5]);
     regionSize    = vec3i(nX, nY, nZ);
-    // regionSpacing = vec3f(X[1]-X[0], Y[1]-Y[0], Z[1]-Z[0]);
     regionSpacing = (regionStop-regionStart)/
 	((ospcommon::vec3f)regionSize-1.0f);
 
@@ -166,7 +170,11 @@ void VolumeInfo::SetVolume(void *ptr, int type,
     ospSetObject(volume, "transferFunction", transferfcn);
 
     // commit volume
-    ospSetVec3f(volume, "specular", osp::vec3f{0.0f,0.0f,0.0f});
+    // -- no lighting by default
+    ospSetVec3f(volume, "specular", 
+		osp::vec3f{specularColor, specularColor, specularColor});
+    ospSet1i(volume, "gradientShadingEnabled", (int)lightingFlag);
+    // -- other properties
     ospSetVec3f(volume, "volumeClippingBoxLower",
     		(const osp::vec3f&)regionLowerClip);
     ospSetVec3f(volume, "volumeClippingBoxUpper",
@@ -174,7 +182,7 @@ void VolumeInfo::SetVolume(void *ptr, int type,
     ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)regionSpacing);
     ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)regionStart);
     ospSetVec3i(volume, "dimensions",  (const osp::vec3i&)regionSize);
-    ospSet1i(volume, "gradientShadingEnabled", 0);
+    ospSet1f(volume, "samplingRate", 3.0f);
     ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 0);
     ospSet1i(volume, "singleShade", 1);
@@ -184,6 +192,13 @@ void VolumeInfo::SetVolume(void *ptr, int type,
 }
 void VolumeInfo::SetSamplingRate(float r) {
     ospSet1f(volume, "samplingRate", r);
+    ospCommit(volume);
+}
+void VolumeInfo::SetLighting(bool lighting, float Ks) {
+    specularColor = Ks;
+    lightingFlag = lighting;
+    ospSetVec3f(volume, "specular", osp::vec3f{Ks, Ks, Ks});
+    ospSet1i(volume, "gradientShadingEnabled", (int)lighting);
     ospCommit(volume);
 }
 
@@ -265,7 +280,7 @@ void OSPContext::InitPatch(int id)
     }
     volumePatch[id].SetTransferFunction(transferfcn);
     volumePatch[id].SetRenderer(renderer);
-    volumePatch[id].SetCompleteFlag(!refreshData); 
+    volumePatch[id].SetCompleteFlag(!refreshData);
     // if the data is refreshed -> not complete
 }
 
@@ -278,7 +293,7 @@ void OSPContext::InitRenderer()
     }
 }
 
-void OSPContext::SetRenderer(bool lighting, double material[4], double dir[3]) 
+void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3]) 
 {
     ospSetObject(renderer, "camera", camera);
     ospSet1i(renderer, "backgroundEnabled", 0);
@@ -286,23 +301,23 @@ void OSPContext::SetRenderer(bool lighting, double material[4], double dir[3])
     ospSet1i(renderer, "aoSamples", 16);
     if (lighting)
     {
-	ospout << "use lighting" 
-	       << "use material " 
-	       << material[0] << " "
-	       << material[1] << " "
-	       << material[2] << " "
-	       << material[3] << std::endl;
-	ospSet1i(renderer, "shadowsEnabled", 1);
+	ospout << "use lighting " 
+	       << "use mtl " 
+	       << mtl[0] << " "
+	       << mtl[1] << " "
+	       << mtl[2] << " "
+	       << mtl[3] << std::endl;
+	ospSet1i(renderer, "shadowsEnabled", 0);
 	OSPLight aLight = ospNewLight(renderer, "AmbientLight");
-	ospSet1f(aLight, "intensity", material[0]);
+	ospSet1f(aLight, "intensity", std::min((float)(mtl[0] * M_PI), 1.0f));
 	ospCommit(aLight);
 	OSPLight dLight = ospNewLight(renderer, "DirectionalLight");
-	ospSet1f(dLight, "intensity", material[1]);
+	ospSet1f(dLight, "intensity", std::min((float)(mtl[1] * M_PI), 1.0f));
 	ospSetVec3f(dLight, "direction", 
 		    osp::vec3f{(float)-dir[0],(float)-dir[1],(float)-dir[2]});
 	ospCommit(dLight);
 	OSPLight lights[2] = { aLight, dLight };
-	ospSetData(renderer,"lights", ospNewData(2, OSP_OBJECT, lights));
+	ospSetData(renderer, "lights", ospNewData(2, OSP_OBJECT, lights));
     }
     ospCommit(renderer);
 }
@@ -367,7 +382,8 @@ void OSPContext::SetCamera(const double campos[3],
     }
     r_panx = imagepan[0] * zoomratio;
     r_pany = imagepan[1] * zoomratio;
-    this->SetSubCamera(imageExtents[0], imageExtents[1], imageExtents[2], imageExtents[3]);
+    this->SetSubCamera(imageExtents[0], imageExtents[1],
+		       imageExtents[2], imageExtents[3]);
     screenSize[0] = screenExtents[0];
     screenSize[1] = screenExtents[1];
 }
