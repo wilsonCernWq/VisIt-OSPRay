@@ -93,11 +93,12 @@ private:
     std::vector<int> regionRankExtents;
 
 private:
-    void ColorImage(float *&, int, int, float color[4]);
+    void ColorImage(float *&, const int, const int, const float color[4]);
     void PlaceImage
-	(const float *, int srcExtents[4], float *&, int dstExtents[4]);
+	(const float *, const int srcExtents[4], 
+	 float *&, const int dstExtents[4]);
     void BlendWithBackground
-	(float *&, int extents[4], float bgColor[4]);
+	(float *&, const int extents[4], const float bgColor[4]);
     void UpdateBoundingBox
 	(int currentBoundingBox[4], const int imageExtents[4]);
     void GatherDepthAtRoot(const int, const float *, int &, int *&, float *&);
@@ -113,10 +114,12 @@ private:
     int getMaxRegionHeight(){ return maxRegionHeight; }
 	
     int getScreenRegionStart(int region, int screenImgMinY, int screenImgMaxY){
-	return slivr::Clamp( getRegionStart(region)+screenImgMinY, screenImgMinY, screenImgMaxY); 
+	return CLAMP(getRegionStart(region)+screenImgMinY, 
+		     screenImgMinY, screenImgMaxY); 
     }
     int getScreenRegionEnd(int region, int screenImgMinY, int screenImgMaxY){
-	return slivr::Clamp( getRegionEnd(region)+screenImgMinY, screenImgMinY, screenImgMaxY); 
+	return CLAMP(getRegionEnd(region)+screenImgMinY, 
+		     screenImgMinY, screenImgMaxY); 
     }
 
 private:
@@ -138,23 +141,21 @@ public:
     virtual const char *GetType(void)
     { return "avtSLIVRImgCommunicator"; };
     virtual const char *GetDescription(void) 
-    { return "Doing compositing for ray casting SLIVR";};
-	
+    { return "Doing compositing for ray casting SLIVR"; };	
 
     void BlendFrontToBack
-	(const float *, int srcExtents[4], int blendExtents[4], 
-	 float *&, int dstExtents[4]);
+	(const float *, const int srcExtents[4], const int blendExtents[4], 
+	 float *&, const int dstExtents[4]);
     void BlendBackToFront
-	(const float *, int srcExtents[4], int blendExtents[4], 
-	 float *&, int dstExtents[4]);
+	(const float *, const int srcExtents[4], const int blendExtents[4], 
+	 float *&, const int dstExtents[4]);
     void BlendFrontToBack
-	(const float *, int srcExtents[4], float *&, int dstExtents[4]);
+	(const float *, const int srcExtents[4], float *&, const int dstExtents[4]);
     void BlendBackToFront
-	(const float *, int srcExtents[4], float *&, int dstExtents[4]);
-
+	(const float *, const int srcExtents[4], float *&, const int dstExtents[4]);
 
     void Barrier();
-    void RegionAllocation(int, int *&);
+    void RegionAllocation(const int, int *&);
 
 
     // Both currently unused but good for simple testing

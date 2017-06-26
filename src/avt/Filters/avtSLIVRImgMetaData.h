@@ -44,6 +44,7 @@
 #include <string>
 #include <iostream>
 #include <limits>
+#include <cmath>
 
 // ****************************************************************************
 //  Namespace:  slivr
@@ -166,19 +167,7 @@ namespace slivr
 //  Creation:    
 //
 // ****************************************************************************
-namespace slivr
-{
-
-    template<typename T>
-    T Clamp(T value, T vmin, T vmax)
-    { return std::max(std::min(value, vmax), vmin); }
-
-    template<typename T>
-    T Clamp(T x)
-    { return std::min(std::max(x, (T)0.0), (T)1.0); }
-
-};
-
+#define CLAMP(x, l, h) (x > l ? x < h ? x : h : l)
 
 // ****************************************************************************
 //  Function:  

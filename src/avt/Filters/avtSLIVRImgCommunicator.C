@@ -140,7 +140,7 @@ void avtSLIVRImgCommunicator::Barrier() {
 // ***************************************************************************
 
 void
-avtSLIVRImgCommunicator::RegionAllocation(int numMPIRanks, int *& regions)
+avtSLIVRImgCommunicator::RegionAllocation(const int numMPIRanks, int *& regions)
 {
     regions = new int[numMPIRanks];
     // Initial allocation: partition for section rank
@@ -163,8 +163,10 @@ avtSLIVRImgCommunicator::RegionAllocation(int numMPIRanks, int *& regions)
 
 void
 avtSLIVRImgCommunicator::ColorImage
-(float *&srcImage, int widthSrc, int heightSrc, float color[4])
+(float *&srcImage, const int widthSrc,
+ const int heightSrc, const float color[4])
 {
+    #pragma omp parallel for
     for (int i = 0; i < heightSrc * widthSrc; ++i) {
 	const int srcIndex = 4 * i;
 	srcImage[srcIndex+0] = color[0];
@@ -190,59 +192,60 @@ avtSLIVRImgCommunicator::ColorImage
 
 void
 avtSLIVRImgCommunicator::PlaceImage
-(const float *srcImage, int srcExtents[4], 
- float *&dstImage, int dstExtents[4])
+(const float *srcImage, const int srcExtents[4], 
+ float *&dstImage, const int dstExtents[4])
 {
     const int srcX = srcExtents[1] - srcExtents[0];
     const int srcY = srcExtents[3] - srcExtents[2];
     const int dstX = dstExtents[1] - dstExtents[0];
     const int dstY = dstExtents[3] - dstExtents[2];
-
     const int startingX = std::max(srcExtents[0], dstExtents[0]);
     const int startingY = std::max(srcExtents[2], dstExtents[2]);
     const int endingX = std::min(srcExtents[1], dstExtents[1]);
     const int endingY = std::min(srcExtents[3], dstExtents[3]);
-
-    for (int y = startingY; y < endingY; y++) {
-	for (int x = startingX; x < endingX; x++) {
+    
+    #pragma omp parallel for collapse(2)
+    for (int y = startingY; y < endingY; ++y) {
+	for (int x = startingX; x < endingX; ++x) {
 	    // check error in debug
-	    if (DebugStream::Level5())
-	    {
-		bool printError = false;
-		if (x <  dstExtents[0]) { printError = true; }
-		if (x >= dstExtents[1]) { printError = true; }
-		if (y <  dstExtents[2]) { printError = true; }
-		if (y >= dstExtents[3]) { printError = true; }
-		if (x <  srcExtents[0]) { printError = true; }
-		if (x >= srcExtents[1]) { printError = true; }
-		if (y <  srcExtents[2]) { printError = true; }
-		if (y >= srcExtents[3]) { printError = true; }
-		if (printError) {
-		    debug5 << "Err: avtSLIVRImgCommunicator::PlaceImage "
-			   << "index goes out of bound "
-			   << "(" << x << "," << y << ") "
-			   << "extents " 
-			   << dstExtents[0] << " " << dstExtents[1] << " "
-			   << dstExtents[2] << " " << dstExtents[3] << " "
-			   << srcExtents[0] << " " << srcExtents[1] << " "
-			   << srcExtents[2] << " " << srcExtents[3] 
-			   << std::endl;
-		    continue; 
-		}
-	    }
+	    // if (DebugStream::Level5())
+	    // {
+	    //     bool printError = false;
+	    //     if (x <  dstExtents[0]) { printError = true; }
+	    //     if (x >= dstExtents[1]) { printError = true; }
+	    //     if (y <  dstExtents[2]) { printError = true; }
+	    //     if (y >= dstExtents[3]) { printError = true; }
+	    //     if (x <  srcExtents[0]) { printError = true; }
+	    //     if (x >= srcExtents[1]) { printError = true; }
+	    //     if (y <  srcExtents[2]) { printError = true; }
+	    //     if (y >= srcExtents[3]) { printError = true; }
+	    //     if (printError) {
+	    // 	debug5 << "Err: avtSLIVRImgCommunicator::PlaceImage "
+	    // 	       << "index goes out of bound "
+	    // 	       << "(" << x << "," << y << ") "
+	    // 	       << "extents " 
+	    // 	       << dstExtents[0] << " " << dstExtents[1] << " "
+	    // 	       << dstExtents[2] << " " << dstExtents[3] << " "
+	    // 	       << srcExtents[0] << " " << srcExtents[1] << " "
+	    // 	       << srcExtents[2] << " " << srcExtents[3] 
+	    // 	       << std::endl;
+	    // 	continue; 
+	    //     }
+	    // }
 	    // index in the sub-image
 	    const int srcIndex = 
 		(srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4; 
 	    // index in the larger buffer
-            const int dstIndex = 
+	    const int dstIndex = 
 		(dstX * (y-dstExtents[2]) + x-dstExtents[0]) * 4;
-            dstImage[dstIndex+0] = srcImage[srcIndex+0];
-            dstImage[dstIndex+1] = srcImage[srcIndex+1];
-            dstImage[dstIndex+2] = srcImage[srcIndex+2];
-            dstImage[dstIndex+3] = srcImage[srcIndex+3];
-        }
+	    dstImage[dstIndex+0] = srcImage[srcIndex+0];
+	    dstImage[dstIndex+1] = srcImage[srcIndex+1];
+	    dstImage[dstIndex+2] = srcImage[srcIndex+2];
+	    dstImage[dstIndex+3] = srcImage[srcIndex+3];
+	}
     }
 }
+
 
 // ****************************************************************************
 //  Method: avtSLIVRImgCommunicator::BlendWithBackground
@@ -258,10 +261,11 @@ avtSLIVRImgCommunicator::PlaceImage
 // **************************************************************************
 void
 avtSLIVRImgCommunicator::BlendWithBackground
-(float *&image, int extents[4], float bgColor[4])
+(float *&image, const int extents[4], const float bgColor[4])
 {
     const int pixelSize = (extents[3]-extents[2]) * (extents[1]-extents[0]);
     // estimated potential speedup: 2.240
+    #pragma omp parallel for
     for (int i = 0; i < pixelSize; ++i)
     {
         const int   idx = i * 4;
@@ -289,8 +293,8 @@ avtSLIVRImgCommunicator::BlendWithBackground
 
 void
 avtSLIVRImgCommunicator::BlendFrontToBack
-(const float *srcImage, int srcExtents[4], int blendExtents[4], 
- float *&dstImage, int dstExtents[4])
+(const float *srcImage, const int srcExtents[4], const int blendExtents[4], 
+ float *&dstImage, const int dstExtents[4])
 {  
     debug5 << ">>> avtSLIVRImgCommunicator::BlendFrontToBack" << std::endl;
     // image sizes
@@ -307,34 +311,35 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 	std::min(std::min(blendExtents[1], srcExtents[1]), dstExtents[1]);
     const int endY = 
 	std::min(std::min(blendExtents[3], srcExtents[3]), dstExtents[3]);
-
+    
+    #pragma omp parallel for collapse(2)
     for (int y = startY; y < endY; ++y) {
-	for (int x = startX; x < endX; ++x) {	  	    
-	    if (DebugStream::Level5())
-	    {
-		bool printError = false;
-		if (x <  dstExtents[0]) { printError = true; }
-		if (x >= dstExtents[1]) { printError = true; }
-		if (y <  dstExtents[2]) { printError = true; }
-		if (y >= dstExtents[3]) { printError = true; }
-		if (x <  srcExtents[0]) { printError = true; }
-		if (x >= srcExtents[1]) { printError = true; }
-		if (y <  srcExtents[2]) { printError = true; }
-		if (y >= srcExtents[3]) { printError = true; }
-		if (printError) {
-		    debug5 << "Err: "
-			   << "avtSLIVRImgCommunicator::BlendFrontToBack "
-			   << "index goes out of bound "
-			   << "(" << x << "," << y << ") "
-			   << "extents " 
-			   << dstExtents[0] << " " << dstExtents[1] << " "
-			   << dstExtents[2] << " " << dstExtents[3] << " "
-			   << srcExtents[0] << " " << srcExtents[1] << " "
-			   << srcExtents[2] << " " << srcExtents[3] 
-			   << std::endl;
-		    continue; 
-		}
-	    }
+	for (int x = startX; x < endX; ++x) {
+	    // if (DebugStream::Level5())
+	    // {
+	    //     bool printError = false;
+	    //     if (x <  dstExtents[0]) { printError = true; }
+	    //     if (x >= dstExtents[1]) { printError = true; }
+	    //     if (y <  dstExtents[2]) { printError = true; }
+	    //     if (y >= dstExtents[3]) { printError = true; }
+	    //     if (x <  srcExtents[0]) { printError = true; }
+	    //     if (x >= srcExtents[1]) { printError = true; }
+	    //     if (y <  srcExtents[2]) { printError = true; }
+	    //     if (y >= srcExtents[3]) { printError = true; }
+	    //     if (printError) {
+	    // 	debug5 << "Err: "
+	    // 	       << "avtSLIVRImgCommunicator::BlendFrontToBack "
+	    // 	       << "index goes out of bound "
+	    // 	       << "(" << x << "," << y << ") "
+	    // 	       << "extents " 
+	    // 	       << dstExtents[0] << " " << dstExtents[1] << " "
+	    // 	       << dstExtents[2] << " " << dstExtents[3] << " "
+	    // 	       << srcExtents[0] << " " << srcExtents[1] << " "
+	    // 	       << srcExtents[2] << " " << srcExtents[3] 
+	    // 	       << std::endl;
+	    // 	continue; 
+	    //     }
+	    // }
 
 	    // get indices
 	    int srcIndex = (srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4;
@@ -344,17 +349,17 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 	    if (dstImage[dstIndex + 3] < 1.0f) {
 		float trans = 1.0f - dstImage[dstIndex + 3];
 		dstImage[dstIndex+0] = 
-		    slivr::Clamp(srcImage[srcIndex+0] * trans + 
-				 dstImage[dstIndex+0]);
+		    CLAMP(srcImage[srcIndex+0] * trans + dstImage[dstIndex+0],
+			  0.0f, 1.0f);
 		dstImage[dstIndex+1] = 
-		    slivr::Clamp(srcImage[srcIndex+1] * trans + 
-				 dstImage[dstIndex+1]);
+		    CLAMP(srcImage[srcIndex+1] * trans + dstImage[dstIndex+1],
+			  0.0f, 1.0f);
 		dstImage[dstIndex+2] = 
-		    slivr::Clamp(srcImage[srcIndex+2] * trans +
-				 dstImage[dstIndex+2]);
+		    CLAMP(srcImage[srcIndex+2] * trans + dstImage[dstIndex+2],
+			  0.0f, 1.0f);
 		dstImage[dstIndex+3] = 
-		    slivr::Clamp(srcImage[srcIndex+3] * trans +
-				 dstImage[dstIndex+3]);
+		    CLAMP(srcImage[srcIndex+3] * trans + dstImage[dstIndex+3],
+			  0.0f, 1.0f);
 	    }
 	}
     }
@@ -376,8 +381,8 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 
 void
 avtSLIVRImgCommunicator::BlendBackToFront
-(const float *srcImage, int srcExtents[4], int blendExtents[4], 
- float *&dstImage, int dstExtents[4])
+(const float *srcImage, const int srcExtents[4], const int blendExtents[4], 
+ float *&dstImage, const int dstExtents[4])
 {
     debug5 << ">>> avtSLIVRImgCommunicator::BlendBackToFront" << std::endl;
     // image sizes
@@ -394,34 +399,35 @@ avtSLIVRImgCommunicator::BlendBackToFront
 	std::min(std::min(blendExtents[1], srcExtents[1]), dstExtents[1]);
     const int endY = 
 	std::min(std::min(blendExtents[3], srcExtents[3]), dstExtents[3]);
-
+    
+    #pragma omp parallel for collapse(2)
     for (int y = startY; y < endY; ++y) {
-	for (int x = startX; x < endX; ++x) {	  	    
-	    if (DebugStream::Level5())
-	    {
-		bool printError = false;
-		if (x <  dstExtents[0]) { printError = true; }
-		if (x >= dstExtents[1]) { printError = true; }
-		if (y <  dstExtents[2]) { printError = true; }
-		if (y >= dstExtents[3]) { printError = true; }
-		if (x <  srcExtents[0]) { printError = true; }
-		if (x >= srcExtents[1]) { printError = true; }
-		if (y <  srcExtents[2]) { printError = true; }
-		if (y >= srcExtents[3]) { printError = true; }
-		if (printError) {
-		    debug5 << "Err: "
-			   << "avtSLIVRImgCommunicator::BlendFrontToBack "
-			   << "index goes out of bound "
-			   << "(" << x << "," << y << ") "
-			   << "extents " 
-			   << dstExtents[0] << " " << dstExtents[1] << " "
-			   << dstExtents[2] << " " << dstExtents[3] << " "
-			   << srcExtents[0] << " " << srcExtents[1] << " "
-			   << srcExtents[2] << " " << srcExtents[3] 
-			   << std::endl;
-		    continue; 
-		}
-	    }
+	for (int x = startX; x < endX; ++x) {
+	    // if (DebugStream::Level5())
+	    // {
+	    //     bool printError = false;
+	    //     if (x <  dstExtents[0]) { printError = true; }
+	    //     if (x >= dstExtents[1]) { printError = true; }
+	    //     if (y <  dstExtents[2]) { printError = true; }
+	    //     if (y >= dstExtents[3]) { printError = true; }
+	    //     if (x <  srcExtents[0]) { printError = true; }
+	    //     if (x >= srcExtents[1]) { printError = true; }
+	    //     if (y <  srcExtents[2]) { printError = true; }
+	    //     if (y >= srcExtents[3]) { printError = true; }
+	    //     if (printError) {
+	    // 	debug5 << "Err: "
+	    // 	       << "avtSLIVRImgCommunicator::BlendFrontToBack "
+	    // 	       << "index goes out of bound "
+	    // 	       << "(" << x << "," << y << ") "
+	    // 	       << "extents " 
+	    // 	       << dstExtents[0] << " " << dstExtents[1] << " "
+	    // 	       << dstExtents[2] << " " << dstExtents[3] << " "
+	    // 	       << srcExtents[0] << " " << srcExtents[1] << " "
+	    // 	       << srcExtents[2] << " " << srcExtents[3] 
+	    // 	       << std::endl;
+	    // 	continue; 
+	    //     }
+	    // }
 
 	    // get indices
 	    int srcIndex = (srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4;
@@ -430,17 +436,17 @@ avtSLIVRImgCommunicator::BlendBackToFront
 	    // back to front compositing	    
 	    float trans = 1.0f - srcImage[srcIndex + 3];
 	    dstImage[dstIndex+0] = 
-		slivr::Clamp(dstImage[dstIndex+0] * trans +
-			     srcImage[srcIndex+0]);
+		CLAMP(dstImage[dstIndex+0] * trans + srcImage[srcIndex+0],
+		      0.0f, 1.0f);
 	    dstImage[dstIndex+1] = 
-		slivr::Clamp(dstImage[dstIndex+1] * trans +
-			     srcImage[srcIndex+1]);
+		CLAMP(dstImage[dstIndex+1] * trans + srcImage[srcIndex+1],
+		      0.0f, 1.0f);
 	    dstImage[dstIndex+2] = 
-		slivr::Clamp(dstImage[dstIndex+2] * trans +
-			     srcImage[srcIndex+2]);
+		CLAMP(dstImage[dstIndex+2] * trans + srcImage[srcIndex+2],
+		      0.0f, 1.0f);
 	    dstImage[dstIndex+3] = 
-		slivr::Clamp(dstImage[dstIndex+3] * trans +
-			     srcImage[srcIndex+3]);
+		CLAMP(dstImage[dstIndex+3] * trans + srcImage[srcIndex+3],
+		      0.0f, 1.0f);
 	}
     }
 }
@@ -460,8 +466,8 @@ avtSLIVRImgCommunicator::BlendBackToFront
 // **************************************************************************
 void
 avtSLIVRImgCommunicator::BlendFrontToBack
-(const float * srcImage, int srcExtents[4], 
- float *& dstImage, int dstExtents[4])
+(const float * srcImage, const int srcExtents[4], 
+ float *& dstImage, const int dstExtents[4])
 {
     BlendFrontToBack(srcImage, srcExtents, srcExtents, dstImage, dstExtents);
 }
@@ -482,8 +488,8 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 
 void
 avtSLIVRImgCommunicator::BlendBackToFront
-(const float * srcImage, int srcExtents[4], 
- float *& dstImage, int dstExtents[4])
+(const float * srcImage, const int srcExtents[4], 
+ float *& dstImage, const int dstExtents[4])
 {
     BlendBackToFront(srcImage, srcExtents, srcExtents, dstImage, dstExtents);
 }
@@ -1112,14 +1118,14 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
     {
 	int startRegionExtents, endRegionExtents, _currentRegionHeight;
 
-	startRegionExtents = slivr::Clamp(regionHeight * i, 0, height);
-	endRegionExtents = slivr::Clamp(regionHeight * i + regionHeight, 0, height);
+	startRegionExtents = CLAMP(regionHeight * i, 0, height);
+	endRegionExtents = CLAMP(regionHeight * i + regionHeight, 0, height);
 
 	if ( i == numRanks -1 )
 	    if ( endRegionExtents < height )
 		endRegionExtents = height;
 
-	_currentRegionHeight = slivr::Clamp(endRegionExtents-startRegionExtents, 0, height);
+	_currentRegionHeight = CLAMP(endRegionExtents-startRegionExtents, 0, height);
 	maxRegionHeight = std::max(maxRegionHeight, _currentRegionHeight);
 
 	regionRankExtents[i*3+0] = startRegionExtents;
@@ -1199,7 +1205,7 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
     int myEndingHeight   = getScreenRegionEnd
 	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
-    myRegionHeight = slivr::Clamp( (myEndingHeight-myStartingHeight), 0, height);
+    myRegionHeight = CLAMP((myEndingHeight-myStartingHeight), 0, height);
 
     debug5 << "myStartingHeight: " << myStartingHeight 
 	   << ", myEndingHeight: " << myEndingHeight 
