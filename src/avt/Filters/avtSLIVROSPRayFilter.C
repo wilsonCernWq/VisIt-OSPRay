@@ -44,6 +44,13 @@
 #include <TimingsManager.h>
 
 // helper
+namespace slivr {
+    // output stream
+    std::ostream *osp_out = &DebugStream::Stream5();
+    std::ostream *osp_err = &DebugStream::Stream1();
+    //bool OSPRAY_VERBOSE = false;
+};
+
 double slivr::deg2rad (double degrees) {
     return degrees * 4.0 * atan (1.0) / 180.0;
 }
@@ -235,8 +242,6 @@ void OSPContext::InitOSP(bool flag, int numThreads)
     OSPDevice device = ospGetCurrentDevice();
     if (device == nullptr) 
     {
-	// init environmental flags
-	slivr::InitEnvVar();
 	// initialize ospray
         ospout << "Initialize OSPRay";
 	enabledOSPRay = true;
@@ -309,10 +314,10 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	       << mtl[3] << std::endl;
 	ospSet1i(renderer, "shadowsEnabled", 0);
 	OSPLight aLight = ospNewLight(renderer, "AmbientLight");
-	ospSet1f(aLight, "intensity", std::min((float)(mtl[0] * M_PI), 1.0f));
+	ospSet1f(aLight, "intensity", 1.0f);
 	ospCommit(aLight);
 	OSPLight dLight = ospNewLight(renderer, "DirectionalLight");
-	ospSet1f(dLight, "intensity", std::min((float)(mtl[1] * M_PI), 1.0f));
+	ospSet1f(dLight, "intensity", (float)(mtl[1] * M_PI));
 	ospSetVec3f(dLight, "direction", 
 		    osp::vec3f{(float)-dir[0],(float)-dir[1],(float)-dir[2]});
 	ospCommit(dLight);

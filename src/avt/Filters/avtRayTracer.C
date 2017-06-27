@@ -323,211 +323,10 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 
 
 // ****************************************************************************
-//  Method: avtRayTracer::unProject
-//
-//  Purpose:
-//      Convert from screen coordinates to world coordinates
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 14, 2016
-//
-//  Modifications:
-//
-// ****************************************************************************
-// double normVec(double vec[3])
-// {
-//     return sqrt(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
-// }
-
-
-// void
-// avtRayTracer::unProject(int _x, int _y, float _z, double _worldCoordinates[3],
-// 			int _width, int _height, vtkMatrix4x4 *invModelViewProj)
-// {
-//     int screenCoord[2] = {_x, _y};
-//     return slivr::ProjectScreenToWorld(screenCoord, _z, _width, _height, panPercentage, view.imageZoom, invModelViewProj, _worldCoordinates);
-// 	// // remove panning
-// 	// _x -= round(_width * panPercentage[0]  * view.imageZoom);
-// 	// _y -= round(_height * panPercentage[1] * view.imageZoom); 
-
-// 	// double worldCoordinates[4] = {0,0,0,1};
-// 	// double in[4] = {0,0,0,1};
-// 	// in[0] = (_x - _width/2. )/(_width/2.);
-// 	// in[1] = (_y - _height/2.)/(_height/2.);
-// 	// in[2] = _z;
-
-// 	// invModelViewProj->MultiplyPoint(in, worldCoordinates);
-
-// 	// if (worldCoordinates[3] == 0)
-// 	// 	debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
-
-// 	// worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
-// 	// worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
-// 	// worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
-// 	// worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
-
-// 	// _worldCoordinates[0] = worldCoordinates[0];
-// 	// _worldCoordinates[1] = worldCoordinates[1];
-// 	// _worldCoordinates[2] = worldCoordinates[2];
-// }
-
-
-
-// ****************************************************************************
-//  Method: avtRayTracer::project
-//
-//  Purpose:
-//      Convert world coordinates to screen coordinates
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 14, 2016
-//
-//  Modifications:
-//
-// ****************************************************************************
-// double
-// avtRayTracer::project(double _worldCoordinates[3], int pos2D[2], 
-// 		      int _width, int _height, vtkMatrix4x4 *modelViewProj)
-// {
-//     return slivr::ProjectWorldToScreen
-// 	(_worldCoordinates, _width, _height, panPercentage, view.imageZoom, modelViewProj, pos2D);
-// 	// double normDevCoord[4];
-// 	// double worldCoordinates[4] = {0,0,0,1};
-// 	// worldCoordinates[0] = _worldCoordinates[0];
-// 	// worldCoordinates[1] = _worldCoordinates[1];
-// 	// worldCoordinates[2] = _worldCoordinates[2];
-
-// 	// // World to Clip space (-1 - 1)
-// 	// modelViewProj->MultiplyPoint(worldCoordinates, normDevCoord);
-
-// 	// if (normDevCoord[3] == 0)
-// 	// {
-// 	// 	debug5 << "Err: avtMassVoxelExtractor::project "
-// 	// 	       << "Division by 0 error!" << endl;
-// 	// 	debug5 << "worldCoordinates: " 
-// 	// 	       << worldCoordinates[0] << ", " 
-// 	// 	       << worldCoordinates[1] << ", " 
-// 	// 	       << worldCoordinates[2] << "   " 
-// 	// 	       << normDevCoord[0] << ", " 
-// 	// 	       << normDevCoord[1] << ", " 
-// 	// 	       << normDevCoord[2] << endl;
-// 	// 	debug5 << "Matrix: " << *modelViewProj << endl;
-// 	// }
-
-// 	// normDevCoord[0] = normDevCoord[0]/normDevCoord[3];
-// 	// normDevCoord[1] = normDevCoord[1]/normDevCoord[3];
-// 	// normDevCoord[2] = normDevCoord[2]/normDevCoord[3];
-// 	// normDevCoord[3] = normDevCoord[3]/normDevCoord[3];
-
-// 	// pos2D[0] = round( normDevCoord[0]*(_width/2.)  + (_width/2.)  );
-// 	// pos2D[1] = round( normDevCoord[1]*(_height/2.) + (_height/2.) );
-
-// 	// pos2D[0] += round(_width * panPercentage[0]  * view.imageZoom);
-// 	// pos2D[1] += round(_height * panPercentage[1]  * view.imageZoom);
-
-// 	// return normDevCoord[2];
-// }
-
-
-
-// ****************************************************************************
-//  Method: avtRayTracer::project3Dto2D
-//
-//  Purpose:
-//          Compute the extents of a volume
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 14, 2016
-//
-//  Modifications:
-//
-// ****************************************************************************
-// void
-// avtRayTracer::project3Dto2D
-// (double _3Dextents[6], int _width, int _height, vtkMatrix4x4 *modelViewProj, int _2DExtents[4], double depthExtents[2])
-// {
-
-//     return slivr::ProjectWorldToScreenCube
-// 	(_3Dextents, _width, _height, 
-// 	 panPercentage, view.imageZoom, modelViewProj, 
-// 	 _2DExtents, depthExtents);
-    
-//     // double _world[3];
-// 	// int _xMin, _xMax, _yMin, _yMax;
-// 	// double _zMin, _zMax;
-// 	// _xMin = _yMin = std::numeric_limits<int>::max();
-// 	// _xMax = _yMax = std::numeric_limits<int>::min();
-
-// 	// _zMin = std::numeric_limits<double>::max();
-// 	// _zMax = std::numeric_limits<double>::min();
-
-// 	// float coordinates[8][3];
-// 	// coordinates[0][0] = _3Dextents[0];   
-// 	// coordinates[0][1] = _3Dextents[2];   
-// 	// coordinates[0][2] = _3Dextents[4];
-	
-// 	// coordinates[1][0] = _3Dextents[1];   
-// 	// coordinates[1][1] = _3Dextents[2];   
-// 	// coordinates[1][2] = _3Dextents[4];
-	
-// 	// coordinates[2][0] = _3Dextents[1];  
-// 	// coordinates[2][1] = _3Dextents[3];
-// 	// coordinates[2][2] = _3Dextents[4];
-	
-// 	// coordinates[3][0] = _3Dextents[0]; 
-// 	// coordinates[3][1] = _3Dextents[3]; 
-// 	// coordinates[3][2] = _3Dextents[4];
-
-// 	// coordinates[4][0] = _3Dextents[0];
-// 	// coordinates[4][1] = _3Dextents[2];
-// 	// coordinates[4][2] = _3Dextents[5];
-
-// 	// coordinates[5][0] = _3Dextents[1]; 
-// 	// coordinates[5][1] = _3Dextents[2]; 
-// 	// coordinates[5][2] = _3Dextents[5];
-	
-// 	// coordinates[6][0] = _3Dextents[1]; 
-// 	// coordinates[6][1] = _3Dextents[3];
-// 	// coordinates[6][2] = _3Dextents[5];
-
-// 	// coordinates[7][0] = _3Dextents[0]; 
-// 	// coordinates[7][1] = _3Dextents[3]; 
-// 	// coordinates[7][2] = _3Dextents[5];
-
-// 	// int pos2D[2];
-// 	// double _z;
-// 	// for (int i=0; i<8; i++)
-// 	// {
-// 	// 	_world[0] = coordinates[i][0];
-// 	// 	_world[1] = coordinates[i][1];
-// 	// 	_world[2] = coordinates[i][2];
-// 	// 	_z = project(_world, pos2D, width, height, modelViewProj);
-
-// 	// 	// Get min max
-// 	// 	_2DExtents[0] = _xMin = std::min(_xMin, pos2D[0]);
-// 	// 	_2DExtents[1] = _xMax = std::max(_xMax, pos2D[0]);
-// 	// 	_2DExtents[2] = _yMin = std::min(_yMin, pos2D[1]);
-// 	// 	_2DExtents[3] = _yMax = std::max(_yMax, pos2D[1]);
-
-// 	// 	depthExtents[0] = _zMin = std::min(_zMin, _z);
-// 	// 	depthExtents[1] = _zMax = std::max(_zMax, _z);
-// 	// }
-
-
-// 	// debug5 << "_2DExtents " 
-// 	//        << _2DExtents[0] << ", " 
-// 	//        << _2DExtents[1] << "   "  
-// 	//        << _2DExtents[2] << ", "  
-// 	//        << _2DExtents[3] 
-// 	//        << "     z: " << depthExtents[0] << ", " << depthExtents[1] << endl;
-// }
-
-
-// ****************************************************************************
 //  Method: avtRayTracer::checkInBounds
 //
 //  Purpose:
-//       Checks whether a coordinate value (coord) falls into a volume (volBounds)
+//    Checks whether a coordinate value (coord) falls into a volume (volBounds)
 //
 //  Programmer:
 //  Creation:
@@ -834,14 +633,16 @@ avtRayTracer::Execute(void)
 	    (dbounds, screen[0], screen[1], 
 	     panPercentage, view.imageZoom, pvm,
 	     fullImageExtents, depthExtents);
-	// project3Dto2D(dbounds, screen[0], screen[1], pvm, 
-	// 	      fullImageExtents, depthExtents);
-	
-	debug5 << "VAR: data bounds: " << std::endl
+	// debug
+	ospout << "VAR: data bounds: " << std::endl
 	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
 	       << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
 	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl;
-
+	ospout << "VAR: full image extents: " << std::endl
+	       << fullImageExtents[0] << " "
+	       << fullImageExtents[1] << std::endl
+	       << fullImageExtents[2] << " "
+	       << fullImageExtents[3] << std::endl;
 	//===================================================================//
 	// ospray stuffs
 	//===================================================================//

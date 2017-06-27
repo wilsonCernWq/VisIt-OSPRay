@@ -169,24 +169,31 @@ slivr::ProjectWorldToScreenCube
     coordinates[0][0] = cube[0];   
     coordinates[0][1] = cube[2];   
     coordinates[0][2] = cube[4];	
+
     coordinates[1][0] = cube[1];   
     coordinates[1][1] = cube[2];   
     coordinates[1][2] = cube[4];	
+
     coordinates[2][0] = cube[1];  
     coordinates[2][1] = cube[3];
     coordinates[2][2] = cube[4];	
+
     coordinates[3][0] = cube[0]; 
     coordinates[3][1] = cube[3]; 
     coordinates[3][2] = cube[4];
+
     coordinates[4][0] = cube[0];
     coordinates[4][1] = cube[2];
     coordinates[4][2] = cube[5];
+
     coordinates[5][0] = cube[1]; 
     coordinates[5][1] = cube[2]; 
     coordinates[5][2] = cube[5];	
+
     coordinates[6][0] = cube[1]; 
     coordinates[6][1] = cube[3];
     coordinates[6][2] = cube[5];
+
     coordinates[7][0] = cube[0]; 
     coordinates[7][1] = cube[3]; 
     coordinates[7][2] = cube[5];
@@ -201,6 +208,9 @@ slivr::ProjectWorldToScreenCube
 	depth = slivr::ProjectWorldToScreen
 	    (worldCoord, screenWidth, screenHeight, 
 	     panPercentage, imageZoom, mvp, screenCoord);
+	// clamp values
+	screenCoord[0] = CLAMP(screenCoord[0], 0, screenWidth);
+	screenCoord[1] = CLAMP(screenCoord[1], 0, screenHeight);
 	screenExtents[0] = xMin = std::min(xMin, screenCoord[0]);
 	screenExtents[1] = xMax = std::max(xMax, screenCoord[0]);
 	screenExtents[2] = yMin = std::min(yMin, screenCoord[1]);
@@ -222,7 +232,7 @@ slivr::ProjectWorldToScreenCube
 //
 // ****************************************************************************
 void 
-createColorPPM
+CreateColorPPM
 (std::string filename, unsigned char *data, int width, int height){
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
 			     std::ios::out | std::ios::binary);
@@ -241,7 +251,7 @@ createColorPPM
 }
 
 void 
-writeOutputToFile( std::string filename, float * data, int dimX, int dimY )
+WriteOutputToFile( std::string filename, float * data, int dimX, int dimY )
 {
     std::ofstream outputFile( (filename+ ".txt").c_str(), std::ios::out);
     outputFile << "Dims: " << dimX << ", " << dimY << "\n";
@@ -260,7 +270,7 @@ writeOutputToFile( std::string filename, float * data, int dimX, int dimY )
 }
 
 void 
-writeOutputToFileByLine(std::string filename, float * data, int dimX, int dimY)
+WriteOutputToFileByLine(std::string filename, float * data, int dimX, int dimY)
 {
     std::ofstream outputFile( (filename+ ".txt").c_str(), std::ios::out);
     outputFile << "Dims: " << dimX << ", " << dimY << "\n";
@@ -277,7 +287,7 @@ writeOutputToFileByLine(std::string filename, float * data, int dimX, int dimY)
     outputFile.close();
 }
 
-void writeDepthBufferToPPM
+void WriteDepthBufferToPPM
 (std::string filename , float * data, int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
@@ -298,7 +308,7 @@ void writeDepthBufferToPPM
     outputFile.close();
 }
 
-void writeArrayToPPM(std::string filename , float * image, int dimX, int dimY)
+void WriteArrayToPPM(std::string filename , float * image, int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
 			     std::ios::out | std::ios::binary);
@@ -310,9 +320,9 @@ void writeArrayToPPM(std::string filename , float * image, int dimX, int dimY)
             int index = (y * dimX + x)*4;
             char color[3];
             float alpha = image[index + 3];
-            color[0] = std::max(std::min(image[index + 0]*alpha, 1.0f), 0.0f) * 255;  // red
-            color[1] = std::max(std::min(image[index + 1]*alpha, 1.0f), 0.0f) * 255;  // green
-            color[2] = std::max(std::min(image[index + 2]*alpha, 1.0f), 0.0f) * 255;  // blue
+            color[0] = CLAMP(image[index + 0]*alpha, 0.0f, 1.0f) * 255;
+            color[1] = CLAMP(image[index + 1]*alpha, 0.0f, 1.0f) * 255;
+            color[2] = CLAMP(image[index + 2]*alpha, 0.0f, 1.0f) * 255;
             outputFile.write(color,3);
         }
     } 

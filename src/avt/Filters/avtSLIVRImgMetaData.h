@@ -168,6 +168,8 @@ namespace slivr
 //
 // ****************************************************************************
 #define CLAMP(x, l, h) (x > l ? x < h ? x : h : l)
+#define M_MIN(x, r) (x < r ? x : r)
+#define M_MAX(x, r) (x > r ? x : r)
 
 // ****************************************************************************
 //  Function:  
@@ -180,19 +182,19 @@ namespace slivr
 //
 // ****************************************************************************
 void 
-createColorPPM
+CreateColorPPM
 (std::string filename, unsigned char *data, int width, int height);
 
 void 
-writeOutputToFile(std::string filename, float *data, int dimX, int dimY);
+WriteOutputToFile(std::string filename, float *data, int dimX, int dimY);
 
 void 
-writeOutputToFileByLine(std::string filename, float *data, int dimX, int dimY);
+WriteOutputToFileByLine(std::string filename, float *data, int dimX, int dimY);
 
 void 
-writeDepthBufferToPPM(std::string filename, float *data, int dimX, int dimY);
+WriteDepthBufferToPPM(std::string filename, float *data, int dimX, int dimY);
 
-void writeArrayToPPM
+void WriteArrayToPPM
 (std::string filename, float *image, int dimX, int dimY);
 
 #endif//IMG_METADATA_H

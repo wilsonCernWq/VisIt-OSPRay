@@ -69,26 +69,32 @@ typedef ospcommon::vec4i vec4i;
 
 namespace slivr {
     // output stream
-    static std::ostream *osp_out = &DebugStream::Stream5();
-    static std::ostream *osp_err = &DebugStream::Stream1();
-    static bool OSPRAY_VERBOSE = false;
+    extern std::ostream *osp_out;
+    extern std::ostream *osp_err;
     // detect environmental variables
-    static void InitEnvVar() 
+    inline bool InitVerbose() 
     {
-	// initialize OSPRAY_VERBOSE
-	auto OSPRAY_VERBOSE_PAIR = ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
+	auto OSPRAY_VERBOSE_PAIR = 
+	    ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
 	if (OSPRAY_VERBOSE_PAIR.first) {
-	    slivr::OSPRAY_VERBOSE = OSPRAY_VERBOSE_PAIR.second > 0;
 	    slivr::osp_out = &std::cout;
 	    slivr::osp_err = &std::cerr;
-	}	
+	    return OSPRAY_VERBOSE_PAIR.second > 0;
+	} else {
+	    return false;
+	}
+    }
+    inline bool CheckVerbose() // initialize OSPRAY_VERBOSE
+    {
+	static bool OSPRAY_VERBOSE = slivr::InitVerbose();
+	return OSPRAY_VERBOSE;
     }
 };
 #define ospout \
-    if (!slivr::OSPRAY_VERBOSE && !DebugStream::Level5()) ; \
+    if (!slivr::CheckVerbose() && !DebugStream::Level5()) ; \
     else (*slivr::osp_out)
 #define osperr \
-    if (!slivr::OSPRAY_VERBOSE && !DebugStream::Level1()) ; \
+    if (!slivr::CheckVerbose() && !DebugStream::Level1()) ; \
     else (*slivr::osp_err)
 
 // ****************************************************************************

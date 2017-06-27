@@ -2139,7 +2139,8 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
 
     if (intesecting){
 	intersect = posAlongVector * (last-first) + first;
-	debug5 << "intersect: " << intersect << "   First: " << first << "  last: " << last << std::endl;
+	debug5 << "intersect: " << intersect 
+	       << "   First: " << first << "  last: " << last << std::endl;
     }
 
     if (hasSamples)
@@ -2341,8 +2342,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	     imageZoom, modelViewProj, point_pos);
 	
 	// Clamp values
-	point_pos[0] = std::min(std::max(point_pos[0], 0), w_max-1);
-	point_pos[1] = std::min(std::max(point_pos[1], 0), h_max-1);
+	point_pos[0] = std::min(std::max(point_pos[0], 0), w_max);
+	point_pos[1] = std::min(std::max(point_pos[1], 0), h_max);
 
 	// Get min max
 	xMin = std::min(xMin, point_pos[0]);
@@ -2371,6 +2372,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //=======================================================================//
     // assign data to the class
     xMax+=1; yMax+=1;
+    ospout << "patch location " 
+	   << xMin << " " << xMax << " "
+	   << yMin << " " << yMax << std::endl;
+    if (xMin < fullImageExtents[0]) { xMin = fullImageExtents[0]; }
+    if (yMin < fullImageExtents[2]) { yMin = fullImageExtents[2]; }    
     if (xMax > fullImageExtents[1]) { xMax = fullImageExtents[1]; }
     if (yMax > fullImageExtents[3]) { yMax = fullImageExtents[3]; }
     clipSpaceDepth = clip_space_depth;
