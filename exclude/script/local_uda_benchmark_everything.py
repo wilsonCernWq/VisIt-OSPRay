@@ -36,8 +36,8 @@ def makePlot(atts):
             DrawPlots()
     # do plots
     drawPlots(atts, atts.OSPRaySLIVR)
-    #drawPlots(atts, atts.RayCastingSLIVR)
-    #drawPlots(atts, atts.RayCasting)
+    drawPlots(atts, atts.RayCastingSLIVR)
+    drawPlots(atts, atts.RayCasting)
     #drawPlots(atts, atts.RayCastingIntegration)
     # close all
     DeleteActivePlots()
@@ -48,6 +48,8 @@ def makePlot(atts):
 VolumeAtts = VolumeAttributes()
 VolumeAtts.freeformOpacity = (0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 19, 36, 63, 71, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173, 195, 173, 151, 130, 108, 86, 65, 43, 21, 0, 0, 21, 43, 65, 86, 108, 130, 151, 173)
 VolumeAtts.opacityAttenuation = 0.3529412
+VolumeAtts.sampling = VolumeAtts.Trilinear  # KernelBased, Rasterization, Trilinear
+VolumeAtts.rendererSamples = 3
 #--------------------------------------------------------------------------------------------------------
 # open remote
 makePlot(VolumeAtts)
