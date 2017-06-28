@@ -151,6 +151,7 @@ void VolumeInfo::SetVolume(void *ptr, int type,
 	debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
 	EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
     }
+    ospout << "[ospray] data type " << dataType << std::endl;
     // assign data pointer
     dataPtr = ptr;
     // assign structure
@@ -303,7 +304,7 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
     ospSetObject(renderer, "camera", camera);
     ospSet1i(renderer, "backgroundEnabled", 0);
     ospSet1i(renderer, "oneSidedLighting", 0);
-    ospSet1i(renderer, "aoSamples", 16);
+    //ospSet1i(renderer, "aoSamples", 16);
     if (lighting)
     {
 	ospout << "use lighting " 
@@ -312,7 +313,7 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	       << mtl[1] << " "
 	       << mtl[2] << " "
 	       << mtl[3] << std::endl;
-	ospSet1i(renderer, "shadowsEnabled", 0);
+	ospSet1i(renderer, "shadowsEnabled", 1);
 	OSPLight aLight = ospNewLight(renderer, "AmbientLight");
 	ospSet1f(aLight, "intensity", 1.0f);
 	ospCommit(aLight);
