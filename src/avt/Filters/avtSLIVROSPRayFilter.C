@@ -48,7 +48,6 @@ namespace slivr {
     // output stream
     std::ostream *osp_out = &DebugStream::Stream5();
     std::ostream *osp_err = &DebugStream::Stream1();
-    //bool OSPRAY_VERBOSE = false;
 };
 
 double slivr::deg2rad (double degrees) {
@@ -58,8 +57,10 @@ double slivr::deg2rad (double degrees) {
 // other function
 void 
 VolumeInfo::Set
-(void *ptr, int type, double *X, double *Y, double *Z, 
- int nX, int nY, int nZ, float sr, 
+(void *ptr, int type, unsigned char* ghost,
+ double *X, double *Y, double *Z, 
+ int nX, int nY, int nZ,
+ bool cellDataFormat, float sr, 
  double volumePBox[6], double volumeBBox[6],
  bool lighting, double mtl[4])
 {
@@ -70,7 +71,9 @@ VolumeInfo::Set
     InitWorld();
     InitVolume();
     if (!isComplete) { 
-	SetVolume(ptr, type, X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox); 
+	SetVolume(ptr, type, ghost,
+		  X, Y, Z, nX, nY, nZ, cellDataFormat,
+		  volumePBox, volumeBBox); 
     }
     if (samplingRate != sr) {
 	samplingRate = sr;
@@ -121,9 +124,10 @@ void VolumeInfo::InitVolume(unsigned char type) {
 	}
     }
 }
-void VolumeInfo::SetVolume(void *ptr, int type, 
+void VolumeInfo::SetVolume(void *ptr, int type, unsigned char* ghost,
 			   double *X, double *Y, double *Z, 
 			   int nX, int nY, int nZ,
+			   bool cellDataFormat,
 			   double volumePBox[6], 
 			   double volumeBBox[6]) {
     // refresh existing data
@@ -173,7 +177,13 @@ void VolumeInfo::SetVolume(void *ptr, int type,
     voxelSize = nX * nY * nZ;
     voxelData = ospNewData(voxelSize, voxelDataType,
 			   dataPtr, OSP_DATA_SHARED_BUFFER);
+    ghostSize = cellDataFormat ? nX * nY * nZ : (nX-1) * (nY-1) * (nZ-1);
+    ghostData = ospNewData(ghostSize, OSP_UCHAR,
+			   ghost, OSP_DATA_SHARED_BUFFER);
     ospSetData(volume, "voxelData", voxelData);
+    //ospSetData(volume, "ghostData", ghostData);
+    ospSet1i(volume, "useGridAccelerator", 0);
+    ospSet1i(volume, "cellDataFormat", cellDataFormat);
     ospSetString(volume, "voxelType", dataType.c_str());
     ospSetObject(volume, "transferFunction", transferfcn);
 

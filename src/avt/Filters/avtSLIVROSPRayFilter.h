@@ -130,6 +130,8 @@ struct VolumeInfo
     OSPDataType             voxelDataType   = OSP_VOID_PTR;
     OSPData                 voxelData       = nullptr;
     size_t                  voxelSize       = 0;
+    OSPData                 ghostData       = nullptr;
+    size_t                  ghostSize       = 0;
 
     float samplingRate = -1.0f;
     vec3f regionStart;
@@ -156,8 +158,10 @@ struct VolumeInfo
     
     // other function
     void Set
-    (void *ptr, int type, double *X, double *Y, double *Z,
-     int nX, int nY, int nZ, float sr, 
+    (void *ptr, int type, unsigned char* ghost,
+     double *X, double *Y, double *Z,
+     int nX, int nY, int nZ,
+     bool cellDataFormat, float sr, 
      double volumePBox[6], double volumeBBox[6],		  
      bool lighting, double mtl[4]);
 
@@ -181,9 +185,10 @@ struct VolumeInfo
     // ospVolume component
     void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME); 
     OSPVolume GetVolume() { return volume; }
-    void SetVolume(void *ptr, int type, 
+    void SetVolume(void *ptr, int type, unsigned char* ghost,
 		   double *X, double *Y, double *Z, 
 		   int nX, int nY, int nZ,
+		   bool cellDataFormat,
 		   double volumePBox[6], 
 		   double volumeBBox[6]);
     void SetSamplingRate(float r);
@@ -192,6 +197,10 @@ struct VolumeInfo
 	if (voxelData != nullptr) { 
 	    ospRelease(voxelData);
 	    voxelData = nullptr; 
+	}
+	if (ghostData != nullptr) {
+	    ospRelease(ghostData);
+	    ghostData = nullptr; 
 	}
 	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
 	volumeType = OSP_INVALID;

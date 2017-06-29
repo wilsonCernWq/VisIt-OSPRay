@@ -1940,8 +1940,6 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
     double pt[3];
     bool hasSamples = false;
 
-
-
     if (rayCastingSLIVR)
     {
 	int screenX = bufferExtents[1] - bufferExtents[0];
@@ -1953,7 +1951,10 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
 	{
 	    float normalizedDepth = depthBuffer[_index]*2 - 1;  // switching from (0 - 1) to (-1 - 1)
 
-	    //debug5 << "normalizedDepth: " <<normalizedDepth << "  renderingDepthsExtents[0]: " << renderingDepthsExtents[0] << "   renderingDepthsExtents[1]:" << renderingDepthsExtents[1] << std::endl;
+	    // debug5 << "normalizedDepth: " << normalizedDepth << " "
+	    // 	   << "renderingDepthsExtents[0]: " << renderingDepthsExtents[0] << " " 
+	    // 	   << "renderingDepthsExtents[1]: " << renderingDepthsExtents[1] << std::endl;
+
 	    if ( (normalizedDepth >= renderingDepthsExtents[0]) && (normalizedDepth <= renderingDepthsExtents[1]) )  // ... and it's within this patch
 	    {
 		rcSLIVRBufferMerge = true;
@@ -1973,7 +1974,10 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
 		if (zGoingUp)
 		    start[1] = origin[2];
 
-		float distOriginTerminus_Squared = (origin[0]-terminus[0])*(origin[0]-terminus[0]) + (origin[1]-terminus[1])*(origin[1]-terminus[1]) + (origin[2]-terminus[2])*(origin[2]-terminus[2]);
+		float distOriginTerminus_Squared = 
+		    (origin[0]-terminus[0])*(origin[0]-terminus[0]) +
+		    (origin[1]-terminus[1])*(origin[1]-terminus[1]) + 
+		    (origin[2]-terminus[2])*(origin[2]-terminus[2]);
 		float distCoordStart_Squared = 
 		    (_worldOpaqueCoordinates[0]-start[0])*(_worldOpaqueCoordinates[0]-start[0]) +
 		    (_worldOpaqueCoordinates[1]-start[1])*(_worldOpaqueCoordinates[1]-start[1]) + 
@@ -1989,17 +1993,14 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
 	}
     }
 
-
-
-
     for (int i = first ; i < last ; i++)
     {
-	int *ind = ind_buffer + 3*i;
-	double *dProp = prop_buffer + 3*i;
+	int *ind = ind_buffer + 3*i;       // index of the cell
+	double *dProp = prop_buffer + 3*i; // percentage within the cell
 	valid_sample[i] = false;
 
 	double proportion = ((double)i)/((double)depth);
-	pt[0] = origin[0] + proportion*x_dist;
+	pt[0] = origin[0] + proportion*x_dist; // current point position
 	pt[1] = origin[1] + proportion*y_dist;
 	pt[2] = origin[2] + proportion*z_dist;
 
@@ -2206,6 +2207,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     void* volumePointer = nullptr;
     int   volumeDataType;
     int nX = 0, nY = 0, nZ = 0;
+    // int gnX = 0, gnY = 0, gnZ = 0;
+    // gnX = dims[0] - 1;
+    // gnY = dims[1] - 1;
+    // gnZ = dims[2] - 1;    
     if (ncell_arrays > 0) {
 	ospout << "[avtMassVoxelExtractor] Cell Dataset " << std::endl;
 	nX = dims[0] - 1;
@@ -2238,47 +2243,49 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     bool ghost_bound[6] = {false};
     if (ghosts != NULL)
     {
-	for (int y = 1; y < (nY-1); ++y) {
-	    for (int z = 1; z < (nZ-1); ++z) {
+	int gnX = 0, gnY = 0, gnZ = 0;
+	gnX = dims[0] - 1;
+	gnY = dims[1] - 1;
+        gnZ = dims[2] - 1;
+	for (int y = 1; y < (gnY-1); ++y) {
+	    for (int z = 1; z < (gnZ-1); ++z) {
 		if (!ghost_bound[0]) {
-		    if (ghosts[z*nY*nX+y*nX       ] != 0) { ghost_bound[0] = true; }
+		    if (ghosts[z*gnY*gnX+y*gnX        ] != 0) { ghost_bound[0] = true; }
 		}
 		if (!ghost_bound[3]) {
-		    if (ghosts[z*nY*nX+y*nX+(nX-1)] != 0) { ghost_bound[3] = true; }
+		    if (ghosts[z*gnY*gnX+y*gnX+(gnX-1)] != 0) { ghost_bound[3] = true; }
 		}
 		if (ghost_bound[0] && ghost_bound[3]) { break; }
 	    }
 	}
-
-	for (int x = 1; x < (nX-1); ++x) {
-	    for (int z = 1; z < (nZ-1); ++z) {
+	for (int x = 1; x < (gnX-1); ++x) {
+	    for (int z = 1; z < (gnZ-1); ++z) {
 		if (!ghost_bound[1]) {
-		    if (ghosts[z*nY*nX          +x] != 0) { ghost_bound[1] = true; }
+		    if (ghosts[z*gnY*gnX            +x] != 0) { ghost_bound[1] = true; }
 		}
 		if (!ghost_bound[4]) {
-		    if (ghosts[z*nY*nX+(nY-1)*nX+x] != 0) { ghost_bound[4] = true; }
+		    if (ghosts[z*gnY*gnX+(gnY-1)*gnX+x] != 0) { ghost_bound[4] = true; }
 		}
 		if (ghost_bound[1] && ghost_bound[4]) { break; }
 	    }
 	}
-
-	for (int x = 1; x < (nX-1); ++x) {
-	    for (int y = 1; y < (nY-1); ++y) {
+	for (int x = 1; x < (gnX-1); ++x) {
+	    for (int y = 1; y < (gnY-1); ++y) {
 		if (!ghost_bound[2]) {
-		    if (ghosts[             y*nX+x] != 0) { ghost_bound[2] = true; }
+		    if (ghosts[                y*gnX+x] != 0) { ghost_bound[2] = true; }
 		}
 		if (!ghost_bound[5]) {
-		    if (ghosts[(nZ-1)*nY*nX+y*nX+x] != 0) { ghost_bound[5] = true; }
+		    if (ghosts[(gnZ-1)*gnY*gnX+y*gnX+x] != 0) { ghost_bound[5] = true; }
 		}
 		if (ghost_bound[2] && ghost_bound[5]) { break; }
 	    }
 	}
-	// ghost_bound[0] = ghosts[nY*nX+nX+0] != 0; // [0,1,1]
-	// ghost_bound[3] = ghosts[(nZ-2)*nY*nX+(nY-2)*nX+(nX-1)] != 0;
-	// ghost_bound[1] = ghosts[nY*nX+   1] != 0; // [1,0,1]
-	// ghost_bound[4] = ghosts[(nZ-2)*nY*nX+(nY-1)*nX+(nX-2)] != 0;
-	// ghost_bound[2] = ghosts[      nX+1] != 0; // [1,1,0]
-	// ghost_bound[5] = ghosts[(nZ-1)*nY*nX+(nY-2)*nX+(nX-2)] != 0;
+	// ghost_bound[0] = ghosts[gnY*gnX+gnX+0] != 0; // [0,1,1]
+	// ghost_bound[3] = ghosts[(gnZ-2)*gnY*gnX+(gnY-2)*gnX+(gnX-1)] != 0;
+	// ghost_bound[1] = ghosts[gnY*gnX+    1] != 0; // [1,0,1]
+	// ghost_bound[4] = ghosts[(gnZ-2)*gnY*gnX+(gnY-1)*gnX+(gnX-2)] != 0;
+	// ghost_bound[2] = ghosts[        gnX+1] != 0; // [1,1,0]
+	// ghost_bound[5] = ghosts[(gnZ-1)*gnY*gnX+(gnY-2)*gnX+(gnX-2)] != 0;
     }
 
     // the name is a bit ugly but easier to read for debugging
@@ -2315,9 +2322,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	volumeCube[0] = ghost_bound[0] ? (X[1]+X[0])/2. : X[0];
 	volumeCube[1] = ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : X[nX-1];
 	volumeCube[2] = ghost_bound[1] ? (Y[1]+Y[0])/2. : Y[0];
-	volumeCube[3] = ghost_bound[4] ? (Y[nY-1]+Y[nY-1])/2. : Y[nY-1];
-	volumeCube[4] = ghost_bound[2] ? (Z[1]+Z[1])/2. : Z[0];
-	volumeCube[5] = ghost_bound[5] ? (Z[nZ-1]+Z[nZ-1])/2. : Z[nZ-1];
+	volumeCube[3] = ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : Y[nY-1];
+	volumeCube[4] = ghost_bound[2] ? (Z[1]+Z[0])/2. : Z[0];
+	volumeCube[5] = ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : Z[nZ-1];
     }
 
     //=======================================================================//
@@ -2498,14 +2505,15 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    (ncell_arrays > 0 ? (Y[nY-1]+Y[nY])/2. : Y[nY-1]), 
 	    (ncell_arrays > 0 ? (Z[nZ-1]+Z[nZ])/2. : Z[nZ-1])
 	};
-	double volumePPBox[6] = {
-	    (ncell_arrays > 0 ? (X[1]+X[2])/2. : X[1]), 
-	    (ncell_arrays > 0 ? (Y[1]+Y[2])/2. : Y[1]), 
-	    (ncell_arrays > 0 ? (Z[1]+Z[2])/2. : Z[1]), 
-	    (ncell_arrays > 0 ? (X[nX-2]+X[nX-1])/2. : X[nX-2]), 
-	    (ncell_arrays > 0 ? (Y[nY-2]+Y[nY-1])/2. : Y[nY-2]), 
-	    (ncell_arrays > 0 ? (Z[nZ-2]+Z[nZ-1])/2. : Z[nZ-2])
-	};
+
+	// double volumePPBox[6] = {
+	//     (ncell_arrays > 0 ? (X[1]+X[2])/2. : X[1]), 
+	//     (ncell_arrays > 0 ? (Y[1]+Y[2])/2. : Y[1]), 
+	//     (ncell_arrays > 0 ? (Z[1]+Z[2])/2. : Z[1]), 
+	//     (ncell_arrays > 0 ? (X[nX-2]+X[nX-1])/2. : X[nX-2]), 
+	//     (ncell_arrays > 0 ? (Y[nY-2]+Y[nY-1])/2. : Y[nY-2]), 
+	//     (ncell_arrays > 0 ? (Z[nZ-2]+Z[nZ-1])/2. : Z[nZ-2])
+	// };
 
 	// double volumeBBox[6] = {
 	//     X[X0]+(ncell_arrays <= 0 ? -dX/2.0 : 0.0),
@@ -2534,12 +2542,15 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    volumeBBox[5] = ghost_bound[5] ? Z[nZ-1] : volumePBox[5];
 	}
 	else {
-	    volumeBBox[0] = ghost_bound[0] ? (X[1]+X[0])/2. : volumePBox[0];
-	    volumeBBox[1] = ghost_bound[1] ? (Y[1]+Y[0])/2. : volumePBox[1];
-	    volumeBBox[2] = ghost_bound[2] ? (Z[1]+Z[1])/2. : volumePBox[2];
-	    volumeBBox[3] = ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : volumePBox[3];
-	    volumeBBox[4] = ghost_bound[4] ? (Y[nY-1]+Y[nY-1])/2. : volumePBox[4];
-	    volumeBBox[5] = ghost_bound[5] ? (Z[nZ-1]+Z[nZ-1])/2. : volumePBox[5];
+	    volumeBBox[0] = ghost_bound[0] ? X[1] : volumePBox[0];
+	    volumeBBox[1] = ghost_bound[1] ? Y[1] : volumePBox[1];
+	    volumeBBox[2] = ghost_bound[2] ? Z[1] : volumePBox[2];
+	    volumeBBox[3] = ghost_bound[3] ? 
+		X[nX-2] : volumePBox[3];
+	    volumeBBox[4] = ghost_bound[4] ? 
+		Y[nY-2] : volumePBox[4];
+	    volumeBBox[5] = ghost_bound[5] ? 
+		Z[nZ-2] : volumePBox[5];
 	}
 	
 	// double volumeBBox[6];    
@@ -2559,15 +2570,15 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	       << " " << volumePBox[4]
 	       << " " << volumePBox[5]
 	       << std::endl; 
-	ospout << "[avtMassVoxelExtractor] neighbor patch data position:" 
-	       << " " << volumePPBox[0]
-	       << " " << volumePPBox[1]
-	       << " " << volumePPBox[2]
-	       << " |"
-	       << " " << volumePPBox[3]
-	       << " " << volumePPBox[4]
-	       << " " << volumePPBox[5]
-	       << std::endl; 
+	// ospout << "[avtMassVoxelExtractor] neighbor patch data position:" 
+	//        << " " << volumePPBox[0]
+	//        << " " << volumePPBox[1]
+	//        << " " << volumePPBox[2]
+	//        << " |"
+	//        << " " << volumePPBox[3]
+	//        << " " << volumePPBox[4]
+	//        << " " << volumePPBox[5]
+	//        << std::endl; 
 	ospout << "[avtMassVoxelExtractor] patch data bbox:" 
 	       << " " << volumeBBox[0]
 	       << " " << volumeBBox[1]
@@ -2578,8 +2589,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	       << " " << volumeBBox[5]
 	       << std::endl; 
    
-	volume->Set(volumePointer, volumeDataType,
-		    X, Y, Z, nX, nY, nZ,
+	volume->Set(volumePointer, volumeDataType, ghosts,
+		    X, Y, Z, nX, nY, nZ, ncell_arrays > 0,
 		    (float)rendererSampleRate, 
 		    volumePBox, volumeBBox,
 		    lighting, materialProperties);
@@ -2618,10 +2629,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgLowerLeft[1] = yMin;
     imgUpperRight[0] = xMax; 
     imgUpperRight[1] = yMax;
-    debug5 << "VAR: patch screen dim:   " 
-	   << xMin << " " << xMax << " | " 
-	   << yMin << " " << yMax << " | "
-	   << "(" << imgWidth << "x" << imgHeight << ")" << std::endl;
 
     if (!avtCallback::UseOSPRay()) 
     {
@@ -2629,7 +2636,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	{
 	    for (int patchY = yMin; patchY < yMax ; patchY++)
 	    {
-		debug5 << "using CPU version raytracer" << std::endl;
+		ospout << "[avtMassiveVoxelExtractor] Using CPU version raytracer" << std::endl;
 		const int pIndex = (patchY-yMin)*imgWidth + (patchX-xMin);
 		const int fIndex = ((patchY-bufferExtents[2])*
 				    (bufferExtents[1]-bufferExtents[0])+
@@ -2746,7 +2753,19 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 	    for (int j=0; j<4; j++)
 		dest_rgb[j] = bufferColor[j] * (1.0 - dest_rgb[3]) + dest_rgb[j];
 
-	    //debug5 << x << ", " << y << "   ~ First: " << first << "  i:  " << i << "   intersect: " << intersect << "  bufferColor: " << bufferColor[0] << ", " << bufferColor[1] << ", " << bufferColor[2] << "   dest_rgb: " << dest_rgb[0] << ", " << dest_rgb[1] << ", " << dest_rgb[2] << ", " << dest_rgb[3] << std::endl;
+	    // debug5 << x << ", " << y 
+	    // 	   << " ~ First: " << first 
+	    // 	   << " i:  " << i 
+	    // 	   << " intersect: " << intersect 
+	    // 	   << " bufferColor: " 
+	    // 	   << bufferColor[0] << ", " 
+	    // 	   << bufferColor[1] << ", " 
+	    // 	   << bufferColor[2] 
+	    // 	   << " dest_rgb: " 
+	    // 	   << dest_rgb[0] << ", " 
+	    // 	   << dest_rgb[1] << ", " 
+	    // 	   << dest_rgb[2] << ", " 
+	    // 	   << dest_rgb[3] << std::endl;
 	    break;
 	}
 
