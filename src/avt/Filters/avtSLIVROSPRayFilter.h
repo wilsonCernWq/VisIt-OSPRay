@@ -111,38 +111,38 @@ namespace slivr {
 struct VolumeInfo 
 {
     // meta info
-    int           patchId = -1;
-    bool          isComplete = false;
+    int                 patchId = -1;
+    bool                isComplete = false;
 
     // object references (shouldnt be deleted in this struct)
     OSPTransferFunction transferfcn = nullptr;
     OSPRenderer         renderer    = nullptr;
 
     // objects owned by the struct
-    OSPModel                world           = nullptr;
-    unsigned char           worldType       = OSP_INVALID;
-    OSPFrameBuffer          framebuffer     = nullptr;
-    float                  *framebufferData = nullptr;
-    OSPVolume               volume          = nullptr;
-    unsigned char           volumeType      = OSP_INVALID;
-    void*                   dataPtr         = nullptr;
-    std::string             dataType        = "";
-    OSPDataType             voxelDataType   = OSP_VOID_PTR;
-    OSPData                 voxelData       = nullptr;
-    size_t                  voxelSize       = 0;
-    OSPData                 ghostData       = nullptr;
-    size_t                  ghostSize       = 0;
+    OSPModel            world           = nullptr;
+    unsigned char       worldType       = OSP_INVALID;
+    OSPFrameBuffer      framebuffer     = nullptr;
+    float              *framebufferData = nullptr;
+    OSPVolume           volume          = nullptr;
+    unsigned char       volumeType      = OSP_INVALID;
+    void*               dataPtr         = nullptr;
+    std::string         dataType        = "";
+    OSPDataType         voxelDataType   = OSP_VOID_PTR;
+    OSPData             voxelData       = nullptr;
+    size_t              voxelSize       = 0;
+    OSPData             ghostData       = nullptr;
+    size_t              ghostSize       = 0;
 
-    float samplingRate = -1.0f;
-    vec3f regionStart;
-    vec3f regionStop;
-    vec3f regionSpacing;
-    vec3i regionSize;
-    vec3f regionUpperClip;
-    vec3f regionLowerClip;
+    float               samplingRate = -1.0f;
+    vec3f               regionStart;
+    vec3f               regionStop;
+    vec3f               regionSpacing;
+    vec3i               regionSize;
+    vec3f               regionUpperClip;
+    vec3f               regionLowerClip;
 
-    bool lightingFlag = false;
-    float specularColor = 0.0f;
+    bool                lightingFlag = false;
+    float               specularColor = 0.0f;
 
     // constructor
     VolumeInfo(int id) : patchId(id) {}
@@ -264,7 +264,7 @@ struct OSPContext
     // expose this in header
     // because this will be called in other libraries
     ~OSPContext() {
-	std::cout << "deleting ospray" << std::endl;
+	ospout << "deleting ospray" << std::endl;
 	// clean stuffs
 	volumePatch.clear();
 	if (camera      != nullptr) { ospRelease(camera); }
