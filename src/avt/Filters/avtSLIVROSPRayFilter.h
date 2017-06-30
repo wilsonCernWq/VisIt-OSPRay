@@ -263,8 +263,7 @@ struct OSPContext
 
     // expose this in header
     // because this will be called in other libraries
-    ~OSPContext() {
-	ospout << "deleting ospray" << std::endl;
+    ~OSPContext() {	
 	// clean stuffs
 	volumePatch.clear();
 	if (camera      != nullptr) { ospRelease(camera); }

@@ -314,7 +314,7 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
     ospSetObject(renderer, "camera", camera);
     ospSet1i(renderer, "backgroundEnabled", 0);
     ospSet1i(renderer, "oneSidedLighting", 0);
-    //ospSet1i(renderer, "aoSamples", 16);
+    ospSet1i(renderer, "aoSamples", 0);
     if (lighting)
     {
 	ospout << "use lighting " 
@@ -323,7 +323,7 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	       << mtl[1] << " "
 	       << mtl[2] << " "
 	       << mtl[3] << std::endl;
-	ospSet1i(renderer, "shadowsEnabled", 1);
+	ospSet1i(renderer, "shadowsEnabled", 0);
 	OSPLight aLight = ospNewLight(renderer, "AmbientLight");
 	ospSet1f(aLight, "intensity", 1.0f);
 	ospCommit(aLight);
