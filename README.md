@@ -24,22 +24,20 @@ The project is particularly sponsored by [CCMSC](http://ccmsc.utah.edu) &
 visualizing their exscale simulation data.
 This is an on-going project, lease email me for more details if you want to use it.
 
-## CONTENTS
+## Build
 
-System Information
+### Building OSPRay
 
-Building OSPRay
-
-Building VisIt
+### Building VisIt
 
 ## System Information
 
-1. Getting information about the platform
+Getting information about the platform
   * Which shell: `ps -p $$   or echo $SHELL`
   * How many cores: `cat /proc/cpuinfo` or `lscpu`
   * where is a library: e.g `which mpic++`
 
-2. Platform Information: Location of MPI
+Platform Information: Location of MPI
 * valhalla.sci.utah.edu _8_ _cores_ _bash_
 ```
 export PAR_COMPILER=`which mpic++`
@@ -69,11 +67,7 @@ export PAR_LIBS="-L/uufs/ash.peaks/sys/pkg/mvapich2/1.9i/lib"
 export PAR_COMPILER="/uufs/kingspeak.peaks/sys/pkg/mvapich2/1.9/bin/mpic++"
 export PAR_INCLUDE="-I/uufs/kingspeak.peaks/sys/pkg/mvapich2/1.9/include"
 ```
-3. Misc
-* AVOID SUSE!!!
 
-## Building OSPRay
-## Building VisIt
 ## How to create patch
 Add the files going to be removed into `removelist.txt`
 Create a patch

@@ -809,19 +809,20 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 // ****************************************************************************
 void
 avtSamplePointExtractor::delImgPatches(){
-	imageMetaPatchVector.clear();
-	for (iter_t it=imgDataHashMap.begin(); it!=imgDataHashMap.end(); it++)
-	{
-		if ((*it).second.imagePatch != NULL)
-		{ delete [](*it).second.imagePatch; }
-		(*it).second.imagePatch = NULL;
-	}
-	imgDataHashMap.clear();
+    imageMetaPatchVector.clear();
+    for (iter_t it = imgDataHashMap.begin(); 
+	 it != imgDataHashMap.end(); it++)
+    {
+	if ((*it).second.imagePatch != NULL)
+	{ delete [](*it).second.imagePatch; }
+	(*it).second.imagePatch = NULL;
+    }
+    imgDataHashMap.clear();
 }
 
 
 // ****************************************************************************
-//  Method: avtSamplePointExtractor::getImgData
+//  Method: avtSamplePointExtractor::GetAndDelImgData
 //
 //  Purpose:
 //      copies a patchover
@@ -832,15 +833,23 @@ avtSamplePointExtractor::delImgPatches(){
 //  Modifications:
 //
 // ****************************************************************************
+
 void 
-avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
+avtSamplePointExtractor::GetAndDelImgData
+(int patchId, slivr::ImgData &tempImgData)
+{
+    size_t imagePatchSize = 
+	imageMetaPatchVector[patchId].dims[0] * 
+	imageMetaPatchVector[patchId].dims[1] * sizeof(float) * 4;
     iter_t it = imgDataHashMap.find(patchId);
     tempImgData.procId = it->second.procId;
     tempImgData.patchNumber = it->second.patchNumber;
-    memcpy(tempImgData.imagePatch,
-	   it->second.imagePatch,
-	   imageMetaPatchVector[patchId].dims[0]*4*imageMetaPatchVector[patchId].dims[1]*sizeof(float));
-    delete [](*it).second.imagePatch;
+    // do shallow copy instead of deep copy
+    tempImgData.imagePatch = it->second.imagePatch;
+    // memcpy(tempImgData.imagePatch,
+    // 	      it->second.imagePatch,
+    //        imagePatchSize);
+    // delete [](*it).second.imagePatch;
     it->second.imagePatch = NULL;
 }
 
@@ -849,7 +858,8 @@ avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
 //  Method: avtSamplePointExtractor::
 //
 //  Purpose:
-//      allocates space to the pointer address and copy the image generated to it
+//      allocates space to the pointer address and copy the image
+//      generated to it
 //
 //  Programmer: 
 //  Creation:   
@@ -857,21 +867,20 @@ avtSamplePointExtractor::getnDelImgData(int patchId, imgData &tempImgData){
 //  Modifications:
 //
 // ****************************************************************************
-imgMetaData
+slivr::ImgMetaData
 avtSamplePointExtractor::initMetaPatch(int id){
-	imgMetaData temp;
-	temp.inUse = 0;
-	temp.procId = PAR_Rank();
-	temp.destProcId = PAR_Rank();
-	temp.patchNumber = id;
-	temp.dims[0] = temp.dims[1] = -1;
-	temp.screen_ll[0] = temp.screen_ll[1] = -1;
-	temp.screen_ur[0] = temp.screen_ur[1] = -1;
-	temp.avg_z = -1.0;
-	temp.eye_z = -1.0;
-	temp.clip_z = -1.0;
-
-	return temp;
+    slivr::ImgMetaData temp;
+    temp.inUse = 0;
+    temp.procId = PAR_Rank();
+    temp.destProcId = PAR_Rank();
+    temp.patchNumber = id;
+    temp.dims[0] = temp.dims[1] = -1;
+    temp.screen_ll[0] = temp.screen_ll[1] = -1;
+    temp.screen_ur[0] = temp.screen_ur[1] = -1;
+    temp.avg_z = -1.0;
+    temp.eye_z = -1.0;
+    temp.clip_z = -1.0;
+    return temp;
 }
 
 
@@ -1065,7 +1074,8 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->SetFullImageExtents(fullImageExtents);
 	}
 
-	massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
+	massVoxelExtractor->Extract((vtkRectilinearGrid *)ds, 
+				    varnames, varsizes);
 
 	//
 	// Get rendering results
@@ -1073,7 +1083,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	//
 	if (rayCastingSLIVR == true)
 	{
-	    imgMetaData      tmpImageMetaPatch;
+	    slivr::ImgMetaData tmpImageMetaPatch;
 	    tmpImageMetaPatch = initMetaPatch(patchCount);
 
 	    massVoxelExtractor->getImageDimensions(
@@ -1089,14 +1099,17 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 		tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
 		tmpImageMetaPatch.destProcId = tmpImageMetaPatch.procId;
 		imageMetaPatchVector.push_back(tmpImageMetaPatch);		
-		imgData tmpImageDataHash;
+		slivr::ImgData tmpImageDataHash;
 		tmpImageDataHash.procId = tmpImageMetaPatch.procId;
 		tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
 		tmpImageDataHash.imagePatch = 
-		    new float[tmpImageMetaPatch.dims[0] * tmpImageMetaPatch.dims[1] * 4];
-		massVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
+		    new float[tmpImageMetaPatch.dims[0] * 
+			      tmpImageMetaPatch.dims[1] * 4];
+		massVoxelExtractor->getComputedImage
+		    (tmpImageDataHash.imagePatch);
 		imgDataHashMap.insert
-		    (std::pair<int, imgData>(tmpImageDataHash.patchNumber, tmpImageDataHash));
+		    (std::pair<int, slivr::ImgData>
+		     (tmpImageDataHash.patchNumber, tmpImageDataHash));
 		patchCount++;
 	    }
 	}

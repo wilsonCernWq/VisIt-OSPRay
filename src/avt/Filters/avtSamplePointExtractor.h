@@ -154,6 +154,14 @@ class AVTFILTERS_API avtSamplePointExtractor
     : public avtDatasetToSamplePointsFilter
 {
 public:
+    typedef std::multimap<int, slivr::ImgData>::iterator iter_t;
+
+public:
+    // Output data for RC SLIVR
+    std::vector<slivr::ImgMetaData>    imageMetaPatchVector;
+    std::multimap<int, slivr::ImgData> imgDataHashMap;
+
+public:
                               avtSamplePointExtractor(int, int, int);
     virtual                  ~avtSamplePointExtractor();
     virtual const char       *GetType(void)
@@ -195,6 +203,7 @@ public:
     { depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1]; }
     void                      SetMVPMatrix(vtkMatrix4x4 *_mvp)
     { modelViewProj->DeepCopy(_mvp); }
+
     void                      getSpatialExtents(double _spatialExtents[6])
     { for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
     void                      getAvgPatchExtents(double _avgPatchExtents[6])
@@ -207,14 +216,18 @@ public:
     // Getting image information
     //
     // gets the max number of patches it could have
-    int                       getTotalAssignedPatches() { return totalAssignedPatches; } 
+    int                       getTotalAssignedPatches() 
+    { return totalAssignedPatches; } 
     // gets the number of patches
     int                       getImgPatchSize(){ return patchCount;};
+
     // gets the metadata
-    imgMetaData               getImgMetaPatch(int patchId)
-    { return imageMetaPatchVector.at(patchId);}
+    slivr::ImgMetaData&       GetImgMetaPatch(int patchId)
+    { return imageMetaPatchVector.at(patchId); }
     // gets the image & erase its existence
-    void                      getnDelImgData(int patchId, imgData &tempImgData);
+    void                      GetAndDelImgData
+	(int patchId, slivr::ImgData &tempImgData);
+
     // deletes patches
     void                      delImgPatches();
     // Set background buffer
@@ -225,26 +238,20 @@ public:
     { rgbColorBuffer = _colorBuffer; };
     void                      setBufferExtents(int _extents[4])
     { for (int i=0;i<4; i++) bufferExtents[i] = _extents[i]; }
+
     // Qi add for ospray  
-    void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
-    void             SetOSPRayContext(OSPContext* o) { ospray = o; }
-    void             SetFullImageExtents(int extents[4]) 
+    void SetOSPRayContext(OSPContext* o) { ospray = o; }
+    void SetRendererSampleRate(double r) { rendererSampleRate = r; }
+    void SetFullImageExtents(int extents[4]) 
     {
 	fullImageExtents[0] = extents[0];
 	fullImageExtents[1] = extents[1];
 	fullImageExtents[2] = extents[2];	
 	fullImageExtents[3] = extents[3];
     }
-public:
-    typedef std::multimap<int, imgData>::iterator iter_t;
-
-public:
-    // Output data for RC SLIVR
-    std::vector<imgMetaData>    imageMetaPatchVector;
-    std::multimap<int, imgData> imgDataHashMap;
 
 protected:
-    int fullImageExtents[4];
+    int                       fullImageExtents[4];
     int                       width,       height,       depth;
     int                       currentNode, totalNodes;
     int                       widthMin,    widthMax;
@@ -305,7 +312,7 @@ protected:
     virtual void              PostExecute(void);
     virtual void              ExecuteTree(avtDataTree_p);
     void                      SetUpExtractors(void);
-    imgMetaData               initMetaPatch(int id);    // initialize a patch
+    slivr::ImgMetaData        initMetaPatch(int id);    // initialize a patch
     //
     // OSPRay stuffs
     //

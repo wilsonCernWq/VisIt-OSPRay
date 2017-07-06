@@ -44,6 +44,7 @@
 #include <string>
 #include <iostream>
 #include <limits>
+#include <cmath>
 
 // ****************************************************************************
 //  Namespace:  slivr
@@ -58,14 +59,25 @@
 namespace slivr
 {
     double ProjectWorldToScreen
-	(const double world_pos[3], 
+	(const double worldCoord[3], 
 	 const int screenWidth, const int screenHeight,	 
 	 const double panPercentage[2], const double imageZoom,
-	 vtkMatrix4x4 *mvp, int screen_pos[2]);
+	 vtkMatrix4x4 *mvp, int screenCoord[2]);
+  
+    void ProjectScreenToWorld
+	(const int screenCoord[2], const double z,
+	 const int screenWidth, const int screenHeight, 
+	 const double panPercentage[2], const double imageZoom,
+	 vtkMatrix4x4 *imvp, double worldCoord[3]);
+
+    void ProjectWorldToScreenCube
+	(const double cube[6], const int screenWidth, const int screenHeight, 
+	 const double panPercentage[2], const double imageZoom, 
+	 vtkMatrix4x4 *mvp,int screenExtents[4], double depthExtents[2]);
 };
 
 // ****************************************************************************
-//  Struct:  imgMetaData
+//  Struct:  ImgMetaData
 //
 //  Purpose:
 //    Holds information about patches but not the image 
@@ -74,23 +86,25 @@ namespace slivr
 //  Creation:   
 //
 // ****************************************************************************
-struct imgMetaData
+namespace slivr
 {
-    int procId;       // processor that produced the patch
-    int patchNumber;  // id of the patch on that processor - with procId, acts as a key
-    int destProcId;   // destination proc where this patch gets composited
-    int inUse;        // whether the patch is composed locally or not
-    int dims[2];      // height, width
-    int screen_ll[2]; // position in the final image
-    int screen_ur[2];
-    float avg_z;      // camera space z = depth of the patch - used for compositing
-    float eye_z;      // camera space z
-    float clip_z;     // clip space z
+    struct ImgMetaData
+    {
+	int procId;       // processor that produced the patch
+	int patchNumber;  // id of the patch on that processor
+	int destProcId;   // destination proc where this patch gets composited
+	int inUse;        // whether the patch is composed locally or not
+	int dims[2];      // height, width
+	int screen_ll[2]; // (lower left)  position in the final image
+	int screen_ur[2]; // (upper right)
+	float avg_z;      // camera space depth of the patch (average)
+	float eye_z;      // camera space z
+	float clip_z;     // clip space z
+    };
 };
 
-
 // ****************************************************************************
-//  Struct:  imgData
+//  Struct:  ImgData
 //
 //  Purpose:
 //    Holds the image data generated
@@ -99,19 +113,19 @@ struct imgMetaData
 //  Creation:    
 //
 // ****************************************************************************
-struct imgData
+namespace slivr 
 {
-    int procId;         // processor that produced the patch
-    int patchNumber;
-    // id of the patch on that processor
-    // - with procId, acts as a key
-
-    float *imagePatch;  // the image data - RGBA
-
-    bool operator==(const imgData &a){
-        return (patchNumber == a.patchNumber);
-    }
-};
+    struct ImgData
+    {
+	// acts as a key
+	int procId;      // processor that produced the patch
+	int patchNumber; // id of the patch on that processor
+	float *imagePatch = NULL; // the image data - RGBA
+	bool operator==(const ImgData &a){
+	    return (patchNumber == a.patchNumber);
+	}
+    };
+}
 
 // ****************************************************************************
 //  Struct:  convexHull
@@ -123,18 +137,24 @@ struct imgData
 //  Creation:    
 //
 // ****************************************************************************
-struct convexHull
+namespace slivr 
 {
-    int numPatches;
-    // [0] rows along x axis, [1] rows along y axis, [2] rows along z axis
-    int arrangement[3];
-    float extents[6];       // minX, maxX   minY, maxY   minZ, maxZ
-    float cellDims[3];      // x, y, z
-    float tolerance;  
-    // amount of overlap that is considered ok
-    // -- typically 2 cells for cell centered data
-    // 0: no overlap    1: overlpa in Z    2: overlap in Y    3: overlap in Z
-    int overlap(convexHull _hull);
+    struct ConvexHull
+    {
+	int numPatches;
+	// [0] rows along x axis, [1] rows along y axis, [2] rows along z axis
+	int arrangement[3];
+	float extents[6];       // minX, maxX   minY, maxY   minZ, maxZ
+	float cellDims[3];      // x, y, z
+	float tolerance;  
+	// amount of overlap that is considered ok
+	// -- typically 2 cells for cell centered data
+	// 0: no overlap  
+	// 1: overlpa in Z 
+	// 2: overlap in Y
+	// 3: overlap in Z
+	int Overlap(ConvexHull);
+    };
 };
 
 // ****************************************************************************
@@ -147,12 +167,9 @@ struct convexHull
 //  Creation:    
 //
 // ****************************************************************************
-// template <class T> 
-// inline std::string toStr(T x){
-//     std::ostringstream ss;
-//     ss << x;
-//     return ss.str();
-// }
+#define CLAMP(x, l, h) (x > l ? x < h ? x : h : l)
+#define M_MIN(x, r) (x < r ? x : r)
+#define M_MAX(x, r) (x > r ? x : r)
 
 // ****************************************************************************
 //  Function:  
@@ -165,19 +182,19 @@ struct convexHull
 //
 // ****************************************************************************
 void 
-createColorPPM
+CreateColorPPM
 (std::string filename, unsigned char *data, int width, int height);
 
 void 
-writeOutputToFile(std::string filename, float * data, int dimX, int dimY);
+WriteOutputToFile(std::string filename, float *data, int dimX, int dimY);
 
 void 
-writeOutputToFileByLine(std::string filename, float * data, int dimX, int dimY);
+WriteOutputToFileByLine(std::string filename, float *data, int dimX, int dimY);
 
 void 
-writeDepthBufferToPPM(std::string filename , float * data, int dimX, int dimY);
+WriteDepthBufferToPPM(std::string filename, float *data, int dimX, int dimY);
 
-void writeArrayToPPM
-(std::string filename , float * image, int dimX, int dimY);
+void WriteArrayToPPM
+(std::string filename, float *image, int dimX, int dimY);
 
 #endif//IMG_METADATA_H

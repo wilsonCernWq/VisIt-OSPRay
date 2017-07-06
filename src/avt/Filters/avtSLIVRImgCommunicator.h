@@ -45,6 +45,7 @@
 
 #include <filters_exports.h>
 #include <pipeline_exports.h>
+
 #include <avtSamplePointExtractor.h>
 #include <avtSLIVRImgMetaData.h>
 
@@ -55,15 +56,15 @@
 #   include <mpi.h>
 #endif
 
-#define MSG_DATA 100
+#define MSG_DATA   100
 #define MSG_RESULT 101
 
-const int SEND = 1;
+const int SEND    = 1;
 const int RECEIVE = 2;
 
 struct imageBuffer{
     float *image;
-    float depth;
+    float  depth;
 };
 
 // ****************************************************************************
@@ -78,9 +79,11 @@ struct imageBuffer{
 // ****************************************************************************
 
 class avtSLIVRImgCommunicator
-{
-    int num_procs;
-    int my_id;
+{ 
+private:
+    int numProcs; // total number of processes (# of ranks)
+    int myRank;   // my rank id
+    
     int totalPatches;
     bool compositingDone;
 
@@ -89,21 +92,19 @@ class avtSLIVRImgCommunicator
     int regularRegionSize;
     std::vector<int> regionRankExtents;
 
-    void placeInImage(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
-    void colorImage(float *& srcImage, int widthSrc, int heightSrc, float _color[4]);
-    void updateBoundingBox(int currentBoundingBox[4], int imageExtents[4]);
+private:
+    void ColorImage(float *&, const int, const int, const float color[4]);
+    void PlaceImage
+	(const float *, const int srcExtents[4], 
+	 float *&, const int dstExtents[4]);
+    void BlendWithBackground
+	(float *&, const int extents[4], const float bgColor[4]);
+    void UpdateBoundingBox
+	(int currentBoundingBox[4], const int imageExtents[4]);
+    void GatherDepthAtRoot(const int, const float *, int &, int *&, float *&);
 
-    void gatherDepthAtRoot(int numlocalPatches, float *localPatchesDepth, int &totalPatches, int *& patchCountPerRank, float *& allPatchesDepth);
-    void blendWithBackground(float *_image, int extents[4], float backgroundColor[4]);
 
-    void blendFrontToBack(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
-    void blendBackToFront(float * srcImage, int srcExtents[4], float *& dstImage, int dstExtents[4]);
-
-    void blendFrontToBack(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4]);
-    void blendBackToFront(float * srcImage, int srcExtents[4], int blendExtents[4], float *& dstImage, int dstExtents[4]);
-
-	
-
+      
     void computeRegionExtents(int numRanks, int height);
 	
     int getRegularRegionSize(){ return regularRegionSize; } 
@@ -113,46 +114,70 @@ class avtSLIVRImgCommunicator
     int getMaxRegionHeight(){ return maxRegionHeight; }
 	
     int getScreenRegionStart(int region, int screenImgMinY, int screenImgMaxY){
-	return clamp( getRegionStart(region)+screenImgMinY, screenImgMinY, screenImgMaxY); 
+	return CLAMP(getRegionStart(region)+screenImgMinY, 
+		     screenImgMinY, screenImgMaxY); 
     }
     int getScreenRegionEnd(int region, int screenImgMinY, int screenImgMaxY){
-	return clamp( getRegionEnd(region)+screenImgMinY, screenImgMinY, screenImgMaxY); 
+	return CLAMP(getRegionEnd(region)+screenImgMinY, 
+		     screenImgMinY, screenImgMaxY); 
     }
 
-	
-
+private:
+    float *imgBuffer;         // Final image is here
 public:
-    float *imgBuffer;                   // Final image is here
+    float* GetFinalImageBuffer() { return imgBuffer; }
+
     int finalImageExtents[4];
     int finalBB[4];
-    float *intermediateImage;           // Intermediate image, e.g. in parallel direct send
+    float *intermediateImage; // Intermediate image, e.g. in parallel direct send
     int intermediateImageExtents[4];
-    int intermediateImageBB[4];
+    int intermediateImageBBox[4];
 
+public:
+    
     avtSLIVRImgCommunicator();
     ~avtSLIVRImgCommunicator();
 
-    virtual const char *GetType(void) { return "avtSLIVRImgCommunicator"; };
-    virtual const char *GetDescription(void) { return "Doing compositing for ray casting SLIVR";};
+    virtual const char *GetType(void)
+    { return "avtSLIVRImgCommunicator"; };
+    virtual const char *GetDescription(void) 
+    { return "Doing compositing for ray casting SLIVR"; };	
 
-    int clamp(int value, int _min, int _max){ return std::max( std::min(value,_max), _min); }
-    float clamp(float x){ return std::min( std::max(x, 0.0f), 1.0f); }
-	
-    void barrier();
+    void BlendFrontToBack
+	(const float *, const int srcExtents[4], const int blendExtents[4], 
+	 float *&, const int dstExtents[4]);
+    void BlendBackToFront
+	(const float *, const int srcExtents[4], const int blendExtents[4], 
+	 float *&, const int dstExtents[4]);
+    void BlendFrontToBack
+	(const float *, const int srcExtents[4], float *&, const int dstExtents[4]);
+    void BlendBackToFront
+	(const float *, const int srcExtents[4], float *&, const int dstExtents[4]);
 
-    int GetNumProcs(){ return num_procs;};
-    int GetMyId(){ return my_id;};
+    void Barrier();
+    void RegionAllocation(const int, int *&);
+
+
+    // Both currently unused but good for simple testing
+    void SerialDirectSend
+	(int, float*, int*, float*, float bgColor[4], int, int);
+
+
+
+
+    int GetNumProcs(){ return numProcs;};
+    int GetMyId(){ return myRank;};
 
     void getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage);  // get the final composited image
-    void regionAllocation(int numMPIRanks, int *& regions);
+
 
     int findRegionsForPatch(int patchExtents[4], int screenProjectedExtents[4], int numRegions, int &from, int &to);
 
-    // Both currently unused but good for simple testing
-    void serialDirectSend(int numPatches, float *localPatchesDepth, int *extents, float *imgData, float backgroundColor[4], int width, int height);
-    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);
-	
-    int parallelDirectSendManyPatches(std::multimap<int, imgData> imgDataHashMap, std::vector<imgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4]);
+
+
+    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);	
+    int  parallelDirectSendManyPatches
+	(std::multimap<int, slivr::ImgData> imgDataHashMap, std::vector<slivr::ImgMetaData> imageMetaPatchVector, int numPatches, int region[], int numRegions, int tags[2], int fullImageExtents[4]);
     void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight);
 };
 

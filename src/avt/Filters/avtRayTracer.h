@@ -127,9 +127,8 @@ public:
                                                       const double [3]);
     int                   GetSamplesPerRay(void)  { return samplesPerRay; };
     const int            *GetScreen(void)         { return screen; };
-    void                  blendImages(float *src, int dimsSrc[2], int posSrc[2], 
-				      float *dst, int dimsDst[2], int posDst[2]);
-    void                  SetKernelBasedSampling(bool v) { kernelBasedSampling = v; };
+    void                  SetKernelBasedSampling(bool v)
+    { kernelBasedSampling = v; };
     void                  SetLighting(bool l) { lighting = l; };
     void                  SetLightPosition(double _lightPos[4])
     { for (int i=0;i<4;i++) lightPosition[i] = _lightPos[i]; }
@@ -144,7 +143,8 @@ public:
     void                  SetTrilinear(bool t) { trilinearInterpolation = t; };
     void                  SetRayCastingSLIVR(bool _rayCastingSLIVR)
     { rayCastingSLIVR = _rayCastingSLIVR; };
-    void                  SetRendererSampleRate(double r) { rendererSampleRate = r; }
+    void                  SetRendererSampleRate(double r)
+    { rendererSampleRate = r; }
     // ospray
     void                  SetOSPRay(OSPContext *ptr) { ospray = ptr; }
     void                  SetOSPRayRefresh(bool flag) { osprayRefresh = flag; }
@@ -175,7 +175,7 @@ protected:
     double                materialProperties[4];
     double                viewDirection[3];
     double                panPercentage[2];
-    avtOpacityMap         *transferFn1D;
+    avtOpacityMap        *transferFn1D;
 
     bool                  rayCastingSLIVR;
     bool                  convexHullOnRCSLIVR;
@@ -189,17 +189,12 @@ protected:
                                                 vtkMatrix4x4 *,
                                                 double &, double &);
 
-    double                project(double _worldCoordinates[3], int pos2D[2], 
-				  int _width, int _height, vtkMatrix4x4 *_mvp);
-    void                  unProject(int _x, int _y, float _z, double _worldCoordinates[3], 
-				    int _width, int _height, vtkMatrix4x4 *invModelViewProj);
-    void                  project3Dto2D(double _3Dextents[6], int width, int height, 
-					vtkMatrix4x4 *_mvp, 
-					int _2DExtents[4], double depthExtents[2]);
-    void                  computeRay(double camera[3], double position[3], double ray[3]);
+    void                  computeRay(double camera[3], 
+				     double position[3], double ray[3]);
     bool                  checkInBounds(double volBounds[6], double coord[3]);
     bool                  intersect(double bounds[6], double ray[3], 
-				    double cameraPos[3], double &tMin, double &tMax);
+				    double cameraPos[3], 
+				    double &tMin, double &tMax);
 
 };
 
