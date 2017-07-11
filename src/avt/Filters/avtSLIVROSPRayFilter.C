@@ -57,12 +57,10 @@ double slivr::deg2rad (double degrees) {
 // other function
 void 
 VolumeInfo::Set
-(void *ptr, int type, unsigned char* ghost,
- double *X, double *Y, double *Z, 
- int nX, int nY, int nZ,
- bool cellDataFormat, float sr, 
- double volumePBox[6], double volumeBBox[6],
- bool lighting, double mtl[4])
+(int type, void *ptr, unsigned char* ghost,
+ double *X, double *Y, double *Z, int nX, int nY, int nZ,
+ double volumePBox[6], double volumeBBox[6], double mtl[4],
+ float sr, bool lighting, bool cellDataFormat)
 {
     if (!isComplete) {
 	worldType = OSP_INVALID;
@@ -71,9 +69,8 @@ VolumeInfo::Set
     InitWorld();
     InitVolume();
     if (!isComplete) { 
-	SetVolume(ptr, type, ghost,
-		  X, Y, Z, nX, nY, nZ, cellDataFormat,
-		  volumePBox, volumeBBox); 
+	SetVolume(type, ptr, ghost, X, Y, Z, nX, nY, nZ,
+		  volumePBox, volumeBBox, cellDataFormat); 
     }
     if (samplingRate != sr) {
 	samplingRate = sr;
@@ -124,12 +121,12 @@ void VolumeInfo::InitVolume(unsigned char type) {
 	}
     }
 }
-void VolumeInfo::SetVolume(void *ptr, int type, unsigned char* ghost,
+void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
 			   double *X, double *Y, double *Z, 
 			   int nX, int nY, int nZ,
-			   bool cellDataFormat,
 			   double volumePBox[6], 
-			   double volumeBBox[6]) {
+			   double volumeBBox[6],
+			   bool cellDataFormat) {
     // refresh existing data
     if (voxelData != nullptr) { 
 	ospRelease(voxelData); 
@@ -180,10 +177,10 @@ void VolumeInfo::SetVolume(void *ptr, int type, unsigned char* ghost,
     ghostSize = cellDataFormat ? nX * nY * nZ : (nX-1) * (nY-1) * (nZ-1);
     ghostData = ospNewData(ghostSize, OSP_UCHAR,
 			   ghost, OSP_DATA_SHARED_BUFFER);
+    ospSet1i(volume, "useGridAccelerator", 0);
     ospSetData(volume, "voxelData", voxelData);
     //ospSetData(volume, "ghostData", ghostData);
-    ospSet1i(volume, "useGridAccelerator", 0);
-    ospSet1i(volume, "cellDataFormat", cellDataFormat);
+    //ospSet1i(volume, "cellDataFormat", cellDataFormat);
     ospSetString(volume, "voxelType", dataType.c_str());
     ospSetObject(volume, "transferFunction", transferfcn);
 
@@ -203,7 +200,7 @@ void VolumeInfo::SetVolume(void *ptr, int type, unsigned char* ghost,
     ospSet1f(volume, "samplingRate", 3.0f);
     ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 0);
-    ospSet1i(volume, "singleShade", 1);
+    ospSet1i(volume, "singleShade", 0);
     //int volumeInitIndex = visitTimer->StartTimer();
     ospCommit(volume);
     //visitTimer->StopTimer(volumeInitIndex, "Commit OSPRay patch");

@@ -158,12 +158,10 @@ struct VolumeInfo
     
     // other function
     void Set
-    (void *ptr, int type, unsigned char* ghost,
-     double *X, double *Y, double *Z,
-     int nX, int nY, int nZ,
-     bool cellDataFormat, float sr, 
-     double volumePBox[6], double volumeBBox[6],		  
-     bool lighting, double mtl[4]);
+    (int type, void *ptr, unsigned char* ghost,
+     double *X, double *Y, double *Z, int nX, int nY, int nZ,
+     double volumePBox[6], double volumeBBox[6], double mtl[4],
+     float sr, bool lighting, bool cellDataFormat);
 
     bool GetCompleteFlag() { return isComplete; }
     void SetCompleteFlag(bool f) { isComplete = f; } 
@@ -185,12 +183,12 @@ struct VolumeInfo
     // ospVolume component
     void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME); 
     OSPVolume GetVolume() { return volume; }
-    void SetVolume(void *ptr, int type, unsigned char* ghost,
+    void SetVolume(int type, void *ptr, unsigned char* ghost,
 		   double *X, double *Y, double *Z, 
 		   int nX, int nY, int nZ,
-		   bool cellDataFormat,
 		   double volumePBox[6], 
-		   double volumeBBox[6]);
+		   double volumeBBox[6],
+		   bool cellDataFormat);
     void SetSamplingRate(float r);
     void SetLighting(bool lighting, float Ks);
     void CleanVolume() {	
