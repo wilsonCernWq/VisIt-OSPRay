@@ -174,13 +174,12 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     voxelSize = nX * nY * nZ;
     voxelData = ospNewData(voxelSize, voxelDataType,
 			   dataPtr, OSP_DATA_SHARED_BUFFER);
-    ghostSize = cellDataFormat ? nX * nY * nZ : (nX-1) * (nY-1) * (nZ-1);
-    ghostData = ospNewData(ghostSize, OSP_UCHAR,
-			   ghost, OSP_DATA_SHARED_BUFFER);
-    ospSet1i(volume, "useGridAccelerator", 0);
+    // ghostSize = cellDataFormat ? nX * nY * nZ : (nX-1) * (nY-1) * (nZ-1);
+    // ghostData = ospNewData(ghostSize, OSP_UCHAR,
+    // 			   ghost, OSP_DATA_SHARED_BUFFER);
     ospSetData(volume, "voxelData", voxelData);
-    //ospSetData(volume, "ghostData", ghostData);
-    //ospSet1i(volume, "cellDataFormat", cellDataFormat);
+    // ospSetData(volume, "ghostData", ghostData);
+    // ospSet1i(volume, "cellDataFormat", cellDataFormat);
     ospSetString(volume, "voxelType", dataType.c_str());
     ospSetObject(volume, "transferFunction", transferfcn);
 
@@ -190,6 +189,7 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
 		osp::vec3f{specularColor, specularColor, specularColor});
     ospSet1i(volume, "gradientShadingEnabled", (int)lightingFlag);
     // -- other properties
+    ospSet1i(volume, "useGridAccelerator", 0);
     ospSetVec3f(volume, "volumeClippingBoxLower",
     		(const osp::vec3f&)regionLowerClip);
     ospSetVec3f(volume, "volumeClippingBoxUpper",
@@ -321,13 +321,15 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	       << mtl[2] << " "
 	       << mtl[3] << std::endl;
 	ospSet1i(renderer, "shadowsEnabled", 1);
-	OSPLight aLight = ospNewLight(renderer, "AmbientLight");
+	OSPLight aLight = ospNewLight(renderer, "ambient");
 	ospSet1f(aLight, "intensity", 1.0f);
+	//ospSet1f(aLight, "intensity", (float)mtl[0]);
 	ospCommit(aLight);
-	OSPLight dLight = ospNewLight(renderer, "DirectionalLight");
+	OSPLight dLight = ospNewLight(renderer, "distant");
 	ospSet1f(dLight, "intensity", (float)(mtl[1] * M_PI));
+	//ospSet1f(dLight, "intensity", (float)mtl[1]);
 	ospSetVec3f(dLight, "direction", 
-		    osp::vec3f{(float)-dir[0],(float)-dir[1],(float)-dir[2]});
+		    osp::vec3f{(float)dir[0],(float)dir[1],(float)dir[2]});
 	ospCommit(dLight);
 	OSPLight lights[2] = { aLight, dLight };
 	ospSetData(renderer, "lights", ospNewData(2, OSP_OBJECT, lights));

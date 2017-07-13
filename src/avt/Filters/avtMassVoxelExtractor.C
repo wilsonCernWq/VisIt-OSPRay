@@ -2569,7 +2569,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	       << " " << volumeBBox[5]
 	       << std::endl; 
    
-	volume->Set(volumeDataType, volumePointer, ghosts, X, Y, Z, nX, nY, nZ,		    
+	volume->Set(volumeDataType, volumePointer, ghosts,
+		    X, Y, Z, nX, nY, nZ,		    
 		    volumePBox, volumeBBox, materialProperties,
 		    (float)rendererSampleRate, lighting, ncell_arrays > 0);
 
@@ -3403,9 +3404,14 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
 	{
             // I * (ka + kd*abs(cos(angle)))           
 	    source_rgb[i] = 
-		((materialProperties[0]+materialProperties[1]*normal_dot_light)*source_rgb[i])+ 
-		(materialProperties[2]*pow((double)normal_dot_light, materialProperties[3]) *
-		 source_rgb[3]);
+	    	((materialProperties[0]+materialProperties[1]*normal_dot_light)*source_rgb[i])+ 
+	    	(materialProperties[2]*pow((double)normal_dot_light, materialProperties[3])*source_rgb[3]);
+
+	    // float specular = materialProperties[2]*pow((double)normal_dot_light, materialProperties[3]);
+	    // source_rgb[i] = 
+	    // 	source_rgb[i]*source_rgb[3]*
+	    // 	(materialProperties[0] + (materialProperties[1] * normal_dot_light + specular));
+
 	}
     }
     for (int i=0; i<4; i++)
