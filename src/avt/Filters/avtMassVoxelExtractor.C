@@ -125,9 +125,8 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
     aspect = 1;
     view_to_world_transform = vtkMatrix4x4::New();
     world_to_view_transform = vtkMatrix4x4::New();
-
-    modelViewProj = vtkMatrix4x4::New();
-    invModelViewProj = vtkMatrix4x4::New();
+    model_to_screen_transform = vtkMatrix4x4::New();
+    screen_to_model_transform = vtkMatrix4x4::New();
 
     X = NULL;
     Y = NULL;
@@ -139,6 +138,13 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
     prop_buffer   = new double[3*depth];
     ind_buffer    = new int[3*depth];
     valid_sample  = new bool[depth];
+
+    // patch screen position
+    imgDims[0] = imgDims[1] = 0;             // size of the patch
+    imgLowerLeft[0]  = imgLowerLeft[1]  = 0; // coordinates in the whole image
+    imgUpperRight[0] = imgUpperRight[1] = 0; //
+
+    // lighting
     lighting = false;
     lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
     lightPosition[3] = 1.0;
@@ -150,15 +156,15 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
 
     proc = patch = 0;
     patchDrawn = 0;
-    imgDims[0] = imgDims[1] = 0;             // size of the patch
-    imgLowerLeft[0] = imgLowerLeft[1] = 0;   // coordinates in the whole image
-    imgUpperRight[0] = imgUpperRight[1] = 0; //
-    eyeSpaceDepth = -1;
+
+    eyesSpaceDepth = -1;
     clipSpaceDepth = -1;
+
     imgArray = NULL;                            // the image data
     depthBuffer = NULL;
     rgbColorBuffer = NULL;
 
+    // ospray renderer
     ospray = NULL;
 }
 
@@ -190,6 +196,9 @@ avtMassVoxelExtractor::~avtMassVoxelExtractor()
 {
     view_to_world_transform->Delete();
     world_to_view_transform->Delete();
+
+    model_to_screen_transform->Delete();
+    screen_to_model_transform->Delete();
 
     if (prop_buffer != NULL)
 	delete [] prop_buffer;
@@ -2215,6 +2224,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // gnZ = dims[2] - 1;    
     if (ncell_arrays > 0) {
 	ospout << "[avtMassVoxelExtractor] Cell Dataset " << std::endl;
+	if (ncell_arrays != 1 || cell_size[0] != 1) {
+	    EXCEPTION1(VisItException, 
+		       "Trying to plot more than one field, which is not supported by OSPRay SLIVR. Use other render type instead");
+	}
 	nX = dims[0] - 1;
 	nY = dims[1] - 1;
 	nZ = dims[2] - 1;
@@ -2223,6 +2236,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     }
     else if (npt_arrays > 0) {
 	ospout << "[avtMassVoxelExtractor] Point Dataset " << std::endl;
+	if (npt_arrays != 1 || pt_size[0] != 1) {
+	    EXCEPTION1(VisItException, 
+		       "Trying to plot more than one field, which is not supported by OSPRay SLIVR. Use other render type instead");
+	}
 	nX = dims[0];
 	nY = dims[1];
 	nZ = dims[2];
@@ -2334,7 +2351,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //=======================================================================//
     int patchScreenExtents[4];
     slivr::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
-				    panPercentage, imageZoom, modelViewProj, 
+				    panPercentage, imageZoom, model_to_screen_transform, 
 				    patchScreenExtents, renderingDepthsExtents);
     xMin = patchScreenExtents[0];
     xMax = patchScreenExtents[1];
@@ -2419,7 +2436,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		  (patch_center[1]-view.camera[1])+
 		  (patch_center[2]-view.camera[2])*
 		  (patch_center[2]-view.camera[2]));
-    eyeSpaceDepth = patch_depth;    
+    eyesSpaceDepth = patch_depth;    
     double clip_space_depth = renderingDepthsExtents[0];
 
     // calculate patch boundaries
@@ -2435,7 +2452,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // 	int point_pos[2];
     // 	double point_depth = slivr::ProjectWorldToScreen
     // 	    (world_pos, fullImgWidth, fullImgHeight, panPercentage, 
-    // 	     imageZoom, modelViewProj, point_pos);
+    // 	     imageZoom, model_to_screen_transform, point_pos);
 	
     // 	// Clamp values
     // 	point_pos[0] = std::min(std::max(point_pos[0], 0), w_max);
@@ -3277,7 +3294,7 @@ avtMassVoxelExtractor::unProject
     in[1] = (_y - _height/2.)/(_height/2.);
     in[2] = _z;
 
-    invModelViewProj->MultiplyPoint(in, worldCoordinates);
+    screen_to_model_transform->MultiplyPoint(in, worldCoordinates);
 
     if (worldCoordinates[3] == 0)
 	debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
@@ -3308,7 +3325,8 @@ avtMassVoxelExtractor::unProject
 
 void
 avtMassVoxelExtractor::getImageDimensions
-(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth)
+(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], 
+ float &eyesDepth, float &clipDepth)
 {
     inUse = patchDrawn;
     dims[0] = imgDims[0];   
@@ -3317,7 +3335,7 @@ avtMassVoxelExtractor::getImageDimensions
     screen_ll[1] = imgLowerLeft[1];
     screen_ur[0] = imgUpperRight[0];    
     screen_ur[1] = imgUpperRight[1];
-    eyeDepth  = eyeSpaceDepth;
+    eyesDepth = eyesSpaceDepth;
     clipDepth = clipSpaceDepth;
 }
 
