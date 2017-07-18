@@ -243,8 +243,9 @@ avtMassVoxelExtractor::~avtMassVoxelExtractor()
 template <class T> static void
 AssignEight(double *vals, int *index, int s, int m, T *array)
 {
-    for (int i = 0 ; i < 8 ; i++)
+    for (int i = 0 ; i < 8 ; i++) {
         vals[i] = (double) array[s*index[i]+m];
+    }
 }
 
 static void
@@ -759,7 +760,6 @@ avtMassVoxelExtractor::GetSegment
         origin[2] /= origin[3];
     }
 
-
     view[0] = (w - width/2.)/(width/2.);
     if (pretendGridsAreInWorldSpace)
 	view[0] *= -1;
@@ -999,12 +999,16 @@ avtMassVoxelExtractor::GridOnPlusSideOfPlane(const double *origin,
 
 bool
 avtMassVoxelExtractor::FindSegmentIntersections(const double *origin, 
-						const double *terminus, int &start, int &end)
+						const double *terminus, 
+						int &start, int &end)
 {
     double  t, x, y, z;
 
     // debug5 << "x,y: " << w << ", " << h;
-    // debug5 << "  origin: "  << origin[0] << ", " << origin[1] << ", " << origin[2] << "   ";
+    // debug5 << " origin: "  
+    // 	      << origin[0] << ", " 
+    // 	      << origin[1] << ", " 
+    // 	      << origin[2] << "   ";
     // debug5 << terminus[0] << ", " << terminus[1] << ", " << terminus[2];
     // debug5 << "   first/last: " << first << " / " << last << endl;
 
@@ -1183,7 +1187,9 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
 
 void
 avtMassVoxelExtractor::getIndexandDistFromCenter
-(float dist, int index, int &index_before, int &index_after, float &dist_before, float &dist_after)
+(float dist, int index, 
+ int &index_before, int &index_after, 
+ float &dist_before, float &dist_after)
 {
     float center = 0.5;
     if (dist < center)
@@ -1277,7 +1283,8 @@ avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int retur
 // ****************************************************************************
 
 double
-avtMassVoxelExtractor::trilinearInterpolate(double vals[8], float distRight, float distTop, float distBack)
+avtMassVoxelExtractor::trilinearInterpolate
+(double vals[8], float distRight, float distTop, float distBack)
 {
     float dist_from_right = 1.0 - distRight;
     float dist_from_left = distRight;
@@ -1288,11 +1295,11 @@ avtMassVoxelExtractor::trilinearInterpolate(double vals[8], float distRight, flo
     float dist_from_back = 1.0 - distBack;
     float dist_from_front = distBack;
 
-    double val =    dist_from_right     * dist_from_top         * dist_from_back * vals[0] +
+    double val =   
+	dist_from_right     * dist_from_top         * dist_from_back * vals[0] +
 	dist_from_left      * dist_from_top         * dist_from_back * vals[1] +
 	dist_from_right     * dist_from_bottom      * dist_from_back * vals[2] +
 	dist_from_left      * dist_from_bottom      * dist_from_back * vals[3] +
-
 	dist_from_right     * dist_from_top         * dist_from_front * vals[4] +
 	dist_from_left      * dist_from_top         * dist_from_front * vals[5] +
 	dist_from_right     * dist_from_bottom      * dist_from_front * vals[6] +
@@ -1332,7 +1339,7 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
     {
 	const int *ind = ind_buffer + 3*i;
 	const double *prop = prop_buffer + 3*i;
-
+	
 	int index = 0;
 	if (calc_cell_index)
 	    index = ind[2]*((dims[0]-1)*(dims[1]-1)) + ind[1]*(dims[0]-1) + ind[0];
@@ -1595,8 +1602,10 @@ FindIndex(vtkDataArray *coordArray,const double &pt, const int &last_hit,
 {
     switch(coordArray->GetDataType())
     {
-	vtkTemplateAliasMacro(return FindIndex(pt, last_hit, n,
-					       static_cast<VTK_TT *>(coordArray->GetVoidPointer(0))));
+	vtkTemplateAliasMacro
+	    (return FindIndex(pt, last_hit, n,
+			      static_cast<VTK_TT *>
+			      (coordArray->GetVoidPointer(0))));
     default:    return -1;
     }
 }
@@ -1626,8 +1635,9 @@ FindRange(vtkDataArray *coordArray, int ind, double c, double &min, double &max)
 {
     switch(coordArray->GetDataType())
     {
-	vtkTemplateAliasMacro(FindRange(ind, c, min, max,
-					static_cast<VTK_TT *>(coordArray->GetVoidPointer(0))));
+	vtkTemplateAliasMacro
+	    (FindRange(ind, c, min, max,
+		       static_cast<VTK_TT *>(coordArray->GetVoidPointer(0))));
     default:
 	EXCEPTION1(VisItException, "Unknown Coordinate type");
     }
@@ -1679,7 +1689,8 @@ FindRange(vtkDataArray *coordArray, int ind, double c, double &min, double &max)
 
 void
 avtMassVoxelExtractor::ExtractImageSpaceGrid(vtkRectilinearGrid *rgrid,
-					     std::vector<std::string> &varnames, std::vector<int> &varsizes)
+					     std::vector<std::string> &varnames,
+					     std::vector<int> &varsizes)
 {
     int  i, j, k, l, m;
 
@@ -1917,24 +1928,26 @@ avtMassVoxelExtractor::ExtractImageSpaceGrid(vtkRectilinearGrid *rgrid,
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *terminus, int w, int h)
+avtMassVoxelExtractor::SampleAlongSegment
+(const double *origin, const double *terminus, int w, int h)
 {
     int first = 0;
     int last = 0;
-    bool hasIntersections = FindSegmentIntersections(origin, terminus, first, last);
+    bool hasIntersections = 
+	FindSegmentIntersections(origin, terminus, first, last);
 
-    // debug5 << "frist - last" << first << " " << last << std::endl;
+    if (!hasIntersections) { return; }
 
-    if (!hasIntersections)
-	return;
+    //std::cout << "frist - last" << first << " " << last << std::endl;
 
     //
     // Determine if there is intersection with buffer
-    bool rcSLIVRBufferMerge = false;
-    double _worldOpaqueCoordinates[3];
-    bool intesecting = false;
-    int intersect = -1;
-    float posAlongVector = 0;
+    //
+    // bool rcSLIVRBufferMerge = false;
+    double worldOpaqueCoordinates[3];
+    bool intersecting = false;
+    int  intersect = -1;
+    float propAlongVector = 0.0f;
 
     bool foundHit = false;
     int curX = -1;
@@ -1956,49 +1969,69 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
 	int screenX = bufferExtents[1] - bufferExtents[0];
 	int screenY = bufferExtents[3] - bufferExtents[2];
 
-	int _index = h*screenX + w;
+	int screenIndex = h * screenX + w;
 
-	if (depthBuffer[_index] != 1)  // There is some other things to blend with at this location ...
+	if (depthBuffer[screenIndex] != 1)  	    
 	{
-	    float normalizedDepth = depthBuffer[_index]*2 - 1;  // switching from (0 - 1) to (-1 - 1)
+	    // There is some other things to blend with at this location ...
+            // -- switching from (0 - 1) to (-1 - 1)
+	    float normalizedDepth = depthBuffer[screenIndex]*2 - 1;  
 
-	    // debug5 << "normalizedDepth: " << normalizedDepth << " "
-	    // 	   << "renderingDepthsExtents[0]: " << renderingDepthsExtents[0] << " " 
-	    // 	   << "renderingDepthsExtents[1]: " << renderingDepthsExtents[1] << std::endl;
+	    debug5 << "normalizedDepth: " << normalizedDepth << " "
+	    	   << "renderingDepthsExtents[0]: " 
+		   << renderingDepthsExtents[0] << " " 
+	    	   << "renderingDepthsExtents[1]: " 
+		   << renderingDepthsExtents[1] << std::endl;
 
-	    if ( (normalizedDepth >= renderingDepthsExtents[0]) && (normalizedDepth <= renderingDepthsExtents[1]) )  // ... and it's within this patch
+	    // ... and it's within this patch
+	    if ((normalizedDepth >= renderingDepthsExtents[0]) && 
+		(normalizedDepth <= renderingDepthsExtents[1]))  
 	    {
-		rcSLIVRBufferMerge = true;
-		unProject(w,h, depthBuffer[_index], _worldOpaqueCoordinates, fullImgWidth, fullImgHeight);
+		//rcSLIVRBufferMerge = true;
+
+		// unProject(w,h, depthBuffer[screenIndex], worldOpaqueCoordinates, 
+		// 	     fullImgWidth, fullImgHeight);
+
+		slivr::ProjectScreenToWorld(w, h, depthBuffer[screenIndex],
+					    fullImgWidth, fullImgHeight, 
+					    panPercentage, imageZoom, 
+					    screen_to_model_transform,
+					    worldOpaqueCoordinates);
+
 		//debug5 << "Location: " << w << ", " << h << std::endl;
 
-		double start[3];
-		start[0] = terminus[0];
-		start[1] = terminus[1];
-		start[2] = terminus[2];
-		if (xGoingUp)
-		    start[0] = origin[0];
+		// double start[3];
+		// start[0] = terminus[0];
+		// start[1] = terminus[1];
+		// start[2] = terminus[2];
+		// if (xGoingUp)
+		//     start[0] = origin[0];
+		// if (yGoingUp)
+		//     start[1] = origin[1];
+		// if (zGoingUp)
+		//     start[1] = origin[2];
 
-		if (yGoingUp)
-		    start[1] = origin[1];
-
-		if (zGoingUp)
-		    start[1] = origin[2];
+		double start[3] = {
+		    xGoingUp ? origin[0] : terminus[0],
+		    yGoingUp ? origin[1] : terminus[1],
+		    zGoingUp ? origin[2] : terminus[2]
+		};
 
 		float distOriginTerminus_Squared = 
 		    (origin[0]-terminus[0])*(origin[0]-terminus[0]) +
 		    (origin[1]-terminus[1])*(origin[1]-terminus[1]) + 
 		    (origin[2]-terminus[2])*(origin[2]-terminus[2]);
 		float distCoordStart_Squared = 
-		    (_worldOpaqueCoordinates[0]-start[0])*(_worldOpaqueCoordinates[0]-start[0]) +
-		    (_worldOpaqueCoordinates[1]-start[1])*(_worldOpaqueCoordinates[1]-start[1]) + 
-		    (_worldOpaqueCoordinates[2]-start[2])*(_worldOpaqueCoordinates[2]-start[2]);
+		    (worldOpaqueCoordinates[0]-start[0])*(worldOpaqueCoordinates[0]-start[0]) +
+		    (worldOpaqueCoordinates[1]-start[1])*(worldOpaqueCoordinates[1]-start[1]) + 
+		    (worldOpaqueCoordinates[2]-start[2])*(worldOpaqueCoordinates[2]-start[2]);
 
-
-		if (distCoordStart_Squared < distOriginTerminus_Squared)     // lies along the vector
+		// lies along the vector
+		if (distCoordStart_Squared < distOriginTerminus_Squared)    
 		{
-		    intesecting = true;
-		    posAlongVector = sqrt(distCoordStart_Squared)/sqrt(distOriginTerminus_Squared);
+		    intersecting = true;
+		    propAlongVector = 
+			(float)sqrt(distCoordStart_Squared)/sqrt(distOriginTerminus_Squared);
 		}
 	    }
 	}
@@ -2148,19 +2181,21 @@ avtMassVoxelExtractor::SampleAlongSegment(const double *origin, const double *te
 	curZ = ind[2];
     }
 
-    //debug5 << "First: " << first << "  last: " << last << std::endl;
-
-    if (intesecting){
-	intersect = posAlongVector * (last-first) + first;
-	debug5 << "intersect: " << intersect 
-	       << "   First: " << first << "  last: " << last << std::endl;
+    debug5 << "First: " << first << "  last: " << last << std::endl;
+    if (intersecting){
+	intersect = round(propAlongVector * (last-first) + first);
+	debug5 << "intersect: " << intersect
+	       << " first: " << first << " last: " << last << std::endl;
     }
 
-    if (hasSamples)
-	if (rayCastingSLIVR)
+    if (hasSamples) {
+	if (rayCastingSLIVR) {
 	    SampleVariableRCSLIVR(first, last, intersect, w, h);
-	else
+	}
+	else {
 	    SampleVariable(first, last, w, h);
+	}
+    }
 }
 
 
@@ -2210,7 +2245,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max)) { return; }
 
     //=======================================================================//
-    //
+    // obtain data pointers & ghost region information
     //=======================================================================//
     // Calculate patch dimensions for point array and cell array
     //   This is to check if the patch is a cell data or a point data
@@ -2218,10 +2253,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     void* volumePointer = nullptr;
     int   volumeDataType;
     int nX = 0, nY = 0, nZ = 0;
-    // int gnX = 0, gnY = 0, gnZ = 0;
-    // gnX = dims[0] - 1;
-    // gnY = dims[1] - 1;
-    // gnZ = dims[2] - 1;    
     if (ncell_arrays > 0) {
 	ospout << "[avtMassVoxelExtractor] Cell Dataset " << std::endl;
 	if (ncell_arrays != 1 || cell_size[0] != 1) {
@@ -2250,6 +2281,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     }
     ospout << "[avtMassVoxelExtractor] patch dimension "
 	   << nX << " " << nY << " " << nZ << std::endl;
+
     // Calculate ghost region boundaries
     //   ghost_boundaries is an array to indicate if the patch contains
     //   any ghost regions in six different directions
@@ -2266,84 +2298,76 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	gnX = dims[0] - 1;
 	gnY = dims[1] - 1;
         gnZ = dims[2] - 1;
-	for (int y = 0; y < gnY; ++y) {
-	    for (int z = 0; z < gnZ; ++z) {
+	for (int y = 1; y < (gnY-1); ++y) {
+	    for (int z = 1; z < (gnZ-1); ++z) {
 		if (!ghost_bound[0]) {
-		    if (ghosts[z*gnY*gnX+y*gnX        ] != 0) { ghost_bound[0] = true; }
+		    if (ghosts[z*gnY*gnX+y*gnX        ] != 0)
+		    { ghost_bound[0] = true; }
 		}
 		if (!ghost_bound[3]) {
-		    if (ghosts[z*gnY*gnX+y*gnX+(gnX-1)] != 0) { ghost_bound[3] = true; }
+		    if (ghosts[z*gnY*gnX+y*gnX+(gnX-1)] != 0)
+		    { ghost_bound[3] = true; }
 		}
 		if (ghost_bound[0] && ghost_bound[3]) { break; }
 	    }
 	}
-	for (int x = 0; x < gnX; ++x) {
-	    for (int z = 0; z < gnZ; ++z) {
+	for (int x = 1; x < (gnX-1); ++x) {
+	    for (int z = 1; z < (gnZ-1); ++z) {
 		if (!ghost_bound[1]) {
-		    if (ghosts[z*gnY*gnX            +x] != 0) { ghost_bound[1] = true; }
+		    if (ghosts[z*gnY*gnX            +x] != 0)
+		    { ghost_bound[1] = true; }
 		}
 		if (!ghost_bound[4]) {
-		    if (ghosts[z*gnY*gnX+(gnY-1)*gnX+x] != 0) { ghost_bound[4] = true; }
+		    if (ghosts[z*gnY*gnX+(gnY-1)*gnX+x] != 0)
+		    { ghost_bound[4] = true; }
 		}
 		if (ghost_bound[1] && ghost_bound[4]) { break; }
 	    }
 	}
-	for (int x = 0; x < gnX; ++x) {
-	    for (int y = 0; y < gnY; ++y) {
+	for (int x = 1; x < (gnX-1); ++x) {
+	    for (int y = 1; y < (gnY-1); ++y) {
 		if (!ghost_bound[2]) {
-		    if (ghosts[                y*gnX+x] != 0) { ghost_bound[2] = true; }
+		    if (ghosts[                y*gnX+x] != 0) 
+		    { ghost_bound[2] = true; }
 		}
 		if (!ghost_bound[5]) {
-		    if (ghosts[(gnZ-1)*gnY*gnX+y*gnX+x] != 0) { ghost_bound[5] = true; }
+		    if (ghosts[(gnZ-1)*gnY*gnX+y*gnX+x] != 0)
+		    { ghost_bound[5] = true; }
 		}
 		if (ghost_bound[2] && ghost_bound[5]) { break; }
 	    }
 	}
-	// ghost_bound[0] = ghosts[gnY*gnX+gnX+0] != 0; // [0,1,1]
-	// ghost_bound[3] = ghosts[(gnZ-2)*gnY*gnX+(gnY-2)*gnX+(gnX-1)] != 0;
-	// ghost_bound[1] = ghosts[gnY*gnX+    1] != 0; // [1,0,1]
-	// ghost_bound[4] = ghosts[(gnZ-2)*gnY*gnX+(gnY-1)*gnX+(gnX-2)] != 0;
-	// ghost_bound[2] = ghosts[        gnX+1] != 0; // [1,1,0]
-	// ghost_bound[5] = ghosts[(gnZ-1)*gnY*gnX+(gnY-2)*gnX+(gnX-2)] != 0;
     }
 
-    // the name is a bit ugly but easier to read for debugging
-    // non-ghost data index range
-    // int X0 = ghost_bound[0] ?    1 :    0,
-    // 	X1 = ghost_bound[3] ? nX-2 : nX-1,
-    // 	Y0 = ghost_bound[1] ?    1 :    0,
-    // 	Y1 = ghost_bound[4] ? nY-2 : nY-1,
-    // 	Z0 = ghost_bound[2] ?    1 :    0,
-    // 	Z1 = ghost_bound[5] ? nZ-2 : nZ-1;
-    // double dX = (X[nX-1]-X[0])/(nX-1); 
-    // double dY = (Y[nY-1]-Y[0])/(nY-1);
-    // double dZ = (Z[nZ-1]-Z[0])/(nZ-1); 
-
-    // double volumeCube[6] = {    
-    // 	X[0], X[nX-1], Y[0], Y[nY-1], Z[0], Z[nZ-1]
-    // 	// ghost_bound[0] ? (X[0]+X[1])/2. : X[0],
-    // 	// ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : X[nX-1],
-    // 	// ghost_bound[1] ? (Y[0]+Y[1])/2. : Y[0],
-    // 	// ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : Y[nY-1],
-    // 	// ghost_bound[2] ? (Z[0]+Z[1])/2. : Z[0],
-    // 	// ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : Z[nZ-1]
-    // };
     double volumeCube[6];
     if (ncell_arrays > 0) {    
-	volumeCube[0] = ghost_bound[0] ? X[1] : (X[0]+X[1])/2.;
-	volumeCube[1] = ghost_bound[3] ? X[nX-1] : (X[nX-1]+X[nX])/2.;
-	volumeCube[2] = ghost_bound[1] ? Y[1] : (Y[0]+Y[1])/2.;
-	volumeCube[3] = ghost_bound[4] ? Y[nY-1] : (Y[nY-1]+Y[nY])/2.;
-	volumeCube[4] = ghost_bound[2] ? Z[1] : (Z[0]+Z[1])/2.;
-	volumeCube[5] = ghost_bound[5] ? Z[nZ-1] : (Z[nZ-1]+Z[nZ])/2.;
+	// volumeCube[0] = ghost_bound[0] ? X[1] : (X[0]+X[1])/2.;
+	// volumeCube[1] = ghost_bound[3] ? X[nX-1] : (X[nX-1]+X[nX])/2.;
+	// volumeCube[2] = ghost_bound[1] ? Y[1] : (Y[0]+Y[1])/2.;
+	// volumeCube[3] = ghost_bound[4] ? Y[nY-1] : (Y[nY-1]+Y[nY])/2.;
+	// volumeCube[4] = ghost_bound[2] ? Z[1] : (Z[0]+Z[1])/2.;
+	// volumeCube[5] = ghost_bound[5] ? Z[nZ-1] : (Z[nZ-1]+Z[nZ])/2.;
+	volumeCube[0] = (X[0]+X[1])/2.;
+	volumeCube[1] = (X[nX-1]+X[nX])/2.;
+	volumeCube[2] = (Y[0]+Y[1])/2.;
+	volumeCube[3] = (Y[nY-1]+Y[nY])/2.;
+	volumeCube[4] = (Z[0]+Z[1])/2.;
+	volumeCube[5] = (Z[nZ-1]+Z[nZ])/2.;
+
     }
     else {
-	volumeCube[0] = ghost_bound[0] ? (X[1]+X[0])/2. : X[0];
-	volumeCube[1] = ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : X[nX-1];
-	volumeCube[2] = ghost_bound[1] ? (Y[1]+Y[0])/2. : Y[0];
-	volumeCube[3] = ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : Y[nY-1];
-	volumeCube[4] = ghost_bound[2] ? (Z[1]+Z[0])/2. : Z[0];
-	volumeCube[5] = ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : Z[nZ-1];
+	// volumeCube[0] = ghost_bound[0] ? (X[1]+X[0])/2. : X[0];
+	// volumeCube[1] = ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : X[nX-1];
+	// volumeCube[2] = ghost_bound[1] ? (Y[1]+Y[0])/2. : Y[0];
+	// volumeCube[3] = ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : Y[nY-1];
+	// volumeCube[4] = ghost_bound[2] ? (Z[1]+Z[0])/2. : Z[0];
+	// volumeCube[5] = ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : Z[nZ-1];
+	volumeCube[0] = X[0];
+	volumeCube[1] = X[nX-1];
+	volumeCube[2] = Y[0];
+	volumeCube[3] = Y[nY-1];
+	volumeCube[4] = Z[0];
+	volumeCube[5] = Z[nZ-1];
     }
 
     //=======================================================================//
@@ -2351,78 +2375,19 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //=======================================================================//
     int patchScreenExtents[4];
     slivr::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
-				    panPercentage, imageZoom, model_to_screen_transform, 
+				    panPercentage, imageZoom,
+				    model_to_screen_transform, 
 				    patchScreenExtents, renderingDepthsExtents);
     xMin = patchScreenExtents[0];
     xMax = patchScreenExtents[1];
     yMin = patchScreenExtents[2];
     yMax = patchScreenExtents[3];
 
-    // xMin = yMin = std::numeric_limits<int>::max(); 
-    // xMax = yMax = std::numeric_limits<int>::min(); 
-    // // upper boundary not included
-
-    // // Compute z order for blending patches
-    // double coordinates[8][3];
-    // // -- corner [0,0,0]
-    // coordinates[0][0] = X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0);
-    // coordinates[0][1] = Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0);
-    // coordinates[0][2] = Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0);
-    // // -- corner [1,0,0]
-    // coordinates[1][0] = X[X1] + (ncell_arrays > 0 ? dX : dX/2.0);
-    // coordinates[1][1] = Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0);
-    // coordinates[1][2] = Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0);
-    // // -- corner [1,1,0]
-    // coordinates[2][0] = X[X1] + (ncell_arrays > 0 ? dX : dX/2.0);
-    // coordinates[2][1] = Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0);
-    // coordinates[2][2] = Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0);
-    // // -- corner [0,1,0]
-    // coordinates[3][0] = X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0);
-    // coordinates[3][1] = Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0);
-    // coordinates[3][2] = Z[Z0] + (ncell_arrays > 0 ? .0 :-dZ/2.0);
-    // // -- corner [0,0,1]
-    // coordinates[4][0] = X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0);
-    // coordinates[4][1] = Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0);
-    // coordinates[4][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
-    // // -- corner [1,0,1]
-    // coordinates[5][0] = X[X1] + (ncell_arrays > 0 ? dX : dX/2.0);
-    // coordinates[5][1] = Y[Y0] + (ncell_arrays > 0 ? .0 :-dY/2.0);
-    // coordinates[5][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
-    // // -- corner [0,1,1]
-    // coordinates[6][0] = X[X0] + (ncell_arrays > 0 ? .0 :-dX/2.0);
-    // coordinates[6][1] = Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0);
-    // coordinates[6][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
-    // // -- corner [1,1,1]
-    // coordinates[7][0] = X[X1] + (ncell_arrays > 0 ? dX : dX/2.0);
-    // coordinates[7][1] = Y[Y1] + (ncell_arrays > 0 ? dY : dY/2.0);
-    // coordinates[7][2] = Z[Z1] + (ncell_arrays > 0 ? dZ : dZ/2.0);
-
-    // check for debug
-    // ospout << "[avtMassVoxelExtractor] patch data bounds:" 
-    // 	   << "   " << volumeCube[0]
-    // 	   << " "   << volumeCube[1]
-    // 	   << " | " << volumeCube[2]
-    // 	   << " "   << volumeCube[3]
-    // 	   << " | " << volumeCube[4]
-    // 	   << " "   << volumeCube[5]
-    // 	   << std::endl; 
     ospout << "[avtMassVoxelExtractor] patch ghost bounds:"
 	   << "   " << ghost_bound[0] << " " << ghost_bound[3] 
 	   << " | " << ghost_bound[1] << " " << ghost_bound[4] 
 	   << " | " << ghost_bound[2] << " " << ghost_bound[5]
 	   << std::endl;   
-
-// #define VOLUMETYPE double
-//     ospout << "[avtMassVoxelExtractor] patch data values:" 
-// 	   << " " << ((VOLUMETYPE*)volumePointer)[                          0] // 0,0,0
-// 	   << " " << ((VOLUMETYPE*)volumePointer)[                       nX-2] // 0,0,1
-// 	   << " " << ((VOLUMETYPE*)volumePointer)[             (nY-2)*nX+   0] // 0,1,0
-// 	   << " " << ((VOLUMETYPE*)volumePointer)[             (nY-2)*nX+nX-2] // 0,1,1
-// 	   << " " << ((VOLUMETYPE*)volumePointer)[(nZ-2)*nY*nX+             0] // 1,0,0
-// 	   << " " << ((VOLUMETYPE*)volumePointer)[(nZ-2)*nY*nX+          nX-2] // 1,0,1
-// 	   << " " << ((VOLUMETYPE*)volumePointer)[(nZ-2)*nY*nX+(nY-2)*nX+   0] // 1,1,0
-// 	   << " " << ((VOLUMETYPE*)volumePointer)[(nZ-2)*nY*nX+(nY-2)*nX+nX-2] // 1,1,1
-// 	   << std::endl;
     
     // calculate patch depth
     double patch_center[3];
@@ -2438,47 +2403,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		  (patch_center[2]-view.camera[2]));
     eyesSpaceDepth = patch_depth;    
     double clip_space_depth = renderingDepthsExtents[0];
-
-    // calculate patch boundaries
-    // for (int i=0; i<8; ++i) // to search for the patch size on screen
-    // {
-    // 	// get world coordinate
-    // 	double world_pos[3];
-    // 	world_pos[0] = coordinates[i][0];
-    // 	world_pos[1] = coordinates[i][1];
-    // 	world_pos[2] = coordinates[i][2];
-
-    // 	// get screen coordinate
-    // 	int point_pos[2];
-    // 	double point_depth = slivr::ProjectWorldToScreen
-    // 	    (world_pos, fullImgWidth, fullImgHeight, panPercentage, 
-    // 	     imageZoom, model_to_screen_transform, point_pos);
-	
-    // 	// Clamp values
-    // 	point_pos[0] = std::min(std::max(point_pos[0], 0), w_max);
-    // 	point_pos[1] = std::min(std::max(point_pos[1], 0), h_max);
-
-    // 	// Get min max
-    // 	xMin = std::min(xMin, point_pos[0]);
-    // 	xMax = std::max(xMax, point_pos[0]);
-    // 	yMin = std::min(yMin, point_pos[1]);
-    // 	yMax = std::max(yMax, point_pos[1]);
-
-    // 	if (i == 0)
-    // 	{
-    // 	    clip_space_depth = point_depth;
-    // 	    renderingDepthsExtents[0] = point_depth;
-    // 	    renderingDepthsExtents[1] = point_depth;
-    // 	}
-    // 	else
-    // 	{
-    // 	    clip_space_depth = std::min(point_depth, clip_space_depth);
-    // 	    renderingDepthsExtents[0] = 
-    // 		std::min(point_depth, renderingDepthsExtents[0]);
-    // 	    renderingDepthsExtents[1] = 
-    // 		std::max(point_depth, renderingDepthsExtents[1]);
-    // 	}
-    // }
 
     //=======================================================================//
     // create framebuffer
@@ -2526,29 +2450,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    (ncell_arrays > 0 ? (Z[nZ-1]+Z[nZ])/2. : Z[nZ-1])
 	};
 
-	// double volumeBBox[6] = {
-	//     X[X0]+(ncell_arrays <= 0 ? -dX/2.0 : 0.0),
-	//     Y[Y0]+(ncell_arrays <= 0 ? -dY/2.0 : 0.0),
-	//     Z[Z0]+(ncell_arrays <= 0 ? -dZ/2.0 : 0.0),
-	//     X[X1]+(ncell_arrays <= 0 ? dX/2.0 : dX),
-	//     Y[Y1]+(ncell_arrays <= 0 ? dY/2.0 : dY),
-	//     Z[Z1]+(ncell_arrays <= 0 ? dZ/2.0 : dZ)
-	// };
-	// double volumeBBox[6] = {    
-	//     ghost_bound[0] ? (X[0]+X[1])/2. : X[0],
-	//     ghost_bound[1] ? (Y[0]+Y[1])/2. : Y[0],
-	//     ghost_bound[2] ? (Z[0]+Z[1])/2. : Z[0],
-	//     ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : X[nX-1],
-	//     ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : Y[nY-1],
-	//     ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : Z[nZ-1]
-	// };
-	// double volumeBBox[6];
-	// volumeBBox[0] = ghost_bound[0] ? (X[0]+X[1])/2. : X[0];
-	// volumeBBox[1] = ghost_bound[1] ? (Y[0]+Y[1])/2. : Y[0];
-	// volumeBBox[2] = ghost_bound[2] ? (Z[0]+Z[1])/2. : Z[0];
-	// volumeBBox[3] = ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : X[nX-1];
-	// volumeBBox[4] = ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : Y[nY-1];
-	// volumeBBox[5] = ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : Z[nZ-1];
 	double volumeBBox[6];
 	if (ncell_arrays > 0) {    
 	    volumeBBox[0] = ghost_bound[0] ? X[1] : volumePBox[0];
@@ -2616,6 +2517,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	}
 	volume->CleanFB();
     }
+
     //=======================================================================//
     // Send rays
     //=======================================================================//
@@ -2626,14 +2528,19 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgUpperRight[0] = xMax; 
     imgUpperRight[1] = yMax;
 
+    // if (proc == 20) {
+    // 	std::cout << " " << xMin << " " << xMax
+    // 		  << " " << yMin << " " << yMax
+    // 		  << std::endl;
+    // }
     if (!avtCallback::UseOSPRay()) 
     {
+	ospout << "[avtMassiveVoxelExtractor] "
+	       << "Using CPU version raytracer" << std::endl;
 	for (int patchX = xMin; patchX < xMax ; patchX++)
 	{
 	    for (int patchY = yMin; patchY < yMax ; patchY++)
 	    {
-		ospout << "[avtMassiveVoxelExtractor] "
-		       << "Using CPU version raytracer" << std::endl;
 		const int pIndex = (patchY-yMin)*imgWidth + (patchX-xMin);
 		const int fIndex = ((patchY-bufferExtents[2])*
 				    (bufferExtents[1]-bufferExtents[0])+
@@ -2646,7 +2553,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		    {
 		        const double clipDepth = depthBuffer[fIndex]*2 - 1;
 		        if (clipDepth >= renderingDepthsExtents[0] && 
-			    clipDepth < renderingDepthsExtents[1])
+			    clipDepth <= renderingDepthsExtents[1])
 		        {
 			    patchDrawn = 1;
 			    const int imgID = pIndex * 4;
@@ -2687,7 +2594,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    delete []imgArray; imgArray = NULL; 
 	} 
     } 
-
+    // else {
+    // 	WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/patch"+
+    // 			std::to_string(proc), imgArray, 
+    // 			imgWidth, imgHeight);
+    // }
 }
 
 
@@ -2708,11 +2619,36 @@ void
 avtMassVoxelExtractor::GetSegmentRCSLIVR
 (int x, int y, double depthsExtents[2], double *origin, double *terminus)
 {
-    unProject(x,y, depthsExtents[0], origin,   fullImgWidth, fullImgHeight);
-    unProject(x,y, depthsExtents[1], terminus, fullImgWidth, fullImgHeight);
+    //unProject(x,y, depthsExtents[0], origin,   fullImgWidth, fullImgHeight);
+    //unProject(x,y, depthsExtents[1], terminus, fullImgWidth, fullImgHeight);
+
+    slivr::ProjectScreenToWorld(x, y, depthsExtents[0], 
+				fullImgWidth, fullImgHeight, 
+				panPercentage, imageZoom, 
+				screen_to_model_transform,
+				origin);
+    slivr::ProjectScreenToWorld(x, y, depthsExtents[1], 
+				fullImgWidth, fullImgHeight, 
+				panPercentage, imageZoom, 
+				screen_to_model_transform,
+				terminus);
+    // if (jitter)
+    // {
+    // 	int reliable_random_number = 
+    // 	    (13*x*y + 14*x*x + 79*y*y + 247*x + 779*y)%513;
+    // 	double jitter = (1.0/depth) * ((reliable_random_number-256) / (256.0));
+    // 	double dir[3];
+    // 	dir[0] = (terminus[0] - origin[0])*jitter;
+    // 	dir[1] = (terminus[1] - origin[1])*jitter;
+    // 	dir[2] = (terminus[2] - origin[2])*jitter;
+    // 	origin[0] += dir[0];
+    // 	origin[1] += dir[1];
+    // 	origin[2] += dir[2];
+    // 	terminus[0] += dir[0];
+    // 	terminus[1] += dir[1];
+    // 	terminus[2] += dir[2];
+    // }
 }
-
-
 
 
 // ****************************************************************************
@@ -2728,28 +2664,28 @@ avtMassVoxelExtractor::GetSegmentRCSLIVR
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y)
+avtMassVoxelExtractor::SampleVariableRCSLIVR
+(int first, int last, int intersect, int x, int y)
 {
     int  count = 0;
     bool calc_cell_index = ((ncell_arrays > 0) || (ghosts != NULL));
 
-    double dest_rgb[4] = {0.0,0.0,0.0, 0.0};     // to store the computed color
-    for (int i = first ; i < last ; i++)
+    double dest_rgb[4] = {0.0,0.0,0.0,0.0};     // to store the computed color
+    for (int i = first; i < last ; i++)
     {
 	// If we intersect a value in the z buffer
 	if (i == intersect)
 	{
 	    int fullIndex = (y * (bufferExtents[1]-bufferExtents[0]) + x) * 3.0;
-
 	    float bufferColor[4];
 	    bufferColor[0] = rgbColorBuffer[fullIndex + 0] / 255.0;
 	    bufferColor[1] = rgbColorBuffer[fullIndex + 1] / 255.0;
 	    bufferColor[2] = rgbColorBuffer[fullIndex + 2] / 255.0;
 	    bufferColor[3] = 1.0;
-
 	    for (int j=0; j<4; j++)
-		dest_rgb[j] = bufferColor[j] * (1.0 - dest_rgb[3]) + dest_rgb[j];
-
+	    { 
+		dest_rgb[j] = bufferColor[j] * (1.0 - dest_rgb[3]) + dest_rgb[j]; 
+	    }
 	    // debug5 << x << ", " << y 
 	    // 	   << " ~ First: " << first 
 	    // 	   << " i:  " << i 
@@ -2770,8 +2706,10 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 	const double *prop = prop_buffer + 3*i;
 
 	int index = 0;
-	if (calc_cell_index)
-	    index = ind[2]*((dims[0]-1)*(dims[1]-1)) + ind[1]*(dims[0]-1) + ind[0];
+	if (calc_cell_index) {
+	    index = 
+		ind[2]*((dims[0]-1)*(dims[1]-1)) + ind[1]*(dims[0]-1) + ind[0];
+	}
 
 	if (ghosts != NULL)
 	{
@@ -2792,15 +2730,14 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 	float z_back  = prop[2];        float z_front  = 1. - z_back;		
 
 	// get the index and distance from the center of the neighbouring cells
-	getIndexandDistFromCenter(x_right, newInd[0], index_left, index_right,   dist_from_left, dist_from_right);
-	getIndexandDistFromCenter(y_top,   newInd[1], index_bottom,index_top,    dist_from_bottom,dist_from_top);
-	getIndexandDistFromCenter(z_back,  newInd[2], index_front, index_back,   dist_from_front, dist_from_back);
+	getIndexandDistFromCenter(x_right, newInd[0], index_left,   index_right,  dist_from_left, dist_from_right);
+	getIndexandDistFromCenter(y_top,   newInd[1], index_bottom, index_top,    dist_from_bottom,dist_from_top);
+	getIndexandDistFromCenter(z_back,  newInd[2], index_front,  index_back,   dist_from_front, dist_from_back);
 
 	int indices[6];
 	indices[4] = index_front;       indices[5] = index_back;
 	indices[2] = index_bottom;      indices[3] = index_top;
 	indices[0] = index_left;        indices[1] = index_right;
-
 
 	if (indices[0] < 0 || indices[0]>dims[0]-2)
 	    valid_sample[i] = false;
@@ -2808,13 +2745,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 	if (indices[1] < 0 || indices[1]>dims[0]-2)
 	    valid_sample[i] = false;
 
-
 	if (indices[2] < 0 || indices[2]>dims[1]-2)
 	    valid_sample[i] = false;
 
 	if (indices[3] < 0 || indices[3]>dims[1]-2)
 	    valid_sample[i] = false;
-
 
 	if (indices[4] < 0 || indices[4]>dims[2]-2)
 	    valid_sample[i] = false;
@@ -2822,10 +2757,8 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 	if (indices[5] < 0 || indices[5]>dims[2]-2)
 	    valid_sample[i] = false;
 
-
 	if (!valid_sample[i])
 	    continue;
-
 
 	//
 	// Cell centered data
@@ -2835,18 +2768,31 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 	    int indexT[8];
 	    computeIndices(dims, indices, indexT);
 
-	    for (int l = 0 ; l < ncell_arrays ; l++)            // ncell_arrays: usually 1
+	    // ncell_arrays: usually 1
+	    for (int l = 0 ; l < ncell_arrays ; l++)
 	    {
 		void  *cell_array = cell_arrays[l];
 		double values[8];
-		for (int m = 0 ; m < cell_size[l] ; m++)        // cell_size[l] usually 1
-		{
-		    AssignEight(cell_vartypes[l], values, indexT, cell_size[l], m, cell_array);
-		    double scalarValue = trilinearInterpolate(values, dist_from_left, dist_from_bottom, dist_from_front);
-		    double source_rgb[4];
-		    int retVal = transferFn1D->QueryTF(scalarValue,source_rgb);
 
-		    if ( ((retVal == 0)||(source_rgb[3]==0)) || (source_rgb[0]==0 && source_rgb[1]==0 && source_rgb[2]==0) )
+		// cell_size[l] usually 1
+		for (int m = 0 ; m < cell_size[l] ; m++)
+		{
+		    AssignEight(cell_vartypes[l], values, indexT, 
+				cell_size[l], m, cell_array);
+		    double scalarValue = 
+			trilinearInterpolate(values, 
+					     dist_from_left, 
+					     dist_from_bottom, 
+					     dist_from_front);
+		    double source_rgb[4];
+		    int retVal;
+
+		    retVal = transferFn1D->QueryTF(scalarValue,source_rgb);
+
+		    if (((retVal == 0) || (source_rgb[3]==0)) || 
+		    	(source_rgb[0]==0 && 
+		    	 source_rgb[1]==0 && 
+		    	 source_rgb[2]==0))
 		    {
 			// no need to do anything more if there will be no color
 		    }
@@ -2862,8 +2808,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 			    // h = offset = 1/2 the distance between grids
 			    // grad = 1/2*h * ( f(x+h,y,z)-f(x-h,y,z)    f(x,y+h,z)-f(x,y-h,z)   f(x,y,z-h)-f(x,y,z-h)  )
 
-			    float distFromRight, distFromLeft, distFromTop, distFromBottom, distFromFront, distFromBack;
-			    int indexLeft, indexRight, indexTop, indexBottom, indexFront, indexBack;
+			    float distFromRight, distFromLeft, 
+				  distFromTop, distFromBottom, 
+				  distFromFront, distFromBack;
+			    int indexLeft, indexRight, indexTop, 
+				indexBottom, indexFront, indexBack;
 			    float gradientOffset = 0.25;
 
 			    double gradVals[8];
@@ -3011,8 +2960,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR(int first, int last, int intersect,
 			// Compute the color
 			//
 			computePixelColor(source_rgb, dest_rgb, gradient);
-		    }
-
+		    }		    
 		}
 	    }
 	}
@@ -3236,10 +3184,10 @@ avtMassVoxelExtractor::normalize(float vec[3])
     float inverse_sqrt_sum_squared = sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]);
     if (inverse_sqrt_sum_squared != 0)
 	inverse_sqrt_sum_squared = 1.0/inverse_sqrt_sum_squared;
-
     for (int i=0;i<3; i++)
 	vec[i] = vec[i]*inverse_sqrt_sum_squared;
 }
+
 
 // ****************************************************************************
 //  Method: avtMassVoxelExtractor::reflect
@@ -3284,29 +3232,32 @@ void
 avtMassVoxelExtractor::unProject
 (int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height)
 {
-    // remove panning
-    _x -= round(_width * panPercentage[0] * imageZoom);
-    _y -= round(_height * panPercentage[1] * imageZoom); 
+    slivr::ProjectScreenToWorld(_x, _y, _z, _width, _height, 
+				panPercentage, imageZoom, screen_to_model_transform,
+				_worldCoordinates);
+    // // remove panning
+    // _x -= round(_width * panPercentage[0] * imageZoom);
+    // _y -= round(_height * panPercentage[1] * imageZoom); 
 
-    double worldCoordinates[4] = {0,0,0,1};
-    double in[4] = {0,0,0,1};
-    in[0] = (_x - _width/2. )/(_width/2.);
-    in[1] = (_y - _height/2.)/(_height/2.);
-    in[2] = _z;
+    // double worldCoordinates[4] = {0,0,0,1};
+    // double in[4] = {0,0,0,1};
+    // in[0] = (_x - _width/2. )/(_width/2.);
+    // in[1] = (_y - _height/2.)/(_height/2.);
+    // in[2] = _z;
 
-    screen_to_model_transform->MultiplyPoint(in, worldCoordinates);
+    // screen_to_model_transform->MultiplyPoint(in, worldCoordinates);
 
-    if (worldCoordinates[3] == 0)
-	debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
+    // if (worldCoordinates[3] == 0)
+    // 	debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
 
-    worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
-    worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
-    worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
-    worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
+    // worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
+    // worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
+    // worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
+    // worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
 
-    _worldCoordinates[0] = worldCoordinates[0];
-    _worldCoordinates[1] = worldCoordinates[1];
-    _worldCoordinates[2] = worldCoordinates[2];
+    // _worldCoordinates[0] = worldCoordinates[0];
+    // _worldCoordinates[1] = worldCoordinates[1];
+    // _worldCoordinates[2] = worldCoordinates[2];
 }
 
 
