@@ -289,7 +289,7 @@ struct OSPContext
     void SetCamera
     (const double campos[3], const double camfocus[3], const double camup [3], 
      const double camdir[3], const double sceneSize[2], const double aspect,
-     const double fovy, const double zoomratio, const double imagepan[2], 
+     const double viewAngle, const double zoomratio, const double imagepan[2], 
      const int imageExtents[4], const int screenExtents[2]);
     void SetSubCamera(float xMin, float xMax, float yMin, float yMax);
 
@@ -314,6 +314,7 @@ struct OSPContext
 namespace slivr
 {
     double deg2rad (double degrees);
+    double rad2deg (double radins);
     void CheckMemoryHere(const std::string& message, 
 			 std::string debugN = "debug5");
     void CheckMemoryHere(const std::string& message, 

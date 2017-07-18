@@ -53,6 +53,9 @@ namespace slivr {
 double slivr::deg2rad (double degrees) {
     return degrees * 4.0 * atan (1.0) / 180.0;
 }
+double slivr::rad2deg (double radins) {
+    return radins / 4.0 / atan (1.0) * 180.0;
+}
 
 // other function
 void 
@@ -174,12 +177,14 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     voxelSize = nX * nY * nZ;
     voxelData = ospNewData(voxelSize, voxelDataType,
 			   dataPtr, OSP_DATA_SHARED_BUFFER);
+    ospSetData(volume, "voxelData", voxelData);
     // ghostSize = cellDataFormat ? nX * nY * nZ : (nX-1) * (nY-1) * (nZ-1);
     // ghostData = ospNewData(ghostSize, OSP_UCHAR,
     // 			   ghost, OSP_DATA_SHARED_BUFFER);
-    ospSetData(volume, "voxelData", voxelData);
     // ospSetData(volume, "ghostData", ghostData);
     // ospSet1i(volume, "cellDataFormat", cellDataFormat);
+
+    // other objects
     ospSetString(volume, "voxelType", dataType.c_str());
     ospSetObject(volume, "transferFunction", transferfcn);
 
@@ -321,13 +326,15 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	       << mtl[2] << " "
 	       << mtl[3] << std::endl;
 	ospSet1i(renderer, "shadowsEnabled", 1);
+	// ambient light
 	OSPLight aLight = ospNewLight(renderer, "ambient");
 	ospSet1f(aLight, "intensity", 1.0f);
-	//ospSet1f(aLight, "intensity", (float)mtl[0]);
+	ospSet1i(aLight, "isVisible", 0);
 	ospCommit(aLight);
+	// directional light
 	OSPLight dLight = ospNewLight(renderer, "distant");
-	ospSet1f(dLight, "intensity", (float)(mtl[1] * M_PI));
-	//ospSet1f(dLight, "intensity", (float)mtl[1]);
+	ospSet1f(dLight, "intensity", (float)(5.f * mtl[1] * M_PI));
+	ospSet1i(dLight, "isVisible", 0);
 	ospSetVec3f(dLight, "direction", 
 		    osp::vec3f{(float)dir[0],(float)dir[1],(float)dir[2]});
 	ospCommit(dLight);
@@ -371,7 +378,7 @@ void OSPContext::SetCamera(const double campos[3],
 			   const double camdir[3],
 			   const double sceneSize[2],
 			   const double aspect, 
-			   const double fovy, 
+			   const double viewAngle, 
 			   const double zoomratio, 
 			   const double imagepan[2],
 			   const int imageExtents[4],
@@ -380,6 +387,7 @@ void OSPContext::SetCamera(const double campos[3],
     float current[3];
     for (int i = 0; i < 3; ++i) {
 	current[i] = (campos[i] - camfocus[i]) / zoomratio + camfocus[i];
+	//current[i] = campos[i];
     }
     const ospcommon::vec3f camPos(current[0], current[1], current[2]);
     const ospcommon::vec3f camDir(camdir[0], camdir[1], camdir[2]);
@@ -389,11 +397,12 @@ void OSPContext::SetCamera(const double campos[3],
     ospSetVec3f(camera, "up",  (osp::vec3f&)camUp);
     if (cameraType == OSP_PERSPECTIVE) {
 	ospSet1f(camera, "aspect", aspect);
-	ospSet1f(camera, "fovy", fovy);
+	ospSet1f(camera, "fovy", viewAngle);
+	//ospSet1f(camera, "nearClip", 94.5f);
     }
     else if (cameraType == OSP_ORTHOGRAPHIC) {
 	ospSet1f(camera, "aspect", aspect);
-	ospSet1f(camera, "height", sceneSize[1]);
+	ospSet1f(camera, "height", sceneSize[1] / zoomratio);
     }
     r_panx = imagepan[0] * zoomratio;
     r_pany = imagepan[1] * zoomratio;
@@ -401,6 +410,7 @@ void OSPContext::SetCamera(const double campos[3],
 		       imageExtents[2], imageExtents[3]);
     screenSize[0] = screenExtents[0];
     screenSize[1] = screenExtents[1];
+
 }
 
 void OSPContext::SetSubCamera(float xMin, float xMax, float yMin, float yMax) 

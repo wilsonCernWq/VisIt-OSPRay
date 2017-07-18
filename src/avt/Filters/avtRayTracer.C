@@ -514,13 +514,14 @@ avtRayTracer::Execute(void)
 	//
 	// Camera Settings
 	//
-	float current[3];
-	for (int i = 0; i < 3; ++i) {
-	    current[i] = (view.camera[i] - view.focus[i]) / 
-		view.imageZoom + view.focus[i];
-	}
 	vtkCamera *sceneCam = vtkCamera::New();
-	sceneCam->SetPosition(current[0],current[1],current[2]);
+	// float current[3];
+	// for (int i = 0; i < 3; ++i) {
+	//     current[i] = (view.camera[i] - view.focus[i]) / 
+	// 	view.imageZoom + view.focus[i];
+	// }
+	// sceneCam->SetPosition(current[0],current[1],current[2]);
+	sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
 	sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
 	sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
 	sceneCam->SetViewAngle(view.viewAngle);
@@ -529,7 +530,7 @@ avtRayTracer::Execute(void)
 	else { sceneCam->ParallelProjectionOff(); }
 	sceneCam->SetParallelScale(view.parallelScale);
 	// debug
-	debug5 << "RT View settings: " << endl
+	ospout << "RT View settings: " << endl
 	       << "  inheriant view direction: "
 	       << viewDirection[0] << " "
 	       << viewDirection[1] << " "
@@ -576,6 +577,14 @@ avtRayTracer::Execute(void)
 	// Zoom and pan portions
 	vtkMatrix4x4 *imageZoomAndPan = vtkMatrix4x4::New();
 	imageZoomAndPan->Identity();
+	if (view.orthographic)
+	{
+	    imageZoomAndPan->SetElement(0, 0, view.imageZoom);
+	    imageZoomAndPan->SetElement(1, 1, view.imageZoom);
+	} else {
+	    imageZoomAndPan->SetElement(0, 0, view.imageZoom);
+	    imageZoomAndPan->SetElement(1, 1, view.imageZoom);
+	}
 	// View
 	vtkMatrix4x4 *tmp = vtkMatrix4x4::New();
 	vtkMatrix4x4 *vm = vtkMatrix4x4::New();
@@ -633,16 +642,22 @@ avtRayTracer::Execute(void)
 	    (dbounds, screen[0], screen[1], 
 	     panPercentage, view.imageZoom, pvm,
 	     fullImageExtents, depthExtents);
+	//++fullImageExtents[1];
+	//++fullImageExtents[3];
 	// debug
+	ospout << "VAR: sceneSize: " 
+	       << sceneSize[0] << " " << sceneSize[1] << std::endl;
+	ospout << "VAR: pvm: " << *pvm << std::endl;
+	ospout << "VAR: screen: " << screen[0] << " " << screen[1] << std::endl;
 	ospout << "VAR: data bounds: " << std::endl
 	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
 	       << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
 	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl;
 	ospout << "VAR: full image extents: " << std::endl
-	       << fullImageExtents[0] << " "
-	       << fullImageExtents[1] << std::endl
-	       << fullImageExtents[2] << " "
-	       << fullImageExtents[3] << std::endl;
+	       << "\t" << fullImageExtents[0] << " "
+	       << "\t" << fullImageExtents[1] << std::endl
+	       << "\t" << fullImageExtents[2] << " "
+	       << "\t" << fullImageExtents[3] << std::endl;
 	//===================================================================//
 	// ospray stuffs
 	//===================================================================//
