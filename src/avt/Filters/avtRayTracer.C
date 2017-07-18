@@ -515,13 +515,13 @@ avtRayTracer::Execute(void)
 	// Camera Settings
 	//
 	vtkCamera *sceneCam = vtkCamera::New();
-	// float current[3];
-	// for (int i = 0; i < 3; ++i) {
-	//     current[i] = (view.camera[i] - view.focus[i]) / 
-	// 	view.imageZoom + view.focus[i];
-	// }
-	// sceneCam->SetPosition(current[0],current[1],current[2]);
-	sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
+	float current[3];
+	for (int i = 0; i < 3; ++i) {
+	    current[i] = (view.camera[i] - view.focus[i]) / 
+		view.imageZoom + view.focus[i];
+	}
+	sceneCam->SetPosition(current[0],current[1],current[2]);
+	//sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
 	sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
 	sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
 	sceneCam->SetViewAngle(view.viewAngle);
@@ -581,10 +581,11 @@ avtRayTracer::Execute(void)
 	{
 	    imageZoomAndPan->SetElement(0, 0, view.imageZoom);
 	    imageZoomAndPan->SetElement(1, 1, view.imageZoom);
-	} else {
-	    imageZoomAndPan->SetElement(0, 0, view.imageZoom);
-	    imageZoomAndPan->SetElement(1, 1, view.imageZoom);
 	}
+	// else {
+	//     //imageZoomAndPan->SetElement(0, 0, view.imageZoom);
+	//     //imageZoomAndPan->SetElement(1, 1, view.imageZoom);
+	// }
 	// View
 	vtkMatrix4x4 *tmp = vtkMatrix4x4::New();
 	vtkMatrix4x4 *vm = vtkMatrix4x4::New();
