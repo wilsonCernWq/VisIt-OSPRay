@@ -198,7 +198,8 @@ avtOpacityMap::Quantize(const double &val)
 }
 
 inline float 
-avtOpacityMap::QuantizeValF(const double &val){
+avtOpacityMap::QuantizeValF(const double &val)
+{
     float testVal = ((val-min)*multiplier); 
 
     if (val < min)
@@ -239,15 +240,14 @@ avtOpacityMap::QuantizeValF(const double &val){
 inline int
 avtOpacityMap::QueryTF(double scalarValue, double color[4])
 {
+
     if (scalarValue <= min){
         int index = 0;
-
         RGBAF colorRGBA = transferFn1D[index];
         color[0] = colorRGBA.R;
         color[1] = colorRGBA.G;
         color[2] = colorRGBA.B;
         color[3] = colorRGBA.A;
-
         return 0;
     }
 
@@ -258,7 +258,6 @@ avtOpacityMap::QueryTF(double scalarValue, double color[4])
         color[1] = colorRGBA.G;
         color[2] = colorRGBA.B;
         color[3] = colorRGBA.A;
-
         return 0;
     }
 
@@ -267,7 +266,9 @@ avtOpacityMap::QueryTF(double scalarValue, double color[4])
     double colorLow[4], colorHigh[4];
     float indexPos, indexDiff;
 
-    indexPos  = (scalarValue-min)/(max-min) *tableEntries;    // multiplier = 1.0/(max-min) * tableEntries
+    // valid index position range is [0, 255] instead of [0, 256]
+    // so we substract total length 'tableEntries' by one to fix it
+    indexPos  = (scalarValue-min)/(max-min) * (tableEntries-1);    // multiplier = 1.0/(max-min) * tableEntries
     indexLow  = (int)indexPos;
     indexHigh = (int)(indexPos+1.0);
 
