@@ -85,7 +85,7 @@
 
 bool sortImgMetaDataByDepth
 (slivr::ImgMetaData const& before, slivr::ImgMetaData const& after)
-{ return before.avg_z > after.avg_z; }
+{ return before.clip_z > after.clip_z; }
 bool sortImgMetaDataByEyeSpaceDepth
 (slivr::ImgMetaData const& before, slivr::ImgMetaData const& after)
 { return before.eye_z > after.eye_z; }
@@ -515,13 +515,18 @@ avtRayTracer::Execute(void)
 	// Camera Settings
 	//
 	vtkCamera *sceneCam = vtkCamera::New();
-	float current[3];
-	for (int i = 0; i < 3; ++i) {
-	    current[i] = (view.camera[i] - view.focus[i]) / 
-		view.imageZoom + view.focus[i];
+	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
+	{ 
+	    float current[3];
+	    for (int i = 0; i < 3; ++i) {
+		current[i] = (view.camera[i] - view.focus[i]) / 
+		    view.imageZoom + view.focus[i];
+	    }
+	    sceneCam->SetPosition(current[0],current[1],current[2]);
 	}
-	sceneCam->SetPosition(current[0],current[1],current[2]);
-	//sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
+	else {
+	    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
+	}
 	sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
 	sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
 	sceneCam->SetViewAngle(view.viewAngle);
@@ -564,36 +569,48 @@ avtRayTracer::Execute(void)
 	       << "  oldFarPlane:  " << oldFarPlane  << std::endl
 	       << "  aspect: " << aspect << std::endl;
 	
-	// clip planes
+	// Clip planes
 	double oldclip[2] = {oldNearPlane, oldFarPlane};
 	panPercentage[0] = view.imagePan[0];
 	panPercentage[1] = view.imagePan[1];
 	// Scaling
-	vtkMatrix4x4 *scaletrans = vtkMatrix4x4::New();
-	scaletrans->Identity();
-	scaletrans->SetElement(0, 0, scale[0]);
-	scaletrans->SetElement(1, 1, scale[1]);
-	scaletrans->SetElement(2, 2, scale[2]);
-	// Zoom and pan portions
-	vtkMatrix4x4 *imageZoomAndPan = vtkMatrix4x4::New();
-	imageZoomAndPan->Identity();
-	if (view.orthographic)
-	{
-	    imageZoomAndPan->SetElement(0, 0, view.imageZoom);
-	    imageZoomAndPan->SetElement(1, 1, view.imageZoom);
+	vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
+	matScale->Identity(); 
+	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
+	{ 
+	    if (view.orthographic)
+	    {
+		matScale->SetElement(0, 0, 1.0 * view.imageZoom); 
+		matScale->SetElement(1, 1, 1.0 * view.imageZoom);
+	    }
 	}
+	else 
+	{
+	    matScale->SetElement(0, 0, scale[0] * view.imageZoom); 
+	    matScale->SetElement(1, 1, scale[1] * view.imageZoom);
+	    matScale->SetElement(2, 2, scale[2]);
+	}
+	// // Zoom and pan portions
+	// vtkMatrix4x4 *imageZoomAndPan = vtkMatrix4x4::New();
+	// imageZoomAndPan->Identity();
+	// if (view.orthographic)
+	// {
+	//     imageZoomAndPan->SetElement(0, 0, view.imageZoom);
+	//     imageZoomAndPan->SetElement(1, 1, view.imageZoom);
+	// }
 	// else {
 	//     //imageZoomAndPan->SetElement(0, 0, view.imageZoom);
 	//     //imageZoomAndPan->SetElement(1, 1, view.imageZoom);
 	// }
 	// View
-	vtkMatrix4x4 *tmp = vtkMatrix4x4::New();
+	//vtkMatrix4x4 *tmp = vtkMatrix4x4::New();
 	vtkMatrix4x4 *vm = vtkMatrix4x4::New();
 	vtkMatrix4x4 *vmInit = sceneCam->GetModelViewTransformMatrix();
 	vmInit->Transpose();
-	imageZoomAndPan->Transpose();
-	vtkMatrix4x4::Multiply4x4(vmInit, scaletrans, tmp);
-	vtkMatrix4x4::Multiply4x4(tmp, imageZoomAndPan, vm);
+	//imageZoomAndPan->Transpose();
+	//vtkMatrix4x4::Multiply4x4(vmInit, matScale, tmp);
+	//vtkMatrix4x4::Multiply4x4(tmp, imageZoomAndPan, vm);
+	vtkMatrix4x4::Multiply4x4(vmInit, matScale, vm);
 	vm->Transpose();
 	// Projection: 
         // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
@@ -630,12 +647,13 @@ avtRayTracer::Execute(void)
 	// compute pvm matrix
 	vtkMatrix4x4::Multiply4x4(p,vm,pvm);
 	// cleanup
-	scaletrans->Delete();
-	imageZoomAndPan->Delete();
+	matScale->Delete();
+	//imageZoomAndPan->Delete();
 	vmInit->Delete();
-	tmp->Delete();
+	//tmp->Delete();
 	vm->Delete();
 	p->Delete();
+
 	// get the full image extents of the volume
 	double depthExtents[2];
 	GetSpatialExtents(dbounds);
@@ -643,8 +661,8 @@ avtRayTracer::Execute(void)
 	    (dbounds, screen[0], screen[1], 
 	     panPercentage, view.imageZoom, pvm,
 	     fullImageExtents, depthExtents);
-	//++fullImageExtents[1];
-	//++fullImageExtents[3];
+	++fullImageExtents[1];
+	++fullImageExtents[3];
 	// debug
 	ospout << "VAR: sceneSize: " 
 	       << sceneSize[0] << " " << sceneSize[1] << std::endl;
@@ -826,7 +844,8 @@ avtRayTracer::Execute(void)
 	    	currData.imagePatch = NULL;
 	    	extractor.GetAndDelImgData /* do shallow copy inside */
 	    	    (currMeta.patchNumber, currData);
-		ospout << i << " depth " << currMeta.eye_z << std::endl
+		ospout << "[avtRayTracer] "
+		       << i << " depth " << currMeta.eye_z << std::endl
 		       << "current patch size = " 
 		       << currMeta.dims[0] << ", " 
 		       << currMeta.dims[1] << std::endl
@@ -836,11 +855,11 @@ avtRayTracer::Execute(void)
 		       << "current patch ending" 
 		       << " X = " << currMeta.screen_ur[0] 
 		       << " Y = " << currMeta.screen_ur[1] << std::endl;
-		// // bug happens before this
-		// WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/patch" + 
-		// 		    std::to_string(i),
-		// 		    currData.imagePatch, 
-		// 		    currMeta.dims[0], currMeta.dims[1]);
+		// bug happens before this
+		WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/p"+ 
+				std::to_string(i),
+				currData.imagePatch, 
+				currMeta.dims[0], currMeta.dims[1]);
 		int currExtents[4] = 
 			{currMeta.screen_ll[0], currMeta.screen_ur[0], 
 			 currMeta.screen_ll[1], currMeta.screen_ur[1]};

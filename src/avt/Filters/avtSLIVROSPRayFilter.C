@@ -406,7 +406,6 @@ void OSPContext::SetCamera(const double campos[3],
     if (cameraType == OSP_PERSPECTIVE) {
 	ospSet1f(camera, "aspect", aspect);
 	ospSet1f(camera, "fovy", viewAngle);
-	//ospSet1f(camera, "nearClip", 94.5f);
     }
     else if (cameraType == OSP_ORTHOGRAPHIC) {
 	ospSet1f(camera, "aspect", aspect);

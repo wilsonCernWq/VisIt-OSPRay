@@ -2341,12 +2341,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
     double volumeCube[6];
     if (ncell_arrays > 0) {    
-	// volumeCube[0] = ghost_bound[0] ? X[1] : (X[0]+X[1])/2.;
-	// volumeCube[1] = ghost_bound[3] ? X[nX-1] : (X[nX-1]+X[nX])/2.;
-	// volumeCube[2] = ghost_bound[1] ? Y[1] : (Y[0]+Y[1])/2.;
-	// volumeCube[3] = ghost_bound[4] ? Y[nY-1] : (Y[nY-1]+Y[nY])/2.;
-	// volumeCube[4] = ghost_bound[2] ? Z[1] : (Z[0]+Z[1])/2.;
-	// volumeCube[5] = ghost_bound[5] ? Z[nZ-1] : (Z[nZ-1]+Z[nZ])/2.;
 	volumeCube[0] = (X[0]+X[1])/2.;
 	volumeCube[1] = (X[nX-1]+X[nX])/2.;
 	volumeCube[2] = (Y[0]+Y[1])/2.;
@@ -2356,12 +2350,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
     }
     else {
-	// volumeCube[0] = ghost_bound[0] ? (X[1]+X[0])/2. : X[0];
-	// volumeCube[1] = ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : X[nX-1];
-	// volumeCube[2] = ghost_bound[1] ? (Y[1]+Y[0])/2. : Y[0];
-	// volumeCube[3] = ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : Y[nY-1];
-	// volumeCube[4] = ghost_bound[2] ? (Z[1]+Z[0])/2. : Z[0];
-	// volumeCube[5] = ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : Z[nZ-1];
 	volumeCube[0] = X[0];
 	volumeCube[1] = X[nX-1];
 	volumeCube[2] = Y[0];
@@ -2401,8 +2389,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		  (patch_center[1]-view.camera[1])+
 		  (patch_center[2]-view.camera[2])*
 		  (patch_center[2]-view.camera[2]));
-    eyesSpaceDepth = patch_depth;    
-    double clip_space_depth = renderingDepthsExtents[0];
+    eyesSpaceDepth = patch_depth;
+    clipSpaceDepth = renderingDepthsExtents[0];
 
     //=======================================================================//
     // create framebuffer
@@ -2416,7 +2404,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     if (yMin < fullImageExtents[2]) { yMin = fullImageExtents[2]; }    
     if (xMax > fullImageExtents[1]) { xMax = fullImageExtents[1]; }
     if (yMax > fullImageExtents[3]) { yMax = fullImageExtents[3]; }
-    clipSpaceDepth = clip_space_depth;
     imgWidth  = xMax-xMin;
     imgHeight = yMax-yMin;
 
@@ -3287,7 +3274,7 @@ avtMassVoxelExtractor::getImageDimensions
     screen_ll[1] = imgLowerLeft[1];
     screen_ur[0] = imgUpperRight[0];    
     screen_ur[1] = imgUpperRight[1];
-    eyesDepth = eyesSpaceDepth;
+    eyesDepth = eyesSpaceDepth; // distance between eye and patch center
     clipDepth = clipSpaceDepth;
 }
 
