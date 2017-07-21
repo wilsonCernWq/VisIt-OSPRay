@@ -2420,11 +2420,16 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgWidth  = xMax-xMin;
     imgHeight = yMax-yMin;
 
+    // // exit if the image is empty
+    // if (imgWidth == 0 || imgHeight == 0) { return; }
+
     // Initialize memory (framebuffer)
     if (avtCallback::UseOSPRay()) {
-	imgArray = new float[((imgWidth)*4) * imgHeight];   // framebuffer
+	// framebuffer
+	imgArray = new float[((imgWidth)*4) * imgHeight];   
     } else {
-	imgArray = new float[((imgWidth)*4) * imgHeight](); // framebuffer
+        // framebuffer initialized
+	imgArray = new float[((imgWidth)*4) * imgHeight](); 
     };
 
     //=======================================================================//
@@ -2440,6 +2445,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      << std::endl;
 	}
 	auto volume = ospray->GetPatch(patch);
+
 	// shift grid and make it cel centered for cell data
 	double volumePBox[6] = {
 	    (ncell_arrays > 0 ? (X[0]+X[1])/2. : X[0]), 
@@ -2528,11 +2534,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgUpperRight[0] = xMax; 
     imgUpperRight[1] = yMax;
 
-    // if (proc == 20) {
-    // 	std::cout << " " << xMin << " " << xMax
-    // 		  << " " << yMin << " " << yMax
-    // 		  << std::endl;
-    // }
     if (!avtCallback::UseOSPRay()) 
     {
 	ospout << "[avtMassiveVoxelExtractor] "

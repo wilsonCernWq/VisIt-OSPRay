@@ -53,7 +53,14 @@
 #include <string>
 
 #ifdef PARALLEL
-#   include <mpi.h>
+#  include <mpi.h>
+#endif
+
+#ifdef PARALLEL
+#  ifdef HAVE_ICET
+#    include <GL/ice-t.h>
+#    include <GL/ice-t_mpi.h>
+#  endif
 #endif
 
 #define MSG_DATA   100
@@ -81,9 +88,11 @@ struct imageBuffer{
 class avtSLIVRImgCommunicator
 { 
 private:
+    // basic MPI information
     int numProcs; // total number of processes (# of ranks)
     int myRank;   // my rank id
-    
+
+    // flags for patch
     int totalPatches;
     bool compositingDone;
 
@@ -91,6 +100,12 @@ private:
     int maxRegionHeight;
     int regularRegionSize;
     std::vector<int> regionRankExtents;
+
+#if defined(PARALLEL) && defined (HAVE_ICET)
+    // IceT
+    IceTCommunicator icetComm;
+    IceTContext icetContext;
+#endif
 
 private:
     void ColorImage(float *&, const int, const int, const float color[4]);

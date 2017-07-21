@@ -782,12 +782,6 @@ avtRayTracer::Execute(void)
 	    // SERIAL : Single Processor
 	    debug5 << "Serial Compositing!" << std::endl;
 
-	    // // test a different timer
-	    // std::chrono::time_point<std::chrono::system_clock> 
-	    // 	start_time, end_time;
-	    // std::chrono::duration<double> elapsed_seconds;
-	    // start_time = std::chrono::system_clock::now();
-
 	    // Get the metadata for all patches
             // contains the metadata to composite the image
 	    std::vector<slivr::ImgMetaData> allPatchMeta;
@@ -832,43 +826,44 @@ avtRayTracer::Execute(void)
 	    	currData.imagePatch = NULL;
 	    	extractor.GetAndDelImgData /* do shallow copy inside */
 	    	    (currMeta.patchNumber, currData);
-
-		debug5 << "current patch size = " 
+		ospout << i << " depth " << currMeta.eye_z << std::endl
+		       << "current patch size = " 
 		       << currMeta.dims[0] << ", " 
-		       << currMeta.dims[1] << std::endl;
-		debug5 << "current patch starting" 
+		       << currMeta.dims[1] << std::endl
+		       << "current patch starting" 
 		       << " X = " << currMeta.screen_ll[0] 
-		       << " Y = " << currMeta.screen_ll[1] << std::endl;
-		debug5 << "current patch ending" 
+		       << " Y = " << currMeta.screen_ll[1] << std::endl
+		       << "current patch ending" 
 		       << " X = " << currMeta.screen_ur[0] 
 		       << " Y = " << currMeta.screen_ur[1] << std::endl;
-
+		// // bug happens before this
+		// WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/patch" + 
+		// 		    std::to_string(i),
+		// 		    currData.imagePatch, 
+		// 		    currMeta.dims[0], currMeta.dims[1]);
 		int currExtents[4] = 
-		    {currMeta.screen_ll[0], currMeta.screen_ur[0], 
-		     currMeta.screen_ll[1], currMeta.screen_ur[1]};
+			{currMeta.screen_ll[0], currMeta.screen_ur[0], 
+			 currMeta.screen_ll[1], currMeta.screen_ur[1]};
 		imgComm.BlendBackToFront
 		    (currData.imagePatch, currExtents,
 		     composedData, fullImageExtents);
-
-	    	// Clean up data
-	    	if (currData.imagePatch != NULL) {
-	    	    debug5 << "Free patch data!" << std::endl;
-	    	    delete[] currData.imagePatch;
-	    	    debug5 << "Free patch data done!" << std::endl;
-	    	}
-	    	currData.imagePatch = NULL;
+	    
+		// Clean up data
+		if (currData.imagePatch != NULL) {
+		    debug5 << "Free patch data!" << std::endl;
+		    delete[] currData.imagePatch;
+		    debug5 << "Free patch data done!" << std::endl;
+		}
+		currData.imagePatch = NULL;
 	    }
 
 	    debug5 << "Clear allImageMetaData" << std::endl;
 	    allPatchMeta.clear();
 	    allPatchData.clear();
 
-	    // // stop time
-	    // end_time = std::chrono::system_clock::now(); 
-	    // elapsed_seconds = end_time - start_time; 
-	    // std::cout << "[Single Thread] " 
-	    // 	  << elapsed_seconds.count()
-	    // 	  << " seconds to finish" << std::endl;
+	    // bug happens before this
+	    WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/composed",
+			    composedData, renderedWidth, renderedHeight);
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;

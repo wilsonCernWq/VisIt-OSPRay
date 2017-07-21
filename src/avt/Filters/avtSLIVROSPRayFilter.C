@@ -71,7 +71,12 @@ VolumeInfo::Set
     }
     InitWorld();
     InitVolume();
-    if (!isComplete) { 
+    if (true /* !isComplete */) { 
+        // TODO: It seems if a volume is recovered from a session
+	// ospray will crash during zooming ...
+	// So we refresh volume everytime to fix the bug
+	// which means we need to disable grid accelerator
+	// to speed things up. Until I found the reason of crashing
 	SetVolume(type, ptr, ghost, X, Y, Z, nX, nY, nZ,
 		  volumePBox, volumeBBox, cellDataFormat); 
     }
@@ -173,6 +178,10 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     regionUpperClip.y = volumeBBox[4];
     regionUpperClip.z = volumeBBox[5];
 
+    // other objects
+    ospSetString(volume, "voxelType", dataType.c_str());
+    ospSetObject(volume, "transferFunction", transferfcn);
+
     // commit data
     voxelSize = nX * nY * nZ;
     voxelData = ospNewData(voxelSize, voxelDataType,
@@ -183,10 +192,6 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     // 			   ghost, OSP_DATA_SHARED_BUFFER);
     // ospSetData(volume, "ghostData", ghostData);
     // ospSet1i(volume, "cellDataFormat", cellDataFormat);
-
-    // other objects
-    ospSetString(volume, "voxelType", dataType.c_str());
-    ospSetObject(volume, "transferFunction", transferfcn);
 
     // commit volume
     // -- no lighting by default
