@@ -130,8 +130,8 @@ struct VolumeInfo
     OSPDataType         voxelDataType   = OSP_VOID_PTR;
     OSPData             voxelData       = nullptr;
     size_t              voxelSize       = 0;
-    OSPData             ghostData       = nullptr;
-    size_t              ghostSize       = 0;
+    //OSPData             ghostData       = nullptr;
+    //size_t              ghostSize       = 0;
 
     float               samplingRate = -1.0f;
     vec3f               regionStart;
@@ -192,15 +192,15 @@ struct VolumeInfo
     void SetSamplingRate(float r);
     void SetLighting(bool lighting, float Ks);
     void CleanVolume() {	
+	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
 	if (voxelData != nullptr) { 
 	    ospRelease(voxelData);
 	    voxelData = nullptr; 
 	}
-	if (ghostData != nullptr) {
-	    ospRelease(ghostData);
-	    ghostData = nullptr; 
-	}
-	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
+	// if (ghostData != nullptr) {
+	//     ospRelease(ghostData);
+	//     ghostData = nullptr; 
+	// }
 	volumeType = OSP_INVALID;
     }
 

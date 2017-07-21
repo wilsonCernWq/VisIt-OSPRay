@@ -65,18 +65,15 @@ VolumeInfo::Set
  double volumePBox[6], double volumeBBox[6], double mtl[4],
  float sr, bool lighting, bool cellDataFormat)
 {
-    if (!isComplete) {
-	worldType = OSP_INVALID;
+    /* OSPRay Volume */
+    // TODO: It seems if a volume is recovered from a session
+    // ospray will crash during zooming ...
+    // So we refresh volume everytime to fix the bug
+    // which means we need to disable grid accelerator
+    // to speed things up. Until I found the reason of crashing
+    if (true /*!isComplete*/) { 
 	volumeType = OSP_INVALID;
-    }
-    InitWorld();
-    InitVolume();
-    if (true /* !isComplete */) { 
-        // TODO: It seems if a volume is recovered from a session
-	// ospray will crash during zooming ...
-	// So we refresh volume everytime to fix the bug
-	// which means we need to disable grid accelerator
-	// to speed things up. Until I found the reason of crashing
+	InitVolume();
 	SetVolume(type, ptr, ghost, X, Y, Z, nX, nY, nZ,
 		  volumePBox, volumeBBox, cellDataFormat); 
     }
@@ -87,9 +84,14 @@ VolumeInfo::Set
     if (lighting != lightingFlag || (float)mtl[2] != specularColor) {
 	SetLighting(lighting, (float)mtl[2]);
     }
-    if (!isComplete) { 
+
+    /* OSPRay Model */
+    if (!isComplete) {
+	worldType = OSP_INVALID; 
+	InitWorld();
 	SetWorld();
     }
+
     isComplete = true;	
 }
 
@@ -135,11 +137,6 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
 			   double volumePBox[6], 
 			   double volumeBBox[6],
 			   bool cellDataFormat) {
-    // refresh existing data
-    if (voxelData != nullptr) { 
-	ospRelease(voxelData); 
-	voxelData = nullptr; 
-    }
     // calculate volume data type
     if (type == VTK_UNSIGNED_CHAR) {
 	dataType = "uchar";
@@ -173,7 +170,6 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     regionLowerClip.x = volumeBBox[0];
     regionLowerClip.y = volumeBBox[1];
     regionLowerClip.z = volumeBBox[2];
-
     regionUpperClip.x = volumeBBox[3];
     regionUpperClip.y = volumeBBox[4];
     regionUpperClip.z = volumeBBox[5];
@@ -182,11 +178,18 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     ospSetString(volume, "voxelType", dataType.c_str());
     ospSetObject(volume, "transferFunction", transferfcn);
 
-    // commit data
+    // commit voxel data
+    if (voxelData != nullptr) { 
+	debug1 << "ERROR: Found VoxelData to be non-empty while creating new volume" << std::endl;
+	EXCEPTION1(VisItException, 
+		   "ERROR: Found VoxelData to be non-empty while creating new volume");
+    }
     voxelSize = nX * nY * nZ;
     voxelData = ospNewData(voxelSize, voxelDataType,
 			   dataPtr, OSP_DATA_SHARED_BUFFER);
     ospSetData(volume, "voxelData", voxelData);
+
+    // // commit ghost data
     // ghostSize = cellDataFormat ? nX * nY * nZ : (nX-1) * (nY-1) * (nZ-1);
     // ghostData = ospNewData(ghostSize, OSP_UCHAR,
     // 			   ghost, OSP_DATA_SHARED_BUFFER);
