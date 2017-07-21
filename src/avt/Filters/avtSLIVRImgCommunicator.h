@@ -102,9 +102,10 @@ private:
     std::vector<int> regionRankExtents;
 
 #if defined(PARALLEL) && defined (HAVE_ICET)
+    // causing crash in MPI mode !!!
     // IceT
-    IceTCommunicator icetComm;
-    IceTContext icetContext;
+    //IceTCommunicator icetComm;
+    //IceTContext icetContext;
 #endif
 
 private:
