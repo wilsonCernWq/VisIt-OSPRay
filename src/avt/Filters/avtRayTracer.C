@@ -497,11 +497,11 @@ avtRayTracer::Execute(void)
     // Before Rendering
     //
     double dbounds[6];  // Extents of the volume in world coordinates
-    vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
+    vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
     vtkImageData  *opaqueImageVTK = NULL;
     unsigned char *opaqueImageData = NULL;
     float         *opaqueImageZB = NULL;
-    int fullImageExtents[4];
+    int            fullImageExtents[4];
 
     //
     // Ray casting: SLIVR ~ Setup
@@ -533,8 +533,83 @@ avtRayTracer::Execute(void)
 	sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
 	if (view.orthographic) { sceneCam->ParallelProjectionOn(); }
 	else { sceneCam->ParallelProjectionOff(); }
-	sceneCam->SetParallelScale(view.parallelScale);
-	// debug
+	sceneCam->SetParallelScale(view.parallelScale);	
+	// Clip planes
+	double oldclip[2] = {oldNearPlane, oldFarPlane};
+	panPercentage[0] = view.imagePan[0];
+	panPercentage[1] = view.imagePan[1];
+	// Scaling
+	vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
+	matScale->Identity(); 
+	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
+	{ 
+	    if (view.orthographic)
+	    {
+		matScale->SetElement(0, 0, 1.0 * view.imageZoom); 
+		matScale->SetElement(1, 1, 1.0 * view.imageZoom);
+	    }
+	}
+	else 
+	{
+	    matScale->SetElement(0, 0, scale[0] * view.imageZoom); 
+	    matScale->SetElement(1, 1, scale[1] * view.imageZoom);
+	    matScale->SetElement(2, 2, scale[2]);
+	}
+	// Scale + Model + View Matrix
+	vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
+	vtkMatrix4x4 *matViewModel  = sceneCam->GetModelViewTransformMatrix();
+	matViewModel->Transpose();
+	vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
+	matViewModelScale->Transpose();
+	matViewModel->Delete();
+	matScale->Delete();
+	// Projection: 
+        // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
+	// The Z buffer that is passed from visit is in clip scape with z
+	// limits of -1 and 1. However, using VTK, the z limits are withing
+	// nearz and farz. So, the projection matrix from VTK is hijacked here
+	// and adjusted to be within -1 and 1 too.
+	// Same as in 
+	// avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
+	vtkMatrix4x4 *matProj = sceneCam->GetProjectionTransformMatrix
+	    (aspect,oldNearPlane, oldFarPlane);
+	double sceneSize[2];
+	if (!view.orthographic)
+	{
+	    matProj = sceneCam->GetProjectionTransformMatrix
+		(aspect, oldNearPlane, oldFarPlane);
+	    matProj->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
+				(oldFarPlane-oldNearPlane));
+	    matProj->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
+				(oldFarPlane-oldNearPlane));
+	    sceneSize[0] = 2.0 * oldNearPlane / matProj->GetElement(0, 0);
+	    sceneSize[1] = 2.0 * oldNearPlane / matProj->GetElement(1, 1);
+	}
+	else
+	{
+	    matProj = sceneCam->GetProjectionTransformMatrix
+		(aspect, oldNearPlane, oldFarPlane);
+	    matProj->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
+	    matProj->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
+				(oldFarPlane-oldNearPlane));
+	    sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
+	    sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
+	}
+	// compute model_to_screen_transform matrix
+	vtkMatrix4x4::Multiply4x4(matProj,matViewModelScale,model_to_screen_transform);
+	matViewModelScale->Delete();
+	matProj->Delete();
+
+	// get the full image extents of the volume
+	double depthExtents[2];
+	GetSpatialExtents(dbounds);
+	slivr::ProjectWorldToScreenCube
+	    (dbounds, screen[0], screen[1], 
+	     panPercentage, view.imageZoom, model_to_screen_transform,
+	     fullImageExtents, depthExtents);
+	++fullImageExtents[1];
+	++fullImageExtents[3];
+	// Debug
 	ospout << "RT View settings: " << endl
 	       << "  inheriant view direction: "
 	       << viewDirection[0] << " "
@@ -568,105 +643,9 @@ avtRayTracer::Execute(void)
 	       << "  oldNearPlane: " << oldNearPlane << std::endl
 	       << "  oldFarPlane:  " << oldFarPlane  << std::endl
 	       << "  aspect: " << aspect << std::endl;
-	
-	// Clip planes
-	double oldclip[2] = {oldNearPlane, oldFarPlane};
-	panPercentage[0] = view.imagePan[0];
-	panPercentage[1] = view.imagePan[1];
-	// Scaling
-	vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
-	matScale->Identity(); 
-	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
-	{ 
-	    if (view.orthographic)
-	    {
-		matScale->SetElement(0, 0, 1.0 * view.imageZoom); 
-		matScale->SetElement(1, 1, 1.0 * view.imageZoom);
-	    }
-	}
-	else 
-	{
-	    matScale->SetElement(0, 0, scale[0] * view.imageZoom); 
-	    matScale->SetElement(1, 1, scale[1] * view.imageZoom);
-	    matScale->SetElement(2, 2, scale[2]);
-	}
-	// // Zoom and pan portions
-	// vtkMatrix4x4 *imageZoomAndPan = vtkMatrix4x4::New();
-	// imageZoomAndPan->Identity();
-	// if (view.orthographic)
-	// {
-	//     imageZoomAndPan->SetElement(0, 0, view.imageZoom);
-	//     imageZoomAndPan->SetElement(1, 1, view.imageZoom);
-	// }
-	// else {
-	//     //imageZoomAndPan->SetElement(0, 0, view.imageZoom);
-	//     //imageZoomAndPan->SetElement(1, 1, view.imageZoom);
-	// }
-	// View
-	//vtkMatrix4x4 *tmp = vtkMatrix4x4::New();
-	vtkMatrix4x4 *vm = vtkMatrix4x4::New();
-	vtkMatrix4x4 *vmInit = sceneCam->GetModelViewTransformMatrix();
-	vmInit->Transpose();
-	//imageZoomAndPan->Transpose();
-	//vtkMatrix4x4::Multiply4x4(vmInit, matScale, tmp);
-	//vtkMatrix4x4::Multiply4x4(tmp, imageZoomAndPan, vm);
-	vtkMatrix4x4::Multiply4x4(vmInit, matScale, vm);
-	vm->Transpose();
-	// Projection: 
-        // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
-	// The Z buffer that is passed from visit is in clip scape with z
-	// limits of -1 and 1. However, using VTK, the z limits are withing
-	// nearz and farz. So, the projection matrix from VTK is hijacked here
-	// and adjusted to be within -1 and 1 too.
-	// Same as in 
-	// avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
-	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix
-	    (aspect,oldNearPlane, oldFarPlane);
-	double sceneSize[2];
-	if (!view.orthographic)
-	{
-	    p = sceneCam->GetProjectionTransformMatrix
-		(aspect, oldNearPlane, oldFarPlane);
-	    p->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
-			  (oldFarPlane-oldNearPlane));
-	    p->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
-			  (oldFarPlane-oldNearPlane));
-	    sceneSize[0] = 2.0 * oldNearPlane / p->GetElement(0, 0);
-	    sceneSize[1] = 2.0 * oldNearPlane / p->GetElement(1, 1);
-	}
-	else
-	{
-	    p = sceneCam->GetProjectionTransformMatrix
-		(aspect, oldNearPlane, oldFarPlane);
-	    p->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
-	    p->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
-			  (oldFarPlane-oldNearPlane));
-	    sceneSize[0] = 2.0 / p->GetElement(0, 0);
-	    sceneSize[1] = 2.0 / p->GetElement(1, 1);
-	}
-	// compute pvm matrix
-	vtkMatrix4x4::Multiply4x4(p,vm,pvm);
-	// cleanup
-	matScale->Delete();
-	//imageZoomAndPan->Delete();
-	vmInit->Delete();
-	//tmp->Delete();
-	vm->Delete();
-	p->Delete();
-
-	// get the full image extents of the volume
-	double depthExtents[2];
-	GetSpatialExtents(dbounds);
-	slivr::ProjectWorldToScreenCube
-	    (dbounds, screen[0], screen[1], 
-	     panPercentage, view.imageZoom, pvm,
-	     fullImageExtents, depthExtents);
-	++fullImageExtents[1];
-	++fullImageExtents[3];
-	// debug
 	ospout << "VAR: sceneSize: " 
 	       << sceneSize[0] << " " << sceneSize[1] << std::endl;
-	ospout << "VAR: pvm: " << *pvm << std::endl;
+	ospout << "VAR: model_to_screen_transform: " << *model_to_screen_transform << std::endl;
 	ospout << "VAR: screen: " << screen[0] << " " << screen[1] << std::endl;
 	ospout << "VAR: data bounds: " << std::endl
 	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
@@ -732,7 +711,7 @@ avtRayTracer::Execute(void)
 	extractor.SetImageZoom(view.imageZoom); 
 	extractor.SetRendererSampleRate(rendererSampleRate); 
 	extractor.SetDepthExtents(depthExtents);
-	extractor.SetMVPMatrix(pvm);
+	extractor.SetMVPMatrix(model_to_screen_transform);
 	extractor.SetFullImageExtents(fullImageExtents);
 	// sending ospray
 	extractor.SetOSPRayContext(ospray);
@@ -907,8 +886,8 @@ avtRayTracer::Execute(void)
 	    //
 	    // Blend in with bounding box and other visit plots
 	    //
-	    vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
-	    vtkMatrix4x4::Invert(pvm, Inversepvm);
+	    vtkMatrix4x4 *screen_to_model_transform = vtkMatrix4x4::New();
+	    vtkMatrix4x4::Invert(model_to_screen_transform, screen_to_model_transform);
 
 	    int compositedImageWidth  = 
 		fullImageExtents[1] - fullImageExtents[0];
@@ -972,9 +951,9 @@ avtRayTracer::Execute(void)
 				     screen[0], screen[1],
 				     panPercentage, 
 				     view.imageZoom, 
-				     Inversepvm, worldCoordinates);
+				     screen_to_model_transform, worldCoordinates);
 				// unProject(_x, _y, _tempZ, worldCoordinates,
-				// 	  screen[0], screen[1], Inversepvm);
+				// 	  screen[0], screen[1], screen_to_model_transform);
 
 				if (checkInBounds(dbounds, worldCoordinates))
 				{
@@ -1067,8 +1046,8 @@ avtRayTracer::Execute(void)
 	    }
 
 	    // clean up
-	    Inversepvm->Delete();
-	    pvm->Delete();
+	    screen_to_model_transform->Delete();
+	    model_to_screen_transform->Delete();
 
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
@@ -1194,8 +1173,8 @@ avtRayTracer::Execute(void)
 		//
 		// Blend in with bounding box and other visit plots
 		//
-		vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
-		vtkMatrix4x4::Invert(pvm,Inversepvm);
+		vtkMatrix4x4 *screen_to_model_transform = vtkMatrix4x4::New();
+		vtkMatrix4x4::Invert(model_to_screen_transform,screen_to_model_transform);
 
 		int compositedImageWidth  = imgComm.finalImageExtents[1] 
 		    - imgComm.finalImageExtents[0];
@@ -1264,8 +1243,8 @@ avtRayTracer::Execute(void)
 					 screen[0], screen[1],
 					 panPercentage, 
 					 view.imageZoom, 
-					 Inversepvm, worldCoordinates);
-				    //unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], Inversepvm);
+					 screen_to_model_transform, worldCoordinates);
+				    //unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], screen_to_model_transform);
 
 				    if ( checkInBounds(dbounds, worldCoordinates) )
 				    {
@@ -1347,7 +1326,7 @@ avtRayTracer::Execute(void)
 		}
 		img->Delete();
 		SetOutput(whole_image);
-		Inversepvm->Delete();
+		screen_to_model_transform->Delete();
 	    }
 
 	    debug5 << "RC SLIVR: Done!" << std::endl;
@@ -1358,7 +1337,7 @@ avtRayTracer::Execute(void)
 		delete []composedData;
 	    if (localPatchesDepth != NULL)
 		delete []localPatchesDepth;
-	    pvm->Delete();
+	    model_to_screen_transform->Delete();
 	    	    
 	}
 
