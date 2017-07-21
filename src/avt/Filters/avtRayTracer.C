@@ -835,17 +835,17 @@ avtRayTracer::Execute(void)
 		       << " X = " << currMeta.screen_ur[0] 
 		       << " Y = " << currMeta.screen_ur[1] << std::endl;
 		// bug happens before this
-		WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/p"+ 
-				std::to_string(i),
-				currData.imagePatch, 
-				currMeta.dims[0], currMeta.dims[1]);
+		// WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/p"+ 
+		// 		std::to_string(i),
+		// 		currData.imagePatch, 
+		// 		currMeta.dims[0], currMeta.dims[1]);
 		int currExtents[4] = 
-			{currMeta.screen_ll[0], currMeta.screen_ur[0], 
-			 currMeta.screen_ll[1], currMeta.screen_ur[1]};
+		    {currMeta.screen_ll[0], currMeta.screen_ur[0], 
+		     currMeta.screen_ll[1], currMeta.screen_ur[1]};
 		imgComm.BlendBackToFront
 		    (currData.imagePatch, currExtents,
 		     composedData, fullImageExtents);
-	    
+		
 		// Clean up data
 		if (currData.imagePatch != NULL) {
 		    debug5 << "Free patch data!" << std::endl;
@@ -860,8 +860,8 @@ avtRayTracer::Execute(void)
 	    allPatchData.clear();
 
 	    // bug happens before this
-	    WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/composed",
-			    composedData, renderedWidth, renderedHeight);
+	    // WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/composed",
+	    // 		    composedData, renderedWidth, renderedHeight);
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
