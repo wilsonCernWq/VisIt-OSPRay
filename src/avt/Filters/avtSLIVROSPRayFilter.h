@@ -77,8 +77,10 @@ namespace slivr {
 	auto OSPRAY_VERBOSE_PAIR = 
 	    ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
 	if (OSPRAY_VERBOSE_PAIR.first) {
-	    slivr::osp_out = &std::cout;
-	    slivr::osp_err = &std::cerr;
+	    if (OSPRAY_VERBOSE_PAIR.second > 0) {
+		slivr::osp_out = &std::cout;
+		slivr::osp_err = &std::cerr;
+	    }
 	    return OSPRAY_VERBOSE_PAIR.second > 0;
 	} else {
 	    return false;

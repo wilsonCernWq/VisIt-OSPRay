@@ -607,8 +607,12 @@ avtRayTracer::Execute(void)
 	    (dbounds, screen[0], screen[1], 
 	     panPercentage, view.imageZoom, model_to_screen_transform,
 	     fullImageExtents, depthExtents);
-	++fullImageExtents[1];
-	++fullImageExtents[3];
+	//++fullImageExtents[1];
+	//++fullImageExtents[3];
+	fullImageExtents[0] = std::max(fullImageExtents[0], 0);
+	fullImageExtents[2] = std::max(fullImageExtents[2], 0);
+	fullImageExtents[1] = std::min(1+fullImageExtents[1], screen[0]);
+	fullImageExtents[3] = std::min(1+fullImageExtents[3], screen[1]);
 	// Debug
 	ospout << "RT View settings: " << endl
 	       << "  inheriant view direction: "
@@ -745,7 +749,7 @@ avtRayTracer::Execute(void)
 
     // Qi debug
     slivr::CheckMemoryHere("avtRayTracer::Execute raytracing setup done");
-    
+
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
 
@@ -834,7 +838,7 @@ avtRayTracer::Execute(void)
 		       << "current patch ending" 
 		       << " X = " << currMeta.screen_ur[0] 
 		       << " Y = " << currMeta.screen_ur[1] << std::endl;
-		// bug happens before this
+		// // bug happens before this
 		// WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/p"+ 
 		// 		std::to_string(i),
 		// 		currData.imagePatch, 
@@ -859,7 +863,7 @@ avtRayTracer::Execute(void)
 	    allPatchMeta.clear();
 	    allPatchData.clear();
 
-	    // bug happens before this
+	    // // bug happens before this
 	    // WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/composed",
 	    // 		    composedData, renderedWidth, renderedHeight);
 

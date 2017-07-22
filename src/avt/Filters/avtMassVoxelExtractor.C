@@ -1938,8 +1938,6 @@ avtMassVoxelExtractor::SampleAlongSegment
 
     if (!hasIntersections) { return; }
 
-    //std::cout << "frist - last" << first << " " << last << std::endl;
-
     //
     // Determine if there is intersection with buffer
     //
@@ -1968,8 +1966,8 @@ avtMassVoxelExtractor::SampleAlongSegment
     {
 	int screenX = bufferExtents[1] - bufferExtents[0];
 	int screenY = bufferExtents[3] - bufferExtents[2];
-
 	int screenIndex = h * screenX + w;
+	if (screenIndex < 0 || screenIndex >= screenX * screenY) { return; }
 
 	if (depthBuffer[screenIndex] != 1)  	    
 	{
@@ -2183,7 +2181,7 @@ avtMassVoxelExtractor::SampleAlongSegment
 
     debug5 << "First: " << first << "  last: " << last << std::endl;
     if (intersecting){
-	intersect = round(propAlongVector * (last-first) + first);
+	intersect = floor(propAlongVector * (last-first) + first);
 	debug5 << "intersect: " << intersect
 	       << " first: " << first << " last: " << last << std::endl;
     }
@@ -2525,6 +2523,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     {
 	ospout << "[avtMassiveVoxelExtractor] "
 	       << "Using CPU version raytracer" << std::endl;
+
 	for (int patchX = xMin; patchX < xMax ; patchX++)
 	{
 	    for (int patchY = yMin; patchY < yMax ; patchY++)
