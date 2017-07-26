@@ -1997,7 +1997,6 @@ avtMassVoxelExtractor::SampleAlongSegment
 					    worldOpaqueCoordinates);
 
 		//debug5 << "Location: " << w << ", " << h << std::endl;
-
 		// double start[3];
 		// start[0] = terminus[0];
 		// start[1] = terminus[1];
@@ -2339,12 +2338,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
     double volumeCube[6];
     if (ncell_arrays > 0) {    
-	volumeCube[0] = (X[0]+X[1])/2.;
-	volumeCube[1] = (X[nX-1]+X[nX])/2.;
-	volumeCube[2] = (Y[0]+Y[1])/2.;
-	volumeCube[3] = (Y[nY-1]+Y[nY])/2.;
-	volumeCube[4] = (Z[0]+Z[1])/2.;
-	volumeCube[5] = (Z[nZ-1]+Z[nZ])/2.;
+	volumeCube[0] = X[0];
+	volumeCube[1] = X[nX-1];
+	volumeCube[2] = Y[0];
+	volumeCube[3] = Y[nY-1];
+	volumeCube[4] = Z[0];
+	volumeCube[5] = Z[nZ-1];
 
     }
     else {
@@ -2433,22 +2432,26 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
 	// shift grid and make it cel centered for cell data
 	double volumePBox[6] = {
-	    (ncell_arrays > 0 ? (X[0]+X[1])/2. : X[0]), 
-	    (ncell_arrays > 0 ? (Y[0]+Y[1])/2. : Y[0]), 
-	    (ncell_arrays > 0 ? (Z[0]+Z[1])/2. : Z[0]), 
-	    (ncell_arrays > 0 ? (X[nX-1]+X[nX])/2. : X[nX-1]), 
-	    (ncell_arrays > 0 ? (Y[nY-1]+Y[nY])/2. : Y[nY-1]), 
-	    (ncell_arrays > 0 ? (Z[nZ-1]+Z[nZ])/2. : Z[nZ-1])
+	    // for cell centered data, we put the voxel on its left boundary
+	    (ncell_arrays > 0 ? X[0] : X[0]), 
+	    (ncell_arrays > 0 ? Y[0] : Y[0]), 
+	    (ncell_arrays > 0 ? Z[0] : Z[0]), 
+	    (ncell_arrays > 0 ? X[nX-1] : X[nX-1]), 
+	    (ncell_arrays > 0 ? Y[nY-1] : Y[nY-1]), 
+	    (ncell_arrays > 0 ? Z[nZ-1] : Z[nZ-1])
 	};
 
 	double volumeBBox[6];
-	if (ncell_arrays > 0) {    
-	    volumeBBox[0] = ghost_bound[0] ? X[1] : volumePBox[0];
-	    volumeBBox[1] = ghost_bound[1] ? Y[1] : volumePBox[1];
-	    volumeBBox[2] = ghost_bound[2] ? Z[1] : volumePBox[2];
-	    volumeBBox[3] = ghost_bound[3] ? X[nX-1] : volumePBox[3];
-	    volumeBBox[4] = ghost_bound[4] ? Y[nY-1] : volumePBox[4];
-	    volumeBBox[5] = ghost_bound[5] ? Z[nZ-1] : volumePBox[5];
+	if (ncell_arrays > 0) {
+	    volumeBBox[0] = ghost_bound[0] ? (X[0]+X[1])/2. : volumePBox[0];
+	    volumeBBox[1] = ghost_bound[1] ? (Y[0]+Y[1])/2. : volumePBox[1];
+	    volumeBBox[2] = ghost_bound[2] ? (Z[0]+Z[1])/2. : volumePBox[2];
+	    volumeBBox[3] = 
+		ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : volumePBox[3];
+	    volumeBBox[4] = 
+		ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : volumePBox[4];
+	    volumeBBox[5] = 
+		ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : volumePBox[5];
 	}
 	else {
 	    volumeBBox[0] = ghost_bound[0] ? X[1] : volumePBox[0];
@@ -2477,7 +2480,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	       << " " << volumeBBox[4]
 	       << " " << volumeBBox[5]
 	       << std::endl; 
-   
 	volume->Set(volumeDataType, volumePointer, ghosts,
 		    X, Y, Z, nX, nY, nZ,		    
 		    volumePBox, volumeBBox, materialProperties,
