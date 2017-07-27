@@ -264,7 +264,7 @@ void OSPContext::InitOSP(bool flag, int numThreads)
     if (device == nullptr) 
     {
 	// initialize ospray
-        ospout << "Initialize OSPRay";
+        ospout << "[ospray] Initialize OSPRay";
 	enabledOSPRay = true;
 	device = ospNewDevice();
 	if (DebugStream::Level5()) {
@@ -286,11 +286,11 @@ void OSPContext::InitOSP(bool flag, int numThreads)
 	ospSetCurrentDevice(device);
 	OSPError err = ospLoadModule("visit");
 	if (err != OSP_NO_ERROR) {
-	    osperr << "can't load visit module" << std::endl;
+	    osperr << "[Error] can't load visit module" << std::endl;
 	}
     }
     refreshData = flag;
-    ospout << "Initialize OSPRay (new data " << flag << ")" 
+    ospout << "[ospray] Initialize OSPRay (new data " << flag << ")" 
 	   << std::endl;    
 }
 
@@ -327,7 +327,7 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
     ospSet1i(renderer, "aoSamples", 0);
     if (lighting)
     {
-	ospout << "use lighting " 
+	ospout << "[ospray] use lighting " 
 	       << "use mtl " 
 	       << mtl[0] << " "
 	       << mtl[1] << " "

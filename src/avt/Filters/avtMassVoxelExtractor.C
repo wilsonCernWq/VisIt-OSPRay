@@ -2254,7 +2254,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospout << "[avtMassVoxelExtractor] Cell Dataset " << std::endl;
 	if (ncell_arrays != 1 || cell_size[0] != 1) {
 	    EXCEPTION1(VisItException, 
-		       "Trying to plot more than one field, which is not supported by OSPRay SLIVR. Use other render type instead");
+		       "Trying to plot more than one field, "
+		       "which is not supported by OSPRay SLIVR. "
+		       "Use other render type instead");
 	}
 	nX = dims[0] - 1;
 	nY = dims[1] - 1;
@@ -2266,7 +2268,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	ospout << "[avtMassVoxelExtractor] Point Dataset " << std::endl;
 	if (npt_arrays != 1 || pt_size[0] != 1) {
 	    EXCEPTION1(VisItException, 
-		       "Trying to plot more than one field, which is not supported by OSPRay SLIVR. Use other render type instead");
+		       "Trying to plot more than one field, "
+		       "which is not supported by OSPRay SLIVR. "
+		       "Use other render type instead");
 	}
 	nX = dims[0];
 	nY = dims[1];
@@ -2336,24 +2340,28 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	}
     }
 
-    double volumeCube[6];
-    if (ncell_arrays > 0) {    
-	volumeCube[0] = X[0];
-	volumeCube[1] = X[nX-1];
-	volumeCube[2] = Y[0];
-	volumeCube[3] = Y[nY-1];
-	volumeCube[4] = Z[0];
-	volumeCube[5] = Z[nZ-1];
+    double volumeCube[6] = {
+	X[0], X[nX-1],
+	Y[0], Y[nY-1],
+	Z[0], Z[nZ-1]
+    };
+    // if (ncell_arrays > 0) {    
+    // 	volumeCube[0] = X[0];
+    // 	volumeCube[1] = X[nX-1];
+    // 	volumeCube[2] = Y[0];
+    // 	volumeCube[3] = Y[nY-1];
+    // 	volumeCube[4] = Z[0];
+    // 	volumeCube[5] = Z[nZ-1];
 
-    }
-    else {
-	volumeCube[0] = X[0];
-	volumeCube[1] = X[nX-1];
-	volumeCube[2] = Y[0];
-	volumeCube[3] = Y[nY-1];
-	volumeCube[4] = Z[0];
-	volumeCube[5] = Z[nZ-1];
-    }
+    // }
+    // else {
+    // 	volumeCube[0] = X[0];
+    // 	volumeCube[1] = X[nX-1];
+    // 	volumeCube[2] = Y[0];
+    // 	volumeCube[3] = Y[nY-1];
+    // 	volumeCube[4] = Z[0];
+    // 	volumeCube[5] = Z[nZ-1];
+    // }
 
     //=======================================================================//
     // Determine the screen size of the patch being processed
@@ -2433,12 +2441,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	// shift grid and make it cel centered for cell data
 	double volumePBox[6] = {
 	    // for cell centered data, we put the voxel on its left boundary
-	    (ncell_arrays > 0 ? X[0] : X[0]), 
-	    (ncell_arrays > 0 ? Y[0] : Y[0]), 
-	    (ncell_arrays > 0 ? Z[0] : Z[0]), 
-	    (ncell_arrays > 0 ? X[nX-1] : X[nX-1]), 
-	    (ncell_arrays > 0 ? Y[nY-1] : Y[nY-1]), 
-	    (ncell_arrays > 0 ? Z[nZ-1] : Z[nZ-1])
+	    X[0], Y[0], Z[0], 
+	    X[nX-1], Y[nY-1], Z[nZ-1]
 	};
 
 	double volumeBBox[6];
@@ -2530,6 +2534,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	{
 	    for (int patchY = yMin; patchY < yMax ; patchY++)
 	    {
+		// std::cout << patchX << " " << patchY 
+		// 	  << " xMin " << xMin
+		// 	  << " yMin " << yMin
+		// 	  << " xMax " << xMax
+		// 	  << " yMax " << yMax << std::endl;
+
 		const int pIndex = (patchY-yMin)*imgWidth + (patchX-xMin);
 		const int fIndex = ((patchY-bufferExtents[2])*
 				    (bufferExtents[1]-bufferExtents[0])+
@@ -2558,6 +2568,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		}
 		else
 		{
+		    // std::cout << "draw" << std::endl;
 		    patchDrawn = 1;		    
                     // starting point where we start sampling
 		    double origin[4]   = {0,0,0,1};

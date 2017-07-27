@@ -47,33 +47,37 @@
 #include <vtkType.h>
 #include <DebugStream.h>
 
-#include "ospray/ospray.h"
-#include "ospray/ospcommon/vec.h"
-#include "ospray/ospcommon/math.h"
-#include "ospray/ospcommon/common.h"
-
-#define OSP_PERSPECTIVE              1
-#define OSP_ORTHOGRAPHIC             2
-#define OSP_BLOCK_BRICKED_VOLUME     3
-#define OSP_SHARED_STRUCTURED_VOLUME 4
-#define OSP_INVALID                  5
-#define OSP_VALID                    6
-
+#ifdef VISIT_OSPRAY
+# include "ospray/ospray.h"
+# include "ospray/ospcommon/vec.h"
+# include "ospray/ospcommon/math.h"
+# include "ospray/ospcommon/common.h"
+# define OSP_PERSPECTIVE              1
+# define OSP_ORTHOGRAPHIC             2
+# define OSP_BLOCK_BRICKED_VOLUME     3
+# define OSP_SHARED_STRUCTURED_VOLUME 4
+# define OSP_INVALID                  5
+# define OSP_VALID                    6
 typedef ospcommon::vec2f vec2f;
 typedef ospcommon::vec2i vec2i;
 typedef ospcommon::vec3f vec3f;
 typedef ospcommon::vec3i vec3i;
 typedef ospcommon::vec4f vec4f;
 typedef ospcommon::vec4i vec4i;
-
+#endif
 
 namespace slivr {
     // output stream
     extern std::ostream *osp_out;
     extern std::ostream *osp_err;
+    //! this function has to be inline, otherwise we need to 
+    //! modify library linkages
     // detect environmental variables
     inline bool InitVerbose() 
     {
+#ifndef VISIT_OSPRAY
+	return false;
+#else
 	auto OSPRAY_VERBOSE_PAIR = 
 	    ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
 	if (OSPRAY_VERBOSE_PAIR.first) {
@@ -85,7 +89,10 @@ namespace slivr {
 	} else {
 	    return false;
 	}
+#endif//VISIT_OSPRAY
     }
+    //! this function has to be inline, otherwise we need to 
+    //! modify library linkages
     inline bool CheckVerbose() // initialize OSPRAY_VERBOSE
     {
 	static bool OSPRAY_VERBOSE = slivr::InitVerbose();

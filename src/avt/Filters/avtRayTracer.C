@@ -458,7 +458,7 @@ avtRayTracer::Execute(void)
     //
     // First we need to transform all of domains into camera space.
     //
-    debug5 << "compute camera" << std::endl;
+    ospout << "[avrRayTracer] compute camera" << std::endl;
     double aspect = 1.;
     if (screen[1] > 0)
     {
@@ -479,7 +479,7 @@ avtRayTracer::Execute(void)
     //
     // Extract all of the samples from the dataset.
     //
-    debug5 << "create extractor" << std::endl;
+    ospout << "[avrRayTracer] create extractor" << std::endl;
     avtSamplePointExtractor extractor(screen[0], screen[1], samplesPerRay);
     bool doKernel = kernelBasedSampling;
     if (trans.GetOutput()->
@@ -508,7 +508,6 @@ avtRayTracer::Execute(void)
     //
     if (rayCastingSLIVR)
     {
-	debug5 << "start rcsliver" << std::endl;
 	extractor.SetRayCastingSLIVR(true);
 
 	//
@@ -517,7 +516,7 @@ avtRayTracer::Execute(void)
 	vtkCamera *sceneCam = vtkCamera::New();
 	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
 	{ 
-	    float current[3];
+	    double current[3];
 	    for (int i = 0; i < 3; ++i) {
 		current[i] = (view.camera[i] - view.focus[i]) / 
 		    view.imageZoom + view.focus[i];
@@ -572,12 +571,12 @@ avtRayTracer::Execute(void)
 	// Same as in 
 	// avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
 	vtkMatrix4x4 *matProj = sceneCam->GetProjectionTransformMatrix
-	    (aspect,oldNearPlane, oldFarPlane);
+	    (aspect, oldNearPlane, oldFarPlane);
 	double sceneSize[2];
 	if (!view.orthographic)
 	{
-	    matProj = sceneCam->GetProjectionTransformMatrix
-		(aspect, oldNearPlane, oldFarPlane);
+	    // matProj = sceneCam->GetProjectionTransformMatrix
+	    // 	(aspect, oldNearPlane, oldFarPlane);
 	    matProj->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
 				(oldFarPlane-oldNearPlane));
 	    matProj->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
@@ -587,8 +586,8 @@ avtRayTracer::Execute(void)
 	}
 	else
 	{
-	    matProj = sceneCam->GetProjectionTransformMatrix
-		(aspect, oldNearPlane, oldFarPlane);
+	    // matProj = sceneCam->GetProjectionTransformMatrix
+	    // 	(aspect, oldNearPlane, oldFarPlane);
 	    matProj->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
 	    matProj->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
 				(oldFarPlane-oldNearPlane));
@@ -596,7 +595,8 @@ avtRayTracer::Execute(void)
 	    sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
 	}
 	// compute model_to_screen_transform matrix
-	vtkMatrix4x4::Multiply4x4(matProj,matViewModelScale,model_to_screen_transform);
+	vtkMatrix4x4::Multiply4x4(matProj,matViewModelScale,
+				  model_to_screen_transform);
 	matViewModelScale->Delete();
 	matProj->Delete();
 
@@ -607,14 +607,12 @@ avtRayTracer::Execute(void)
 	    (dbounds, screen[0], screen[1], 
 	     panPercentage, view.imageZoom, model_to_screen_transform,
 	     fullImageExtents, depthExtents);
-	//++fullImageExtents[1];
-	//++fullImageExtents[3];
 	fullImageExtents[0] = std::max(fullImageExtents[0], 0);
 	fullImageExtents[2] = std::max(fullImageExtents[2], 0);
 	fullImageExtents[1] = std::min(1+fullImageExtents[1], screen[0]);
 	fullImageExtents[3] = std::min(1+fullImageExtents[3], screen[1]);
 	// Debug
-	ospout << "RT View settings: " << endl
+	ospout << "[avrRayTracer] View settings: " << endl
 	       << "  inheriant view direction: "
 	       << viewDirection[0] << " "
 	       << viewDirection[1] << " "
@@ -647,15 +645,18 @@ avtRayTracer::Execute(void)
 	       << "  oldNearPlane: " << oldNearPlane << std::endl
 	       << "  oldFarPlane:  " << oldFarPlane  << std::endl
 	       << "  aspect: " << aspect << std::endl;
-	ospout << "VAR: sceneSize: " 
-	       << sceneSize[0] << " " << sceneSize[1] << std::endl;
-	ospout << "VAR: model_to_screen_transform: " << *model_to_screen_transform << std::endl;
-	ospout << "VAR: screen: " << screen[0] << " " << screen[1] << std::endl;
-	ospout << "VAR: data bounds: " << std::endl
+	ospout << "[avrRayTracer] sceneSize: " 
+	       << sceneSize[0] << " " 
+	       << sceneSize[1] << std::endl;
+	ospout << "[avrRayTracer] model_to_screen_transform: " 
+	       << *model_to_screen_transform << std::endl;
+	ospout << "[avrRayTracer] screen: " 
+	       << screen[0] << " " << screen[1] << std::endl;
+	ospout << "[avrRayTracer] data bounds: " << std::endl
 	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
 	       << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
 	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl;
-	ospout << "VAR: full image extents: " << std::endl
+	ospout << "[avrRayTracer] full image extents: " << std::endl
 	       << "\t" << fullImageExtents[0] << " "
 	       << "\t" << fullImageExtents[1] << std::endl
 	       << "\t" << fullImageExtents[2] << " "
@@ -669,7 +670,7 @@ avtRayTracer::Execute(void)
 	    // -- multi-threading enabled
 	    ospray->InitOSP(osprayRefresh);
 	    // camera
-	    debug5 << "make ospray camera" << std::endl;
+	    ospout << "[avrRayTracer] make ospray camera" << std::endl;
 	    if (!view.orthographic)
 	    {
 		ospray->InitCamera(OSP_PERSPECTIVE);
@@ -683,7 +684,8 @@ avtRayTracer::Execute(void)
 		 sceneSize, aspect, view.viewAngle, view.imageZoom,
 		 view.imagePan, fullImageExtents, screen);
 	    // transfer function
-	    debug5  << "make ospray transfer function" << std::endl;
+	    ospout  << "[avrRayTracer] make ospray transfer function" 
+		    << std::endl;
 	    ospray->InitTransferFunction();
 	    ospray->SetTransferFunction
 		((OSPContext::OSPColor*)transferFn1D->GetTableFloat(), 
@@ -691,7 +693,7 @@ avtRayTracer::Execute(void)
 		 (float)transferFn1D->GetMin(),
 		 (float)transferFn1D->GetMax());
 	    // renderer
-	    debug5 << "make ospray renderer" << std::endl;
+	    ospout << "[avrRayTracer] make ospray renderer" << std::endl;
 	    ospray->InitRenderer();
 	    ospray->SetRenderer(lighting, materialProperties, viewDirection);
 	    // check memory
@@ -731,8 +733,6 @@ avtRayTracer::Execute(void)
 	extractor.setRGBBuffer  (opaqueImageData, screen[0],screen[1]);
 	int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
 	extractor.setBufferExtents(bufferScreenExtents);
-	//writeDepthBufferToPPM
-	//    ("opaqueImageZB", opaqueImageZB, screen[0], screen[1]);
     }
 
     //
