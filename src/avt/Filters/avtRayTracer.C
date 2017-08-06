@@ -542,26 +542,44 @@ avtRayTracer::Execute(void)
 	matScale->Identity(); 
 	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
 	{ 
-	    if (view.orthographic)
-	    {
-		matScale->SetElement(0, 0, 1.0 * view.imageZoom); 
-		matScale->SetElement(1, 1, 1.0 * view.imageZoom);
-	    }
 	}
 	else 
 	{
-	    matScale->SetElement(0, 0, scale[0] * view.imageZoom); 
-	    matScale->SetElement(1, 1, scale[1] * view.imageZoom);
+	    matScale->SetElement(0, 0, scale[0] /* view.imageZoom*/); 
+	    matScale->SetElement(1, 1, scale[1] /* view.imageZoom*/);
 	    matScale->SetElement(2, 2, scale[2]);
 	}
 	// Scale + Model + View Matrix
 	vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
-	vtkMatrix4x4 *matViewModel  = sceneCam->GetModelViewTransformMatrix();
-	matViewModel->Transpose();
+	vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
+	//matViewModel->Transpose();
+	//vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
 	vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
-	matViewModelScale->Transpose();
 	matViewModel->Delete();
 	matScale->Delete();
+	// Zooming
+	vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
+	vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
+	matZoom->Identity(); 
+	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
+	{ 
+	    if (view.orthographic)
+	    {
+	    	matZoom->SetElement(0, 0, view.imageZoom); 
+	    	matZoom->SetElement(1, 1, view.imageZoom);
+	    }
+	}
+	else 
+	{
+	    matZoom->SetElement(0, 0, view.imageZoom); 
+	    matZoom->SetElement(1, 1, view.imageZoom);
+	}
+	vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, matZoomViewModelScale);
+	//matZoom->Transpose();
+	//vtkMatrix4x4::Multiply4x4(matViewModelScale, matZoom, matZoomViewModelScale);
+	//matZoomViewModelScale->Transpose();
+	matViewModelScale->Delete();
+	matZoom->Delete();
 	// Projection: 
         // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
 	// The Z buffer that is passed from visit is in clip scape with z
@@ -594,13 +612,12 @@ avtRayTracer::Execute(void)
 	    sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
 	    sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
 	}
-	// compute model_to_screen_transform matrix
-	vtkMatrix4x4::Multiply4x4(matProj,matViewModelScale,
+	// Compute model_to_screen_transform matrix
+	vtkMatrix4x4::Multiply4x4(matProj,matZoomViewModelScale,
 				  model_to_screen_transform);
-	matViewModelScale->Delete();
+	matZoomViewModelScale->Delete();
 	matProj->Delete();
-
-	// get the full image extents of the volume
+	// Get the full image extents of the volume
 	double depthExtents[2];
 	GetSpatialExtents(dbounds);
 	slivr::ProjectWorldToScreenCube
