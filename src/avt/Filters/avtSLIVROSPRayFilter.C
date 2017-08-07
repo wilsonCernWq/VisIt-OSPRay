@@ -202,13 +202,17 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
 		osp::vec3f{specularColor, specularColor, specularColor});
     ospSet1i(volume, "gradientShadingEnabled", (int)lightingFlag);
     // -- other properties
+    vec3f scaledBBoxLower = regionLowerClip * regionScaling;
+    vec3f scaledBBoxUpper = regionUpperClip * regionScaling;
+    vec3f scaledSpacing = regionSpacing * regionScaling;
+    vec3f scaledOrigin  = regionStart * regionScaling;
     ospSet1i(volume, "useGridAccelerator", 0);
     ospSetVec3f(volume, "volumeClippingBoxLower",
-    		(const osp::vec3f&)regionLowerClip);
+    		(const osp::vec3f&)scaledBBoxLower);
     ospSetVec3f(volume, "volumeClippingBoxUpper",
-    		(const osp::vec3f&)regionUpperClip);
-    ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)regionSpacing);
-    ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)regionStart);
+    		(const osp::vec3f&)scaledBBoxUpper);
+    ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)scaledSpacing);
+    ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)scaledOrigin);
     ospSetVec3i(volume, "dimensions",  (const osp::vec3i&)regionSize);
     ospSet1f(volume, "samplingRate", 3.0f);
     ospSet1i(volume, "adaptiveSampling", 0);
@@ -307,6 +311,7 @@ void OSPContext::InitPatch(int id)
     volumePatch[id].SetTransferFunction(transferfcn);
     volumePatch[id].SetRenderer(renderer);
     volumePatch[id].SetCompleteFlag(!refreshData);
+    volumePatch[id].SetScaling(regionScaling);
     // if the data is refreshed -> not complete
 }
 

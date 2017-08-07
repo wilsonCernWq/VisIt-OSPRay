@@ -149,12 +149,15 @@ struct VolumeInfo
     vec3i               regionSize;
     vec3f               regionUpperClip;
     vec3f               regionLowerClip;
+    vec3f               regionScaling;
 
     bool                lightingFlag = false;
     float               specularColor = 0.0f;
 
     // constructor
-    VolumeInfo(int id) : patchId(id) {}
+    VolumeInfo(int id) : patchId(id) {
+	regionScaling = vec3f{1.0f,1.0f,1.0f};
+    }
     // destructor
     ~VolumeInfo() { Clean(); }
 
@@ -166,6 +169,7 @@ struct VolumeInfo
     }
     
     // other function
+    void SetScaling(vec3f s) { regionScaling = s; }
     void Set
     (int type, void *ptr, unsigned char* ghost,
      double *X, double *Y, double *Z, int nX, int nY, int nZ,
@@ -262,6 +266,8 @@ struct OSPContext
     OSPTransferFunction     transferfcn     = nullptr;
     unsigned char           transferfcnType = OSP_INVALID;
 
+    vec3f regionScaling = vec3f{1.0f, 1.0f, 1.0f};
+
     float r_panx;
     float r_pany;
     int   screenSize[2];
@@ -281,7 +287,8 @@ struct OSPContext
     // flags
     bool IsEnabled() { return enabledOSPRay; }
     bool IsDVRMode() { return enabledDVR; }
-    void setDVRMode(bool mode) { enabledDVR = mode; } 
+    void SetDVRMode(bool mode) { enabledDVR = mode; } 
+    void SetScaling(vec3f s) { regionScaling = s; }
 
     // patch 
     void InitOSP(bool flag, int numThreads = 0);
