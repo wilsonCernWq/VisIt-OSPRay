@@ -153,6 +153,7 @@ struct VolumeInfo
 
     bool                lightingFlag = false;
     float               specularColor = 0.0f;
+    float               specularNs    = 0.0f;
 
     // constructor
     VolumeInfo(int id) : patchId(id) {
@@ -203,7 +204,7 @@ struct VolumeInfo
 		   double volumeBBox[6],
 		   bool cellDataFormat);
     void SetSamplingRate(float r);
-    void SetLighting(bool lighting, float Ks);
+    void SetLighting(bool lighting, float Ks, float Ns);
     void CleanVolume() {	
 	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
 	if (voxelData != nullptr) { 

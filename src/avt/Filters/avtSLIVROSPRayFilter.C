@@ -66,6 +66,10 @@ VolumeInfo::Set
  float sr, bool lighting, bool cellDataFormat)
 {
     /* OSPRay Volume */
+    specularColor = (float)mtl[2];
+    specularNs    = (float)mtl[3];
+    lightingFlag  = lighting;
+    samplingRate  = sr;
     // TODO: It seems if a volume is recovered from a session
     // ospray will crash during zooming ...
     // So we refresh volume everytime to fix the bug
@@ -77,13 +81,16 @@ VolumeInfo::Set
 	SetVolume(type, ptr, ghost, X, Y, Z, nX, nY, nZ,
 		  volumePBox, volumeBBox, cellDataFormat); 
     }
-    if (samplingRate != sr) {
-	samplingRate = sr;
-	SetSamplingRate(samplingRate);
-    }
-    if (lighting != lightingFlag || (float)mtl[2] != specularColor) {
-	SetLighting(lighting, (float)mtl[2]);
-    }
+    // if (samplingRate != sr) {
+    // 	samplingRate = sr;
+    // 	SetSamplingRate(samplingRate);
+    // }
+    // if (lighting != lightingFlag || 
+    // 	(float)mtl[2] != specularColor ||
+    // 	(float)mtl[3] != specularNs) 
+    // {
+    // 	SetLighting(lighting, (float)mtl[2], (float)mtl[3]);
+    // }
 
     /* OSPRay Model */
     if (!isComplete) {
@@ -198,8 +205,9 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
 
     // commit volume
     // -- no lighting by default
-    ospSetVec3f(volume, "specular", 
+    ospSetVec3f(volume, "Ks", 
 		osp::vec3f{specularColor, specularColor, specularColor});
+    ospSet1f(volume, "Ns", specularNs);
     ospSet1i(volume, "gradientShadingEnabled", (int)lightingFlag);
     // -- other properties
     vec3f scaledBBoxLower = regionLowerClip * regionScaling;
@@ -223,15 +231,17 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     //visitTimer->StopTimer(volumeInitIndex, "Commit OSPRay patch");
 }
 void VolumeInfo::SetSamplingRate(float r) {
-    ospSet1f(volume, "samplingRate", r);
-    ospCommit(volume);
+    // ospSet1f(volume, "samplingRate", r);
+    // ospCommit(volume);
 }
-void VolumeInfo::SetLighting(bool lighting, float Ks) {
-    specularColor = Ks;
-    lightingFlag = lighting;
-    ospSetVec3f(volume, "specular", osp::vec3f{Ks, Ks, Ks});
-    ospSet1i(volume, "gradientShadingEnabled", (int)lighting);
-    ospCommit(volume);
+void VolumeInfo::SetLighting(bool lighting, float Ks, float Ns) {
+    // specularColor = Ks;
+    // specularNs    = Ns;
+    // lightingFlag  = lighting;
+    // ospSetVec3f(volume, "Ks", osp::vec3f{Ks, Ks, Ks});
+    // ospSet1f(volume, "Ns", Ns);
+    // ospSet1i(volume, "gradientShadingEnabled", (int)lighting);
+    // ospCommit(volume);
 }
 
 // framebuffer component     

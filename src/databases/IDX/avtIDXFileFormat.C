@@ -244,7 +244,8 @@ void avtIDXFileFormat::loadBalance(){
 
       }
 
-      if(residual > 0){
+
+      if (residual > 0 || (high[maxdir] < box_high[maxdir])) {
         int lowr[3];
         int highr[3];
 

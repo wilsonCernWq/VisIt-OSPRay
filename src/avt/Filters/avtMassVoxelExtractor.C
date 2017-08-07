@@ -2370,7 +2370,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     slivr::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
 				    panPercentage, imageZoom,
 				    model_to_screen_transform, 
-				    patchScreenExtents, renderingDepthsExtents);
+				    patchScreenExtents, 
+				    renderingDepthsExtents);
     xMin = patchScreenExtents[0];
     xMax = patchScreenExtents[1];
     yMin = patchScreenExtents[2];
@@ -2484,10 +2485,12 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	       << " " << volumeBBox[4]
 	       << " " << volumeBBox[5]
 	       << std::endl; 
+
 	volume->Set(volumeDataType, volumePointer, ghosts,
 		    X, Y, Z, nX, nY, nZ,		    
 		    volumePBox, volumeBBox, materialProperties,
-		    (float)rendererSampleRate, lighting, ncell_arrays > 0);
+		    (float)rendererSampleRate, lighting, 
+		    ncell_arrays > 0);
 
 	if ((scalarRange[1] >= tFVisibleRange[0]) &&
 	    (scalarRange[0] <= tFVisibleRange[1]))
