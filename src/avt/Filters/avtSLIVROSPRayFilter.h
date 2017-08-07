@@ -47,43 +47,52 @@
 #include <vtkType.h>
 #include <DebugStream.h>
 
-#include "ospray/ospray.h"
-#include "ospray/ospcommon/vec.h"
-#include "ospray/ospcommon/math.h"
-#include "ospray/ospcommon/common.h"
-
-#define OSP_PERSPECTIVE              1
-#define OSP_ORTHOGRAPHIC             2
-#define OSP_BLOCK_BRICKED_VOLUME     3
-#define OSP_SHARED_STRUCTURED_VOLUME 4
-#define OSP_INVALID                  5
-#define OSP_VALID                    6
-
+#ifdef VISIT_OSPRAY
+# include "ospray/ospray.h"
+# include "ospray/ospcommon/vec.h"
+# include "ospray/ospcommon/math.h"
+# include "ospray/ospcommon/common.h"
+# define OSP_PERSPECTIVE              1
+# define OSP_ORTHOGRAPHIC             2
+# define OSP_BLOCK_BRICKED_VOLUME     3
+# define OSP_SHARED_STRUCTURED_VOLUME 4
+# define OSP_INVALID                  5
+# define OSP_VALID                    6
 typedef ospcommon::vec2f vec2f;
 typedef ospcommon::vec2i vec2i;
 typedef ospcommon::vec3f vec3f;
 typedef ospcommon::vec3i vec3i;
 typedef ospcommon::vec4f vec4f;
 typedef ospcommon::vec4i vec4i;
-
+#endif
 
 namespace slivr {
     // output stream
     extern std::ostream *osp_out;
     extern std::ostream *osp_err;
+    //! this function has to be inline, otherwise we need to 
+    //! modify library linkages
     // detect environmental variables
     inline bool InitVerbose() 
     {
+#ifndef VISIT_OSPRAY
+	return false;
+#else
 	auto OSPRAY_VERBOSE_PAIR = 
 	    ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
 	if (OSPRAY_VERBOSE_PAIR.first) {
-	    slivr::osp_out = &std::cout;
-	    slivr::osp_err = &std::cerr;
+	    if (OSPRAY_VERBOSE_PAIR.second > 0) {
+		slivr::osp_out = &std::cout;
+		slivr::osp_err = &std::cerr;
+	    }
 	    return OSPRAY_VERBOSE_PAIR.second > 0;
 	} else {
 	    return false;
 	}
+#endif//VISIT_OSPRAY
     }
+    //! this function has to be inline, otherwise we need to 
+    //! modify library linkages
     inline bool CheckVerbose() // initialize OSPRAY_VERBOSE
     {
 	static bool OSPRAY_VERBOSE = slivr::InitVerbose();
@@ -130,8 +139,8 @@ struct VolumeInfo
     OSPDataType         voxelDataType   = OSP_VOID_PTR;
     OSPData             voxelData       = nullptr;
     size_t              voxelSize       = 0;
-    OSPData             ghostData       = nullptr;
-    size_t              ghostSize       = 0;
+    //OSPData             ghostData       = nullptr;
+    //size_t              ghostSize       = 0;
 
     float               samplingRate = -1.0f;
     vec3f               regionStart;
@@ -140,12 +149,16 @@ struct VolumeInfo
     vec3i               regionSize;
     vec3f               regionUpperClip;
     vec3f               regionLowerClip;
+    vec3f               regionScaling;
 
     bool                lightingFlag = false;
     float               specularColor = 0.0f;
+    float               specularNs    = 0.0f;
 
     // constructor
-    VolumeInfo(int id) : patchId(id) {}
+    VolumeInfo(int id) : patchId(id) {
+	regionScaling = vec3f{1.0f,1.0f,1.0f};
+    }
     // destructor
     ~VolumeInfo() { Clean(); }
 
@@ -157,13 +170,12 @@ struct VolumeInfo
     }
     
     // other function
+    void SetScaling(vec3f s) { regionScaling = s; }
     void Set
-    (void *ptr, int type, unsigned char* ghost,
-     double *X, double *Y, double *Z,
-     int nX, int nY, int nZ,
-     bool cellDataFormat, float sr, 
-     double volumePBox[6], double volumeBBox[6],		  
-     bool lighting, double mtl[4]);
+    (int type, void *ptr, unsigned char* ghost,
+     double *X, double *Y, double *Z, int nX, int nY, int nZ,
+     double volumePBox[6], double volumeBBox[6], double mtl[4],
+     float sr, bool lighting, bool cellDataFormat);
 
     bool GetCompleteFlag() { return isComplete; }
     void SetCompleteFlag(bool f) { isComplete = f; } 
@@ -185,24 +197,24 @@ struct VolumeInfo
     // ospVolume component
     void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME); 
     OSPVolume GetVolume() { return volume; }
-    void SetVolume(void *ptr, int type, unsigned char* ghost,
+    void SetVolume(int type, void *ptr, unsigned char* ghost,
 		   double *X, double *Y, double *Z, 
 		   int nX, int nY, int nZ,
-		   bool cellDataFormat,
 		   double volumePBox[6], 
-		   double volumeBBox[6]);
+		   double volumeBBox[6],
+		   bool cellDataFormat);
     void SetSamplingRate(float r);
-    void SetLighting(bool lighting, float Ks);
+    void SetLighting(bool lighting, float Ks, float Ns);
     void CleanVolume() {	
+	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
 	if (voxelData != nullptr) { 
 	    ospRelease(voxelData);
 	    voxelData = nullptr; 
 	}
-	if (ghostData != nullptr) {
-	    ospRelease(ghostData);
-	    ghostData = nullptr; 
-	}
-	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
+	// if (ghostData != nullptr) {
+	//     ospRelease(ghostData);
+	//     ghostData = nullptr; 
+	// }
 	volumeType = OSP_INVALID;
     }
 
@@ -255,6 +267,8 @@ struct OSPContext
     OSPTransferFunction     transferfcn     = nullptr;
     unsigned char           transferfcnType = OSP_INVALID;
 
+    vec3f regionScaling = vec3f{1.0f, 1.0f, 1.0f};
+
     float r_panx;
     float r_pany;
     int   screenSize[2];
@@ -274,7 +288,8 @@ struct OSPContext
     // flags
     bool IsEnabled() { return enabledOSPRay; }
     bool IsDVRMode() { return enabledDVR; }
-    void setDVRMode(bool mode) { enabledDVR = mode; } 
+    void SetDVRMode(bool mode) { enabledDVR = mode; } 
+    void SetScaling(vec3f s) { regionScaling = s; }
 
     // patch 
     void InitOSP(bool flag, int numThreads = 0);
@@ -291,7 +306,7 @@ struct OSPContext
     void SetCamera
     (const double campos[3], const double camfocus[3], const double camup [3], 
      const double camdir[3], const double sceneSize[2], const double aspect,
-     const double fovy, const double zoomratio, const double imagepan[2], 
+     const double viewAngle, const double zoomratio, const double imagepan[2], 
      const int imageExtents[4], const int screenExtents[2]);
     void SetSubCamera(float xMin, float xMax, float yMin, float yMax);
 
@@ -316,6 +331,7 @@ struct OSPContext
 namespace slivr
 {
     double deg2rad (double degrees);
+    double rad2deg (double radins);
     void CheckMemoryHere(const std::string& message, 
 			 std::string debugN = "debug5");
     void CheckMemoryHere(const std::string& message, 

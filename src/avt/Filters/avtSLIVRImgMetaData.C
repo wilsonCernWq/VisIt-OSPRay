@@ -233,7 +233,8 @@ slivr::ProjectWorldToScreenCube
 // ****************************************************************************
 void 
 CreateColorPPM
-(std::string filename, unsigned char *data, int width, int height){
+(std::string filename, unsigned char *data, int width, int height)
+{
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
 			     std::ios::out | std::ios::binary);
     outputFile << "P6\n" << width << "\n" << height << "\n" << 255 << "\n";    

@@ -156,24 +156,61 @@ ${VISIT_SOURCE_DIR}/vtkm
 ${EAVL_INCLUDE_DIR}
 ${VTKM_INCLUDE_DIR}
 ${VTK_INCLUDE_DIRS}
-${OSPRAY_INCLUDE_DIR}
 )
 
+IF (VISIT_OSPRAY) 
+  INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
+ENDIF ()
+
+# If we have Ice-T then add -DHAVE_ICET to the compilation flags.
+IF(ICET_FOUND)
+  # We need to link with OpenGL on Mac when we have IceT.
+  IF(APPLE)
+    SET(ICET_OPENGL ${OPENGL_gl_LIBRARY})
+  ENDIF(APPLE)
+  # full path IceT libraries 
+  SET(ICET_FULL_LIB "")
+  FOREACH(X ${ICET_LIB})
+    LIST(APPEND ICET_FULL_LIB "${ICET_LIBRARY_DIR}/${X}")
+  ENDFOREACH()
+  SET(ICET_LINK_LIB ${ICET_FULL_LIB} ${ICET_OPENGL})  
+  # add include path
+  INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})
+  # debug
+  MESSAGE(STATUS "ICET_INCLUDE_DIR: ${ICET_INCLUDE_DIR}")
+  MESSAGE(STATUS "ICET_LIBRARY_DIR: ${ICET_LIBRARY_DIR}")
+  MESSAGE(STATUS "ICET_LINK_LIB: ${ICET_LINK_LIB}")
+ENDIF(ICET_FOUND)
+
 # Add link directories
-LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_DIRS} ${MESA_LIBRARY_DIR} ${GLEW_LIBRARY_DIR} ${OSPRAY_LIBRARY_DIR})
+LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_DIRS} ${MESA_LIBRARY_DIR} ${GLEW_LIBRARY_DIR})
 
 #********************************* SERIAL ************************************
 ADD_LIBRARY(avtfilters_ser ${AVTFILTERS_SOURCES})
-TARGET_COMPILE_OPTIONS(avtfilters_ser PUBLIC "$<$<CONFIG:DEBUG>:-std=c++11>")
-TARGET_COMPILE_OPTIONS(avtfilters_ser PUBLIC "$<$<CONFIG:RELEASE>:-std=c++11>")
-TARGET_LINK_LIBRARIES(avtfilters_ser visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_ser avtdatabase_ser avtdbatts ${EAVL_LIB} ${VTKM_LIB} vtkFiltersModeling ${OSPRAY_LIBRARIES})
+TARGET_LINK_LIBRARIES(avtfilters_ser visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_ser avtdatabase_ser avtdbatts vtkFiltersModeling ${EAVL_LIB} ${VTKM_LIB})
+IF (VISIT_OSPRAY) 
+  TARGET_COMPILE_OPTIONS(avtfilters_ser PUBLIC "$<$<CONFIG:DEBUG>:-std=c++11>")
+  TARGET_COMPILE_OPTIONS(avtfilters_ser PUBLIC "$<$<CONFIG:RELEASE>:-std=c++11>")
+  TARGET_LINK_LIBRARIES(avtfilters_ser ${OSPRAY_LIBRARIES})
+ENDIF (VISIT_OSPRAY) 
+IF(ICET_FOUND)
+  ADD_TARGET_DEFINITIONS(avtfilters_ser "HAVE_ICET")
+  TARGET_LINK_LIBRARIES(avtfilters_ser ${ICET_LINK_LIB})
+ENDIF(ICET_FOUND)
 VISIT_INSTALL_TARGETS(avtfilters_ser)
 
 #********************************* PARALLEL **********************************
 IF(VISIT_PARALLEL)
     ADD_PARALLEL_LIBRARY(avtfilters_par ${AVTFILTERS_SOURCES})
-    TARGET_COMPILE_OPTIONS(avtfilters_par PUBLIC "$<$<CONFIG:DEBUG>:-std=c++11>")
-    TARGET_COMPILE_OPTIONS(avtfilters_par PUBLIC "$<$<CONFIG:RELEASE>:-std=c++11>")
-    TARGET_LINK_LIBRARIES(avtfilters_par visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_par avtdatabase_par avtdbatts ${EAVL_LIB} ${VTKM_LIB} vtkFiltersModeling ${OSPRAY_LIBRARIES})
+    TARGET_LINK_LIBRARIES(avtfilters_par visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_par avtdatabase_par avtdbatts vtkFiltersModeling ${EAVL_LIB} ${VTKM_LIB})
+    IF (VISIT_OSPRAY) 
+      TARGET_COMPILE_OPTIONS(avtfilters_par PUBLIC "$<$<CONFIG:DEBUG>:-std=c++11>")
+      TARGET_COMPILE_OPTIONS(avtfilters_par PUBLIC "$<$<CONFIG:RELEASE>:-std=c++11>")
+      TARGET_LINK_LIBRARIES(avtfilters_par ${OSPRAY_LIBRARIES})
+    ENDIF (VISIT_OSPRAY) 
+    IF(ICET_FOUND)
+      ADD_TARGET_DEFINITIONS(avtfilters_par "HAVE_ICET")
+      TARGET_LINK_LIBRARIES(avtfilters_par ${ICET_LINK_LIB})
+    ENDIF(ICET_FOUND)
     VISIT_INSTALL_TARGETS(avtfilters_par)
 ENDIF(VISIT_PARALLEL)

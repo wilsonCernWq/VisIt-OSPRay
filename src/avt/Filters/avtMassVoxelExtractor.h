@@ -114,27 +114,29 @@ public:
 				 std::vector<std::string> &varnames,
 				 std::vector<int> &varsize);
 
-	void             SetGridsAreInWorldSpace(bool, const avtViewInfo &,double, const double *);
-	void             SetVariableInformation(std::vector<std::string> &names, std::vector<int> varsize);
-	void             SetTrilinear(bool _t) { trilinearInterpolation = _t; };
+	void             SetGridsAreInWorldSpace
+	    (bool, const avtViewInfo &,double, const double *);
+	void             SetVariableInformation
+	    (std::vector<std::string> &names, std::vector<int> varsize);
+	void             SetTrilinear(bool t) { trilinearInterpolation = t; };
 
 	//
-	// RC SLIVR Specific
+	// RayCast SLIVR Specific
 	//
-	void             SetRayCastingSLIVR(bool _s) { rayCastingSLIVR = _s; };
-	void             SetLighting(bool _l) { lighting = _l; };
-	void             SetLightDirection(double _lightDir[3])
-	{ for (int i=0;i<3;i++) { lightDirection[i] = _lightDir[i]; } }
-	void             SetLightPosition(double _lightPos[4]) 
-	{ for (int i=0;i<4;i++) { lightPosition[i] = _lightPos[i]; } }
-	void             SetMatProperties(double _matProp[4]) 
-	{ for (int i=0;i<4;i++) { materialProperties[i]=_matProp[i]; } }
-	void             SetScalarRange(double _range[2])
-	{ scalarRange[0]=_range[0]; scalarRange[1]=_range[1];}
-	void             SetTFVisibleRange(double _tfRange[2])
-	{ tFVisibleRange[0]=_tfRange[0]; tFVisibleRange[1]=_tfRange[1]; }
-	void             SetTransferFn(avtOpacityMap *_transferFn1D) 
-	{ transferFn1D = _transferFn1D; };
+	void             SetRayCastingSLIVR(bool s) { rayCastingSLIVR = s; };
+	void             SetLighting(bool l) { lighting = l; };
+	void             SetLightDirection(double lightDir[3])
+	{ for (int i=0;i<3;i++) { lightDirection[i] = lightDir[i]; } }
+	void             SetLightPosition(double lightPos[4]) 
+	{ for (int i=0;i<4;i++) { lightPosition[i] = lightPos[i]; } }
+	void             SetMatProperties(double matProp[4]) 
+	{ for (int i=0;i<4;i++) { materialProperties[i] = matProp[i]; } }
+	void             SetScalarRange(double range[2])
+	{ scalarRange[0] = range[0]; scalarRange[1] = range[1];}
+	void             SetTFVisibleRange(double tfRange[2])
+	{ tFVisibleRange[0] = tfRange[0]; tFVisibleRange[1] = tfRange[1]; }
+	void             SetTransferFn(avtOpacityMap *tf1D) 
+	{ transferFn1D = tf1D; };
 	void             SetViewDirection(double *_vD)
 	{ for (int i=0; i<3; i++) { viewDirection[i] = view_direction[i] = _vD[i]; } }
 	void             SetCameraPosition(double *_cp) 
@@ -154,19 +156,22 @@ public:
 	}
 	void             SetMVPMatrix(vtkMatrix4x4 *_mvp)
 	{ 
-	    modelViewProj->DeepCopy(_mvp); 
-	    vtkMatrix4x4::Invert(modelViewProj, invModelViewProj); 
+	    model_to_screen_transform->DeepCopy(_mvp); 
+	    vtkMatrix4x4::Invert(model_to_screen_transform, screen_to_model_transform); 
 	}
+
 	//
 	// Getting the image
-	void             getImageDimensions(int &inUse, int dims[2], 
-					    int screen_ll[2], int screen_ur[2], 
-					    float &eyeDepth, float &clipDepth);
-	void             getComputedImage(float *image);
+	//
+	void             getImageDimensions
+	    (int &, int dims[2], int screen_ll[2], int screen_ur[2], float &, float &);
+	void             getComputedImage(float *);
 	void             setProcIdPatchID(int _proc, int _patch)
 	{ proc = _proc; patch = _patch; }
+
 	//
 	// Set the background information
+        //
 	void             setDepthBuffer(float *_zBuffer, int size) { depthBuffer=_zBuffer; }
 	void             setRGBBuffer(unsigned char  *_colorBuffer, int width, int height)
 	{ rgbColorBuffer=_colorBuffer; };
@@ -181,8 +186,9 @@ public:
 	    fullImageExtents[2] = extents[2];	
 	    fullImageExtents[3] = extents[3];
 	}
+
 protected:
-	int fullImageExtents[4];
+	int              fullImageExtents[4];
 	bool             gridsAreInWorldSpace;
 	bool             pretendGridsAreInWorldSpace;
 	avtViewInfo      view;
@@ -194,8 +200,8 @@ protected:
 	bool             trilinearInterpolation;
 	bool             rayCastingSLIVR;
 
-	vtkMatrix4x4    *modelViewProj;
-	vtkMatrix4x4    *invModelViewProj;
+	vtkMatrix4x4    *model_to_screen_transform;
+	vtkMatrix4x4    *screen_to_model_transform;
 	double           clipPlanes[2];
 	double 		 panPercentage[2];
 	double           imageZoom;
@@ -294,7 +300,7 @@ protected:
 	int              imgDims[2];            // size of the patch
 	int              imgLowerLeft[2];       // coordinates in the whole image
 	int              imgUpperRight[2];      //
-	float            eyeSpaceDepth;         // for blending patches
+	float            eyesSpaceDepth;         // for blending patches
 	float            clipSpaceDepth;        // clip space depth for blending with other visit stuff
 	float           *imgArray;              // the image data
 	int              proc;                  // id of the processor

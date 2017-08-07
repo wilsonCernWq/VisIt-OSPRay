@@ -207,31 +207,6 @@ avtSLIVRImgCommunicator::PlaceImage
     #pragma omp parallel for collapse(2)
     for (int y = startingY; y < endingY; ++y) {
 	for (int x = startingX; x < endingX; ++x) {
-	    // check error in debug
-	    // if (DebugStream::Level5())
-	    // {
-	    //     bool printError = false;
-	    //     if (x <  dstExtents[0]) { printError = true; }
-	    //     if (x >= dstExtents[1]) { printError = true; }
-	    //     if (y <  dstExtents[2]) { printError = true; }
-	    //     if (y >= dstExtents[3]) { printError = true; }
-	    //     if (x <  srcExtents[0]) { printError = true; }
-	    //     if (x >= srcExtents[1]) { printError = true; }
-	    //     if (y <  srcExtents[2]) { printError = true; }
-	    //     if (y >= srcExtents[3]) { printError = true; }
-	    //     if (printError) {
-	    // 	debug5 << "Err: avtSLIVRImgCommunicator::PlaceImage "
-	    // 	       << "index goes out of bound "
-	    // 	       << "(" << x << "," << y << ") "
-	    // 	       << "extents " 
-	    // 	       << dstExtents[0] << " " << dstExtents[1] << " "
-	    // 	       << dstExtents[2] << " " << dstExtents[3] << " "
-	    // 	       << srcExtents[0] << " " << srcExtents[1] << " "
-	    // 	       << srcExtents[2] << " " << srcExtents[3] 
-	    // 	       << std::endl;
-	    // 	continue; 
-	    //     }
-	    // }
 	    // index in the sub-image
 	    const int srcIndex = 
 		(srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4; 
@@ -315,32 +290,6 @@ avtSLIVRImgCommunicator::BlendFrontToBack
     #pragma omp parallel for collapse(2)
     for (int y = startY; y < endY; ++y) {
 	for (int x = startX; x < endX; ++x) {
-	    // if (DebugStream::Level5())
-	    // {
-	    //     bool printError = false;
-	    //     if (x <  dstExtents[0]) { printError = true; }
-	    //     if (x >= dstExtents[1]) { printError = true; }
-	    //     if (y <  dstExtents[2]) { printError = true; }
-	    //     if (y >= dstExtents[3]) { printError = true; }
-	    //     if (x <  srcExtents[0]) { printError = true; }
-	    //     if (x >= srcExtents[1]) { printError = true; }
-	    //     if (y <  srcExtents[2]) { printError = true; }
-	    //     if (y >= srcExtents[3]) { printError = true; }
-	    //     if (printError) {
-	    // 	debug5 << "Err: "
-	    // 	       << "avtSLIVRImgCommunicator::BlendFrontToBack "
-	    // 	       << "index goes out of bound "
-	    // 	       << "(" << x << "," << y << ") "
-	    // 	       << "extents " 
-	    // 	       << dstExtents[0] << " " << dstExtents[1] << " "
-	    // 	       << dstExtents[2] << " " << dstExtents[3] << " "
-	    // 	       << srcExtents[0] << " " << srcExtents[1] << " "
-	    // 	       << srcExtents[2] << " " << srcExtents[3] 
-	    // 	       << std::endl;
-	    // 	continue; 
-	    //     }
-	    // }
-
 	    // get indices
 	    int srcIndex = (srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4;
 	    int dstIndex = (dstX * (y-dstExtents[2]) + x-dstExtents[0]) * 4;
@@ -403,36 +352,9 @@ avtSLIVRImgCommunicator::BlendBackToFront
     #pragma omp parallel for collapse(2)
     for (int y = startY; y < endY; ++y) {
 	for (int x = startX; x < endX; ++x) {
-	    // if (DebugStream::Level5())
-	    // {
-	    //     bool printError = false;
-	    //     if (x <  dstExtents[0]) { printError = true; }
-	    //     if (x >= dstExtents[1]) { printError = true; }
-	    //     if (y <  dstExtents[2]) { printError = true; }
-	    //     if (y >= dstExtents[3]) { printError = true; }
-	    //     if (x <  srcExtents[0]) { printError = true; }
-	    //     if (x >= srcExtents[1]) { printError = true; }
-	    //     if (y <  srcExtents[2]) { printError = true; }
-	    //     if (y >= srcExtents[3]) { printError = true; }
-	    //     if (printError) {
-	    // 	debug5 << "Err: "
-	    // 	       << "avtSLIVRImgCommunicator::BlendFrontToBack "
-	    // 	       << "index goes out of bound "
-	    // 	       << "(" << x << "," << y << ") "
-	    // 	       << "extents " 
-	    // 	       << dstExtents[0] << " " << dstExtents[1] << " "
-	    // 	       << dstExtents[2] << " " << dstExtents[3] << " "
-	    // 	       << srcExtents[0] << " " << srcExtents[1] << " "
-	    // 	       << srcExtents[2] << " " << srcExtents[3] 
-	    // 	       << std::endl;
-	    // 	continue; 
-	    //     }
-	    // }
-
 	    // get indices
 	    int srcIndex = (srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4;
 	    int dstIndex = (dstX * (y-dstExtents[2]) + x-dstExtents[0]) * 4;
-
 	    // back to front compositing	    
 	    float trans = 1.0f - srcImage[srcIndex + 3];
 	    dstImage[dstIndex+0] = 

@@ -389,10 +389,10 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     //
     if (atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
 	avtCallback::SetOSPRayMode(true);
-	debug1 << "runing with OSPRay backend" << std::endl;
+	debug1 << "running with OSPRay backend" << std::endl;
     } else {
 	avtCallback::SetOSPRayMode(false);
-	debug1 << "runing with CPU Raycasting backend" << std::endl;
+	debug1 << "running with CPU Raycasting backend" << std::endl;
     }
     avtRayTracer *software = new avtRayTracer;
     software->SetRayCastingSLIVR(true);

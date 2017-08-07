@@ -85,7 +85,7 @@
 
 bool sortImgMetaDataByDepth
 (slivr::ImgMetaData const& before, slivr::ImgMetaData const& after)
-{ return before.avg_z > after.avg_z; }
+{ return before.clip_z > after.clip_z; }
 bool sortImgMetaDataByEyeSpaceDepth
 (slivr::ImgMetaData const& before, slivr::ImgMetaData const& after)
 { return before.eye_z > after.eye_z; }
@@ -458,7 +458,7 @@ avtRayTracer::Execute(void)
     //
     // First we need to transform all of domains into camera space.
     //
-    debug5 << "compute camera" << std::endl;
+    ospout << "[avrRayTracer] compute camera" << std::endl;
     double aspect = 1.;
     if (screen[1] > 0)
     {
@@ -479,7 +479,7 @@ avtRayTracer::Execute(void)
     //
     // Extract all of the samples from the dataset.
     //
-    debug5 << "create extractor" << std::endl;
+    ospout << "[avrRayTracer] create extractor" << std::endl;
     avtSamplePointExtractor extractor(screen[0], screen[1], samplesPerRay);
     bool doKernel = kernelBasedSampling;
     if (trans.GetOutput()->
@@ -497,39 +497,139 @@ avtRayTracer::Execute(void)
     // Before Rendering
     //
     double dbounds[6];  // Extents of the volume in world coordinates
-    vtkMatrix4x4 *pvm = vtkMatrix4x4::New();
+    vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
     vtkImageData  *opaqueImageVTK = NULL;
     unsigned char *opaqueImageData = NULL;
     float         *opaqueImageZB = NULL;
-    int fullImageExtents[4];
+    int            fullImageExtents[4];
 
     //
     // Ray casting: SLIVR ~ Setup
     //
     if (rayCastingSLIVR)
     {
-	debug5 << "start rcsliver" << std::endl;
 	extractor.SetRayCastingSLIVR(true);
 
 	//
 	// Camera Settings
 	//
-	float current[3];
-	for (int i = 0; i < 3; ++i) {
-	    current[i] = (view.camera[i] - view.focus[i]) / 
-		view.imageZoom + view.focus[i];
-	}
 	vtkCamera *sceneCam = vtkCamera::New();
-	sceneCam->SetPosition(current[0],current[1],current[2]);
+	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
+	{ 
+	    double current[3];
+	    for (int i = 0; i < 3; ++i) {
+		current[i] = (view.camera[i] - view.focus[i]) / 
+		    view.imageZoom + view.focus[i];
+	    }
+	    sceneCam->SetPosition(current[0],current[1],current[2]);
+	}
+	else {
+	    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
+	}
 	sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
 	sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
 	sceneCam->SetViewAngle(view.viewAngle);
 	sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
 	if (view.orthographic) { sceneCam->ParallelProjectionOn(); }
 	else { sceneCam->ParallelProjectionOff(); }
-	sceneCam->SetParallelScale(view.parallelScale);
-	// debug
-	debug5 << "RT View settings: " << endl
+	sceneCam->SetParallelScale(view.parallelScale);	
+	// Clip planes
+	double oldclip[2] = {oldNearPlane, oldFarPlane};
+	panPercentage[0] = view.imagePan[0];
+	panPercentage[1] = view.imagePan[1];
+	// Scaling
+	vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
+	matScale->Identity(); 
+	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
+	{ 
+	}
+	else 
+	{
+	    matScale->SetElement(0, 0, scale[0] /* view.imageZoom*/); 
+	    matScale->SetElement(1, 1, scale[1] /* view.imageZoom*/);
+	    matScale->SetElement(2, 2, scale[2]);
+	}
+	// Scale + Model + View Matrix
+	vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
+	vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
+	//matViewModel->Transpose();
+	//vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
+	vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
+	matViewModel->Delete();
+	matScale->Delete();
+	// Zooming
+	vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
+	vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
+	matZoom->Identity(); 
+	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
+	{ 
+	    if (view.orthographic)
+	    {
+	    	matZoom->SetElement(0, 0, view.imageZoom); 
+	    	matZoom->SetElement(1, 1, view.imageZoom);
+	    }
+	}
+	else 
+	{
+	    matZoom->SetElement(0, 0, view.imageZoom); 
+	    matZoom->SetElement(1, 1, view.imageZoom);
+	}
+	vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, matZoomViewModelScale);
+	//matZoom->Transpose();
+	//vtkMatrix4x4::Multiply4x4(matViewModelScale, matZoom, matZoomViewModelScale);
+	//matZoomViewModelScale->Transpose();
+	matViewModelScale->Delete();
+	matZoom->Delete();
+	// Projection: 
+        // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
+	// The Z buffer that is passed from visit is in clip scape with z
+	// limits of -1 and 1. However, using VTK, the z limits are withing
+	// nearz and farz. So, the projection matrix from VTK is hijacked here
+	// and adjusted to be within -1 and 1 too.
+	// Same as in 
+	// avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
+	vtkMatrix4x4 *matProj = sceneCam->GetProjectionTransformMatrix
+	    (aspect, oldNearPlane, oldFarPlane);
+	double sceneSize[2];
+	if (!view.orthographic)
+	{
+	    // matProj = sceneCam->GetProjectionTransformMatrix
+	    // 	(aspect, oldNearPlane, oldFarPlane);
+	    matProj->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
+				(oldFarPlane-oldNearPlane));
+	    matProj->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
+				(oldFarPlane-oldNearPlane));
+	    sceneSize[0] = 2.0 * oldNearPlane / matProj->GetElement(0, 0);
+	    sceneSize[1] = 2.0 * oldNearPlane / matProj->GetElement(1, 1);
+	}
+	else
+	{
+	    // matProj = sceneCam->GetProjectionTransformMatrix
+	    // 	(aspect, oldNearPlane, oldFarPlane);
+	    matProj->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
+	    matProj->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
+				(oldFarPlane-oldNearPlane));
+	    sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
+	    sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
+	}
+	// Compute model_to_screen_transform matrix
+	vtkMatrix4x4::Multiply4x4(matProj,matZoomViewModelScale,
+				  model_to_screen_transform);
+	matZoomViewModelScale->Delete();
+	matProj->Delete();
+	// Get the full image extents of the volume
+	double depthExtents[2];
+	GetSpatialExtents(dbounds);
+	slivr::ProjectWorldToScreenCube
+	    (dbounds, screen[0], screen[1], 
+	     panPercentage, view.imageZoom, model_to_screen_transform,
+	     fullImageExtents, depthExtents);
+	fullImageExtents[0] = std::max(fullImageExtents[0], 0);
+	fullImageExtents[2] = std::max(fullImageExtents[2], 0);
+	fullImageExtents[1] = std::min(1+fullImageExtents[1], screen[0]);
+	fullImageExtents[3] = std::min(1+fullImageExtents[3], screen[1]);
+	// Debug
+	ospout << "[avrRayTracer] View settings: " << endl
 	       << "  inheriant view direction: "
 	       << viewDirection[0] << " "
 	       << viewDirection[1] << " "
@@ -562,87 +662,22 @@ avtRayTracer::Execute(void)
 	       << "  oldNearPlane: " << oldNearPlane << std::endl
 	       << "  oldFarPlane:  " << oldFarPlane  << std::endl
 	       << "  aspect: " << aspect << std::endl;
-	
-	// clip planes
-	double oldclip[2] = {oldNearPlane, oldFarPlane};
-	panPercentage[0] = view.imagePan[0];
-	panPercentage[1] = view.imagePan[1];
-	// Scaling
-	vtkMatrix4x4 *scaletrans = vtkMatrix4x4::New();
-	scaletrans->Identity();
-	scaletrans->SetElement(0, 0, scale[0]);
-	scaletrans->SetElement(1, 1, scale[1]);
-	scaletrans->SetElement(2, 2, scale[2]);
-	// Zoom and pan portions
-	vtkMatrix4x4 *imageZoomAndPan = vtkMatrix4x4::New();
-	imageZoomAndPan->Identity();
-	// View
-	vtkMatrix4x4 *tmp = vtkMatrix4x4::New();
-	vtkMatrix4x4 *vm = vtkMatrix4x4::New();
-	vtkMatrix4x4 *vmInit = sceneCam->GetModelViewTransformMatrix();
-	vmInit->Transpose();
-	imageZoomAndPan->Transpose();
-	vtkMatrix4x4::Multiply4x4(vmInit, scaletrans, tmp);
-	vtkMatrix4x4::Multiply4x4(tmp, imageZoomAndPan, vm);
-	vm->Transpose();
-	// Projection: 
-        // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
-	// The Z buffer that is passed from visit is in clip scape with z
-	// limits of -1 and 1. However, using VTK, the z limits are withing
-	// nearz and farz. So, the projection matrix from VTK is hijacked here
-	// and adjusted to be within -1 and 1 too.
-	// Same as in 
-	// avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
-	vtkMatrix4x4 *p = sceneCam->GetProjectionTransformMatrix
-	    (aspect,oldNearPlane, oldFarPlane);
-	double sceneSize[2];
-	if (!view.orthographic)
-	{
-	    p = sceneCam->GetProjectionTransformMatrix
-		(aspect, oldNearPlane, oldFarPlane);
-	    p->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
-			  (oldFarPlane-oldNearPlane));
-	    p->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
-			  (oldFarPlane-oldNearPlane));
-	    sceneSize[0] = 2.0 * oldNearPlane / p->GetElement(0, 0);
-	    sceneSize[1] = 2.0 * oldNearPlane / p->GetElement(1, 1);
-	}
-	else
-	{
-	    p = sceneCam->GetProjectionTransformMatrix
-		(aspect, oldNearPlane, oldFarPlane);
-	    p->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
-	    p->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
-			  (oldFarPlane-oldNearPlane));
-	    sceneSize[0] = 2.0 / p->GetElement(0, 0);
-	    sceneSize[1] = 2.0 / p->GetElement(1, 1);
-	}
-	// compute pvm matrix
-	vtkMatrix4x4::Multiply4x4(p,vm,pvm);
-	// cleanup
-	scaletrans->Delete();
-	imageZoomAndPan->Delete();
-	vmInit->Delete();
-	tmp->Delete();
-	vm->Delete();
-	p->Delete();
-	// get the full image extents of the volume
-	double depthExtents[2];
-	GetSpatialExtents(dbounds);
-	slivr::ProjectWorldToScreenCube
-	    (dbounds, screen[0], screen[1], 
-	     panPercentage, view.imageZoom, pvm,
-	     fullImageExtents, depthExtents);
-	// debug
-	ospout << "VAR: data bounds: " << std::endl
+	ospout << "[avrRayTracer] sceneSize: " 
+	       << sceneSize[0] << " " 
+	       << sceneSize[1] << std::endl;
+	ospout << "[avrRayTracer] model_to_screen_transform: " 
+	       << *model_to_screen_transform << std::endl;
+	ospout << "[avrRayTracer] screen: " 
+	       << screen[0] << " " << screen[1] << std::endl;
+	ospout << "[avrRayTracer] data bounds: " << std::endl
 	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
 	       << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
 	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl;
-	ospout << "VAR: full image extents: " << std::endl
-	       << fullImageExtents[0] << " "
-	       << fullImageExtents[1] << std::endl
-	       << fullImageExtents[2] << " "
-	       << fullImageExtents[3] << std::endl;
+	ospout << "[avrRayTracer] full image extents: " << std::endl
+	       << "\t" << fullImageExtents[0] << " "
+	       << "\t" << fullImageExtents[1] << std::endl
+	       << "\t" << fullImageExtents[2] << " "
+	       << "\t" << fullImageExtents[3] << std::endl;
 	//===================================================================//
 	// ospray stuffs
 	//===================================================================//
@@ -652,7 +687,7 @@ avtRayTracer::Execute(void)
 	    // -- multi-threading enabled
 	    ospray->InitOSP(osprayRefresh);
 	    // camera
-	    debug5 << "make ospray camera" << std::endl;
+	    ospout << "[avrRayTracer] make ospray camera" << std::endl;
 	    if (!view.orthographic)
 	    {
 		ospray->InitCamera(OSP_PERSPECTIVE);
@@ -666,7 +701,8 @@ avtRayTracer::Execute(void)
 		 sceneSize, aspect, view.viewAngle, view.imageZoom,
 		 view.imagePan, fullImageExtents, screen);
 	    // transfer function
-	    debug5  << "make ospray transfer function" << std::endl;
+	    ospout  << "[avrRayTracer] make ospray transfer function" 
+		    << std::endl;
 	    ospray->InitTransferFunction();
 	    ospray->SetTransferFunction
 		((OSPContext::OSPColor*)transferFn1D->GetTableFloat(), 
@@ -674,7 +710,7 @@ avtRayTracer::Execute(void)
 		 (float)transferFn1D->GetMin(),
 		 (float)transferFn1D->GetMax());
 	    // renderer
-	    debug5 << "make ospray renderer" << std::endl;
+	    ospout << "[avrRayTracer] make ospray renderer" << std::endl;
 	    ospray->InitRenderer();
 	    ospray->SetRenderer(lighting, materialProperties, viewDirection);
 	    // check memory
@@ -698,7 +734,7 @@ avtRayTracer::Execute(void)
 	extractor.SetImageZoom(view.imageZoom); 
 	extractor.SetRendererSampleRate(rendererSampleRate); 
 	extractor.SetDepthExtents(depthExtents);
-	extractor.SetMVPMatrix(pvm);
+	extractor.SetMVPMatrix(model_to_screen_transform);
 	extractor.SetFullImageExtents(fullImageExtents);
 	// sending ospray
 	extractor.SetOSPRayContext(ospray);
@@ -714,8 +750,6 @@ avtRayTracer::Execute(void)
 	extractor.setRGBBuffer  (opaqueImageData, screen[0],screen[1]);
 	int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
 	extractor.setBufferExtents(bufferScreenExtents);
-	//writeDepthBufferToPPM
-	//    ("opaqueImageZB", opaqueImageZB, screen[0], screen[1]);
     }
 
     //
@@ -732,7 +766,7 @@ avtRayTracer::Execute(void)
 
     // Qi debug
     slivr::CheckMemoryHere("avtRayTracer::Execute raytracing setup done");
-    
+
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
 
@@ -765,12 +799,6 @@ avtRayTracer::Execute(void)
 	{
 	    // SERIAL : Single Processor
 	    debug5 << "Serial Compositing!" << std::endl;
-
-	    // // test a different timer
-	    // std::chrono::time_point<std::chrono::system_clock> 
-	    // 	start_time, end_time;
-	    // std::chrono::duration<double> elapsed_seconds;
-	    // start_time = std::chrono::system_clock::now();
 
 	    // Get the metadata for all patches
             // contains the metadata to composite the image
@@ -816,43 +844,45 @@ avtRayTracer::Execute(void)
 	    	currData.imagePatch = NULL;
 	    	extractor.GetAndDelImgData /* do shallow copy inside */
 	    	    (currMeta.patchNumber, currData);
-
-		debug5 << "current patch size = " 
+		ospout << "[avtRayTracer] "
+		       << i << " depth " << currMeta.eye_z << std::endl
+		       << "current patch size = " 
 		       << currMeta.dims[0] << ", " 
-		       << currMeta.dims[1] << std::endl;
-		debug5 << "current patch starting" 
+		       << currMeta.dims[1] << std::endl
+		       << "current patch starting" 
 		       << " X = " << currMeta.screen_ll[0] 
-		       << " Y = " << currMeta.screen_ll[1] << std::endl;
-		debug5 << "current patch ending" 
+		       << " Y = " << currMeta.screen_ll[1] << std::endl
+		       << "current patch ending" 
 		       << " X = " << currMeta.screen_ur[0] 
 		       << " Y = " << currMeta.screen_ur[1] << std::endl;
-
+		// // bug happens before this
+		// WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/p"+ 
+		// 		std::to_string(i),
+		// 		currData.imagePatch, 
+		// 		currMeta.dims[0], currMeta.dims[1]);
 		int currExtents[4] = 
 		    {currMeta.screen_ll[0], currMeta.screen_ur[0], 
 		     currMeta.screen_ll[1], currMeta.screen_ur[1]};
 		imgComm.BlendBackToFront
 		    (currData.imagePatch, currExtents,
 		     composedData, fullImageExtents);
-
-	    	// Clean up data
-	    	if (currData.imagePatch != NULL) {
-	    	    debug5 << "Free patch data!" << std::endl;
-	    	    delete[] currData.imagePatch;
-	    	    debug5 << "Free patch data done!" << std::endl;
-	    	}
-	    	currData.imagePatch = NULL;
+		
+		// Clean up data
+		if (currData.imagePatch != NULL) {
+		    debug5 << "Free patch data!" << std::endl;
+		    delete[] currData.imagePatch;
+		    debug5 << "Free patch data done!" << std::endl;
+		}
+		currData.imagePatch = NULL;
 	    }
 
 	    debug5 << "Clear allImageMetaData" << std::endl;
 	    allPatchMeta.clear();
 	    allPatchData.clear();
 
-	    // // stop time
-	    // end_time = std::chrono::system_clock::now(); 
-	    // elapsed_seconds = end_time - start_time; 
-	    // std::cout << "[Single Thread] " 
-	    // 	  << elapsed_seconds.count()
-	    // 	  << " seconds to finish" << std::endl;
+	    // // bug happens before this
+	    // WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/composed",
+	    // 		    composedData, renderedWidth, renderedHeight);
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
@@ -877,8 +907,8 @@ avtRayTracer::Execute(void)
 	    //
 	    // Blend in with bounding box and other visit plots
 	    //
-	    vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
-	    vtkMatrix4x4::Invert(pvm, Inversepvm);
+	    vtkMatrix4x4 *screen_to_model_transform = vtkMatrix4x4::New();
+	    vtkMatrix4x4::Invert(model_to_screen_transform, screen_to_model_transform);
 
 	    int compositedImageWidth  = 
 		fullImageExtents[1] - fullImageExtents[0];
@@ -942,9 +972,9 @@ avtRayTracer::Execute(void)
 				     screen[0], screen[1],
 				     panPercentage, 
 				     view.imageZoom, 
-				     Inversepvm, worldCoordinates);
+				     screen_to_model_transform, worldCoordinates);
 				// unProject(_x, _y, _tempZ, worldCoordinates,
-				// 	  screen[0], screen[1], Inversepvm);
+				// 	  screen[0], screen[1], screen_to_model_transform);
 
 				if (checkInBounds(dbounds, worldCoordinates))
 				{
@@ -1037,8 +1067,8 @@ avtRayTracer::Execute(void)
 	    }
 
 	    // clean up
-	    Inversepvm->Delete();
-	    pvm->Delete();
+	    screen_to_model_transform->Delete();
+	    model_to_screen_transform->Delete();
 
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
@@ -1164,8 +1194,8 @@ avtRayTracer::Execute(void)
 		//
 		// Blend in with bounding box and other visit plots
 		//
-		vtkMatrix4x4 *Inversepvm = vtkMatrix4x4::New();
-		vtkMatrix4x4::Invert(pvm,Inversepvm);
+		vtkMatrix4x4 *screen_to_model_transform = vtkMatrix4x4::New();
+		vtkMatrix4x4::Invert(model_to_screen_transform,screen_to_model_transform);
 
 		int compositedImageWidth  = imgComm.finalImageExtents[1] 
 		    - imgComm.finalImageExtents[0];
@@ -1234,8 +1264,8 @@ avtRayTracer::Execute(void)
 					 screen[0], screen[1],
 					 panPercentage, 
 					 view.imageZoom, 
-					 Inversepvm, worldCoordinates);
-				    //unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], Inversepvm);
+					 screen_to_model_transform, worldCoordinates);
+				    //unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], screen_to_model_transform);
 
 				    if ( checkInBounds(dbounds, worldCoordinates) )
 				    {
@@ -1317,7 +1347,7 @@ avtRayTracer::Execute(void)
 		}
 		img->Delete();
 		SetOutput(whole_image);
-		Inversepvm->Delete();
+		screen_to_model_transform->Delete();
 	    }
 
 	    debug5 << "RC SLIVR: Done!" << std::endl;
@@ -1328,7 +1358,7 @@ avtRayTracer::Execute(void)
 		delete []composedData;
 	    if (localPatchesDepth != NULL)
 		delete []localPatchesDepth;
-	    pvm->Delete();
+	    model_to_screen_transform->Delete();
 	    	    
 	}
 

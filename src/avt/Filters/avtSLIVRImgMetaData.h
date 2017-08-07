@@ -70,6 +70,17 @@ namespace slivr
 	 const double panPercentage[2], const double imageZoom,
 	 vtkMatrix4x4 *imvp, double worldCoord[3]);
 
+    inline void ProjectScreenToWorld
+	(const int x, const int y, const double z,
+	 const int screenWidth, const int screenHeight, 
+	 const double panPercentage[2], const double imageZoom,
+	 vtkMatrix4x4 *imvp, double worldCoord[3]) 
+    {
+	int screen_coord[2] = {x, y};
+	slivr::ProjectScreenToWorld(screen_coord, z, screenWidth, screenHeight, 
+				    panPercentage, imageZoom, imvp, worldCoord);
+    }
+
     void ProjectWorldToScreenCube
 	(const double cube[6], const int screenWidth, const int screenHeight, 
 	 const double panPercentage[2], const double imageZoom, 

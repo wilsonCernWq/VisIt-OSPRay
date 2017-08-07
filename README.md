@@ -27,6 +27,15 @@ This is an on-going project, lease email me for more details if you want to use 
 ## Build
 
 ### Building OSPRay
+Before the VisIt-OSPRay module is completely pushed into VisIt's official repository, you
+need to build OSPRay yourself first. There is a bash [script](https://gist.github.com/wilsonCernWq/48a6aacd8c42ba45aae2b801a881d9e0#file-make_ospray-sh-L1) 
+which should be able to build ospray with VisIt module automatically.
+If it doesn't work, you can clone the [ospray](https://github.com/wilsonCernWq/ospray) from my github,
+and build it as normal ospray. You might need to add an additional cmake flag `-DOSPRAY_MODULE_VISIT=ON`
+in order to build the visit module. 
+
+There is a different building script locates in the `ospray` repository called `premake.sh`. You can read
+it or run `./premake.sh --help` to learn its usage.
 
 ### Building VisIt
 
