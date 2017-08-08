@@ -425,7 +425,7 @@ void OSPContext::SetCamera(const double campos[3],
     }
     else if (cameraType == OSP_ORTHOGRAPHIC) {
 	ospSet1f(camera, "aspect", aspect);
-	ospSet1f(camera, "height", sceneSize[1] / zoomratio);
+	ospSet1f(camera, "height", sceneSize[1]);
     }
     r_panx = imagepan[0] * zoomratio;
     r_pany = imagepan[1] * zoomratio;
