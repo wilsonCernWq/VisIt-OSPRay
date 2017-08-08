@@ -139,9 +139,10 @@ struct VolumeInfo
     OSPDataType         voxelDataType   = OSP_VOID_PTR;
     OSPData             voxelData       = nullptr;
     size_t              voxelSize       = 0;
-    //OSPData             ghostData       = nullptr;
-    //size_t              ghostSize       = 0;
-
+    // OSPData          ghostData       = nullptr;
+    // size_t           ghostSize       = 0;
+    
+    // parameters for volume
     float               samplingRate = -1.0f;
     vec3f               regionStart;
     vec3f               regionStop;
@@ -149,8 +150,7 @@ struct VolumeInfo
     vec3i               regionSize;
     vec3f               regionUpperClip;
     vec3f               regionLowerClip;
-    vec3f               regionScaling;
-
+    vec3f               regionScaling;    
     bool                lightingFlag = false;
     float               specularColor = 0.0f;
     float               specularNs    = 0.0f;
@@ -257,8 +257,7 @@ struct OSPContext
 	float A;
     };
 
-    bool refreshData = false;
-
+    // ospray objects
     std::vector<VolumeInfo> volumePatch;
     OSPRenderer             renderer        = nullptr;
     unsigned char           rendererType    = OSP_INVALID;
@@ -267,10 +266,12 @@ struct OSPContext
     OSPTransferFunction     transferfcn     = nullptr;
     unsigned char           transferfcnType = OSP_INVALID;
 
+    // class parameters
+    bool refreshData = false;
     vec3f regionScaling = vec3f{1.0f, 1.0f, 1.0f};
-
     float r_panx;
     float r_pany;
+    float zoom;
     int   screenSize[2];
     bool  enabledOSPRay = false;
     bool  enabledDVR = false; // Distributed Volume Renderer
@@ -289,7 +290,9 @@ struct OSPContext
     bool IsEnabled() { return enabledOSPRay; }
     bool IsDVRMode() { return enabledDVR; }
     void SetDVRMode(bool mode) { enabledDVR = mode; } 
-    void SetScaling(vec3f s) { regionScaling = s; }
+    void SetScaling(double s[3]) { 
+	regionScaling = vec3f{(float)s[0], (float)s[1], (float)s[2]}; 
+    }
 
     // patch 
     void InitOSP(bool flag, int numThreads = 0);

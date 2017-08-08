@@ -407,12 +407,13 @@ void OSPContext::SetCamera(const double campos[3],
 			   const int imageExtents[4],
 			   const int screenExtents[2]) 
 {
-    float current[3];
-    for (int i = 0; i < 3; ++i) {
-	current[i] = (campos[i] - camfocus[i]) / zoomratio + camfocus[i];
-	//current[i] = campos[i];
-    }
-    const ospcommon::vec3f camPos(current[0], current[1], current[2]);
+    // float current[3];
+    // for (int i = 0; i < 3; ++i) {
+    // 	current[i] = (campos[i] - camfocus[i]) / zoomratio + camfocus[i];
+    // 	//current[i] = campos[i];
+    // }
+    // const ospcommon::vec3f camPos(current[0], current[1], current[2]);
+    const ospcommon::vec3f camPos(campos[0], campos[1], campos[2]);
     const ospcommon::vec3f camDir(camdir[0], camdir[1], camdir[2]);
     const ospcommon::vec3f camUp (camup[0], camup[1], camup[2]);
     ospSetVec3f(camera, "pos", (osp::vec3f&)camPos);
@@ -432,7 +433,7 @@ void OSPContext::SetCamera(const double campos[3],
 		       imageExtents[2], imageExtents[3]);
     screenSize[0] = screenExtents[0];
     screenSize[1] = screenExtents[1];
-
+    zoom = zoomratio;
 }
 
 void OSPContext::SetSubCamera(float xMin, float xMax, float yMin, float yMax) 
@@ -441,6 +442,10 @@ void OSPContext::SetSubCamera(float xMin, float xMax, float yMin, float yMax)
     float r_yl = yMin/screenSize[1] - r_pany; 
     float r_xu = xMax/screenSize[0] - r_panx;
     float r_yu = yMax/screenSize[1] - r_pany;	
+    r_xl = (r_xl - 0.5f) / zoom + 0.5f;
+    r_yl = (r_yl - 0.5f) / zoom + 0.5f;
+    r_xu = (r_xu - 0.5f) / zoom + 0.5f;
+    r_yu = (r_yu - 0.5f) / zoom + 0.5f;
     ospSetVec2f(camera, "imageStart", osp::vec2f{r_xl, r_yl});
     ospSetVec2f(camera, "imageEnd",   osp::vec2f{r_xu, r_yu});
     ospCommit(camera);
