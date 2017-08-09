@@ -203,8 +203,8 @@ struct VolumeInfo
 		   double volumePBox[6], 
 		   double volumeBBox[6],
 		   bool cellDataFormat);
-    void SetSamplingRate(float r);
-    void SetLighting(bool lighting, float Ks, float Ns);
+    // void SetSamplingRate(float r);
+    // void SetLighting(bool lighting, float Ks, float Ns);
     void CleanVolume() {	
 	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
 	if (voxelData != nullptr) { 

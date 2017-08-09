@@ -230,19 +230,19 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     ospCommit(volume);
     //visitTimer->StopTimer(volumeInitIndex, "Commit OSPRay patch");
 }
-void VolumeInfo::SetSamplingRate(float r) {
-    // ospSet1f(volume, "samplingRate", r);
-    // ospCommit(volume);
-}
-void VolumeInfo::SetLighting(bool lighting, float Ks, float Ns) {
-    // specularColor = Ks;
-    // specularNs    = Ns;
-    // lightingFlag  = lighting;
-    // ospSetVec3f(volume, "Ks", osp::vec3f{Ks, Ks, Ks});
-    // ospSet1f(volume, "Ns", Ns);
-    // ospSet1i(volume, "gradientShadingEnabled", (int)lighting);
-    // ospCommit(volume);
-}
+// void VolumeInfo::SetSamplingRate(float r) {
+//     // ospSet1f(volume, "samplingRate", r);
+//     // ospCommit(volume);
+// }
+// void VolumeInfo::SetLighting(bool lighting, float Ks, float Ns) {
+//     // specularColor = Ks;
+//     // specularNs    = Ns;
+//     // lightingFlag  = lighting;
+//     // ospSetVec3f(volume, "Ks", osp::vec3f{Ks, Ks, Ks});
+//     // ospSet1f(volume, "Ns", Ns);
+//     // ospSet1i(volume, "gradientShadingEnabled", (int)lighting);
+//     // ospCommit(volume);
+// }
 
 // framebuffer component     
 void VolumeInfo::InitFB(unsigned int width, unsigned int height) {
@@ -351,12 +351,12 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	ospSet1i(renderer, "shadowsEnabled", 1);
 	// ambient light
 	OSPLight aLight = ospNewLight(renderer, "ambient");
-	ospSet1f(aLight, "intensity", 1.0f);
+	ospSet1f(aLight, "intensity", (float)mtl[0]);
 	ospSet1i(aLight, "isVisible", 0);
 	ospCommit(aLight);
 	// directional light
 	OSPLight dLight = ospNewLight(renderer, "distant");
-	ospSet1f(dLight, "intensity", (float)(5.f * mtl[1] * M_PI));
+	ospSet1f(dLight, "intensity", (float)mtl[1]);
 	ospSet1i(dLight, "isVisible", 0);
 	ospSetVec3f(dLight, "direction", 
 		    osp::vec3f{(float)dir[0],(float)dir[1],(float)dir[2]});
