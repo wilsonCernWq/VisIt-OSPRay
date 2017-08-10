@@ -46,7 +46,6 @@
 #endif
 #include <time.h>
 #include <vector>
-#include <chrono>
 
 #include <avtRayTracer.h>
 #include <visit-config.h>

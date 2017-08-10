@@ -73,10 +73,12 @@ enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 //
 // ****************************************************************************
 
-avtSLIVRImgCommunicator::avtSLIVRImgCommunicator() : 
-    intermediateImageExtents{0},
-    intermediateImageBBox{0}
+avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 {
+    intermediateImageExtents[0] = intermediateImageExtents[1] = 0.0;
+    intermediateImageExtents[2] = intermediateImageExtents[3] = 0.0;
+    intermediateImageBBox[0] = intermediateImageBBox[1] = 0.0;
+    intermediateImageBBox[2] = intermediateImageBBox[3] = 0.0;
 #ifdef PARALLEL
     MPI_Comm_size(VISIT_MPI_COMM, &numProcs);
     MPI_Comm_rank(VISIT_MPI_COMM, &myRank);
@@ -591,7 +593,8 @@ avtSLIVRImgCommunicator::SerialDirectSend
         int localIndex = 0;
 
         // Compositing
-        for (auto it = sortedPatches.begin(); it != sortedPatches.end(); ++it)
+        for (std::multimap<float,int>::iterator it = sortedPatches.begin(); 
+	     it != sortedPatches.end(); ++it)
         {
             int rank = (*it).second;
             if (rank != myRank)

@@ -51,9 +51,6 @@
 #include <avtSLIVROSPRayFilter.h>
 #include <DebugStream.h>
 
-#include "ospray/ospray.h"
-#include "ospray/ospcommon/vec.h"
-
 #include <vtkMatrix3x3.h>
 #include <vtkMatrix4x4.h>
 #include <vtkCamera.h>
