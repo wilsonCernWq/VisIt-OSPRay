@@ -710,7 +710,7 @@ OPTION(VISIT_DISABLE_SELECT "Disable use of the select() function" OFF)
 OPTION(VISIT_USE_NOSPIN_BCAST "Use VisIt's no-spin Bcast in parallel" ON)
 OPTION(VISIT_INSTALL_THIRD_PARTY "Install VisIt's 3rd party I/O libs and includes to permit plugin development" OFF)
 OPTION(VISIT_NOLINK_MPI_WITH_LIBRARIES "Do not link MPI with VisIt's parallel shared libraries; just with executables" OFF)
-OPTION(VISIT_CREATE_SOCKET_RELAY_EXECUTABLE "Create a separate executable that forwards VisIt's socket connection between engine and component launcher" OFF)
+OPTION(VISIT_CREATE_SOCKET_RELAY_EXECUTABLE "Create a separate executable that forwards VisIt's socket connection between engine and component launcher" ON)
 OPTION(VISIT_RPATH_RELATIVE_TO_EXECUTABLE_PATH "Install rpath relative to executable location using \$ORIGIN tag" OFF)
 OPTION(VISIT_FORTRAN "Enable compilation of Fortran example progams" OFF)
 OPTION(VISIT_DATA_MANUAL_EXAMPLES "Build Getting Data Into VisIt examples" OFF)
@@ -1376,7 +1376,7 @@ IF(NOT VISIT_BUILD_MINIMAL_PLUGINS OR VISIT_SELECTED_DATABASE_PLUGINS)
     INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindUintah.cmake)
 
     # Configure PIDX support.
-    # INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindPIDX.cmake)
+    INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindPIDX.cmake)
 
     # Configure Visus support.
     INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindVisus.cmake)
@@ -1589,19 +1589,6 @@ IF(VISIT_PARALLEL)
         MESSAGE(STATUS "    VISIT_PARALLEL_FORTRAN_LINKER_FLAGS = ${VISIT_PARALLEL_FORTRAN_LINKER_FLAGS}")
         MESSAGE(STATUS "    VISIT_PARALLEL_FORTRAN_LIBS = ${VISIT_PARALLEL_FORTRAN_LIBS}")
     ENDIF(VISIT_FORTRAN AND VISIT_PARALLEL_FORTRAN_LIBS)
-
-    # modified by Qi
-    # PIDX module work only with visit parallel
-    IF(NOT VISIT_BUILD_MINIMAL_PLUGINS OR VISIT_SELECTED_DATABASE_PLUGINS)
-
-      # Configure PIDX support.
-      INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindPIDX.cmake)
-      # IF(PIDX_FOUND)
-      #   SET(HAVE_LIBPIDX 1)
-      # ENDIF(PIDX_FOUND)
-
-    ENDIF()
-
 ELSE(VISIT_PARALLEL)
     MESSAGE(STATUS "Serial version of VisIt")
 ENDIF(VISIT_PARALLEL)

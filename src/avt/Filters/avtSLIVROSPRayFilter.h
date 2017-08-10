@@ -40,30 +40,22 @@
 #define AVT_OSPRAY_FILTER_H
 
 #include <iostream>
+#include <cmath>
+#include <cstdlib>
 #include <string>
 #include <vector>
-#include <cmath>
 
 #include <vtkType.h>
 #include <DebugStream.h>
 
 #ifdef VISIT_OSPRAY
 # include "ospray/ospray.h"
-# include "ospray/ospcommon/vec.h"
-# include "ospray/ospcommon/math.h"
-# include "ospray/ospcommon/common.h"
 # define OSP_PERSPECTIVE              1
 # define OSP_ORTHOGRAPHIC             2
 # define OSP_BLOCK_BRICKED_VOLUME     3
 # define OSP_SHARED_STRUCTURED_VOLUME 4
 # define OSP_INVALID                  5
 # define OSP_VALID                    6
-typedef ospcommon::vec2f vec2f;
-typedef ospcommon::vec2i vec2i;
-typedef ospcommon::vec3f vec3f;
-typedef ospcommon::vec3i vec3i;
-typedef ospcommon::vec4f vec4f;
-typedef ospcommon::vec4i vec4i;
 #endif
 
 namespace slivr {
@@ -78,18 +70,21 @@ namespace slivr {
 #ifndef VISIT_OSPRAY
 	return false;
 #else
-	auto OSPRAY_VERBOSE_PAIR = 
-	    ospcommon::getEnvVar<int>("OSPRAY_VERBOSE");
-	if (OSPRAY_VERBOSE_PAIR.first) {
-	    if (OSPRAY_VERBOSE_PAIR.second > 0) {
+	const char* env_verbose = std::getenv("OSPRAY_VERBOSE");
+	if (env_verbose) {
+	    if (atoi(env_verbose) > 0) {
 		slivr::osp_out = &std::cout;
 		slivr::osp_err = &std::cerr;
+		return true;
 	    }
-	    return OSPRAY_VERBOSE_PAIR.second > 0;
-	} else {
+	    else {
+		return false;
+	    }
+	}
+	else {
 	    return false;
 	}
-#endif//VISIT_OSPRAY
+#endif
     }
     //! this function has to be inline, otherwise we need to 
     //! modify library linkages
@@ -117,51 +112,87 @@ namespace slivr {
 //
 // ****************************************************************************
 // this struct will contain informations related to one volume
-struct VolumeInfo 
-{
-    // meta info
-    int                 patchId = -1;
-    bool                isComplete = false;
-
-    // object references (shouldnt be deleted in this struct)
-    OSPTransferFunction transferfcn = nullptr;
-    OSPRenderer         renderer    = nullptr;
-
+#ifdef VISIT_OSPRAY
+class VolumeInfo 
+{    
+ private:
+    // object references 
+    // (those objects are created and handled by other parts of the program)
+    // (shouldnt be deleted in this struct)
+    OSPTransferFunction transferfcn;
+    OSPRenderer         renderer;
+    
     // objects owned by the struct
-    OSPModel            world           = nullptr;
-    unsigned char       worldType       = OSP_INVALID;
-    OSPFrameBuffer      framebuffer     = nullptr;
-    float              *framebufferData = nullptr;
-    OSPVolume           volume          = nullptr;
-    unsigned char       volumeType      = OSP_INVALID;
-    void*               dataPtr         = nullptr;
-    std::string         dataType        = "";
-    OSPDataType         voxelDataType   = OSP_VOID_PTR;
-    OSPData             voxelData       = nullptr;
-    size_t              voxelSize       = 0;
-    //OSPData             ghostData       = nullptr;
-    //size_t              ghostSize       = 0;
+    // -- ospray model ---
+    OSPModel            world;
+    unsigned char       worldType;
+    // --- ospray framebuffer ---
+    OSPFrameBuffer      framebuffer;
+    float              *framebufferData;
+    // --- ospray volume ---
+    OSPVolume           volume;
+    unsigned char       volumeType;
+    // --- ospray data ---
+    OSPDataType         voxelDataType;
+    OSPData             voxelData;
+    size_t              voxelSize;
+    void*               dataPtr;
+    std::string         dataType;
 
-    float               samplingRate = -1.0f;
-    vec3f               regionStart;
-    vec3f               regionStop;
-    vec3f               regionSpacing;
-    vec3i               regionSize;
-    vec3f               regionUpperClip;
-    vec3f               regionLowerClip;
-    vec3f               regionScaling;
+    // metadata for volume
+    int                 patchId;       // volume patch id
+    bool                isComplete; // check if this volume is initialized
+    bool                lightingFlag;
+    float               specularColor;
+    float               specularNs;
+    float               samplingRate;
 
-    bool                lightingFlag = false;
-    float               specularColor = 0.0f;
-    float               specularNs    = 0.0f;
-
+    // geometric parameters for volume
+    osp::vec3i          regionSize;
+    osp::vec3f          regionStart;
+    osp::vec3f          regionStop;
+    osp::vec3f          regionSpacing;
+    osp::vec3f          regionUpperClip;
+    osp::vec3f          regionLowerClip;
+    osp::vec3f          regionScaling;
+    
+ public:
     // constructor
-    VolumeInfo(int id) : patchId(id) {
-	regionScaling = vec3f{1.0f,1.0f,1.0f};
+    VolumeInfo(int id) {
+	// object references 
+	transferfcn = NULL;
+	renderer    = NULL;
+	// objects owned by the struct
+	world           = NULL;
+	worldType       = OSP_INVALID;
+	framebuffer     = NULL;
+	framebufferData = NULL;    
+	volume          = NULL;
+	volumeType      = OSP_INVALID;
+	voxelDataType   = OSP_VOID_PTR;
+	voxelData       = NULL;
+	voxelSize       = 0;
+	dataPtr         = NULL;
+	dataType        = "";
+	// metadata for volume
+	patchId = id;    
+	isComplete = false; 
+	lightingFlag = false;
+	specularColor = 0.0f;
+	specularNs    = 0.0f;
+	samplingRate = -1.0f;
+	// geometric parameters for volume
+	regionSize.x  = regionSize.y  = regionSize.z  = 0;
+	regionStart.x = regionStart.y = regionStart.z = 0.0f;
+	regionStop.x  = regionStop.y  = regionStop.z  = 0.0f;
+	regionSpacing.x   = regionSpacing.y   = regionSpacing.z   = 0.0f;
+	regionUpperClip.x = regionUpperClip.y = regionUpperClip.z = 0.0f;
+	regionLowerClip.x = regionLowerClip.y = regionLowerClip.z = 0.0f;
+	regionScaling.x   = regionScaling.y   = regionScaling.z   = 1.0f;
     }
-    // destructor
-    ~VolumeInfo() { Clean(); }
 
+    // destructor
+    ~VolumeInfo() { Clean(); }    
     void Clean() {
 	CleanFBData();
 	CleanFB();
@@ -170,26 +201,24 @@ struct VolumeInfo
     }
     
     // other function
-    void SetScaling(vec3f s) { regionScaling = s; }
-    void Set
-    (int type, void *ptr, unsigned char* ghost,
-     double *X, double *Y, double *Z, int nX, int nY, int nZ,
-     double volumePBox[6], double volumeBBox[6], double mtl[4],
-     float sr, bool lighting, bool cellDataFormat);
-
+    void Set(int type, void *ptr, unsigned char* ghost,
+	     double *X, double *Y, double *Z, int nX, int nY, int nZ,
+	     double volumePBox[6], double volumeBBox[6], double mtl[4],
+	     float sr, bool lighting, bool cellDataFormat);
     bool GetCompleteFlag() { return isComplete; }
     void SetCompleteFlag(bool f) { isComplete = f; } 
-    void SetTransferFunction(OSPTransferFunction tf) { transferfcn = tf; }
-    void SetRenderer(OSPRenderer r) { renderer = r; }
+    void SetTransferFunction(const OSPTransferFunction& tf) { transferfcn = tf; }
+    void SetRenderer(const OSPRenderer& r) { renderer = r; }
+    void SetScaling(const osp::vec3f& s) { regionScaling = s; }
 
     // ospModel component
     OSPModel GetWorld() { return world; }
     void InitWorld();
     void SetWorld();
     void CleanWorld() {
-	if (world != nullptr) {	    
+	if (world != NULL) {	    
 	    ospRelease(world);
-	    world = nullptr;
+	    world = NULL;
 	}
 	worldType = OSP_INVALID;
     }
@@ -203,18 +232,12 @@ struct VolumeInfo
 		   double volumePBox[6], 
 		   double volumeBBox[6],
 		   bool cellDataFormat);
-    void SetSamplingRate(float r);
-    void SetLighting(bool lighting, float Ks, float Ns);
     void CleanVolume() {	
-	if (volume != nullptr) { ospRelease(volume); volume = nullptr; }
-	if (voxelData != nullptr) { 
+	if (volume != NULL) { ospRelease(volume); volume = NULL; }
+	if (voxelData != NULL) { 
 	    ospRelease(voxelData);
-	    voxelData = nullptr; 
+	    voxelData = NULL; 
 	}
-	// if (ghostData != nullptr) {
-	//     ospRelease(ghostData);
-	//     ghostData = nullptr; 
-	// }
 	volumeType = OSP_INVALID;
     }
 
@@ -223,15 +246,15 @@ struct VolumeInfo
     void RenderFB();
     float* GetFBData();
     void CleanFBData() {
-	if (framebufferData != nullptr) { 
+	if (framebufferData != NULL) { 
 	    ospUnmapFrameBuffer(framebufferData, framebuffer); 
-	    framebufferData = nullptr;
+	    framebufferData = NULL;
 	}
     }
     void CleanFB() {	   
-	if (framebuffer != nullptr) { 
+	if (framebuffer != NULL) { 
 	    ospFreeFrameBuffer(framebuffer); 	    
-	    framebuffer = nullptr;
+	    framebuffer = NULL;
 	}	
     }
 
@@ -247,8 +270,9 @@ struct VolumeInfo
 //  Creation:   
 //
 // ****************************************************************************
-struct OSPContext
+class OSPContext
 {
+ public:
     struct OSPColor
     {
 	float R;
@@ -256,40 +280,63 @@ struct OSPContext
 	float B;
 	float A;
     };
-
-    bool refreshData = false;
-
+ private:
+    // ospray objects
     std::vector<VolumeInfo> volumePatch;
-    OSPRenderer             renderer        = nullptr;
-    unsigned char           rendererType    = OSP_INVALID;
-    OSPCamera               camera          = nullptr;
-    unsigned char           cameraType      = OSP_INVALID;
-    OSPTransferFunction     transferfcn     = nullptr;
-    unsigned char           transferfcnType = OSP_INVALID;
+    OSPRenderer             renderer;
+    unsigned char           rendererType;
+    OSPCamera               camera;
+    unsigned char           cameraType;
+    OSPTransferFunction     transferfcn;
+    unsigned char           transferfcnType;
 
-    vec3f regionScaling = vec3f{1.0f, 1.0f, 1.0f};
-
+    // class parameters
+    bool refreshData;
+    osp::vec3f regionScaling;
     float r_panx;
     float r_pany;
+    float zoom;
     int   screenSize[2];
-    bool  enabledOSPRay = false;
-    bool  enabledDVR = false; // Distributed Volume Renderer
-
+    bool  enabledOSPRay;
+    bool  enabledDVR; // (not used yet) Distributed Volume Renderer
+ public:
+    OSPContext() {
+	// ospray objects
+	renderer        = NULL;
+	rendererType    = OSP_INVALID;
+	camera          = NULL;
+	cameraType      = OSP_INVALID;
+	transferfcn     = NULL;
+	transferfcnType = OSP_INVALID;
+	// class parameters
+	refreshData = false;
+	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
+	r_panx = 0.0f;
+	r_pany = 0.0f;
+	zoom = 1.0f;
+	screenSize[0] = screenSize[1] = 0.0f;
+	enabledOSPRay = false;
+	enabledDVR = false; // Distributed Volume Renderer
+    }
     // expose this in header
     // because this will be called in other libraries
     ~OSPContext() {	
 	// clean stuffs
 	volumePatch.clear();
-	if (camera      != nullptr) { ospRelease(camera); }
-	if (renderer    != nullptr) { ospRelease(renderer); }
-	if (transferfcn != nullptr) { ospRelease(transferfcn); }
+	if (camera      != NULL) { ospRelease(camera); }
+	if (renderer    != NULL) { ospRelease(renderer); }
+	if (transferfcn != NULL) { ospRelease(transferfcn); }
     }
 
     // flags
     bool IsEnabled() { return enabledOSPRay; }
     bool IsDVRMode() { return enabledDVR; }
     void SetDVRMode(bool mode) { enabledDVR = mode; } 
-    void SetScaling(vec3f s) { regionScaling = s; }
+    void SetScaling(double s[3]) { 
+	regionScaling.x = (float)s[0];
+	regionScaling.y = (float)s[1];
+	regionScaling.z = (float)s[2]; 
+    }
 
     // patch 
     void InitOSP(bool flag, int numThreads = 0);
@@ -315,8 +362,8 @@ struct OSPContext
     void SetTransferFunction
     (const OSPColor* table, const unsigned int size, 
      const float datamin, const float datamax);
-
 };
+#endif//VISIT_OSPRAY
 
 // ****************************************************************************
 //  Namespace:  slivr

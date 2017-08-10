@@ -40,7 +40,7 @@ VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/impi/2017.2.174/bin64/mpicc T
 VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
 
 ##
-## OSPRa
+## OSPRay
 ## -- VTK 6.1.0 forces to use python 2.7.6, need to manually change it
 ## -- recommend to remove tbb libraries inside embree and ospray binary folder
 ##                                                                             

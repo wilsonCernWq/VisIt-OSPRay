@@ -29,7 +29,6 @@ avtIDXOptions.C
 
 INCLUDE_DIRECTORIES(
 ${CMAKE_CURRENT_SOURCE_DIR}
-${PIDX_INCLUDE_DIR}
 ${VISIT_INCLUDE_DIR}/avt/View
 ${VISIT_COMMON_INCLUDES}
 ${VISIT_INCLUDE_DIR}/avt/DBAtts/MetaData
@@ -54,6 +53,27 @@ ${VISIT_INCLUDE_DIR}/visit_vtk/lightweight
 ${EAVL_INCLUDE_DIR} 
 ${VTK_INCLUDE_DIRS} 
 )
+
+#---- Set PIDX ----
+# Read pidx_config.h to see if we need to link MPI
+FILE(STRINGS "${PIDX_INCLUDE_DIR}/PIDX_config.h" config)
+LIST(FIND config "#define PIDX_HAVE_MPI 1" have_mpi)
+IF (have_mpi GREATER 0)
+  # Try to find MPI only if MPI is not defined before
+  # To avoid MPI compilation error
+  IF (NOT MPI_C_INCLUDE_PATH)
+    FIND_PACKAGE(MPI REQUIRED)
+  ENDIF ()
+  IF (MPI_C_INCLUDE_PATH)
+    SET(PIDX_INCLUDE_DIRS ${PIDX_INCLUDE_DIRS} ${MPI_C_INCLUDE_PATH})
+    SET(PIDX_MPI_LIBS ${MPI_C_LIBRARIES})
+  ELSE()
+    MESSAGE("PIDX was configured with MPI support, but we could not locate MPI on your system!")
+  ENDIF()
+ENDIF()
+SET(PIDX_LIBRARIES ${PIDX_LIBRARIES} ${PIDX_MPI_LIBS})
+INCLUDE_DIRECTORIES(${PIDX_INCLUDE_DIRS})
+#---- done PIDX ----
 
 LINK_DIRECTORIES(${VISIT_LIBRARY_DIR} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_DIRS} ${PIDX_LIBRARY_DIR})
 

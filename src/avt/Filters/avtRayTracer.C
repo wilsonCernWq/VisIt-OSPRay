@@ -46,7 +46,6 @@
 #endif
 #include <time.h>
 #include <vector>
-#include <chrono>
 
 #include <avtRayTracer.h>
 #include <visit-config.h>
@@ -516,12 +515,13 @@ avtRayTracer::Execute(void)
 	vtkCamera *sceneCam = vtkCamera::New();
 	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
 	{ 
-	    double current[3];
-	    for (int i = 0; i < 3; ++i) {
-		current[i] = (view.camera[i] - view.focus[i]) / 
-		    view.imageZoom + view.focus[i];
-	    }
-	    sceneCam->SetPosition(current[0],current[1],current[2]);
+	    // double current[3];
+	    // for (int i = 0; i < 3; ++i) {
+	    // 	current[i] = (view.camera[i] - view.focus[i]) / 
+	    // 	    view.imageZoom + view.focus[i];
+	    // }
+	    // sceneCam->SetPosition(current[0],current[1],current[2]);
+	    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
 	}
 	else {
 	    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
@@ -542,18 +542,17 @@ avtRayTracer::Execute(void)
 	matScale->Identity(); 
 	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
 	{ 
+	    // will be setted later
 	}
 	else 
 	{
-	    matScale->SetElement(0, 0, scale[0] /* view.imageZoom*/); 
-	    matScale->SetElement(1, 1, scale[1] /* view.imageZoom*/);
+	    matScale->SetElement(0, 0, scale[0]); 
+	    matScale->SetElement(1, 1, scale[1]);
 	    matScale->SetElement(2, 2, scale[2]);
 	}
 	// Scale + Model + View Matrix
 	vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
 	vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
-	//matViewModel->Transpose();
-	//vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
 	vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
 	matViewModel->Delete();
 	matScale->Delete();
@@ -568,6 +567,11 @@ avtRayTracer::Execute(void)
 	    	matZoom->SetElement(0, 0, view.imageZoom); 
 	    	matZoom->SetElement(1, 1, view.imageZoom);
 	    }
+	    else 
+	    {
+	    	matZoom->SetElement(0, 0, view.imageZoom); 
+	    	matZoom->SetElement(1, 1, view.imageZoom);
+	    }
 	}
 	else 
 	{
@@ -575,9 +579,6 @@ avtRayTracer::Execute(void)
 	    matZoom->SetElement(1, 1, view.imageZoom);
 	}
 	vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, matZoomViewModelScale);
-	//matZoom->Transpose();
-	//vtkMatrix4x4::Multiply4x4(matViewModelScale, matZoom, matZoomViewModelScale);
-	//matZoomViewModelScale->Transpose();
 	matViewModelScale->Delete();
 	matZoom->Delete();
 	// Projection: 
@@ -593,8 +594,6 @@ avtRayTracer::Execute(void)
 	double sceneSize[2];
 	if (!view.orthographic)
 	{
-	    // matProj = sceneCam->GetProjectionTransformMatrix
-	    // 	(aspect, oldNearPlane, oldFarPlane);
 	    matProj->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
 				(oldFarPlane-oldNearPlane));
 	    matProj->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
@@ -604,8 +603,6 @@ avtRayTracer::Execute(void)
 	}
 	else
 	{
-	    // matProj = sceneCam->GetProjectionTransformMatrix
-	    // 	(aspect, oldNearPlane, oldFarPlane);
 	    matProj->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
 	    matProj->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
 				(oldFarPlane-oldNearPlane));
@@ -650,6 +647,11 @@ avtRayTracer::Execute(void)
 	       << "  eyeAngle:  " << view.eyeAngle  << std::endl
 	       << "  parallelScale: " << view.parallelScale  << std::endl
 	       << "  setScale: " << view.setScale << std::endl
+	       << "  scale:    " 
+	       << scale[0] << " " 
+	       << scale[1] << " " 
+	       << scale[2] << " " 
+	       << std::endl
 	       << "  nearPlane: " << view.nearPlane << std::endl
 	       << "  farPlane:  " << view.farPlane  << std::endl
 	       << "  imagePan[0]: " << view.imagePan[0] << std::endl 
@@ -700,6 +702,7 @@ avtRayTracer::Execute(void)
 		(view.camera,view.focus, view.viewUp, viewDirection,
 		 sceneSize, aspect, view.viewAngle, view.imageZoom,
 		 view.imagePan, fullImageExtents, screen);
+	    ospray->SetScaling(scale);
 	    // transfer function
 	    ospout  << "[avrRayTracer] make ospray transfer function" 
 		    << std::endl;

@@ -81,24 +81,12 @@ VolumeInfo::Set
 	SetVolume(type, ptr, ghost, X, Y, Z, nX, nY, nZ,
 		  volumePBox, volumeBBox, cellDataFormat); 
     }
-    // if (samplingRate != sr) {
-    // 	samplingRate = sr;
-    // 	SetSamplingRate(samplingRate);
-    // }
-    // if (lighting != lightingFlag || 
-    // 	(float)mtl[2] != specularColor ||
-    // 	(float)mtl[3] != specularNs) 
-    // {
-    // 	SetLighting(lighting, (float)mtl[2], (float)mtl[3]);
-    // }
-
     /* OSPRay Model */
     if (!isComplete) {
 	worldType = OSP_INVALID; 
 	InitWorld();
 	SetWorld();
     }
-
     isComplete = true;	
 }
 
@@ -111,7 +99,7 @@ void VolumeInfo::InitWorld() {
     }
 }
 void VolumeInfo::SetWorld() {
-    if (world != nullptr) { 
+    if (world != NULL) { 
 	ospAddVolume(world, volume);
 	ospCommit(world);
     }
@@ -138,12 +126,11 @@ void VolumeInfo::InitVolume(unsigned char type) {
 	}
     }
 }
-void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
-			   double *X, double *Y, double *Z, 
-			   int nX, int nY, int nZ,
-			   double volumePBox[6], 
-			   double volumeBBox[6],
-			   bool cellDataFormat) {
+void 
+VolumeInfo::SetVolume
+(int type, void *ptr, unsigned char* ghost, double *X, double *Y, double *Z, 
+ int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6], bool cellDataFormat) 
+{
     // calculate volume data type
     if (type == VTK_UNSIGNED_CHAR) {
 	dataType = "uchar";
@@ -168,12 +155,18 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     // assign data pointer
     dataPtr = ptr;
     // assign structure
-    regionStart   = vec3f(volumePBox[0], volumePBox[1], volumePBox[2]);
-    regionStop    = vec3f(volumePBox[3], volumePBox[4], volumePBox[5]);
-    regionSize    = vec3i(nX, nY, nZ);
-    regionSpacing = (regionStop-regionStart)/
-	((ospcommon::vec3f)regionSize-1.0f);
-
+    regionStart.x   = volumePBox[0];
+    regionStart.y   = volumePBox[1];
+    regionStart.z   = volumePBox[2];
+    regionStop.x    = volumePBox[3];
+    regionStop.y    = volumePBox[4];
+    regionStop.z    = volumePBox[5];
+    regionSize.x    = nX;
+    regionSize.y    = nY;
+    regionSize.z    = nZ;
+    regionSpacing.x = (regionStop.x-regionStart.x) / ((float)regionSize.x-1.0f);
+    regionSpacing.y = (regionStop.y-regionStart.y) / ((float)regionSize.y-1.0f);
+    regionSpacing.z = (regionStop.z-regionStart.z) / ((float)regionSize.z-1.0f);
     regionLowerClip.x = volumeBBox[0];
     regionLowerClip.y = volumeBBox[1];
     regionLowerClip.z = volumeBBox[2];
@@ -186,69 +179,65 @@ void VolumeInfo::SetVolume(int type, void *ptr, unsigned char* ghost,
     ospSetObject(volume, "transferFunction", transferfcn);
 
     // commit voxel data
-    if (voxelData != nullptr) { 
-	debug1 << "ERROR: Found VoxelData to be non-empty while creating new volume" << std::endl;
+    if (voxelData != NULL) { 
+	debug1 << "ERROR: Found VoxelData to be non-empty "
+	       << "while creating new volume" << std::endl;
 	EXCEPTION1(VisItException, 
-		   "ERROR: Found VoxelData to be non-empty while creating new volume");
+		   "ERROR: Found VoxelData to be non-empty "
+		   "while creating new volume");
     }
     voxelSize = nX * nY * nZ;
     voxelData = ospNewData(voxelSize, voxelDataType,
 			   dataPtr, OSP_DATA_SHARED_BUFFER);
     ospSetData(volume, "voxelData", voxelData);
 
-    // // commit ghost data
-    // ghostSize = cellDataFormat ? nX * nY * nZ : (nX-1) * (nY-1) * (nZ-1);
-    // ghostData = ospNewData(ghostSize, OSP_UCHAR,
-    // 			   ghost, OSP_DATA_SHARED_BUFFER);
-    // ospSetData(volume, "ghostData", ghostData);
-    // ospSet1i(volume, "cellDataFormat", cellDataFormat);
-
     // commit volume
     // -- no lighting by default
-    ospSetVec3f(volume, "Ks", 
-		osp::vec3f{specularColor, specularColor, specularColor});
+    osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularColor;
+    ospSetVec3f(volume, "Ks", Ks);
     ospSet1f(volume, "Ns", specularNs);
     ospSet1i(volume, "gradientShadingEnabled", (int)lightingFlag);
     // -- other properties
-    vec3f scaledBBoxLower = regionLowerClip * regionScaling;
-    vec3f scaledBBoxUpper = regionUpperClip * regionScaling;
-    vec3f scaledSpacing = regionSpacing * regionScaling;
-    vec3f scaledOrigin  = regionStart * regionScaling;
+    osp::vec3f scaledBBoxLower;
+    osp::vec3f scaledBBoxUpper;
+    osp::vec3f scaledSpacing;
+    osp::vec3f scaledOrigin;
+
+    scaledBBoxLower.x = regionLowerClip.x * regionScaling.x;
+    scaledBBoxUpper.x = regionUpperClip.x * regionScaling.x;
+    scaledSpacing.x = regionSpacing.x * regionScaling.x;
+    scaledOrigin.x  = regionStart.x * regionScaling.x;
+
+    scaledBBoxLower.y = regionLowerClip.y * regionScaling.y;
+    scaledBBoxUpper.y = regionUpperClip.y * regionScaling.y;
+    scaledSpacing.y = regionSpacing.y * regionScaling.y;
+    scaledOrigin.y  = regionStart.y * regionScaling.y;
+
+    scaledBBoxLower.z = regionLowerClip.z * regionScaling.z;
+    scaledBBoxUpper.z = regionUpperClip.z * regionScaling.z;
+    scaledSpacing.z = regionSpacing.z * regionScaling.z;
+    scaledOrigin.z  = regionStart.z * regionScaling.z;
+
     ospSet1i(volume, "useGridAccelerator", 0);
-    ospSetVec3f(volume, "volumeClippingBoxLower",
-    		(const osp::vec3f&)scaledBBoxLower);
-    ospSetVec3f(volume, "volumeClippingBoxUpper",
-    		(const osp::vec3f&)scaledBBoxUpper);
-    ospSetVec3f(volume, "gridSpacing", (const osp::vec3f&)scaledSpacing);
-    ospSetVec3f(volume, "gridOrigin",  (const osp::vec3f&)scaledOrigin);
-    ospSetVec3i(volume, "dimensions",  (const osp::vec3i&)regionSize);
+    ospSetVec3f(volume, "volumeClippingBoxLower", scaledBBoxLower);
+    ospSetVec3f(volume, "volumeClippingBoxUpper", scaledBBoxUpper);
+    ospSetVec3f(volume, "gridSpacing", scaledSpacing);
+    ospSetVec3f(volume, "gridOrigin",  scaledOrigin);
+    ospSetVec3i(volume, "dimensions",  regionSize);
     ospSet1f(volume, "samplingRate", 3.0f);
     ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 0);
     ospSet1i(volume, "singleShade", 0);
-    //int volumeInitIndex = visitTimer->StartTimer();
     ospCommit(volume);
-    //visitTimer->StopTimer(volumeInitIndex, "Commit OSPRay patch");
-}
-void VolumeInfo::SetSamplingRate(float r) {
-    // ospSet1f(volume, "samplingRate", r);
-    // ospCommit(volume);
-}
-void VolumeInfo::SetLighting(bool lighting, float Ks, float Ns) {
-    // specularColor = Ks;
-    // specularNs    = Ns;
-    // lightingFlag  = lighting;
-    // ospSetVec3f(volume, "Ks", osp::vec3f{Ks, Ks, Ks});
-    // ospSet1f(volume, "Ns", Ns);
-    // ospSet1i(volume, "gradientShadingEnabled", (int)lighting);
-    // ospCommit(volume);
 }
 
 // framebuffer component     
 void VolumeInfo::InitFB(unsigned int width, unsigned int height) {
-    vec2i imageSize(width, height);
+    osp::vec2i imageSize;
+    imageSize.x = width;
+    imageSize.y = height;
     CleanFBData(); CleanFB();	    
-    framebuffer = ospNewFrameBuffer((osp::vec2i&)imageSize, 
+    framebuffer = ospNewFrameBuffer(imageSize, 
 				    OSP_FB_RGBA32F,
 				    OSP_FB_COLOR | OSP_FB_ACCUM);	    
 }
@@ -271,11 +260,12 @@ float* VolumeInfo::GetFBData() {
 //  Creation:   
 //
 // ****************************************************************************
-
+void OSPContext_ErrorFunc(OSPError, const char* msg) { osperr << msg; }
+void OSPContext_StatusFunc(const char* msg) { ospout << msg; }
 void OSPContext::InitOSP(bool flag, int numThreads) 
 { 
     OSPDevice device = ospGetCurrentDevice();
-    if (device == nullptr) 
+    if (device == NULL) 
     {
 	// initialize ospray
         ospout << "[ospray] Initialize OSPRay";
@@ -290,12 +280,8 @@ void OSPContext::InitOSP(bool flag, int numThreads)
 	    ospDeviceSet1i(device, "numThreads", numThreads);
 	}
 	ospout << std::endl;
-	ospDeviceSetErrorFunc
-	    (device, [](OSPError, const char *msg) { 	
-		osperr << msg;
-	    });
-	ospDeviceSetStatusFunc
-	    (device, [](const char *msg) { ospout << msg; });
+	ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
+	ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
 	ospDeviceCommit(device);
 	ospSetCurrentDevice(device);
 	OSPError err = ospLoadModule("visit");
@@ -316,7 +302,7 @@ void OSPContext::InitPatch(int id)
 	return;
     }
     if (volumePatch.size() == id) { 
-	volumePatch.emplace_back(id); 
+	volumePatch.push_back(id); 
     }
     volumePatch[id].SetTransferFunction(transferfcn);
     volumePatch[id].SetRenderer(renderer);
@@ -351,15 +337,18 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	ospSet1i(renderer, "shadowsEnabled", 1);
 	// ambient light
 	OSPLight aLight = ospNewLight(renderer, "ambient");
-	ospSet1f(aLight, "intensity", 1.0f);
+	ospSet1f(aLight, "intensity", (float)mtl[0]);
 	ospSet1i(aLight, "isVisible", 0);
 	ospCommit(aLight);
 	// directional light
 	OSPLight dLight = ospNewLight(renderer, "distant");
-	ospSet1f(dLight, "intensity", (float)(5.f * mtl[1] * M_PI));
+	osp::vec3f dLightDir;
+	dLightDir.x = (float)dir[0];
+	dLightDir.y = (float)dir[1];
+	dLightDir.z = (float)dir[2];
+	ospSet1f(dLight, "intensity", (float)mtl[1]);
 	ospSet1i(dLight, "isVisible", 0);
-	ospSetVec3f(dLight, "direction", 
-		    osp::vec3f{(float)dir[0],(float)dir[1],(float)dir[2]});
+	ospSetVec3f(dLight, "direction", dLightDir);
 	ospCommit(dLight);
 	OSPLight lights[2] = { aLight, dLight };
 	ospSetData(renderer, "lights", ospNewData(2, OSP_OBJECT, lights));
@@ -379,7 +368,7 @@ void OSPContext::InitCamera(unsigned char type)
 {
     if (cameraType != type) {
 	cameraType = type;
-	if (camera != nullptr) { ospRelease(camera); }
+	if (camera != NULL) { ospRelease(camera); }
 	switch (type) {
 	case (OSP_PERSPECTIVE):
 	    camera = ospNewCamera("perspective");
@@ -407,24 +396,20 @@ void OSPContext::SetCamera(const double campos[3],
 			   const int imageExtents[4],
 			   const int screenExtents[2]) 
 {
-    float current[3];
-    for (int i = 0; i < 3; ++i) {
-	current[i] = (campos[i] - camfocus[i]) / zoomratio + camfocus[i];
-	//current[i] = campos[i];
-    }
-    const ospcommon::vec3f camPos(current[0], current[1], current[2]);
-    const ospcommon::vec3f camDir(camdir[0], camdir[1], camdir[2]);
-    const ospcommon::vec3f camUp (camup[0], camup[1], camup[2]);
-    ospSetVec3f(camera, "pos", (osp::vec3f&)camPos);
-    ospSetVec3f(camera, "dir", (osp::vec3f&)camDir);
-    ospSetVec3f(camera, "up",  (osp::vec3f&)camUp);
+    osp::vec3f camPos, camDir, camUp;
+    camPos.x = campos[0]; camPos.y = campos[1]; camPos.z = campos[2];    
+    camDir.x = camdir[0]; camDir.y = camdir[1]; camDir.z = camdir[2];
+    camUp.x = camup[0];   camUp.y = camup[1];   camUp.z = camup[2];
+    ospSetVec3f(camera, "pos", camPos);
+    ospSetVec3f(camera, "dir", camDir);
+    ospSetVec3f(camera, "up",  camUp);
     if (cameraType == OSP_PERSPECTIVE) {
 	ospSet1f(camera, "aspect", aspect);
 	ospSet1f(camera, "fovy", viewAngle);
     }
     else if (cameraType == OSP_ORTHOGRAPHIC) {
 	ospSet1f(camera, "aspect", aspect);
-	ospSet1f(camera, "height", sceneSize[1] / zoomratio);
+	ospSet1f(camera, "height", sceneSize[1]);
     }
     r_panx = imagepan[0] * zoomratio;
     r_pany = imagepan[1] * zoomratio;
@@ -432,17 +417,22 @@ void OSPContext::SetCamera(const double campos[3],
 		       imageExtents[2], imageExtents[3]);
     screenSize[0] = screenExtents[0];
     screenSize[1] = screenExtents[1];
-
+    zoom = zoomratio;
 }
 
 void OSPContext::SetSubCamera(float xMin, float xMax, float yMin, float yMax) 
 {
+    osp::vec2f imgS, imgE;
     float r_xl = xMin/screenSize[0] - r_panx; 
     float r_yl = yMin/screenSize[1] - r_pany; 
     float r_xu = xMax/screenSize[0] - r_panx;
     float r_yu = yMax/screenSize[1] - r_pany;	
-    ospSetVec2f(camera, "imageStart", osp::vec2f{r_xl, r_yl});
-    ospSetVec2f(camera, "imageEnd",   osp::vec2f{r_xu, r_yu});
+    imgS.x = (r_xl - 0.5f) / zoom + 0.5f;
+    imgS.y = (r_yl - 0.5f) / zoom + 0.5f;
+    imgE.x = (r_xu - 0.5f) / zoom + 0.5f;
+    imgE.y = (r_yu - 0.5f) / zoom + 0.5f;
+    ospSetVec2f(camera, "imageStart", imgS);
+    ospSetVec2f(camera, "imageEnd",   imgE);
     ospCommit(camera);
 }
 
@@ -450,7 +440,7 @@ void OSPContext::SetSubCamera(float xMin, float xMax, float yMin, float yMax)
 void OSPContext::InitTransferFunction() 
 {
     if (transferfcnType == OSP_INVALID) {
-	if (transferfcn != nullptr) { ospRelease(transferfcn); }
+	if (transferfcn != NULL) { ospRelease(transferfcn); }
 	transferfcn = ospNewTransferFunction("piecewise_linear");
 	transferfcnType = OSP_VALID;
     }
@@ -461,20 +451,26 @@ void OSPContext::SetTransferFunction(const OSPColor *table,
 				     const float datamin, 
 				     const float datamax) 
 {
-    std::vector<ospcommon::vec3f> colors;
-    std::vector<float>            opacities;
+    std::vector<osp::vec3f> colors;
+    std::vector<float>      opacities;
     for (int i = 0; i < size; ++i) {
-	colors.emplace_back(table[i].R, table[i].G, table[i].B);
-	opacities.emplace_back(table[i].A);
+	osp::vec3f color;
+	color.x = table[i].R;
+	color.y = table[i].G;
+	color.z = table[i].B;
+	colors.push_back(color);
+	opacities.push_back(table[i].A);
     }
     OSPData colorData   = 
 	ospNewData(colors.size(), OSP_FLOAT3, colors.data());
     OSPData opacityData = 
 	ospNewData(opacities.size(), OSP_FLOAT, opacities.data());
-    const ospcommon::vec2f range(datamin, datamax);
-    ospSetData(transferfcn, "colors",    colorData);
-    ospSetData(transferfcn, "opacities", opacityData);
-    ospSetVec2f(transferfcn, "valueRange", (osp::vec2f&)range);
+    osp::vec2f range;
+    range.x = datamin;
+    range.y = datamax;
+    ospSetData(transferfcn, "colors",      colorData);
+    ospSetData(transferfcn, "opacities",   opacityData);
+    ospSetVec2f(transferfcn, "valueRange", range);
     ospCommit(transferfcn);
 }
 
