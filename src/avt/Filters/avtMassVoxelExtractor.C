@@ -2247,7 +2247,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // Calculate patch dimensions for point array and cell array
     //   This is to check if the patch is a cell data or a point data
     //   I have to assume cell dataset has a higher priority
-    void* volumePointer = nullptr;
+    void* volumePointer = NULL;
     int   volumeDataType;
     int nX = 0, nY = 0, nZ = 0;
     if (ncell_arrays > 0) {
@@ -2437,7 +2437,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      << "         One of the dataset might be missing "
 		      << std::endl;
 	}
-	auto volume = ospray->GetPatch(patch);
+	VolumeInfo* volume = ospray->GetPatch(patch);
 
 	// shift grid and make it cel centered for cell data
 	double volumePBox[6] = {
