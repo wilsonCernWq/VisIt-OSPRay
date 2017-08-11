@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <Object name="MachineProfile">
-    <Field name="hostNickname" type="string">"SCI Kepler"</Field>
-    <Field name="host" type="string">wopr.sci.utah.edu</Field>
-    <Field name="userName" type="string">notset</Field>
-    <Field name="hostAliases" type="string">kepler##</Field>
-    <Field name="directory" type="string">/home/sci/qwu/software/Kepler/VisIt/visit-trunk/build</Field>
+    <Field name="hostNickname" type="string">"Utah CHPC Ember"</Field>
+    <Field name="host" type="string">ember.chpc.utah.edu</Field>
+    <Field name="userName" type="string">u1077116</Field>
+    <Field name="hostAliases" type="string">"ember#.chpc.utah.edu ember#.wasatch.peaks"</Field>
+    <Field name="directory" type="string">/uufs/chpc.utah.edu/common/home/u1077116/visitospray/visit2.12.0/build</Field>
     <Field name="shareOneBatchJob" type="bool">false</Field>
     <Field name="sshPortSpecified" type="bool">false</Field>
     <Field name="sshPort" type="int">22</Field>
@@ -21,15 +21,15 @@
     <Field name="maximumProcessors" type="int">1</Field>
     <Object name="LaunchProfile">
         <Field name="timeout" type="int">480</Field>
-        <Field name="numProcessors" type="int">32</Field>
+        <Field name="numProcessors" type="int">12</Field>
         <Field name="numNodesSet" type="bool">true</Field>
-        <Field name="numNodes" type="int">2</Field>
-        <Field name="partitionSet" type="bool">false</Field>
-        <Field name="partition" type="string"></Field>
-        <Field name="bankSet" type="bool">false</Field>
-        <Field name="bank" type="string"></Field>
-        <Field name="timeLimitSet" type="bool">false</Field>
-        <Field name="timeLimit" type="string"></Field>
+        <Field name="numNodes" type="int">1</Field>
+        <Field name="partitionSet" type="bool">true</Field>
+        <Field name="partition" type="string">smithp-em</Field>
+        <Field name="bankSet" type="bool">true</Field>
+        <Field name="bank" type="string">smithp-em</Field>
+        <Field name="timeLimitSet" type="bool">true</Field>
+        <Field name="timeLimit" type="string">04:00:00</Field>
         <Field name="launchMethodSet" type="bool">true</Field>
         <Field name="launchMethod" type="string">sbatch/mpirun</Field>
         <Field name="forceStatic" type="bool">true</Field>
@@ -41,23 +41,23 @@
         <Field name="launchArgs" type="string"></Field>
         <Field name="sublaunchArgsSet" type="bool">false</Field>
         <Field name="sublaunchArgs" type="string"></Field>
-        <Field name="sublaunchPreCmdSet" type="bool">true</Field>
-        <Field name="sublaunchPreCmd" type="string">"source /home/sci/qwu/software/Kepler/VisIt/visit-depend.sh activate"</Field>
-        <Field name="sublaunchPostCmdSet" type="bool">true</Field>
-        <Field name="sublaunchPostCmd" type="string">"source /home/sci/qwu/software/Kepler/VisIt/visit-depend.sh deactivate"</Field>
+        <Field name="sublaunchPreCmdSet" type="bool">false</Field>
+        <Field name="sublaunchPreCmd" type="string"></Field>
+        <Field name="sublaunchPostCmdSet" type="bool">false</Field>
+        <Field name="sublaunchPostCmd" type="string"></Field>
         <Field name="machinefileSet" type="bool">false</Field>
         <Field name="machinefile" type="string"></Field>
         <Field name="visitSetsUpEnv" type="bool">false</Field>
         <Field name="canDoHWAccel" type="bool">false</Field>
-        <Field name="GPUsPerNode" type="int">2</Field>
+        <Field name="GPUsPerNode" type="int">1</Field>
         <Field name="XArguments" type="string"></Field>
-        <Field name="launchXServers" type="bool">true</Field>
+        <Field name="launchXServers" type="bool">false</Field>
         <Field name="XDisplay" type="string">:%l</Field>
         <Field name="numThreads" type="int">0</Field>
         <Field name="constrainNodeProcs" type="bool">false</Field>
         <Field name="allowableNodes" type="intVector"></Field>
         <Field name="allowableProcs" type="intVector"></Field>
-        <Field name="profileName" type="string">"Kepler Default"</Field>
+        <Field name="profileName" type="string">"ember parallel"</Field>
     </Object>
     <Field name="activeProfile" type="int">0</Field>
 </Object>
