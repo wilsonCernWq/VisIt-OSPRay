@@ -316,6 +316,10 @@ void OSPContext::InitRenderer()
 {
     if (rendererType == OSP_INVALID) {
 	renderer = ospNewRenderer("scivis");
+	aLight = ospNewLight(renderer, "ambient");
+	dLight = ospNewLight(renderer, "distant");
+	OSPLight lights[2] = { aLight, dLight };
+	lightdata = ospNewData(2, OSP_OBJECT, lights);
 	rendererType = OSP_VALID;
     }
 }
@@ -336,12 +340,10 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	       << mtl[3] << std::endl;
 	ospSet1i(renderer, "shadowsEnabled", 1);
 	// ambient light
-	OSPLight aLight = ospNewLight(renderer, "ambient");
 	ospSet1f(aLight, "intensity", (float)mtl[0]);
 	ospSet1i(aLight, "isVisible", 0);
 	ospCommit(aLight);
 	// directional light
-	OSPLight dLight = ospNewLight(renderer, "distant");
 	osp::vec3f dLightDir;
 	dLightDir.x = (float)dir[0];
 	dLightDir.y = (float)dir[1];
@@ -349,9 +351,8 @@ void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3])
 	ospSet1f(dLight, "intensity", (float)mtl[1]);
 	ospSet1i(dLight, "isVisible", 0);
 	ospSetVec3f(dLight, "direction", dLightDir);
-	ospCommit(dLight);
-	OSPLight lights[2] = { aLight, dLight };
-	ospSetData(renderer, "lights", ospNewData(2, OSP_OBJECT, lights));
+	ospCommit(dLight);	
+	ospSetData(renderer, "lights", lightdata);
     }
     ospCommit(renderer);
 }
@@ -472,6 +473,8 @@ void OSPContext::SetTransferFunction(const OSPColor *table,
     ospSetData(transferfcn, "opacities",   opacityData);
     ospSetVec2f(transferfcn, "valueRange", range);
     ospCommit(transferfcn);
+    ospRelease(colorData);
+    ospRelease(opacityData);
 }
 
 // ****************************************************************************

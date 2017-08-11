@@ -283,13 +283,15 @@ class OSPContext
  private:
     // ospray objects
     std::vector<VolumeInfo> volumePatch;
+    OSPLight aLight;
+    OSPLight dLight;
+    OSPData  lightdata;
     OSPRenderer             renderer;
     unsigned char           rendererType;
     OSPCamera               camera;
     unsigned char           cameraType;
     OSPTransferFunction     transferfcn;
     unsigned char           transferfcnType;
-
     // class parameters
     bool refreshData;
     osp::vec3f regionScaling;
@@ -302,6 +304,9 @@ class OSPContext
  public:
     OSPContext() {
 	// ospray objects
+	aLight = NULL;
+	dLight = NULL;
+	lightdata = NULL;
 	renderer        = NULL;
 	rendererType    = OSP_INVALID;
 	camera          = NULL;
@@ -323,9 +328,15 @@ class OSPContext
     ~OSPContext() {	
 	// clean stuffs
 	volumePatch.clear();
+	if (renderer    != NULL) {
+	    ospRelease(lightdata);
+	    ospRelease(renderer); 
+	}
 	if (camera      != NULL) { ospRelease(camera); }
-	if (renderer    != NULL) { ospRelease(renderer); }
 	if (transferfcn != NULL) { ospRelease(transferfcn); }
+	rendererType    = OSP_INVALID;
+	cameraType      = OSP_INVALID;
+	transferfcnType = OSP_INVALID;
     }
 
     // flags
