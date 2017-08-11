@@ -515,12 +515,6 @@ avtRayTracer::Execute(void)
 	vtkCamera *sceneCam = vtkCamera::New();
 	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
 	{ 
-	    // double current[3];
-	    // for (int i = 0; i < 3; ++i) {
-	    // 	current[i] = (view.camera[i] - view.focus[i]) / 
-	    // 	    view.imageZoom + view.focus[i];
-	    // }
-	    // sceneCam->SetPosition(current[0],current[1],current[2]);
 	    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
 	}
 	else {
@@ -560,24 +554,8 @@ avtRayTracer::Execute(void)
 	vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
 	vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
 	matZoom->Identity(); 
-	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
-	{ 
-	    if (view.orthographic)
-	    {
-	    	matZoom->SetElement(0, 0, view.imageZoom); 
-	    	matZoom->SetElement(1, 1, view.imageZoom);
-	    }
-	    else 
-	    {
-	    	matZoom->SetElement(0, 0, view.imageZoom); 
-	    	matZoom->SetElement(1, 1, view.imageZoom);
-	    }
-	}
-	else 
-	{
-	    matZoom->SetElement(0, 0, view.imageZoom); 
-	    matZoom->SetElement(1, 1, view.imageZoom);
-	}
+	matZoom->SetElement(0, 0, view.imageZoom); 
+	matZoom->SetElement(1, 1, view.imageZoom);
 	vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, matZoomViewModelScale);
 	matViewModelScale->Delete();
 	matZoom->Delete();
@@ -734,7 +712,7 @@ avtRayTracer::Execute(void)
 	extractor.SetTransferFn(transferFn1D);
 	extractor.SetClipPlanes(oldclip);
 	extractor.SetPanPercentages(view.imagePan);
-	extractor.SetImageZoom(view.imageZoom); 
+	extractor.SetImageZoom(view.imageZoom);
 	extractor.SetRendererSampleRate(rendererSampleRate); 
 	extractor.SetDepthExtents(depthExtents);
 	extractor.SetMVPMatrix(model_to_screen_transform);
