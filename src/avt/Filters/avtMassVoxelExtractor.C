@@ -3369,6 +3369,7 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
 	       << _gradient[0] << ", " 
 	       << _gradient[1] << ", " 
 	       << _gradient[2] << std::endl;
+
 	// Calculate color using phong shading
 	// I = (I  * ka) + [ (I_i  * kd * (L.N)) + (Ia_i * ks * (R.V)^ns) ]
 	// for each light source i
@@ -3378,12 +3379,6 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
 	    source_rgb[i] = 
 	    	((materialProperties[0]+materialProperties[1]*normal_dot_light)*source_rgb[i])+ 
 	    	(materialProperties[2]*pow((double)normal_dot_light, materialProperties[3])*source_rgb[3]);
-
-	    // float specular = materialProperties[2]*pow((double)normal_dot_light, materialProperties[3]);
-	    // source_rgb[i] = 
-	    // 	source_rgb[i]*source_rgb[3]*
-	    // 	(materialProperties[0] + (materialProperties[1] * normal_dot_light + specular));
-
 	}
     }
     for (int i=0; i<4; i++)
