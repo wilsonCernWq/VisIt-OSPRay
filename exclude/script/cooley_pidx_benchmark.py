@@ -1,12 +1,12 @@
 import os
 from subprocess import call
 hostname = "cooley.alcf.anl.gov"
-database = "/home/derekhar/Harris/trunk/data/predIncite.pidx/t230278/l0/CCVars.idx"
+database = "/home/qiwu/data/timestamps/t230278/l0/CCVars.idx"
 timestep = 230278
 prefix = "/gpfs/mira-home/qiwu/timings/visit/check"
 field = "O2"
 
-#---------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
     cPoint = ColorControlPoint()
@@ -23,16 +23,16 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(machine, atts, numThreads, numNodes):
+def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True, usePascal = True):
     dirpath = "n" + str(numNodes) + "p" + str(numThreads)
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd = "source enterVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPreCmd  = "source /gpfs/mira-home/qiwu/enterVisItJobs.sh " + prefix + "/" + dirpath
     machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source exitVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source /gpfs/mira-home/qiwu/exitVisItJobs.sh "  + prefix + "/" + dirpath
     OpenComputeEngine(machine)
     OpenDatabase(hostname + ":" + database)
     SetTimeSliderState(timestep)
@@ -73,10 +73,11 @@ def makePlot(machine, atts, numThreads, numNodes):
             SetView3D(c[i % 4])
             DrawPlots()
             SaveWindow()
-    drawPlots(atts, atts.OSPRaySLIVR)
-    drawPlots(atts, atts.RayCastingSLIVR)
+    if (useOSPRay):
+        drawPlots(atts, atts.OSPRaySLIVR)
+    if (usePascal):
+        drawPlots(atts, atts.RayCastingSLIVR)
     drawPlots(atts, atts.RayCasting)
-    #drawPlots(atts, atts.RayCastingIntegration)
     # close all
     DeleteActivePlots()
     CloseDatabase(hostname + ":" + database)
@@ -84,15 +85,15 @@ def makePlot(machine, atts, numThreads, numNodes):
     # clean up data
     call("mv visit*.png " + dirpath, shell=True)
 
-#---------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # Set Default Option
 opt = GetDefaultFileOpenOptions("IDX")
-opt['Big Endian'] = 1
+opt['Big Endian'] = 0
 opt['Use RAW format'] = 1
 opt['Use extra cells'] = 1
 SetDefaultFileOpenOptions("IDX", opt)
 
-#---------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # setup VolumeAttribute
 # set TF
 VolumeAtts = VolumeAttributes()
@@ -153,15 +154,24 @@ VolumeAtts.lowGradientLightingClampFlag = 0
 VolumeAtts.lowGradientLightingClampValue = 1
 VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
-#---------------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # open remote
 m = GetMachineProfile(hostname)
-#makePlot(m, VolumeAtts, 12, 4)
-#makePlot(m, VolumeAtts, 12, 8)
-#makePlot(m, VolumeAtts, 12, 16)
-#makePlot(m, VolumeAtts, 1, 4)
-makePlot(m, VolumeAtts, 1, 8)
-#makePlot(m, VolumeAtts, 1, 16)
-#makePlot(m, VolumeAtts, 1, 32)
+makePlot(m, VolumeAtts, 12, 112, False, False)
+makePlot(m, VolumeAtts, 1, 112)
+# makePlot(m, VolumeAtts, 12, 96, False, False)
+# makePlot(m, VolumeAtts, 1, 96)
+# makePlot(m, VolumeAtts, 12, 64, False, False)
+# makePlot(m, VolumeAtts, 1, 64)
+# makePlot(m, VolumeAtts, 12, 32, False)
+# makePlot(m, VolumeAtts, 1, 32)
+# makePlot(m, VolumeAtts, 12, 16, False)
+# makePlot(m, VolumeAtts, 1, 16)
+# makePlot(m, VolumeAtts, 12, 8, False)
+# makePlot(m, VolumeAtts, 1, 8)
+# makePlot(m, VolumeAtts, 12, 4, False)
+# makePlot(m, VolumeAtts, 1, 4)
+# makePlot(m, VolumeAtts, 12, 2, False)
+# makePlot(m, VolumeAtts, 1, 2)
 exit()
 

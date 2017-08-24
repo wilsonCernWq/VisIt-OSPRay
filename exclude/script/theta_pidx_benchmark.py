@@ -1,13 +1,12 @@
 import os
 from subprocess import call
-hostname = "wopr.sci.utah.edu"
-database = "/usr/sci/cedmav/data/pidx_uintah/CCVars.idx"
+hostname = "theta.alcf.anl.gov"
+database = "/projects/Viz_Support/data/CoalBoiler_IDX/CCVars.idx"
 timestep = 229829
-prefix='/home/sci/qwu/Desktop/timing/08-11/Kepler'
-script='/home/sci/qwu/VisIt/visitOSPRayCPU/working/exclude/script/tools/wopr'
+prefix = "/gpfs/mira-home/qiwu/timings/visit/theta"
 field = "O2"
 
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
     cPoint = ColorControlPoint()
@@ -24,22 +23,23 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True):
+def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True, usePascal = True, useDefault = True):
     dirpath = "n" + str(numNodes) + "p" + str(numThreads)
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd = "source " + script + "/enterVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPreCmd  = "source /home/qiwu/enterVisItJobs.sh " + prefix + "/" + dirpath
     machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source " + script + "/exitVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source /home/qiwu/exitVisItJobs.sh "  + prefix + "/" + dirpath
     OpenComputeEngine(machine)
     OpenDatabase(hostname + ":" + database)
     SetTimeSliderState(timestep)
     AddPlot("Volume", field)
     def drawPlots(VolumeAtts, VolumeType):
-        # Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        # Splatting, Texture3D, RayCasting, RayCastingIntegration
+        # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
@@ -74,8 +74,10 @@ def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True):
             SaveWindow()
     if (useOSPRay):
         drawPlots(atts, atts.OSPRaySLIVR)
-    drawPlots(atts, atts.RayCastingSLIVR)
-    drawPlots(atts, atts.RayCasting)
+    if (usePascal):
+        drawPlots(atts, atts.RayCastingSLIVR)
+    if (useDefault):
+        drawPlots(atts, atts.RayCasting)
     # close all
     DeleteActivePlots()
     CloseDatabase(hostname + ":" + database)
@@ -83,7 +85,7 @@ def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True):
     # clean up data
     call("mv visit*.png " + dirpath, shell=True)
 
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # Set Default Option
 opt = GetDefaultFileOpenOptions("IDX")
 opt['Big Endian'] = 0
@@ -91,7 +93,7 @@ opt['Use RAW format'] = 1
 opt['Use extra cells'] = 1
 SetDefaultFileOpenOptions("IDX", opt)
 
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # setup VolumeAttribute
 # set TF
 VolumeAtts = VolumeAttributes()
@@ -152,18 +154,23 @@ VolumeAtts.lowGradientLightingClampFlag = 0
 VolumeAtts.lowGradientLightingClampValue = 1
 VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
-#------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # open remote
 m = GetMachineProfile(hostname)
-# makePlot(m, VolumeAtts, 16, 2, False)
-# makePlot(m, VolumeAtts, 16, 4, False)
-# makePlot(m, VolumeAtts, 16, 8, False)
-makePlot(m, VolumeAtts, 16, 16, False)
-makePlot(m, VolumeAtts, 16, 32, False)
-# makePlot(m, VolumeAtts, 1, 2)
-makePlot(m, VolumeAtts, 1, 4)
-makePlot(m, VolumeAtts, 1, 8)
-makePlot(m, VolumeAtts, 1, 16)
-makePlot(m, VolumeAtts, 1, 32)
-call("mv *.vlog *.timings " + prefix, shell=True)
+
+# makePlot(m, VolumeAtts, 1, 256, True, True, False)
+# makePlot(m, VolumeAtts, 1, 128, True, True, False)
+# makePlot(m, VolumeAtts, 1, 64, True, True, False)
+# makePlot(m, VolumeAtts, 1, 32, True, True, True)
+# makePlot(m, VolumeAtts, 1, 16, True, True, True)
+# makePlot(m, VolumeAtts, 1, 8)
+
+makePlot(m, VolumeAtts, 64, 8, False, True, True)
+# makePlot(m, VolumeAtts, 64, 16, False, True, False)
+# makePlot(m, VolumeAtts, 64, 32, False, True, False)
+# makePlot(m, VolumeAtts, 64, 64, False, True, False)
+# makePlot(m, VolumeAtts, 64, 128, False, True, False)
+# makePlot(m, VolumeAtts, 64, 256, False, True, False)
+
 exit()
+
