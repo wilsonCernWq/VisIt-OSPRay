@@ -59,46 +59,45 @@ double slivr::rad2deg (double radins) {
 
 // other function
 void 
-VolumeInfo::Set
-(int type, void *ptr, unsigned char* ghost,
- double *X, double *Y, double *Z, int nX, int nY, int nZ,
- double volumePBox[6], double volumeBBox[6], double mtl[4],
- float sr, bool lighting, bool cellDataFormat)
+OSPVolumePatch::Set
+(int type, void *ptr, double *X, double *Y, double *Z, 
+ int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6], 
+ double mtl[4], float sr, bool shading)
 {
     /* OSPRay Volume */
-    specularColor = (float)mtl[2];
+    specularKs    = (float)mtl[2];
     specularNs    = (float)mtl[3];
-    lightingFlag  = lighting;
+    enableShading = shading;
     samplingRate  = sr;
     // TODO: It seems if a volume is recovered from a session
     // ospray will crash during zooming ...
     // So we refresh volume everytime to fix the bug
     // which means we need to disable grid accelerator
     // to speed things up. Until I found the reason of crashing
-    if (true /*!isComplete*/) { 
+    if (true /*!finished*/) { 
 	volumeType = OSP_INVALID;
 	InitVolume();
-	SetVolume(type, ptr, ghost, X, Y, Z, nX, nY, nZ,
-		  volumePBox, volumeBBox, cellDataFormat); 
+	SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
+		  volumePBox, volumeBBox); 
     }
     /* OSPRay Model */
-    if (!isComplete) {
+    if (!finished) {
 	worldType = OSP_INVALID; 
 	InitWorld();
 	SetWorld();
     }
-    isComplete = true;	
+    finished = true;
 }
 
 // ospModel component
-void VolumeInfo::InitWorld() {
+void OSPVolumePatch::InitWorld() {
     if (worldType == OSP_INVALID) {
 	CleanWorld();
 	worldType = OSP_VALID;
 	world = ospNewModel();
     }
 }
-void VolumeInfo::SetWorld() {
+void OSPVolumePatch::SetWorld() {
     if (world != NULL) { 
 	ospAddVolume(world, volume);
 	ospCommit(world);
@@ -106,7 +105,7 @@ void VolumeInfo::SetWorld() {
 }
 
 // ospVolume component
-void VolumeInfo::InitVolume(unsigned char type) {
+void OSPVolumePatch::InitVolume(unsigned char type) {
     if (volumeType != type) { // only initialize once
 	CleanVolume();
 	volumeType = type;
@@ -127,9 +126,9 @@ void VolumeInfo::InitVolume(unsigned char type) {
     }
 }
 void 
-VolumeInfo::SetVolume
-(int type, void *ptr, unsigned char* ghost, double *X, double *Y, double *Z, 
- int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6], bool cellDataFormat) 
+OSPVolumePatch::SetVolume
+(int type, void *ptr, double *X, double *Y, double *Z, 
+ int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6]) 
 {
     // calculate volume data type
     if (type == VTK_UNSIGNED_CHAR) {
@@ -164,9 +163,9 @@ VolumeInfo::SetVolume
     regionSize.x    = nX;
     regionSize.y    = nY;
     regionSize.z    = nZ;
-    regionSpacing.x = (regionStop.x-regionStart.x) / ((float)regionSize.x-1.0f);
-    regionSpacing.y = (regionStop.y-regionStart.y) / ((float)regionSize.y-1.0f);
-    regionSpacing.z = (regionStop.z-regionStart.z) / ((float)regionSize.z-1.0f);
+    regionSpacing.x = (regionStop.x-regionStart.x)/((float)regionSize.x-1.0f);
+    regionSpacing.y = (regionStop.y-regionStart.y)/((float)regionSize.y-1.0f);
+    regionSpacing.z = (regionStop.z-regionStart.z)/((float)regionSize.z-1.0f);
     regionLowerClip.x = volumeBBox[0];
     regionLowerClip.y = volumeBBox[1];
     regionLowerClip.z = volumeBBox[2];
@@ -193,10 +192,10 @@ VolumeInfo::SetVolume
 
     // commit volume
     // -- no lighting by default
-    osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularColor;
+    osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularKs;
     ospSetVec3f(volume, "Ks", Ks);
     ospSet1f(volume, "Ns", specularNs);
-    ospSet1i(volume, "gradientShadingEnabled", (int)lightingFlag);
+    ospSet1i(volume, "gradientShadingEnabled", (int)enableShading);
     // -- other properties
     osp::vec3f scaledBBoxLower;
     osp::vec3f scaledBBoxUpper;
@@ -232,7 +231,7 @@ VolumeInfo::SetVolume
 }
 
 // framebuffer component     
-void VolumeInfo::InitFB(unsigned int width, unsigned int height) {
+void OSPVolumePatch::InitFB(unsigned int width, unsigned int height) {
     osp::vec2i imageSize;
     imageSize.x = width;
     imageSize.y = height;
@@ -241,12 +240,12 @@ void VolumeInfo::InitFB(unsigned int width, unsigned int height) {
 				    OSP_FB_RGBA32F,
 				    OSP_FB_COLOR | OSP_FB_ACCUM);	    
 }
-void VolumeInfo::RenderFB() {
+void OSPVolumePatch::RenderFB() {
     ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM);
     ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
     framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
 }
-float* VolumeInfo::GetFBData() {
+float* OSPVolumePatch::GetFBData() {
     return framebufferData;
 }
 
@@ -267,14 +266,31 @@ void OSPContext::InitOSP(bool flag, int numThreads)
     OSPDevice device = ospGetCurrentDevice();
     if (device == NULL) 
     {
+	// load ospray module
+	if (enableDVR) {
+	    OSPError err = ospLoadModule("mpi");
+	    if (err != OSP_NO_ERROR) {
+		osperr << "[Error] can't load ospray MPI module" << std::endl;
+	    }
+	}
+	OSPError err = ospLoadModule("visit");
+	if (err != OSP_NO_ERROR) {
+	    osperr << "[Error] can't load visit module" << std::endl;
+	}
 	// initialize ospray
         ospout << "[ospray] Initialize OSPRay";
-	enabledOSPRay = true;
-	device = ospNewDevice();
+	if (enableDVR) {
+	    device = ospNewDevice("mpi_distributed");
+	    ospDeviceSet1i(device, "masterRank", 0);
+	} else {
+	    device = ospNewDevice();
+	}
+	// setup debug 
 	if (DebugStream::Level5()) {
 	    ospout << " debug mode";
 	    ospDeviceSet1i(device, "debug", 1);
 	}
+	// setup number of threads (this can only be hard-coded)
 	if (numThreads > 0) {
 	    ospout << " numThreads: " << numThreads;
 	    ospDeviceSet1i(device, "numThreads", numThreads);
@@ -284,14 +300,34 @@ void OSPContext::InitOSP(bool flag, int numThreads)
 	ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
 	ospDeviceCommit(device);
 	ospSetCurrentDevice(device);
-	OSPError err = ospLoadModule("visit");
-	if (err != OSP_NO_ERROR) {
-	    osperr << "[Error] can't load visit module" << std::endl;
-	}
     }
     refreshData = flag;
     ospout << "[ospray] Initialize OSPRay (new data " << flag << ")" 
 	   << std::endl;    
+}
+
+// We use this function to minimize interface
+void OSPContext::Render
+(float xMin, float xMax, float yMin, float yMax,
+ int imgWidth, int imgHeight, float*& dest, OSPVolumePatch* volume) 
+{
+    // start timing
+    int renderIndex = visitTimer->StartTimer();
+	
+    // render frame
+    SetSubCamera(xMin, xMax, yMin, yMax);
+    SetModel(volume->GetWorld());
+    volume->InitFB(imgWidth, imgHeight);
+    volume->RenderFB();
+	
+    // end timing
+    visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
+
+    // copy data
+    std::copy(volume->GetFBData(), 
+	      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
+	      dest);
+    volume->CleanFBData();
 }
 
 void OSPContext::InitPatch(int id) 
@@ -304,10 +340,11 @@ void OSPContext::InitPatch(int id)
     if (volumePatch.size() == id) { 
 	volumePatch.push_back(id); 
     }
+    volumePatch[id].SetScaling(regionScaling);
     volumePatch[id].SetTransferFunction(transferfcn);
     volumePatch[id].SetRenderer(renderer);
-    volumePatch[id].SetCompleteFlag(!refreshData);
-    volumePatch[id].SetScaling(regionScaling);
+    volumePatch[id].SetDVRFlag(enableDVR);
+    volumePatch[id].SetFinishedFlag(!refreshData); // reset volume for new data
     // if the data is refreshed -> not complete
 }
 
@@ -324,13 +361,13 @@ void OSPContext::InitRenderer()
     }
 }
 
-void OSPContext::SetRenderer(bool lighting, double mtl[4], double dir[3]) 
+void OSPContext::SetRenderer(bool shading, double mtl[4], double dir[3]) 
 {
     ospSetObject(renderer, "camera", camera);
     ospSet1i(renderer, "backgroundEnabled", 0);
     ospSet1i(renderer, "oneSidedLighting", 0);
     ospSet1i(renderer, "aoSamples", 0);
-    if (lighting)
+    if (shading)
     {
 	ospout << "[ospray] use lighting " 
 	       << "use mtl " 

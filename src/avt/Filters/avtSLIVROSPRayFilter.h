@@ -70,18 +70,30 @@ namespace slivr {
 #ifndef VISIT_OSPRAY
 	return false;
 #else
+	/* OSPRay defined environmental variables */
+	// OSPRAY_THREADS, OSPRAY_SET_AFFINITY
+	// OSPRAY_DEBUG, OSPRAY_LOG_LEVEL
+	// OSPRAY_LOG_OUTPUT
+	/* visit shortcuts*/
+	// OSPRAY_VERBOSE
+	const char* env_debug = std::getenv("OSPRAY_DEBUG");
 	const char* env_verbose = std::getenv("OSPRAY_VERBOSE");
-	if (env_verbose) {
-	    if (atoi(env_verbose) > 0) {
-		slivr::osp_out = &std::cout;
-		slivr::osp_err = &std::cerr;
-		return true;
-	    }
-	    else {
-		return false;
-	    }
+	const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");
+	bool verbose = false;
+	if (env_debug) {
+	    if (atoi(env_debug) > 0) { verbose = true; }
 	}
-	else {
+	if (env_verbose) {
+	    if (atoi(env_verbose) > 0) { verbose = true; }
+	}
+	if (env_log_level) {
+	    if (atoi(env_log_level) > 0) { verbose = true; }
+	}
+	if (verbose) {
+	    slivr::osp_out = &std::cout;
+	    slivr::osp_err = &std::cerr;
+	    return true;
+	} else {
 	    return false;
 	}
 #endif
@@ -102,7 +114,7 @@ namespace slivr {
     else (*slivr::osp_err)
 
 // ****************************************************************************
-//  Struct:  VolumeInfo
+//  Struct:  OSPVolumePatch
 //
 //  Purpose:
 //    Holds information about patches but not the image 
@@ -113,7 +125,7 @@ namespace slivr {
 // ****************************************************************************
 // this struct will contain informations related to one volume
 #ifdef VISIT_OSPRAY
-class VolumeInfo 
+class OSPVolumePatch 
 {    
  private:
     // object references 
@@ -141,9 +153,10 @@ class VolumeInfo
 
     // metadata for volume
     int                 patchId;       // volume patch id
-    bool                isComplete; // check if this volume is initialized
-    bool                lightingFlag;
-    float               specularColor;
+    bool                finished;    // check if this volume is initialized
+    bool                enableShading;
+    bool                enableDVR;     // Distributed Volume Renderer
+    float               specularKs;
     float               specularNs;
     float               samplingRate;
 
@@ -158,7 +171,7 @@ class VolumeInfo
     
  public:
     // constructor
-    VolumeInfo(int id) {
+    OSPVolumePatch(int id) {
 	// object references 
 	transferfcn = NULL;
 	renderer    = NULL;
@@ -176,11 +189,12 @@ class VolumeInfo
 	dataType        = "";
 	// metadata for volume
 	patchId = id;    
-	isComplete = false; 
-	lightingFlag = false;
-	specularColor = 0.0f;
+	finished      = false; 
+	enableShading = false;
+	enableDVR     = false;
+	specularKs    = 0.0f;
 	specularNs    = 0.0f;
-	samplingRate = -1.0f;
+	samplingRate  = 0.0f;
 	// geometric parameters for volume
 	regionSize.x  = regionSize.y  = regionSize.z  = 0;
 	regionStart.x = regionStart.y = regionStart.z = 0.0f;
@@ -192,7 +206,7 @@ class VolumeInfo
     }
 
     // destructor
-    ~VolumeInfo() { Clean(); }    
+    ~OSPVolumePatch() { Clean(); }    
     void Clean() {
 	CleanFBData();
 	CleanFB();
@@ -201,15 +215,16 @@ class VolumeInfo
     }
     
     // other function
-    void Set(int type, void *ptr, unsigned char* ghost,
-	     double *X, double *Y, double *Z, int nX, int nY, int nZ,
-	     double volumePBox[6], double volumeBBox[6], double mtl[4],
-	     float sr, bool lighting, bool cellDataFormat);
-    bool GetCompleteFlag() { return isComplete; }
-    void SetCompleteFlag(bool f) { isComplete = f; } 
-    void SetTransferFunction(const OSPTransferFunction& tf) { transferfcn = tf; }
-    void SetRenderer(const OSPRenderer& r) { renderer = r; }
+    void Set(int type, void *ptr, double *X, double *Y, double *Z, 
+	     int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6],
+	     double mtl[4], float sr, bool shading);
+    bool GetDVRFlag() { return enableDVR; }
+    void SetDVRFlag(bool mode) { enableDVR = mode; }
+    bool GetFinishedFlag() { return finished; }
+    void SetFinishedFlag(bool f) { finished = f; } 
     void SetScaling(const osp::vec3f& s) { regionScaling = s; }
+    void SetTransferFunction(const OSPTransferFunction& t) { transferfcn = t; }
+    void SetRenderer(const OSPRenderer& r) { renderer = r; }
 
     // ospModel component
     OSPModel GetWorld() { return world; }
@@ -226,12 +241,11 @@ class VolumeInfo
     // ospVolume component
     void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME); 
     OSPVolume GetVolume() { return volume; }
-    void SetVolume(int type, void *ptr, unsigned char* ghost,
+    void SetVolume(int type, void *ptr,
 		   double *X, double *Y, double *Z, 
 		   int nX, int nY, int nZ,
 		   double volumePBox[6], 
-		   double volumeBBox[6],
-		   bool cellDataFormat);
+		   double volumeBBox[6]);
     void CleanVolume() {	
 	if (volume != NULL) { ospRelease(volume); volume = NULL; }
 	if (voxelData != NULL) { 
@@ -282,7 +296,7 @@ class OSPContext
     };
  private:
     // ospray objects
-    std::vector<VolumeInfo> volumePatch;
+    std::vector<OSPVolumePatch> volumePatch;
     OSPLight aLight;
     OSPLight dLight;
     OSPData  lightdata;
@@ -292,15 +306,20 @@ class OSPContext
     unsigned char           cameraType;
     OSPTransferFunction     transferfcn;
     unsigned char           transferfcnType;
+    // -- DVR mode variable --
+    OSPModel                modelDVR;
+    OSPFrameBuffer          fbDVR;
+    float                  *fbDataDVR;
+    std::vector<osp::box3f> volumeRegionsDVR;
     // class parameters
-    bool refreshData;
     osp::vec3f regionScaling;
     float r_panx;
     float r_pany;
     float zoom;
     int   screenSize[2];
-    bool  enabledOSPRay;
-    bool  enabledDVR; // (not used yet) Distributed Volume Renderer
+    // ospray mode
+    bool  refreshData;
+    bool  enableDVR; // (not used yet) Distributed Volume Renderer
  public:
     OSPContext() {
 	// ospray objects
@@ -313,15 +332,19 @@ class OSPContext
 	cameraType      = OSP_INVALID;
 	transferfcn     = NULL;
 	transferfcnType = OSP_INVALID;
+	//--- DVR ---
+	modelDVR        = NULL;
+	fbDVR           = NULL;
+	fbDataDVR       = NULL;
 	// class parameters
-	refreshData = false;
 	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
 	r_panx = 0.0f;
 	r_pany = 0.0f;
-	zoom = 1.0f;
+	zoom   = 1.0f;
 	screenSize[0] = screenSize[1] = 0.0f;
-	enabledOSPRay = false;
-	enabledDVR = false; // Distributed Volume Renderer
+	// ospray mode
+	refreshData = false;
+	enableDVR   = false; // Distributed Volume Renderer
     }
     // expose this in header
     // because this will be called in other libraries
@@ -339,10 +362,15 @@ class OSPContext
 	transferfcnType = OSP_INVALID;
     }
 
+    // helper
+    void Render(float xMin, float xMax, float yMin, float yMax,
+		int imgWidth, int imgHeight, 
+		float*& dest, OSPVolumePatch* volume);
     // flags
-    bool IsEnabled() { return enabledOSPRay; }
-    bool IsDVRMode() { return enabledDVR; }
-    void SetDVRMode(bool mode) { enabledDVR = mode; } 
+    bool IsDVRMode() { return enableDVR; }
+    void SetDVRMode(bool mode) { enableDVR = mode; } 
+
+    // parameters
     void SetScaling(double s[3]) { 
 	regionScaling.x = (float)s[0];
 	regionScaling.y = (float)s[1];
@@ -352,11 +380,11 @@ class OSPContext
     // patch 
     void InitOSP(bool flag, int numThreads = 0);
     void InitPatch(int id);
-    VolumeInfo* GetPatch(int id) { return &volumePatch[id]; }
+    OSPVolumePatch* GetPatch(int id) { return &volumePatch[id]; }
 
     // ospRenderer component
     void InitRenderer();
-    void SetRenderer(bool lighting, double mtl[4], double dir[3]);
+    void SetRenderer(bool shading, double mtl[4], double dir[3]);
     void SetModel(OSPModel world);
 
     // ospCamera component

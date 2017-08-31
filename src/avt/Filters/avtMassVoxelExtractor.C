@@ -2345,23 +2345,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	Y[0], Y[nY-1],
 	Z[0], Z[nZ-1]
     };
-    // if (ncell_arrays > 0) {    
-    // 	volumeCube[0] = X[0];
-    // 	volumeCube[1] = X[nX-1];
-    // 	volumeCube[2] = Y[0];
-    // 	volumeCube[3] = Y[nY-1];
-    // 	volumeCube[4] = Z[0];
-    // 	volumeCube[5] = Z[nZ-1];
-
-    // }
-    // else {
-    // 	volumeCube[0] = X[0];
-    // 	volumeCube[1] = X[nX-1];
-    // 	volumeCube[2] = Y[0];
-    // 	volumeCube[3] = Y[nY-1];
-    // 	volumeCube[4] = Z[0];
-    // 	volumeCube[5] = Z[nZ-1];
-    // }
 
     //=======================================================================//
     // Determine the screen size of the patch being processed
@@ -2437,7 +2420,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      << "         One of the dataset might be missing "
 		      << std::endl;
 	}
-	VolumeInfo* volume = ospray->GetPatch(patch);
+	OSPVolumePatch* volume = ospray->GetPatch(patch);
 
 	// shift grid and make it cel centered for cell data
 	double volumePBox[6] = {
@@ -2486,32 +2469,32 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	       << " " << volumeBBox[5]
 	       << std::endl; 
 
-	volume->Set(volumeDataType, volumePointer, ghosts,
-		    X, Y, Z, nX, nY, nZ,		    
-		    volumePBox, volumeBBox, materialProperties,
-		    (float)rendererSampleRate, lighting, 
-		    ncell_arrays > 0);
+	volume->Set(volumeDataType, volumePointer,
+		    X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox, 
+		    materialProperties, (float)rendererSampleRate, lighting);
 
 	if ((scalarRange[1] >= tFVisibleRange[0]) &&
 	    (scalarRange[0] <= tFVisibleRange[1]))
 	{
-	    // start timing
-	    int renderIndex = visitTimer->StartTimer();
+	    ospray->Render(xMin, xMax, yMin, yMax,
+			   imgWidth, imgHeight, imgArray, volume);
+	    // // start timing
+	    // int renderIndex = visitTimer->StartTimer();
 
-            // render frame
-	    ospray->SetSubCamera(xMin, xMax, yMin, yMax);
-	    ospray->SetModel(volume->GetWorld());
-	    volume->InitFB(imgWidth, imgHeight);
-	    volume->RenderFB();
+            // // render frame
+	    // ospray->SetSubCamera(xMin, xMax, yMin, yMax);
+	    // ospray->SetModel(volume->GetWorld());
+	    // volume->InitFB(imgWidth, imgHeight);
+	    // volume->RenderFB();
 
-	    // end timing
-	    visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
+	    // // end timing
+	    // visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
 
-	    // copy data
-	    std::copy(volume->GetFBData(), 
-		      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
-		      imgArray);
-	    volume->CleanFBData();
+	    // // copy data
+	    // std::copy(volume->GetFBData(), 
+	    // 	      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
+	    // 	      imgArray);
+	    // volume->CleanFBData();
 	    patchDrawn = 1;
 
 	}
