@@ -1,16 +1,17 @@
-#/home/sci/qwu/VisIt/visit/cmake/3.8.1/linux-x86_64_gcc-4.8/bin/cmake
+#/home/sci/qwu/software/Hastur/VisIt/visit/cmake/3.8.1/linux-x86_64_gcc-4.8/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Sun Jun 18 04:01:25 MDT 2017
+## created: Sat Aug 26 12:46:10 MDT 2017
 ## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
 ##
 ## Setup VISITHOME & VISITARCH variables.
 ##
-SET(VISITHOME /home/sci/qwu/VisIt/visit)
+SET(VISITHOME /home/sci/qwu/software/Hastur/VisIt/visit)
 SET(VISITARCH linux-x86_64_gcc-4.8)
 
+##
 ## Compiler flags.
 ##
 IF (VISIT_USE_ICC)
@@ -38,23 +39,6 @@ VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/impi/2017.2.174/bin64/mpicc T
 ## VisIt Thread Option
 ##
 VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
-
-##
-## OSPRay
-## -- VTK 6.1.0 forces to use python 2.7.6, need to manually change it
-## -- recommend to remove tbb libraries inside embree and ospray binary folder
-##                                                                             
-SET(OSPRAY_USE_EXTERNAL_EMBREE ON)
-SET(ospray_DIR /home/sci/qwu/software/ospray-qwu-visit/lib64/cmake/ospray-1.3.0)
-SET(embree_DIR /home/sci/qwu/software/embree-2.15.0.x86_64.linux)
-SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
-SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
-VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-
-##
-## PIDX
-##
-SET(PIDX_DIR /home/sci/qwu/VisIt/visitOSPRayCPU/PIDX/install-master)
 
 ##############################################################
 ##
@@ -111,14 +95,14 @@ VISIT_OPTION_DEFAULT(VISIT_HDF5_DIR ${VISITHOME}/hdf5/1.8.14/${VISITARCH})
 VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz /usr/lib z TYPE STRING)
 
 ##
-## Ice-T
-##
-VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/1.0.0/${VISITARCH})
-
-##
 ## LLVM
 ##
 VISIT_OPTION_DEFAULT(VISIT_LLVM_DIR ${VISITHOME}/llvm/4.0.0/${VISITARCH})
+
+##
+## Ice-T
+##
+VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/1.0.0/${VISITARCH})
 ##
 
 ##
@@ -136,6 +120,22 @@ VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP
 ##
 ## Uintah
 ##
-SETUP_APP_VERSION(UINTAH 1.6.0)
+SETUP_APP_VERSION(UINTAH 2.0.0)
 VISIT_OPTION_DEFAULT(VISIT_UINTAH_DIR ${VISITHOME}/uintah/${UINTAH_VERSION}/${VISITARCH})
 
+##
+## OSPRay
+## -- VTK 6.1.0 forces to use python 2.7.6, need to manually change it
+## -- recommend to remove tbb libraries inside embree and ospray binary folder
+##                                                                             
+SET(OSPRAY_USE_EXTERNAL_EMBREE ON)
+SET(ospray_DIR /home/sci/qwu/OSPRay/Hastur/install-visit/lib64/cmake/ospray-1.3.1)
+SET(embree_DIR /home/sci/qwu/software/embree-2.15.0.x86_64.linux)
+SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
+SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
+
+##
+## PIDX
+##
+SET(PIDX_DIR /home/sci/qwu/software/Hastur/PIDX/install)
