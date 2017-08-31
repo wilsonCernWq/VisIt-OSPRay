@@ -165,7 +165,7 @@ m = GetMachineProfile(hostname)
 # makePlot(m, VolumeAtts, 1, 16, True, True, True)
 # makePlot(m, VolumeAtts, 1, 8)
 
-makePlot(m, VolumeAtts, 64, 8, False, True, True)
+makePlot(m, VolumeAtts, 32, 8, False, True, True)
 # makePlot(m, VolumeAtts, 64, 16, False, True, False)
 # makePlot(m, VolumeAtts, 64, 32, False, True, False)
 # makePlot(m, VolumeAtts, 64, 64, False, True, False)

@@ -157,8 +157,6 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 #-----------------------------------------------------------------------------
 # open remote
 m = GetMachineProfile(hostname)
-makePlot(m, VolumeAtts, 12, 112, False, False)
-makePlot(m, VolumeAtts, 1, 112)
 # makePlot(m, VolumeAtts, 12, 96, False, False)
 # makePlot(m, VolumeAtts, 1, 96)
 # makePlot(m, VolumeAtts, 12, 64, False, False)
