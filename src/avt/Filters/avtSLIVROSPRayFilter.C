@@ -375,7 +375,7 @@ void OSPContext::SetRenderer(bool shading, double mtl[4], double dir[3])
 	       << mtl[1] << " "
 	       << mtl[2] << " "
 	       << mtl[3] << std::endl;
-	ospSet1i(renderer, "shadowsEnabled", 1);
+	ospSet1i(renderer, "shadowsEnabled", 0);
 	// ambient light
 	ospSet1f(aLight, "intensity", (float)mtl[0]);
 	ospSet1i(aLight, "isVisible", 0);
