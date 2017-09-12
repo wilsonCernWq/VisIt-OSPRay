@@ -131,7 +131,8 @@ namespace slivr
 	// acts as a key
 	int procId;      // processor that produced the patch
 	int patchNumber; // id of the patch on that processor
-	float *imagePatch = NULL; // the image data - RGBA
+	float *imagePatch; // the image data - RGBA
+	ImgData() { imagePatch = NULL; }
 	bool operator==(const ImgData &a){
 	    return (patchNumber == a.patchNumber);
 	}

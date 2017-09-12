@@ -15,7 +15,7 @@ AddPlot("Volume", "O2", 1, 1)
 # set TF
 VolumeAtts = VolumeAttributes()
 VolumeAtts.legendFlag = 1
-VolumeAtts.lightingFlag = 0
+VolumeAtts.lightingFlag = 1
 
 # COLOR
 # remove all color control points

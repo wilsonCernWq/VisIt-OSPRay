@@ -299,6 +299,7 @@ class OSPContext
     std::vector<OSPVolumePatch> volumePatch;
     OSPLight aLight;
     OSPLight dLight;
+    OSPLight sLight; // constant sun light
     OSPData  lightdata;
     OSPRenderer             renderer;
     unsigned char           rendererType;
@@ -325,6 +326,7 @@ class OSPContext
 	// ospray objects
 	aLight = NULL;
 	dLight = NULL;
+	sLight = NULL;
 	lightdata = NULL;
 	renderer        = NULL;
 	rendererType    = OSP_INVALID;

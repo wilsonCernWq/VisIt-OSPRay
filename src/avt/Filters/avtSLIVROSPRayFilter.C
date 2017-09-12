@@ -355,8 +355,9 @@ void OSPContext::InitRenderer()
 	renderer = ospNewRenderer("scivis");
 	aLight = ospNewLight(renderer, "ambient");
 	dLight = ospNewLight(renderer, "distant");
-	OSPLight lights[2] = { aLight, dLight };
-	lightdata = ospNewData(2, OSP_OBJECT, lights);
+	sLight = ospNewLight(renderer, "distant");
+	OSPLight lights[3] = { aLight, dLight, sLight };
+	lightdata = ospNewData(3, OSP_OBJECT, lights);
 	rendererType = OSP_VALID;
     }
 }
@@ -376,18 +377,25 @@ void OSPContext::SetRenderer(bool shading, double mtl[4], double dir[3])
 	       << mtl[2] << " "
 	       << mtl[3] << std::endl;
 	ospSet1i(renderer, "shadowsEnabled", 0);
+	// light direction
+	osp::vec3f lightDir;
+	lightDir.x = (float)dir[0];
+	lightDir.y = (float)dir[1];
+	lightDir.z = (float)dir[2];
 	// ambient light
 	ospSet1f(aLight, "intensity", (float)mtl[0]);
 	ospSet1i(aLight, "isVisible", 0);
 	ospCommit(aLight);
 	// directional light
-	osp::vec3f dLightDir;
-	dLightDir.x = (float)dir[0];
-	dLightDir.y = (float)dir[1];
-	dLightDir.z = (float)dir[2];
 	ospSet1f(dLight, "intensity", (float)mtl[1]);
+	ospSet1f(dLight, "angularDiameter", 0.53f);
 	ospSet1i(dLight, "isVisible", 0);
-	ospSetVec3f(dLight, "direction", dLightDir);
+	ospSetVec3f(dLight, "direction", lightDir);
+	// directional light
+	ospSet1f(sLight, "intensity", 1.5f);
+	ospSet1f(sLight, "angularDiameter", 0.53f);
+	ospSet1i(sLight, "isVisible", 0);
+	ospSetVec3f(sLight, "direction", lightDir);
 	ospCommit(dLight);	
 	ospSetData(renderer, "lights", lightdata);
     }

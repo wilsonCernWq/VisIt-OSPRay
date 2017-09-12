@@ -2385,7 +2385,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // create framebuffer
     //=======================================================================//
     // assign data to the class
-    xMax+=1; yMax+=1;
+    //xMax+=1; yMax+=1;
     ospout << "[avtMassVoxelExtractor] patch extents " 
 	   << xMin << " " << xMax << " "
 	   << yMin << " " << yMax << std::endl;
@@ -2395,9 +2395,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     if (yMax > fullImageExtents[3]) { yMax = fullImageExtents[3]; }
     imgWidth  = xMax-xMin;
     imgHeight = yMax-yMin;
-
-    // // exit if the image is empty
-    // if (imgWidth == 0 || imgHeight == 0) { return; }
 
     // Initialize memory (framebuffer)
     if (avtCallback::UseOSPRay()) {
@@ -2478,23 +2475,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	{
 	    ospray->Render(xMin, xMax, yMin, yMax,
 			   imgWidth, imgHeight, imgArray, volume);
-	    // // start timing
-	    // int renderIndex = visitTimer->StartTimer();
-
-            // // render frame
-	    // ospray->SetSubCamera(xMin, xMax, yMin, yMax);
-	    // ospray->SetModel(volume->GetWorld());
-	    // volume->InitFB(imgWidth, imgHeight);
-	    // volume->RenderFB();
-
-	    // // end timing
-	    // visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
-
-	    // // copy data
-	    // std::copy(volume->GetFBData(), 
-	    // 	      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
-	    // 	      imgArray);
-	    // volume->CleanFBData();
 	    patchDrawn = 1;
 
 	}
