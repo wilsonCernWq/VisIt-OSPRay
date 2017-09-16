@@ -192,9 +192,9 @@ class OSPVolumePatch
 	finished      = false; 
 	enableShading = false;
 	enableDVR     = false;
-	specularKs    = 0.0f;
-	specularNs    = 0.0f;
-	samplingRate  = 0.0f;
+	specularKs    = 1.0f;
+	specularNs    = 15.0f;
+	samplingRate  = 3.0f;
 	// geometric parameters for volume
 	regionSize.x  = regionSize.y  = regionSize.z  = 0;
 	regionStart.x = regionStart.y = regionStart.z = 0.0f;

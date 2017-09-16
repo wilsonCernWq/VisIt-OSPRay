@@ -193,7 +193,7 @@ OSPVolumePatch::SetVolume
     // commit volume
     // -- no lighting by default
     osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularKs;
-    ospSetVec3f(volume, "Ks", Ks);
+    ospSetVec3f(volume, "specular", Ks);
     ospSet1f(volume, "Ns", specularNs);
     ospSet1i(volume, "gradientShadingEnabled", (int)enableShading);
     // -- other properties
@@ -391,12 +391,13 @@ void OSPContext::SetRenderer(bool shading, double mtl[4], double dir[3])
 	ospSet1f(dLight, "angularDiameter", 0.53f);
 	ospSet1i(dLight, "isVisible", 0);
 	ospSetVec3f(dLight, "direction", lightDir);
+	ospCommit(dLight);
 	// directional light
 	ospSet1f(sLight, "intensity", 1.5f);
 	ospSet1f(sLight, "angularDiameter", 0.53f);
 	ospSet1i(sLight, "isVisible", 0);
 	ospSetVec3f(sLight, "direction", lightDir);
-	ospCommit(dLight);	
+	ospCommit(sLight);
 	ospSetData(renderer, "lights", lightdata);
     }
     ospCommit(renderer);
