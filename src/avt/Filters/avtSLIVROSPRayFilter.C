@@ -43,6 +43,10 @@
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
 
+#ifdef __unix__
+# include <unistd.h>
+#endif
+
 // helper
 namespace slivr {
     // output stream
@@ -192,6 +196,7 @@ OSPVolumePatch::SetVolume
 
     // commit volume
     // -- no lighting by default
+    ospout << "[ospray] setting specular value to " << specularKs << std::endl;
     osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularKs;
     ospSetVec3f(volume, "specular", Ks);
     ospSet1f(volume, "Ns", specularNs);
@@ -266,6 +271,12 @@ void OSPContext::InitOSP(bool flag, int numThreads)
     OSPDevice device = ospGetCurrentDevice();
     if (device == NULL) 
     {
+	// check hostname
+#ifdef __unix__
+	char hname[200];
+	gethostname(hname, 200);
+        ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
+#endif
 	// load ospray module
 	if (enableDVR) {
 	    OSPError err = ospLoadModule("mpi");

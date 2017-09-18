@@ -1031,6 +1031,55 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
 //    Added support for polygons.
 //
 // ****************************************************************************
+void CheckCellType(const int cellType) 
+{
+    switch (cellType)
+    {
+    case VTK_HEXAHEDRON:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_HEXAHEDRON" << std::endl;
+	break;
+    case VTK_QUADRATIC_HEXAHEDRON:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_QUADRATIC_HEXAHEDRON" << std::endl;
+	break;
+    case VTK_VOXEL:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_VOXEL" << std::endl;
+	break;
+    case VTK_TETRA:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_TETRA" << std::endl;
+	break;
+    case VTK_WEDGE:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_WEDGE" << std::endl;
+	break;
+    case VTK_PYRAMID:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_PYRAMID" << std::endl;
+	break;
+    case VTK_TRIANGLE:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_TRIANGLE" << std::endl;
+	break;
+    case VTK_QUAD:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_QUAD" << std::endl;	    
+	break;
+    case VTK_PIXEL:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_PIXEL" << std::endl;	    
+	break;
+    case VTK_POLYGON:
+	ospout << "[avtSamplePointExtractor] RasterBasedSample "
+	       << "DataObjectType == VTK_POLYGON" << std::endl;	    
+	break;
+    default:
+	EXCEPTION1(InvalidCellTypeException, 
+		   "surfaces or anything outside the finite element zoo.");
+    }
+}
 
 void
 avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
@@ -1038,7 +1087,8 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
     if (modeIs3D && ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
 	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "modeIs3D = " << modeIs3D << " "
+	       << "modeIs3D = " << modeIs3D << std::endl
+	       << "[avtSamplePointExtractor] RasterBasedSample "
 	       << "DataObjectType = VTK_RECTILINEAR_GRID"
 	       << std::endl;
 	avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
@@ -1129,55 +1179,9 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	   << "modeIs3D = " << modeIs3D << " " << std::endl;
     if (rayCastingSLIVR == true)
     {
-	std::cerr << "Warning: Dataset is not a VTK_RECTILINEAR_GRID."
-		  << " Currently RaycastSLIVR and OSPRaySLIVR renderer"
-		  << " only support rectilinear grid." << std::endl;
-    }
-    switch (ds->GetDataObjectType())
-    {
-    case VTK_HEXAHEDRON:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_HEXAHEDRON" << std::endl;
-	break;
-    case VTK_QUADRATIC_HEXAHEDRON:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_QUADRATIC_HEXAHEDRON" << std::endl;
-	break;
-    case VTK_VOXEL:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_VOXEL" << std::endl;
-	break;
-    case VTK_TETRA:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_TETRA" << std::endl;
-	break;
-    case VTK_WEDGE:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_WEDGE" << std::endl;
-	break;
-    case VTK_PYRAMID:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_PYRAMID" << std::endl;
-	break;
-    case VTK_TRIANGLE:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_TRIANGLE" << std::endl;
-	break;
-    case VTK_QUAD:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_QUAD" << std::endl;	    
-	break;
-    case VTK_PIXEL:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_PIXEL" << std::endl;	    
-	break;
-    case VTK_POLYGON:
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType == VTK_POLYGON" << std::endl;	    
-	break;
-    default:
-	EXCEPTION1(InvalidCellTypeException, 
-		   "surfaces or anything outside the finite element zoo.");
+	std::cerr << "Warning: Dataset is not a VTK_RECTILINEAR_GRID." << std::endl
+		  << "         Currently Ray Casting: SLIVR/OSPRay-SLIVR renderer" << std::endl
+		  << "         only support rectilinear grid." << std::endl;
     }
 
     int numCells = ds->GetNumberOfCells();
@@ -1201,6 +1205,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    EXCEPTION1(InvalidCellTypeException, "surfaces or anything outside"
 		       " the finite element zoo.");
 
+	if (j == 0) { CheckCellType(cell->GetCellType()); }
 	switch (cell->GetCellType())
 	{
 	case VTK_HEXAHEDRON:
