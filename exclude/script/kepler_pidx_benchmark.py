@@ -4,7 +4,7 @@ hostname = "wopr.sci.utah.edu"
 database = "/usr/sci/cedmav/data/pidx_uintah/CCVars.idx"
 timestep = 229829
 prefix='/home/sci/qwu/Desktop/timing/08-11/Kepler'
-script='/home/sci/qwu/VisIt/visitOSPRayCPU/working/exclude/script/tools/wopr'
+script='/home/sci/qwu/VisIt/working/exclude/script/tools/wopr'
 field = "O2"
 
 #------------------------------------------------------------------------------
@@ -156,7 +156,7 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 # open remote
 m = GetMachineProfile(hostname)
 # makePlot(m, VolumeAtts, 16, 2, False)
-# makePlot(m, VolumeAtts, 16, 4, False)
+makePlot(m, VolumeAtts, 16, 4, False)
 # makePlot(m, VolumeAtts, 16, 8, False)
 # makePlot(m, VolumeAtts, 16, 16, False)
 # makePlot(m, VolumeAtts, 16, 32, False)
