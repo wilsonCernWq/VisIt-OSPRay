@@ -2491,20 +2491,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgUpperRight[0] = xMax; 
     imgUpperRight[1] = yMax;
 
-    if (!avtCallback::UseOSPRay()) 
-    {
+    if (!avtCallback::UseOSPRay()) {
 	ospout << "[avtMassiveVoxelExtractor] "
 	       << "Using CPU version raytracer" << std::endl;
-
-	for (int patchX = xMin; patchX < xMax ; patchX++)
-	{
-	    for (int patchY = yMin; patchY < yMax ; patchY++)
-	    {
-		// std::cout << patchX << " " << patchY 
-		// 	  << " xMin " << xMin
-		// 	  << " yMin " << yMin
-		// 	  << " xMax " << xMax
-		// 	  << " yMax " << yMax << std::endl;
+    	for (int patchX = xMin; patchX < xMax ; patchX++) {
+	    for (int patchY = yMin; patchY < yMax ; patchY++) {
 
 		const int pIndex = (patchY-yMin)*imgWidth + (patchX-xMin);
 		const int fIndex = ((patchY-bufferExtents[2])*
@@ -2516,10 +2507,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		{
 		    if (depthBuffer[fIndex] != 1)
 		    {
-		        const double clipDepth = depthBuffer[fIndex]*2 - 1;
-		        if (clipDepth >= renderingDepthsExtents[0] && 
+			const double clipDepth = depthBuffer[fIndex]*2 - 1;
+			if (clipDepth >= renderingDepthsExtents[0] && 
 			    clipDepth <= renderingDepthsExtents[1])
-		        {
+			{
 			    patchDrawn = 1;
 			    const int imgID = pIndex * 4;
 			    imgArray[imgID + 0] = 
@@ -2529,14 +2520,14 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 			    imgArray[imgID + 2] = 
 				rgbColorBuffer[fIndex*3 + 2]/255.0;
 			    imgArray[imgID + 3] = 1.0;
-		        }
+			}
 		    }
 		}
 		else
 		{
 		    // std::cout << "draw" << std::endl;
 		    patchDrawn = 1;		    
-                    // starting point where we start sampling
+		    // starting point where we start sampling
 		    double origin[4]   = {0,0,0,1};
 		    // ending point where we stop sampling 
 		    double terminus[4] = {0,0,0,1};
@@ -2546,8 +2537,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		    // Go get the segments along this ray and store them in
 		    SampleAlongSegment(origin, terminus, patchX, patchY);
 		}
-    	    }
-    	}
+	    }
+	}
     }
 
     //=======================================================================//

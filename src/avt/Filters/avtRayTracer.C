@@ -826,7 +826,8 @@ avtRayTracer::Execute(void)
 	    	extractor.GetAndDelImgData /* do shallow copy inside */
 	    	    (currMeta.patchNumber, currData);
 		ospout << "[avtRayTracer] "
-		       << i << " depth " << currMeta.eye_z << std::endl
+		       << i << "(" << currMeta.patchNumber << ") " 
+		       << " depth " << currMeta.eye_z << std::endl
 		       << "current patch size = " 
 		       << currMeta.dims[0] << ", " 
 		       << currMeta.dims[1] << std::endl
@@ -837,10 +838,11 @@ avtRayTracer::Execute(void)
 		       << " X = " << currMeta.screen_ur[0] 
 		       << " Y = " << currMeta.screen_ur[1] << std::endl;
 		// // bug happens before this
+		// char ppmName[10]; sprintf(ppmName, "%d", i);
 		// WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/p"+ 
-		// 		std::to_string(i),
-		// 		currData.imagePatch, 
-		// 		currMeta.dims[0], currMeta.dims[1]);
+		//  		std::string(ppmName),
+		//  		currData.imagePatch, 
+		//  		currMeta.dims[0], currMeta.dims[1]);
 		int currExtents[4] = 
 		    {currMeta.screen_ll[0], currMeta.screen_ur[0], 
 		     currMeta.screen_ll[1], currMeta.screen_ur[1]};

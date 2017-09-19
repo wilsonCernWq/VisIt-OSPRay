@@ -765,13 +765,13 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 	//
 	if (kernelBasedSampling) {
 	    ospout << "[avtSamplePointExtractor] KernalBasedSampling" 
-		   << std::endl;
+		   << patchCount << std::endl;
 	    KernelBasedSample(ds);
 	}
 	else
 	{
-	    ospout << "[avtSamplePointExtractor] RasterBasedSampling" 
-		   << std::endl;
+	    ospout << "[avtSamplePointExtractor] RasterBasedSampling " 
+		   << patchCount << std::endl;
 	    if (rayCastingSLIVR == true)
 	    {
 		double _scalarRange[2];
@@ -795,7 +795,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     }
     
     debug5 << " parallel rank #" << PAR_Rank() 
-	   << " has " << patchCount  << " patches in data tree" << std::endl;
+	   << " has " << patchCount << " patches in data tree" << std::endl;
     
 }
 
