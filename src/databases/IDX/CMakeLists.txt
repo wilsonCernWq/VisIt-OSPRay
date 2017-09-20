@@ -61,10 +61,10 @@ LIST(FIND config "#define PIDX_HAVE_MPI 1" have_mpi)
 IF (have_mpi GREATER 0)
   # Try to find MPI only if MPI is not defined before
   # To avoid MPI compilation error
-  IF (NOT MPI_C_INCLUDE_PATH)
+  IF (NOT MPI_C_COMPILER)
     FIND_PACKAGE(MPI REQUIRED)
   ENDIF ()
-  IF (MPI_C_INCLUDE_PATH)
+  IF (MPI_C_COMPILER)
     SET(PIDX_INCLUDE_DIRS ${PIDX_INCLUDE_DIRS} ${MPI_C_INCLUDE_PATH})
     SET(PIDX_MPI_LIBS ${MPI_C_LIBRARIES})
   ELSE()
