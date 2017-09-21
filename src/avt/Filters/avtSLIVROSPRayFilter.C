@@ -228,7 +228,7 @@ OSPVolumePatch::SetVolume
     ospSetVec3f(volume, "gridSpacing", scaledSpacing);
     ospSetVec3f(volume, "gridOrigin",  scaledOrigin);
     ospSetVec3i(volume, "dimensions",  regionSize);
-    ospSet1f(volume, "samplingRate", 3.0f);
+    ospSet1f(volume, "samplingRate", samplingRate);
     ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 0);
     ospSet1i(volume, "singleShade", 0);
