@@ -519,6 +519,17 @@ void OSPContext::SetTransferFunction(const OSPColor *table,
 	colors.push_back(color);
 	opacities.push_back(table[i].A);
     }
+
+    // printf("\n\n");
+    // for (int i = 0; i < size; ++i) {
+    // 	printf("vec3f(%f,%f,%f),\n",colors[i].x,colors[i].y,colors[i].z);
+    // }
+    // printf("\n{");
+    // for (int i = 0; i < size; ++i) {
+    // 	printf("%f,",opacities[i]);
+    // }
+    // printf("}\n");
+
     OSPData colorData   = 
 	ospNewData(colors.size(), OSP_FLOAT3, colors.data());
     OSPData opacityData = 
