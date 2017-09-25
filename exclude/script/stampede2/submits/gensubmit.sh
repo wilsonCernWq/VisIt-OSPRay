@@ -16,6 +16,9 @@ cat >> sample-$NAME.sh <<EOF
 #SBATCH --time=00:30:00 # walltime, abbreviated by -t
 #
 #
+module import intel
+module import impi
+module import hdf5
 export LIBRARY_PATH=${LIBRARY_PATH}:/work/04915/qiwu/stampede2/software/VisIt/stampede2/visit/vtk/6.1.0/linux-x86_64_gcc-5.4/lib
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/work/04915/qiwu/stampede2/software/VisIt/stampede2/visit/vtk/6.1.0/linux-x86_64_gcc-5.4/lib
 export I_MPI_PIN_DOMAIN=omp
