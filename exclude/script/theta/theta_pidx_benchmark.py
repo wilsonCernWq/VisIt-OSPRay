@@ -1,11 +1,17 @@
 import os
 from subprocess import call
-hostname = "theta.alcf.anl.gov"
-database = "/projects/Viz_Support/data/CoalBoiler_IDX/CCVars.idx"
-timestep = 229829
-prefix = "/gpfs/mira-home/qiwu/timings/visit/theta"
-field = "O2"
 
+#-----------------------------------------------------------------------------
+server_path = "/gpfs/mira-home/qiwu/timings/visit/theta"
+client_path = "./"
+datainfo = {
+    'HOSTNAME': "theta.alcf.anl.gov",
+    'FULLPATH': "/projects/Viz_Support/data/CoalBoiler_IDX/CCVars.idx",
+    'TIMESTEP': 229829,
+    'VARIABLE': "O2"
+}
+cmd_enter = "source /home/qiwu/enterVisItJobs.sh " + server_path + "/"
+cmd_exit  = "source /home/qiwu/exitVisItJobs.sh "  + server_path + "/"
 #-----------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
@@ -23,20 +29,23 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True, usePascal = True, useDefault = True):
-    dirpath = "n" + str(numNodes) + "p" + str(numThreads)
+def makePlot(machine, atts, numThreads, numNodes, \
+             useOSPRay = True, usePascal = True, useDefault = True):
+    dirpath = client_path + "n" + str(numNodes) + "p" + str(numThreads)
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
+
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd  = "source /home/qiwu/enterVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPreCmd  = emd_enter + dirpath
     machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source /home/qiwu/exitVisItJobs.sh "  + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPostCmd = emd_exit  + dirpath
+
     OpenComputeEngine(machine)
-    OpenDatabase(hostname + ":" + database)
-    SetTimeSliderState(timestep)
-    AddPlot("Volume", field)
+    OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
+    SetTimeSliderState(datainfo['TIMESTEP'])
+    AddPlot("Volume", datainfo['VARIABLE'])
     def drawPlots(VolumeAtts, VolumeType):
         # Splatting, Texture3D, RayCasting, RayCastingIntegration
         # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
@@ -157,19 +166,17 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 #-----------------------------------------------------------------------------
 # open remote
 m = GetMachineProfile(hostname)
-
 # makePlot(m, VolumeAtts, 1, 256, True, True, False)
 # makePlot(m, VolumeAtts, 1, 128, True, True, False)
 # makePlot(m, VolumeAtts, 1, 64, True, True, False)
 # makePlot(m, VolumeAtts, 1, 32, True, True, True)
 # makePlot(m, VolumeAtts, 1, 16, True, True, True)
-makePlot(m, VolumeAtts, 1, 8)
-
+# makePlot(m, VolumeAtts, 1, 8, True, False, False)
 # makePlot(m, VolumeAtts, 32, 8, False, True, True)
 # makePlot(m, VolumeAtts, 64, 16, False, True, False)
 # makePlot(m, VolumeAtts, 64, 32, False, True, False)
 # makePlot(m, VolumeAtts, 64, 64, False, True, False)
 # makePlot(m, VolumeAtts, 64, 128, False, True, False)
 # makePlot(m, VolumeAtts, 64, 256, False, True, False)
-
+call("mv *.vlog *.timings " + server_path, shell=True)
 exit()

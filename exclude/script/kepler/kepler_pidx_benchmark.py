@@ -1,12 +1,18 @@
 import os
 from subprocess import call
-hostname = "wopr.sci.utah.edu"
-database = "/usr/sci/cedmav/data/pidx_uintah/CCVars.idx"
-timestep = 229829
-prefix='/home/sci/qwu/Desktop/timing/08-11/Kepler'
-script='/home/sci/qwu/VisIt/working/exclude/script/tools/wopr'
-field = "O2"
 
+#-----------------------------------------------------------------------------
+server_path = "/home/sci/qwu/Desktop/timing/08-11/Kepler"
+client_path = "./"
+datainfo = {
+    'HOSTNAME': "wopr.sci.utah.edu",
+    'FULLPATH': "/usr/sci/cedmav/data/pidx_uintah/CCVars.idx",
+    'TIMESTEP': 229829,
+    'VARIABLE': "O2"
+}
+cmd_prefix = "/home/sci/qwu/VisIt/working/exclude/script/tools/wopr"
+cmd_enter = "source " + cmd_prefix + "/enterVisItJobs.sh " + server_path + "/"
+cmd_exit  = "source " + cmd_prefix + "/exitVisItJobs.sh "  + server_path + "/"
 #------------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
@@ -24,22 +30,26 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True):
-    dirpath = "n" + str(numNodes) + "p" + str(numThreads)
+def makePlot(machine, atts, numThreads, numNodes, \
+             useOSPRay = True, usePascal = True, useDefault = True):
+    dirpath = client_path + "n" + str(numNodes) + "p" + str(numThreads)
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
+
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd = "source " + script + "/enterVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPreCmd  = emd_enter + dirpath
     machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source " + script + "/exitVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPostCmd = emd_exit  + dirpath
+
     OpenComputeEngine(machine)
-    OpenDatabase(hostname + ":" + database)
-    SetTimeSliderState(timestep)
-    AddPlot("Volume", field)
+    OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
+    SetTimeSliderState(datainfo['TIMESTEP'])
+    AddPlot("Volume", datainfo['VARIABLE'])
     def drawPlots(VolumeAtts, VolumeType):
-        # Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        # Splatting, Texture3D, RayCasting, RayCastingIntegration
+        # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
@@ -74,8 +84,10 @@ def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True):
             SaveWindow()
     if (useOSPRay):
         drawPlots(atts, atts.OSPRaySLIVR)
-    drawPlots(atts, atts.RayCastingSLIVR)
-    drawPlots(atts, atts.RayCasting)
+    if (usePascal):
+        drawPlots(atts, atts.RayCastingSLIVR)
+    if (useDefault):
+        drawPlots(atts, atts.RayCasting)
     # close all
     DeleteActivePlots()
     CloseDatabase(hostname + ":" + database)
@@ -156,7 +168,7 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 # open remote
 m = GetMachineProfile(hostname)
 # makePlot(m, VolumeAtts, 16, 2, False)
-makePlot(m, VolumeAtts, 16, 4, False)
+# makePlot(m, VolumeAtts, 16, 4, False)
 # makePlot(m, VolumeAtts, 16, 8, False)
 # makePlot(m, VolumeAtts, 16, 16, False)
 # makePlot(m, VolumeAtts, 16, 32, False)
@@ -165,5 +177,5 @@ makePlot(m, VolumeAtts, 16, 4, False)
 # makePlot(m, VolumeAtts, 1, 8)
 # makePlot(m, VolumeAtts, 1, 16)
 # makePlot(m, VolumeAtts, 1, 32)
-call("mv *.vlog *.timings " + prefix, shell=True)
+call("mv *.vlog *.timings " + server_path, shell=True)
 exit()
