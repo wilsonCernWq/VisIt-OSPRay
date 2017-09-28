@@ -78,18 +78,30 @@ OSPVolumePatch::Set
     // So we refresh volume everytime to fix the bug
     // which means we need to disable grid accelerator
     // to speed things up. Until I found the reason of crashing
-    if (true /*!finished*/) { 
+    if (ptr != dataPtr) {
+       ospout << "[ospray] update data" << std::endl;
+    };
+    if (true /*!finished*/) {
+	// Because we initialized the volume each frame
+	// we need to removed the old volume from model first
+	// if (finished) {
+	//     ospRemoveVolume(world, volume);
+	//     ospCommit(world);	    
+	// }
 	volumeType = OSP_INVALID;
 	InitVolume();
 	SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
-		  volumePBox, volumeBBox); 
+		  volumePBox, volumeBBox);
+	// now we add the volume back
+	// if (finished) { SetWorld(); }
     }
     /* OSPRay Model */
-    if (!finished) {
+    if (true/*!finished*/) {
 	worldType = OSP_INVALID; 
 	InitWorld();
 	SetWorld();
     }
+    /* update volume */
     finished = true;
 }
 
