@@ -1,4 +1,5 @@
 #!/bin/bash
+export OSPRAY_THREADS=2
 source /home/sci/qwu/software/Kepler/VisIt/visit-depend.sh activate
 DEST=$1
 mkdir -p $DEST
