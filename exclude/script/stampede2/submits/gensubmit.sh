@@ -1,13 +1,15 @@
 #!/bin/bash
+
 NT=$2 # number of tasks
 NN=$3 # number of node
 NC=$4 # number of cores per task
 NAME=n${NN}p$((NT / NN))
-DIR=$(pwd)/$NAME
 EXE=$WORK/software/VisIt/stampede2/visit-trunk/build/bin/visit
 SCP=$1
+
 mkdir -p $NAME
 cd $NAME
+
 cat >> sample-$NAME.sh <<EOF
 #!/bin/bash
 #SBATCH -n ${NT}
@@ -15,7 +17,7 @@ cat >> sample-$NAME.sh <<EOF
 #SBATCH -c ${NC}
 #SBATCH --time=00:30:00 # walltime, abbreviated by -t
 #
-#
+# load modules
 module import intel
 module import impi
 module import hdf5
@@ -25,10 +27,6 @@ export I_MPI_PIN_DOMAIN=omp
 export OMP_NUM_THREADS=1
 export KMP_AFFINITY=verbose,granularity=core,compact,1,0
 export OSPRAY_THREADS=1
-#
-# set data and working directories
-mkdir -p $DIR
-cd $DIR
 #
 # run job
 echo "job: <\$SLURM_JOBID> node = $NN processes-per-node = $((NT / NN))"
