@@ -1,11 +1,17 @@
 import os
 from subprocess import call
-hostname = "cooley.alcf.anl.gov"
-database = "/home/qiwu/data/timestamps/t230278/l0/CCVars.idx"
-timestep = 230278
-prefix = "/gpfs/mira-home/qiwu/timings/visit/cooley"
-field = "O2"
 
+#-----------------------------------------------------------------------------
+server_path = "/gpfs/mira-home/qiwu/timings/visit/cooley"
+client_path = "./"
+datainfo = {
+    'HOSTNAME': "cooley.alcf.anl.gov",
+    'FULLPATH': "/home/qiwu/data/timestamps/t230278/l0/CCVars.idx",
+    'TIMESTEP': 230278,
+    'VARIABLE': "O2"
+}
+cmd_enter = "source /home/qiwu/enterVisItJobs.sh " + server_path + "/"
+cmd_exit  = "source /home/qiwu/exitVisItJobs.sh "  + server_path + "/"
 #-----------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
@@ -22,33 +28,34 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.xBias = xBias
     oPoint.yBias = yBias
     return oPoint
-
-def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True, usePascal = True):
-    dirpath = "n" + str(numNodes) + "p" + str(numThreads)
+def makePlot(machine, atts, numThreads, numNodes, \
+             useOSPRay = True, usePascal = True, useDefault = True):
+    dirpath = client_path + "n" + str(numNodes) + "p" + str(numThreads)
     if not os.path.isdir(dirpath):
         os.makedirs(dirpath)
+
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd  = "source /gpfs/mira-home/qiwu/enterVisItJobs.sh " + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPreCmd  = emd_enter + dirpath
     machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = "source /gpfs/mira-home/qiwu/exitVisItJobs.sh "  + prefix + "/" + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPostCmd = emd_exit  + dirpath
+
     OpenComputeEngine(machine)
-    OpenDatabase(hostname + ":" + database)
-    SetTimeSliderState(timestep)
-    AddPlot("Volume", field)
-    # atts.rendererType = atts.Splatting
-    # SetPlotOptions(atts)
-    # DrawPlots()
+    OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
+    SetTimeSliderState(datainfo['TIMESTEP'])
+    AddPlot("Volume", datainfo['VARIABLE'])
     def drawPlots(VolumeAtts, VolumeType):
-        # Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        # Splatting, Texture3D, RayCasting, RayCastingIntegration
+        # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
         DrawPlots()
         SaveWindow()
         # camera positions
-        c = [GetView3D(), GetView3D(), GetView3D(), GetView3D(), GetView3D(), GetView3D()]
+        c = [GetView3D(), GetView3D(), GetView3D(), 
+             GetView3D(), GetView3D(), GetView3D()]
         # side views
         c[0].viewNormal = (0, 1, 0)
         c[0].viewUp = (0, 0, -1)
@@ -77,7 +84,8 @@ def makePlot(machine, atts, numThreads, numNodes, useOSPRay = True, usePascal = 
         drawPlots(atts, atts.OSPRaySLIVR)
     if (usePascal):
         drawPlots(atts, atts.RayCastingSLIVR)
-    drawPlots(atts, atts.RayCasting)
+    if (useDefault):
+        drawPlots(atts, atts.RayCasting)
     # close all
     DeleteActivePlots()
     CloseDatabase(hostname + ":" + database)
@@ -171,5 +179,6 @@ m = GetMachineProfile(hostname)
 # makePlot(m, VolumeAtts, 1, 4)
 # makePlot(m, VolumeAtts, 12, 2, False)
 # makePlot(m, VolumeAtts, 1, 2)
+call("mv *.vlog *.timings " + server_path, shell=True)
 exit()
 

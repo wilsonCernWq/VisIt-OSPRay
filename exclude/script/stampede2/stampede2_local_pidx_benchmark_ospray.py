@@ -6,7 +6,7 @@ server_path = "./"
 client_path = "./"
 datainfo = {
     'HOSTNAME': "localhost",
-    'FULLPATH': "/usr/sci/cedmav/data/pidx_uintah/CCVars.idx",
+    'FULLPATH': "/work/04915/qiwu/stampede2/data/PIDX_CoilBoiler/CCVars.idx",
     'TIMESTEP': 229829,
     'VARIABLE': "O2"
 }
@@ -147,5 +147,5 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
 #-----------------------------------------------------------------------------
 # open remote
-makePlot(VolumeAtts, False, True, False)
+makePlot(VolumeAtts, True, False, False)
 exit()

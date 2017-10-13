@@ -1,11 +1,16 @@
 import os
 from subprocess import call
-hostname = "localhost"
-database = "/usr/sci/cedmav/data/pidx_uintah/CCVars.idx"
-timestep = 229829
-field = "O2"
 
-#--------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+server_path = "./"
+client_path = "./"
+datainfo = {
+    'HOSTNAME': "localhost",
+    'FULLPATH': "/work/04915/qiwu/stampede2/data/PIDX_CoilBoiler/CCVars.idx",
+    'TIMESTEP': 229829,
+    'VARIABLE': "O2"
+}
+#-----------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
     cPoint = ColorControlPoint()
@@ -22,19 +27,21 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(atts):
-    OpenDatabase(hostname + ":" + database)
-    SetTimeSliderState(timestep)
-    AddPlot("Volume", field)
+def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
+    OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
+    SetTimeSliderState(datainfo['TIMESTEP'])
+    AddPlot("Volume", datainfo['VARIABLE'])
     def drawPlots(VolumeAtts, VolumeType):
-        # Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR
-        # RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        # Splatting, Texture3D, RayCasting, RayCastingIntegration
+        # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
         DrawPlots()
+        SaveWindow()
         # camera positions
-        c = [GetView3D(), GetView3D(), GetView3D(), GetView3D(), GetView3D(), GetView3D()]
+        c = [GetView3D(), GetView3D(), GetView3D(), 
+             GetView3D(), GetView3D(), GetView3D()]
         # side views
         c[0].viewNormal = (0, 1, 0)
         c[0].viewUp = (0, 0, -1)
@@ -50,24 +57,26 @@ def makePlot(atts):
         c[5].viewNormal = (-1, 0, 0)
         c[5].viewUp = (0, 1, 0)
         # N front/back views
-        for i in range(2):
+        for i in range(4):
             SetView3D(c[i % 2 + 4])
             DrawPlots()
+            SaveWindow()
         # N side views
-        for i in range(4):
+        for i in range(8):
             SetView3D(c[i % 4])
             DrawPlots()
-    # do plots
-    drawPlots(atts, atts.OSPRaySLIVR)
-    #drawPlots(atts, atts.RayCastingSLIVR)
-    #drawPlots(atts, atts.RayCasting)
-    #drawPlots(atts, atts.RayCastingIntegration)
+            SaveWindow()
+    if (useOSPRay):
+        drawPlots(atts, atts.OSPRaySLIVR)
+    if (usePascal):
+        drawPlots(atts, atts.RayCastingSLIVR)
+    if (useDefault):
+        drawPlots(atts, atts.RayCasting)
     # close all
     DeleteActivePlots()
-    CloseDatabase(hostname + ":" + database)
-    CloseComputeEngine(hostname)
+    CloseDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
 
-#--------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # Set Default Option
 opt = GetDefaultFileOpenOptions("IDX")
 opt['Big Endian'] = 0
@@ -75,7 +84,7 @@ opt['Use RAW format'] = 1
 opt['Use extra cells'] = 1
 SetDefaultFileOpenOptions("IDX", opt)
 
-#--------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # setup VolumeAttribute
 # set TF
 VolumeAtts = VolumeAttributes()
@@ -129,15 +138,14 @@ VolumeAtts.skewFactor = 1
 VolumeAtts.limitsMode = VolumeAtts.OriginalData  # OriginalData, CurrentPlot
 VolumeAtts.sampling = VolumeAtts.Trilinear  # KernelBased, Rasterization, Trilinear
 VolumeAtts.rendererSamples = 3
-#transferFunction2DWidgets does not contain any TransferFunctionWidget objects.
+# transferFunction2DWidgets does not contain any TransferFunctionWidget objects.
 VolumeAtts.transferFunctionDim = 1
 VolumeAtts.lowGradientLightingReduction = VolumeAtts.Lower  # Off, Lowest, Lower, Low, Medium, High, Higher, Highest
 VolumeAtts.lowGradientLightingClampFlag = 0
 VolumeAtts.lowGradientLightingClampValue = 1
 VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
-#--------------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 # open remote
-makePlot(VolumeAtts)
+makePlot(VolumeAtts, False, True, False)
 exit()
-
