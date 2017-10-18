@@ -377,12 +377,20 @@ avtSamplePointExtractor::Execute(void)
 {
     int timingsIndex = visitTimer->StartTimer();
 
+    int timings_SetUpExtractors = visitTimer->StartTimer();
     SetUpExtractors();
+    visitTimer->StopTimer(timings_SetUpExtractors, 
+			  "avtSamplePointExtractor::Execute "
+			  "SetUpExtractors()");
 
+    int timings_ExecuteTree = visitTimer->StartTimer();
     avtDataTree_p tree = GetInputDataTree();
     totalNodes = tree->GetNumberOfLeaves();
     currentNode = 0;
     ExecuteTree(tree);
+    visitTimer->StopTimer(timings_ExecuteTree, 
+			  "avtSamplePointExtractor::Execute "
+			  "ExecuteTree(ree)");
 
     visitTimer->StopTimer(timingsIndex, "Sample point extraction");
 }
@@ -706,29 +714,43 @@ struct datatree_childindex {
 void
 avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 {
+    //----------------------------------------------------------
+    // Initialization
+    //----------------------------------------------------------
+    int timings_ExecuteTree_init = visitTimer->StartTimer();
     // initialize rayCastingSLIVR sampling state
     totalAssignedPatches = dt->GetNChildren();
     patchCount = 0;
     imageMetaPatchVector.clear();
     imgDataHashMap.clear();
-
-    // Qi debug 
+    // debug 
     ospout << "[avtSamplePointExtractor] ExecuteTree with " 
 	   << totalAssignedPatches << " patches" << std::endl;
-
+    // timing
+    visitTimer->StopTimer(timings_ExecuteTree_init, 
+			  "avtSamplePointExtractor::ExecuteTree "
+			  "Initialization");
     // if it is an empty node
     if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
-	return;
+    { 
+	return; 
+    }
 
+    //----------------------------------------------------------
+    // Process tree
+    //----------------------------------------------------------
+    int timings_ExecuteTree_process = visitTimer->StartTimer();
     // Process tree
     std::stack<datatree_childindex*> nodes;
-
     // iterative depth-first sampling
     nodes.push(new datatree_childindex(dt,0));
     while (!nodes.empty())
     {
+	//-----------------------------------------------
+        // initialize tree structure
+	//-----------------------------------------------
 	datatree_childindex *ci=nodes.top();
-	avtDataTree_p ch=ci->dt;	
+	avtDataTree_p ch=ci->dt;
 	if (ch->GetNChildren() != 0)
 	{
 	    nodes.pop();  // if it has children, it never gets processed below
@@ -739,39 +761,52 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 		    if (*ch == NULL || 
 			(ch->GetNChildren() <= 0 && 
 			 (!(ch->HasData()))))
-			continue;
+		    { continue; }
 		    nodes.push(new datatree_childindex(ch->GetChild(i),i));
 		    if (rayCastingSLIVR == true && avtCallback::UseOSPRay())
 		    {
+			int timings_init_osp_patch = visitTimer->StartTimer();
 			ospray->InitPatch(i);
+			visitTimer->StopTimer(timings_init_osp_patch,
+					      "avtSamplePointExtractor::ExecuteTree "
+					      "[OSPRay] InitPatch()");			
 		    }	
 		}
 	    }    
 	    continue;
-	}	
-	//do the work
+	}
+	
+	//-----------------------------------------------
+	// do the work
+	//-----------------------------------------------
 	nodes.pop();
-	if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
-	    continue;
-	
-	//
+	if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData())))) { continue; }
 	// Get the dataset for this leaf in the tree.
-	//
-	vtkDataSet *ds = ch->GetDataRepresentation().GetDataVTK();
-	
-	//
+	int timings_pop_get_data = visitTimer->StartTimer();
+	vtkDataSet *ds = ch->GetDataRepresentation().GetDataVTK();		
+	visitTimer->StopTimer(timings_pop_get_data,
+			      "avtSamplePointExtractor::ExecuteTree "
+			      "Pop and getDataVTK()");		
+
+	//-----------------------------------------------
 	// Iterate over all cells in the mesh and call the appropriate
 	// extractor for each cell to get the sample points.
-	//
+	//-----------------------------------------------
 	if (kernelBasedSampling) {
 	    ospout << "[avtSamplePointExtractor] KernalBasedSampling" 
 		   << patchCount << std::endl;
+	    int timings_KernelBasedSample = visitTimer->StartTimer();
 	    KernelBasedSample(ds);
+	    visitTimer->StopTimer(timings_KernelBasedSample,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "KernelBasedSample(ds)");		
 	}
 	else
 	{
 	    ospout << "[avtSamplePointExtractor] RasterBasedSampling " 
 		   << patchCount << std::endl;
+	    // Get transfer function
+	    int timings_RasterBased_gettfn = visitTimer->StartTimer();
 	    if (rayCastingSLIVR == true)
 	    {
 		double _scalarRange[2];
@@ -787,16 +822,29 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 		
 		massVoxelExtractor->SetScalarRange(_scalarRange);
 		massVoxelExtractor->SetTFVisibleRange(_tfVisibleRange);
-	    }  
+	    } 
+	    visitTimer->StopTimer(timings_RasterBased_gettfn,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "Get Transfer Function before RasterBasedSample");		
+	    // do the work
+	    int timings_RasterBasedSample = visitTimer->StartTimer();
 	    RasterBasedSample(ds, ci->idx);
+	    visitTimer->StopTimer(timings_RasterBasedSample,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "RasterBasedSample(ds, ci->idx)");		
 	}
+	// update progress
 	UpdateProgress(10*currentNode+9, 10*totalNodes);
 	currentNode++;
     }
-    
-    debug5 << " parallel rank #" << PAR_Rank() 
-	   << " has " << patchCount << " patches in data tree" << std::endl;
-    
+    // timing
+    visitTimer->StopTimer(timings_ExecuteTree_process, 
+			  "avtSamplePointExtractor::ExecuteTree "
+			  "Process Tree");
+    // debug
+    ospout << "[avtSamplePointExtractor] parallel rank #" << PAR_Rank() 
+	   << " has " << patchCount << " patches in data tree"
+	   << std::endl;    
 }
 
 
@@ -1084,6 +1132,10 @@ void CheckCellType(const int cellType)
 void
 avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 {
+    int timingsIndex = visitTimer->StartTimer();
+    //---------------------------------------------------------
+    // Rectlinear
+    //---------------------------------------------------------
     if (modeIs3D && ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
 	ospout << "[avtSamplePointExtractor] RasterBasedSample "
@@ -1091,6 +1143,9 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	       << "[avtSamplePointExtractor] RasterBasedSample "
 	       << "DataObjectType = VTK_RECTILINEAR_GRID"
 	       << std::endl;
+	//-----------------------------
+	// Initialization
+	//-----------------------------
 	avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
 	const double *xform = NULL;
 	if (atts.GetRectilinearGridHasTransform()) { xform = atts.GetRectilinearGridTransform(); }
@@ -1109,8 +1164,10 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    // name of the variable
 	}
 
-	//
+	//-----------------------------
 	// Compositing Setup
+	//-----------------------------
+	int timings_setup_extractor = visitTimer->StartTimer();
 	if (rayCastingSLIVR == true)
 	{
 	    massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
@@ -1132,27 +1189,37 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    massVoxelExtractor->SetOSPRayContext(ospray);
 	    massVoxelExtractor->SetFullImageExtents(fullImageExtents);
 	}
+	// timing
+	visitTimer->StopTimer(timings_setup_extractor, 
+			      "avtSamplePointExtractor::RasterBasedSample "
+			      "Setup RectlinearGrid Extractor");
 
+	//-----------------------------
+	// Extract
+	//-----------------------------	
+	int timings_extract = visitTimer->StartTimer();
 	massVoxelExtractor->Extract((vtkRectilinearGrid *)ds, 
 				    varnames, varsizes);
+	visitTimer->StopTimer(timings_extract, 
+			      "avtSamplePointExtractor::RasterBasedSample "
+			      "Do Extraction");
 
-	//
+	//-----------------------------
 	// Get rendering results
 	// put them into a proper vector, sort them based on z value
-	//
+	//-----------------------------
+	int timings_get_result = visitTimer->StartTimer();
 	if (rayCastingSLIVR == true)
 	{
 	    slivr::ImgMetaData tmpImageMetaPatch;
 	    tmpImageMetaPatch = initMetaPatch(patchCount);
-
 	    massVoxelExtractor->getImageDimensions(
 		tmpImageMetaPatch.inUse,
 		tmpImageMetaPatch.dims,
 		tmpImageMetaPatch.screen_ll, 
 		tmpImageMetaPatch.screen_ur, 
 		tmpImageMetaPatch.eye_z, 
-		tmpImageMetaPatch.clip_z);
-	    
+		tmpImageMetaPatch.clip_z);	   
 	    if (tmpImageMetaPatch.inUse == 1)
 	    {
 		tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
@@ -1172,9 +1239,19 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 		patchCount++;
 	    }
 	}
+	visitTimer->StopTimer(timings_get_result, 
+			      "avtSamplePointExtractor::RasterBasedSample "
+			      "Get Result");
+	// timing
+	visitTimer->StopTimer(timingsIndex, 
+			  "avtSamplePointExtractor::RasterBasedSample "
+			  "RectlinearGrid");
 	return;
     }
 
+    //---------------------------------------------------------
+    // Other Grid
+    //---------------------------------------------------------
     ospout << "[avtSamplePointExtractor] RasterBasedSample "
 	   << "modeIs3D = " << modeIs3D << " " << std::endl;
     if (rayCastingSLIVR == true)
@@ -1259,6 +1336,10 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    lastMilestone = currentMilestone;
 	}
     }
+    // timing
+    visitTimer->StopTimer(timingsIndex, 
+			  "avtSamplePointExtractor::RasterBasedSample "
+			  "Others");
 }
 
 
