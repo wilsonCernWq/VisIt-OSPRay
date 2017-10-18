@@ -809,19 +809,30 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 	    int timings_RasterBased_gettfn = visitTimer->StartTimer();
 	    if (rayCastingSLIVR == true)
 	    {
+		int timings_gettfn_range = visitTimer->StartTimer();
 		double _scalarRange[2];
-		ds->GetScalarRange(_scalarRange);
+		ds->GetScalarRange(_scalarRange);		
+		visitTimer->StopTimer(timings_gettfn_range,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "Get Data Scalar Range");
 		
+		int timings_gettfn_tfnrange = visitTimer->StartTimer();
 		double _tfRange[2];
 		_tfRange[0] = transferFn1D->GetMin();
 		_tfRange[1] = transferFn1D->GetMax();
-		
 		double _tfVisibleRange[2];
 		_tfVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
 		_tfVisibleRange[1] = transferFn1D->GetMaxVisibleScalar();
+		visitTimer->StopTimer(timings_gettfn_tfnrange,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "Get TFN Range");		
 		
+		int timings_gettfn_setrange = visitTimer->StartTimer();
 		massVoxelExtractor->SetScalarRange(_scalarRange);
 		massVoxelExtractor->SetTFVisibleRange(_tfVisibleRange);
+		visitTimer->StopTimer(timings_gettfn_setrange,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "Set TFN Range to Extractor");		
 	    } 
 	    visitTimer->StopTimer(timings_RasterBased_gettfn,
 				  "avtSamplePointExtractor::ExecuteTree "
