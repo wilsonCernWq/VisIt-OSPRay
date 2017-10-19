@@ -255,11 +255,11 @@ void OSPVolumePatch::InitFB(unsigned int width, unsigned int height) {
     CleanFBData(); CleanFB();	    
     framebuffer = ospNewFrameBuffer(imageSize, 
 				    OSP_FB_RGBA32F,
-				    OSP_FB_COLOR | OSP_FB_ACCUM);	    
+				    OSP_FB_COLOR);	    
 }
 void OSPVolumePatch::RenderFB() {
-    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM);
-    ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+    // ospFrameBufferClear(framebuffer, OSP_FB_COLOR);
+    ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
     framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
 }
 float* OSPVolumePatch::GetFBData() {
@@ -334,23 +334,33 @@ void OSPContext::Render
 (float xMin, float xMax, float yMin, float yMax,
  int imgWidth, int imgHeight, float*& dest, OSPVolumePatch* volume) 
 {
-    // start timing
-    int renderIndex = visitTimer->StartTimer();
-	
     // render frame
+    int timing_setsubcamera = visitTimer->StartTimer();
     SetSubCamera(xMin, xMax, yMin, yMax);
+    visitTimer->StopTimer(timing_setsubcamera, "[OSPRay] Calling OSPContext::SetSubCamera");
+
+    int timing_setmodel = visitTimer->StartTimer();
     SetModel(volume->GetWorld());
+    visitTimer->StopTimer(timing_setmodel, "[OSPRay] Calling OSPContext::SetModel");
+
+    int timing_initfb = visitTimer->StartTimer();
     volume->InitFB(imgWidth, imgHeight);
+    visitTimer->StopTimer(timing_initfb, "[OSPRay] Calling OSPContext::InitFB");
+
+    int timing_renderfb = visitTimer->StartTimer();
     volume->RenderFB();
-	
-    // end timing
-    visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
+    visitTimer->StopTimer(timing_renderfb, "[OSPRay] Calling OSPContext::RenderFB");
 
     // copy data
+    int timing_stdcopy = visitTimer->StartTimer();
     std::copy(volume->GetFBData(), 
 	      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
 	      dest);
+    visitTimer->StopTimer(timing_stdcopy, "[OSPRay] Calling OSPContext::std::copy");
+
+    int timing_cleanfbdata = visitTimer->StartTimer();
     volume->CleanFBData();
+    visitTimer->StopTimer(timing_cleanfbdata, "[OSPRay] Calling OSPContext::CleanFBData");
 }
 
 void OSPContext::InitPatch(int id) 

@@ -2215,6 +2215,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
  std::vector<std::string> &varnames, 
  std::vector<int> &varsize)
 {
+    int timing_ExtractWorldSpaceGridRCSLIVR = visitTimer->StartTimer();
     //=======================================================================//
     // Initialization
     //=======================================================================//
@@ -2224,26 +2225,29 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     //=======================================================================//
     // Register data and early skipping
     //=======================================================================//
-
+    int timing_register_data = visitTimer->StartTimer();
     // Some of our sampling routines need a chance to pre-process the data.
     // Register the grid here so we can do that.
     // Stores the values in a structure so that it can be used
     RegisterGrid(rgrid, varnames, varsize);
-
     // Determine what range we are dealing with on this iteration.
     int w_min = restrictedMinWidth;
     int w_max = restrictedMaxWidth + 1;
     int h_min = restrictedMinHeight;
     int h_max = restrictedMaxHeight + 1;
     imgWidth = imgHeight = 0;
-
     // Let's find out if this range can even intersect the dataset.
     // If not, just skip it.
     if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max)) { return; }
+    // Timing
+    visitTimer->StopTimer(timing_register_data, 
+			  "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			  "Register Data (VisIt preparation)");
 
     //=======================================================================//
     // obtain data pointers & ghost region information
     //=======================================================================//
+    int timing_get_metadata = visitTimer->StartTimer();
     // Calculate patch dimensions for point array and cell array
     //   This is to check if the patch is a cell data or a point data
     //   I have to assume cell dataset has a higher priority
@@ -2282,7 +2286,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     }
     ospout << "[avtMassVoxelExtractor] patch dimension "
 	   << nX << " " << nY << " " << nZ << std::endl;
-
     // Calculate ghost region boundaries
     //   ghost_boundaries is an array to indicate if the patch contains
     //   any ghost regions in six different directions
@@ -2339,16 +2342,21 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    }
 	}
     }
-
+    // Data bounding box
     double volumeCube[6] = {
 	X[0], X[nX-1],
 	Y[0], Y[nY-1],
 	Z[0], Z[nZ-1]
     };
+    // Timing
+    visitTimer->StopTimer(timing_get_metadata , 
+			  "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			  "Compute metadata & ghost boundary (Pre-OSPRay preparation)");
 
     //=======================================================================//
     // Determine the screen size of the patch being processed
     //=======================================================================//
+    int timing_get_screen_projection = visitTimer->StartTimer();
     int patchScreenExtents[4];
     slivr::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
 				    panPercentage, imageZoom,
@@ -2380,10 +2388,15 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		  (patch_center[2]-view.camera[2]));
     eyesSpaceDepth = patch_depth;
     clipSpaceDepth = renderingDepthsExtents[0];
+    // Timing
+    visitTimer->StopTimer(timing_get_screen_projection, 
+			  "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			  "Get screen size of the patch (Pre-OSPRay preparation)");
 
     //=======================================================================//
     // create framebuffer
     //=======================================================================//
+    int timing_create_imgarray = visitTimer->StartTimer();
     // assign data to the class
     //xMax+=1; yMax+=1;
     ospout << "[avtMassVoxelExtractor] patch extents " 
@@ -2404,11 +2417,17 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
         // framebuffer initialized
 	imgArray = new float[((imgWidth)*4) * imgHeight](); 
     };
+    // Timing
+    visitTimer->StopTimer(timing_create_imgarray, 
+			  "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			  "Create ImgArray (Pre-OSPRay preparation)");
 
     //=======================================================================//
     // Render using OSPRay
     //=======================================================================//
+    int timing_using_ospray = visitTimer->StartTimer();
     if (avtCallback::UseOSPRay()) {
+	int timing_setup_ospray = visitTimer->StartTimer();
 	if (!((npt_arrays == 1)^(ncell_arrays == 1)))
 	{
 	    std::cerr << "WARNING: Multiple data found within one patch, " 
@@ -2418,14 +2437,13 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      << std::endl;
 	}
 	OSPVolumePatch* volume = ospray->GetPatch(patch);
-
 	// shift grid and make it cel centered for cell data
 	double volumePBox[6] = {
 	    // for cell centered data, we put the voxel on its left boundary
 	    X[0], Y[0], Z[0], 
 	    X[nX-1], Y[nY-1], Z[nZ-1]
 	};
-
+	// compute boundingbox and clipping plane for ospray
 	double volumeBBox[6];
 	if (ncell_arrays > 0) {
 	    volumeBBox[0] = ghost_bound[0] ? (X[0]+X[1])/2. : volumePBox[0];
@@ -2446,7 +2464,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    volumeBBox[4] = ghost_bound[4] ? Y[nY-2] : volumePBox[4];
 	    volumeBBox[5] = ghost_bound[5] ? Z[nZ-2] : volumePBox[5];
 	}
-
 	ospout << "[avtMassVoxelExtractor] patch data position:" 
 	       << " " << volumePBox[0]
 	       << " " << volumePBox[1]
@@ -2465,11 +2482,22 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	       << " " << volumeBBox[4]
 	       << " " << volumeBBox[5]
 	       << std::endl; 
-
+	// Timing
+	visitTimer->StopTimer(timing_setup_ospray, 
+			      "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			      "OSPRay bbox and clip (OSPRay preparation)");
+	
+	// Create volume and model
+	int timing_create_volume = visitTimer->StartTimer();
 	volume->Set(volumeDataType, volumePointer,
 		    X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox, 
 		    materialProperties, (float)rendererSampleRate, lighting);
+	visitTimer->StopTimer(timing_create_volume, 
+			      "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			      "OSPRay Create Volume");
 
+	// Render Volume
+	int timing_render_volume = visitTimer->StartTimer();
 	if ((scalarRange[1] >= tFVisibleRange[0]) &&
 	    (scalarRange[0] <= tFVisibleRange[1]))
 	{
@@ -2479,11 +2507,19 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 
 	}
 	volume->CleanFB();
+	visitTimer->StopTimer(timing_render_volume, 
+			      "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			      "OSPRay Render Volume");	
     }
+    // Timing
+    visitTimer->StopTimer(timing_using_ospray, 
+			  "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			  "Using OSPRay");
 
     //=======================================================================//
     // Send rays
     //=======================================================================//
+    int timing_using_pascal = visitTimer->StartTimer();
     imgDims[0] = imgWidth;
     imgDims[1] = imgHeight;
     imgLowerLeft[0] = xMin;
@@ -2540,6 +2576,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    }
 	}
     }
+    // Timing
+    visitTimer->StopTimer(timing_using_pascal, 
+			  "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+			  "Using Pascal (Post OSPRay)");
 
     //=======================================================================//
     // Deallocate memory if not used
@@ -2556,6 +2596,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // 			std::to_string(proc), imgArray, 
     // 			imgWidth, imgHeight);
     // }
+    visitTimer->StopTimer(timing_ExtractWorldSpaceGridRCSLIVR, "Calling avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR");
 }
 
 
