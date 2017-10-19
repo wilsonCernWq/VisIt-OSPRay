@@ -57,15 +57,15 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
         c[5].viewNormal = (-1, 0, 0)
         c[5].viewUp = (0, 1, 0)
         # N front/back views
-        for i in range(4):
+        for i in range(12):
             SetView3D(c[i % 2 + 4])
             DrawPlots()
             SaveWindow()
-        # N side views
-        for i in range(8):
-            SetView3D(c[i % 4])
-            DrawPlots()
-            SaveWindow()
+        # # N side views
+        # for i in range(8):
+        #     SetView3D(c[i % 4])
+        #     DrawPlots()
+        #     SaveWindow()
     if (useOSPRay):
         drawPlots(atts, atts.OSPRaySLIVR)
     if (usePascal):
