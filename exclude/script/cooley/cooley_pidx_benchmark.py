@@ -37,9 +37,9 @@ def makePlot(machine, atts, numThreads, numNodes, \
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd  = emd_enter + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPreCmd  = cmd_enter + dirpath
     machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = emd_exit  + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPostCmd = cmd_exit  + dirpath
 
     OpenComputeEngine(machine)
     OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
@@ -164,7 +164,7 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
 #-----------------------------------------------------------------------------
 # open remote
-m = GetMachineProfile(hostname)
+m = GetMachineProfile(datainfo['HOSTNAME'])
 # makePlot(m, VolumeAtts, 12, 96, False, False)
 # makePlot(m, VolumeAtts, 1, 96)
 # makePlot(m, VolumeAtts, 12, 64, False, False)

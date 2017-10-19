@@ -1,4 +1,5 @@
 import os
+import math
 from subprocess import call
 
 #-----------------------------------------------------------------------------
@@ -10,7 +11,7 @@ datainfo = {
     'TIMESTEP': 229829,
     'VARIABLE': "O2"
 }
-cmd_prefix = "/home/sci/qwu/VisIt/working/exclude/script/tools/wopr"
+cmd_prefix = "/home/sci/qwu/VisIt/working/exclude/tools/kepler"
 cmd_enter = "source " + cmd_prefix + "/enterVisItJobs.sh " + server_path + "/"
 cmd_exit  = "source " + cmd_prefix + "/exitVisItJobs.sh "  + server_path + "/"
 #------------------------------------------------------------------------------
@@ -39,9 +40,9 @@ def makePlot(machine, atts, numThreads, numNodes, \
     machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
     machine.GetLaunchProfiles(0).numNodes = numNodes
     machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd  = emd_enter + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPreCmd  = cmd_enter + dirpath
     machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = emd_exit  + dirpath
+    machine.GetLaunchProfiles(0).sublaunchPostCmd = cmd_exit  + dirpath
 
     OpenComputeEngine(machine)
     OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
@@ -56,30 +57,23 @@ def makePlot(machine, atts, numThreads, numNodes, \
         DrawPlots()
         SaveWindow()
         # camera positions
-        c = [GetView3D(), GetView3D(), GetView3D(), 
-             GetView3D(), GetView3D(), GetView3D()]
-        # side views
-        c[0].viewNormal = (0, 1, 0)
-        c[0].viewUp = (0, 0, -1)
-        c[1].viewNormal = (0, 0,-1)
-        c[1].viewUp = (0,-1, 0)
-        c[2].viewNormal = (0,-1, 0)
-        c[2].viewUp = (0, 0, 1)
-        c[3].viewNormal = (0, 0, 1)
-        c[3].viewUp = (0, 1, 0)
+        c = GetView3D()
         # front/back views
-        c[4].viewNormal = ( 1, 0, 0)
-        c[4].viewUp = (0, 1, 0)
-        c[5].viewNormal = (-1, 0, 0)
-        c[5].viewUp = (0, 1, 0)
-        # N front/back views
-        for i in range(4):
-            SetView3D(c[i % 2 + 4])
+        N = 100
+        for i in range(N):
+            angle = float(i) / float(N) * 2 * math.pi
+            cc = c
+            cc.viewNormal = (0, math.sin(angle),  math.cos(angle))
+            cc.viewUp     = (0, math.cos(angle), -math.sin(angle))
+            SetView3D(cc)
             DrawPlots()
             SaveWindow()
-        # N side views
-        for i in range(8):
-            SetView3D(c[i % 4])
+        for i in range(N):
+            angle = float(i) / float(N) * 2 * math.pi
+            cc = c
+            cc.viewNormal = (math.cos(angle), 0, math.sin(angle))
+            cc.viewUp     = (0, 1, 0)
+            SetView3D(cc)
             DrawPlots()
             SaveWindow()
     if (useOSPRay):
@@ -166,16 +160,7 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
 #------------------------------------------------------------------------------
 # open remote
-m = GetMachineProfile(hostname)
-# makePlot(m, VolumeAtts, 16, 2, False)
-# makePlot(m, VolumeAtts, 16, 4, False)
-# makePlot(m, VolumeAtts, 16, 8, False)
-# makePlot(m, VolumeAtts, 16, 16, False)
-# makePlot(m, VolumeAtts, 16, 32, False)
-# makePlot(m, VolumeAtts, 1, 2)
-# makePlot(m, VolumeAtts, 1, 4)
-# makePlot(m, VolumeAtts, 1, 8)
-# makePlot(m, VolumeAtts, 1, 16)
-# makePlot(m, VolumeAtts, 1, 32)
+m = GetMachineProfile(datainfo['HOSTNAME'])
+makePlot(m, VolumeAtts, 1, 16, True, False, False)
 call("mv *.vlog *.timings " + server_path, shell=True)
 exit()
