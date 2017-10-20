@@ -311,7 +311,7 @@ void OSPContext::InitOSP(bool flag, int numThreads)
 	// setup debug 
 	if (DebugStream::Level5()) {
 	    ospout << " debug mode";
-	    ospDeviceSet1i(device, "debug", 1);
+	    ospDeviceSet1i(device, "debug", 0);
 	}
 	// setup number of threads (this can only be hard-coded)
 	if (numThreads > 0) {
