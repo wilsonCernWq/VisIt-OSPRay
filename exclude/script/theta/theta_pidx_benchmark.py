@@ -10,8 +10,8 @@ datainfo = {
     'TIMESTEP': 229829,
     'VARIABLE': "O2"
 }
-cmd_enter = "source /home/qiwu/enterVisItJobs.sh " + server_path + "/"
-cmd_exit  = "source /home/qiwu/exitVisItJobs.sh "  + server_path + "/"
+cmd_enter = "source /home/qiwu/bin/enterVisItJobs.sh " + server_path + "/"
+cmd_exit  = "source /home/qiwu/bin/exitVisItJobs.sh "  + server_path + "/"
 #-----------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
@@ -171,5 +171,6 @@ m = GetMachineProfile(datainfo['HOSTNAME'])
 #makePlot(m, VolumeAtts, 1, 16, True, False, False)
 #makePlot(m, VolumeAtts, 1, 32, True, False, False)
 #makePlot(m, VolumeAtts, 1, 64, True, False, False)
-makePlot(m, VolumeAtts, 1, 128, True, False, False)
+#makePlot(m, VolumeAtts, 1, 128, True, False, False)
+#makePlot(m, VolumeAtts, 1, 256, True, False, False)
 exit()
