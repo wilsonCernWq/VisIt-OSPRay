@@ -3,7 +3,7 @@ import math
 from subprocess import call
 
 #-----------------------------------------------------------------------------
-server_path = "/home/sci/qwu/Desktop/timing/08-11/Kepler"
+server_path = "/home/sci/qwu/Desktop/timing/tmp/Kepler"
 client_path = "./"
 datainfo = {
     'HOSTNAME': "wopr.sci.utah.edu",
