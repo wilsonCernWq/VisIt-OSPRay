@@ -16,6 +16,18 @@ class JobSubmitter_qsub_ANL(JobSubmitter_qsub):
     def __init__(self, launcher):
         super(JobSubmitter_qsub_ANL, self).__init__(launcher)
 
+    def aprun_args(self, args):
+        mpicmd = self.aprun()
+        if self.parallel.sublaunchargs != None:
+            mpicmd = mpicmd + self.parallel.sublaunchargs
+        if self.parallel.np != None:
+            mpicmd = mpicmd + ["-n", self.parallel.np]
+        if self.parallel.nn != None:
+            mpicmd = mpicmd + ["-N", self.PPN()]
+        mpicmd = mpicmd + ["-cc", "depth", "-d", "256", "-j", "0"]
+        mpicmd = mpicmd + self.VisItExecutable() + args
+        return mpicmd
+
     def CreateFilename(self, root):
         tdate = time.asctime()[11:19]
         tuser = self.launcher.username()
@@ -49,15 +61,15 @@ class JobSubmitter_qsub_ANL(JobSubmitter_qsub):
         tfile.write("export LIBRARY_PATH=${LIBRARY_PATH}:/home/qiwu/software/VisIt/theta/visit/vtk/6.1.0/linux-x86_64_cc/lib:/home/qiwu/software/PIDX/install/theta/lib\n")
         tfile.write("export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/qiwu/software/VisIt/theta/visit/vtk/6.1.0/linux-x86_64_cc/lib:/home/qiwu/software/PIDX/install/theta/lib\n")
         tfile.write("module unload PrgEnv-intel\n")
-        tfile.write("module load gcc\n")
-        tfile.write("module load ispc\n")
         tfile.write("module load PrgEnv-gnu\n")
         tfile.write("source /home/qiwu/software/embree-2.15.0.x86_64.linux/embree-vars.sh\n")
-        tfile.write("export OSPRAY_THREADS=64\n")
-	tfile.write("export OMP_NUM_THREADS=64\n")	
-        tfile.write("export I_MPI_PIN_DOMAIN=omp:platform\n")
-        tfile.write("export CRAYPE_LINK_TYPE=dynamic\n")
-        tfile.write("export MPICH_MAX_THREAD_SAFETY=multiple\n")
+	tfile.write("export CRAYPE_LINK_TYPE=dynamic\n")
+	tfile.write("export MPICH_MAX_THREAD_SAFETY=multiple\n")
+	tfile.write("export OSPRAY_THREADS=64\n")
+	tfile.write("export I_MPI_PIN_DOMAIN=omp\n")
+	tfile.write("export OMP_NUM_THREADS=256\n")
+	tfile.write("export KMP_AFFINITY=verbose,granularity=core,compact,1,0\n")
+	tfile.write("export CRAY_OMP_CHECK_AFFINITY=TRUE\n")
 
 
 ###############################################################################
