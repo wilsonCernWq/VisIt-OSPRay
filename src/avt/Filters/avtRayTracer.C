@@ -72,15 +72,16 @@
 #  include <avtImageCommunicator.h>
 #  include <avtSamplePointCommunicator.h>
 #endif
+
 #include <DebugStream.h>
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
 
-// ****************************************************************************
-//
-// Extra functions only in this source
-//
-// ****************************************************************************
+#if defined (_MSC_VER) && (_MSC_VER < 1800) && !defined(round)
+inline double round(double x) {return (x-floor(x)) > 0.5 ? ceil(x) : floor(x);}
+#endif
+
+using     std::vector;
 
 bool sortImgMetaDataByDepth
 (slivr::ImgMetaData const& before, slivr::ImgMetaData const& after)
@@ -110,7 +111,6 @@ bool sortImgMetaDataByEyeSpaceDepth
 
 avtRayTracer::avtRayTracer()
 {
-    // view information
     view.camera[0] = -5.;
     view.camera[1] = 10.;
     view.camera[2] = -15.;
@@ -172,7 +172,10 @@ avtRayTracer::avtRayTracer()
 //
 // ****************************************************************************
 
-avtRayTracer::~avtRayTracer() {}
+avtRayTracer::~avtRayTracer()
+{
+    ;
+}
 
 
 // ****************************************************************************
@@ -534,9 +537,9 @@ avtRayTracer::Execute(void)
 	// Scaling
 	vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
 	matScale->Identity(); 
-	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
+	if (avtCallback::UseOSPRay())
 	{ 
-	    // will be setted later
+	    // This is set in line 686 ospray->SetScaling(scale);
 	}
 	else 
 	{
