@@ -1,17 +1,17 @@
 import os
+import math
 from subprocess import call
 
 #-----------------------------------------------------------------------------
-server_path = "/gpfs/mira-home/qiwu/timings/visit/theta"
+server_path = "./"
 client_path = "./"
 datainfo = {
-    'HOSTNAME': "theta.alcf.anl.gov",
-    'FULLPATH': "/projects/Viz_Support/data/CoalBoiler_IDX/CCVars.idx",
-    'TIMESTEP': 229829,
+    'HOSTNAME': "localhost",
+    'FULLPATH': "/home/qiwu/data/timestamps/t230278/l0/CCVars.idx",
+    'TIMESTEP': 230278,
     'VARIABLE': "O2"
 }
-cmd_enter = "source /home/qiwu/bin/enterVisItJobs.sh " + server_path + "/"
-cmd_exit  = "source /home/qiwu/bin/exitVisItJobs.sh "  + server_path + "/"
+
 #-----------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
@@ -29,21 +29,7 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(machine, atts, numThreads, numNodes, \
-             useOSPRay = True, usePascal = True, useDefault = True):
-
-    dirpath = client_path + "n" + str(numNodes) + "p" + str(numThreads)
-    if not os.path.isdir(dirpath):
-        os.makedirs(dirpath)
-
-    machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
-    machine.GetLaunchProfiles(0).numNodes = numNodes
-    machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd  = cmd_enter + dirpath
-    machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = cmd_exit  + dirpath
-
-    OpenComputeEngine(machine)
+def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
     OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
     SetTimeSliderState(datainfo['TIMESTEP'])
     AddPlot("Volume", datainfo['VARIABLE'])
@@ -56,30 +42,23 @@ def makePlot(machine, atts, numThreads, numNodes, \
         DrawPlots()
         SaveWindow()
         # camera positions
-        c = [GetView3D(), GetView3D(), GetView3D(), 
-             GetView3D(), GetView3D(), GetView3D()]
-        # side views
-        c[0].viewNormal = (0, 1, 0)
-        c[0].viewUp = (0, 0, -1)
-        c[1].viewNormal = (0, 0,-1)
-        c[1].viewUp = (0,-1, 0)
-        c[2].viewNormal = (0,-1, 0)
-        c[2].viewUp = (0, 0, 1)
-        c[3].viewNormal = (0, 0, 1)
-        c[3].viewUp = (0, 1, 0)
+        c = GetView3D()
         # front/back views
-        c[4].viewNormal = ( 1, 0, 0)
-        c[4].viewUp = (0, 1, 0)
-        c[5].viewNormal = (-1, 0, 0)
-        c[5].viewUp = (0, 1, 0)
-        # N front/back views
-        for i in range(4):
-            SetView3D(c[i % 2 + 4])
+        N = 100
+        for i in range(N):
+            angle = float(i) / float(N) * 2 * math.pi
+            cc = c
+            cc.viewNormal = (0, math.sin(angle),  math.cos(angle))
+            cc.viewUp     = (0, math.cos(angle), -math.sin(angle))
+            SetView3D(cc)
             DrawPlots()
             SaveWindow()
-        # N side views
-        for i in range(8):
-            SetView3D(c[i % 4])
+        for i in range(N):
+            angle = float(i) / float(N) * 2 * math.pi
+            cc = c
+            cc.viewNormal = (math.cos(angle), 0, math.sin(angle))
+            cc.viewUp     = (0, 1, 0)
+            SetView3D(cc)
             DrawPlots()
             SaveWindow()
     if (useOSPRay):
@@ -91,9 +70,6 @@ def makePlot(machine, atts, numThreads, numNodes, \
     # close all
     DeleteActivePlots()
     CloseDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
-    CloseComputeEngine(datainfo['HOSTNAME'])
-    # clean up data
-    call("mv visit*.png " + dirpath, shell=True)
 
 #-----------------------------------------------------------------------------
 # Set Default Option
@@ -157,7 +133,7 @@ VolumeAtts.skewFactor = 1
 VolumeAtts.limitsMode = VolumeAtts.OriginalData  # OriginalData, CurrentPlot
 VolumeAtts.sampling = VolumeAtts.Trilinear  # KernelBased, Rasterization, Trilinear
 VolumeAtts.rendererSamples = 3
-#transferFunction2DWidgets does not contain any TransferFunctionWidget objects.
+# transferFunction2DWidgets does not contain any TransferFunctionWidget objects.
 VolumeAtts.transferFunctionDim = 1
 VolumeAtts.lowGradientLightingReduction = VolumeAtts.Lower  # Off, Lowest, Lower, Low, Medium, High, Higher, Highest
 VolumeAtts.lowGradientLightingClampFlag = 0
@@ -166,11 +142,6 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
 #-----------------------------------------------------------------------------
 # open remote
-m = GetMachineProfile(datainfo['HOSTNAME'])
-#makePlot(m, VolumeAtts, 1, 8, True, False, False)
-#makePlot(m, VolumeAtts, 1, 16, True, False, False)
-#makePlot(m, VolumeAtts, 1, 32, True, False, False)
-#makePlot(m, VolumeAtts, 1, 64, True, False, False)
-#makePlot(m, VolumeAtts, 1, 128, True, False, False)
-#makePlot(m, VolumeAtts, 1, 256, True, False, False)
+makePlot(VolumeAtts, True, False, False)
 exit()
+

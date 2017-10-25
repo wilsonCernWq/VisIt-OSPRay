@@ -15,36 +15,29 @@
 #ifndef _pidx_idx_io_h
 #define _pidx_idx_io_h
 
+#include "visit_idx_io.h"
+#include "visit_idx_io_types.h"
+
+#include <PIDX.h>
+
 #include <string>
 #include <vector>
 #include <cassert>
-#include <PIDX.h>
-#include "visit_idx_io.h"
-#include "visit_idx_io_types.h"
+
 typedef std::string String;
-
-using namespace VisitIDXIO;
-
-//class DatasetImpl;
-//class AccessImpl;
 
 class PIDXIO : public IDX_IO{
 
 public:
     
-    //TODO: remove use_raw
-    PIDXIO(){use_raw = false;}
-
-    PIDXIO(bool _use_raw){ use_raw = _use_raw; };
-    
+    PIDXIO(){}
+  
     bool openDataset(const std::string filename);
     
-    unsigned char* getData(const Box box, const int timestate, const char* varname);
+    unsigned char* getData(const VisitIDXIO::Box box, const int timestate, const char* varname);
     
     virtual ~PIDXIO();
 
-    bool use_raw;
-  
 };
 
 
