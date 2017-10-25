@@ -35,31 +35,31 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
     def drawPlots(VolumeAtts, VolumeType):
         # Splatting, Texture3D, RayCasting, RayCastingIntegration
         # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        print "drawing volume type: " + str(VolumeType)
+        VolumeAtts.rendererType = VolumeType
+        SetPlotOptions(VolumeAtts)
+        DrawPlots()
+        SaveWindow()
         # camera positions
-        c = [GetView3D(), GetView3D(), GetView3D(), 
-             GetView3D(), GetView3D(), GetView3D()]
-        # side views
-        c[0].viewNormal = (0, 1, 0)
-        c[0].viewUp = (0, 0, -1)
-        c[1].viewNormal = (0, 0,-1)
-        c[1].viewUp = (0,-1, 0)
-        c[2].viewNormal = (0,-1, 0)
-        c[2].viewUp = (0, 0, 1)
-        c[3].viewNormal = (0, 0, 1)
-        c[3].viewUp = (0, 1, 0)
+        c = GetView3D()
         # front/back views
-        c[4].viewNormal = ( 1, 0, 0)
-        c[4].viewUp = (0, 1, 0)
-        c[5].viewNormal = (-1, 0, 0)
-        c[5].viewUp = (0, 1, 0)
-        # N front/back views
-        for i in range(4):
-            SetView3D(c[i % 2 + 4])
+        N = 100
+        for i in range(N):
+            angle = float(i) / float(N) * 2 * math.pi
+            cc = c
+            cc.viewNormal = (0, math.sin(angle),  math.cos(angle))
+            cc.viewUp     = (0, math.cos(angle), -math.sin(angle))
+            SetView3D(cc)
             DrawPlots()
             SaveWindow()
-        # N side views
-        for i in range(8):
-            SetView3D(c[i % 4])
+            if (i > 25):
+                exit()
+        for i in range(N):
+            angle = float(i) / float(N) * 2 * math.pi
+            cc = c
+            cc.viewNormal = (math.cos(angle), 0, math.sin(angle))
+            cc.viewUp     = (0, 1, 0)
+            SetView3D(cc)
             DrawPlots()
             SaveWindow()
     if (useOSPRay):
