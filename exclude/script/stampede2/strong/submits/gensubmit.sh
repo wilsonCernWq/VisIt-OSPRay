@@ -14,7 +14,7 @@ cat >> sample-$NAME.sh <<EOF
 #!/bin/bash
 #SBATCH -n ${NT}
 #SBATCH -N ${NN}
-#SBATCH --time=02:00:00 # walltime, abbreviated by -t
+#SBATCH --time=00:30:00 # walltime, abbreviated by -t
 #
 # load modules
 module load intel
@@ -31,7 +31,7 @@ export OSPRAY_THREADS=$NC
 echo "job: <\$SLURM_JOBID> node = $NN processes-per-node = $((NT / NN))"
 $EXE -np $NT -nn $NN -l ibrun \
     -withhold-timing-output -timing \
-    -nowin -cli -s $SCP -debug 1
+    -nowin -cli -s $SCP 
 EOF
 sbatch -p normal -A TG-ASC170049 sample-$NAME.sh
 cd -
