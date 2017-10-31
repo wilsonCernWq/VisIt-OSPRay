@@ -52,8 +52,6 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
             SetView3D(cc)
             DrawPlots()
             SaveWindow()
-            if (i > 25):
-                exit()
         for i in range(N):
             angle = float(i) / float(N) * 2 * math.pi
             cc = c
@@ -143,5 +141,5 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
 #-----------------------------------------------------------------------------
 # open remote
-makePlot(VolumeAtts, True, False, False)
+makePlot(VolumeAtts, False, True, False)
 exit()
