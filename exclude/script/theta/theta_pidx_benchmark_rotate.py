@@ -59,7 +59,7 @@ def makePlot(machine, atts, numThreads, numNodes, \
         # camera positions
         c = GetView3D()
         # front/back views
-        N = 100
+        N = 10
         for i in range(N):
             angle = float(i) / float(N) * 2 * math.pi
             cc = c
@@ -161,11 +161,11 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 #-----------------------------------------------------------------------------
 # open remote
 m = GetMachineProfile(datainfo['HOSTNAME'])
-#makePlot(m, VolumeAtts, 1, 8, True, False, False)
-#makePlot(m, VolumeAtts, 1, 16, True, False, False)
-#makePlot(m, VolumeAtts, 1, 32, True, False, False)
-#makePlot(m, VolumeAtts, 1, 64, True, False, False)
-#makePlot(m, VolumeAtts, 1, 128, True, False, False)
-#makePlot(m, VolumeAtts, 1, 256, True, False, False)
-makePlot(m, VolumeAtts, 1, 512, True, False, False)
+#makePlot(m, VolumeAtts, 1, 512, True, False, False)
+#makePlot(m, VolumeAtts, 1, 256, False, False, True)
+#makePlot(m, VolumeAtts, 1, 128, False, False, True)
+#makePlot(m, VolumeAtts, 1, 64, False, False, True)
+makePlot(m, VolumeAtts, 1, 32, False, False, True)
+makePlot(m, VolumeAtts, 1, 16, False, False, True)
+makePlot(m, VolumeAtts, 1, 8, False, False, True)
 exit()
