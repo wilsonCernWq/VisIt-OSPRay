@@ -24,7 +24,11 @@ class JobSubmitter_qsub_ANL(JobSubmitter_qsub):
             mpicmd = mpicmd + ["-n", self.parallel.np]
         if self.parallel.nn != None:
             mpicmd = mpicmd + ["-N", self.PPN()]
-        mpicmd = mpicmd + ["-cc", "depth", "-d", "256", "-j", "0"]
+	if int(self.PPN()) == 1:
+	   mpicmd = mpicmd + ["-d", "256"]
+	else:
+	   mpicmd = mpicmd + ["-d", "1"]
+        mpicmd = mpicmd + ["-cc", "depth", "-j", "0"]
         mpicmd = mpicmd + self.VisItExecutable() + args
         return mpicmd
 
