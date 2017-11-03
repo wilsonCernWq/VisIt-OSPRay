@@ -17,8 +17,8 @@ cat >> sample-$NAME.sh <<EOF
 #
 # load modules
 source /home/qiwu/software/embree-2.15.0.x86_64.linux/embree-vars.sh 
-export LIBRARY_PATH=${LIBRARY_PATH}:/home/qiwu/software/VisIt/cooley/visit/vtk/6.1.0/linux-rhel_6-x86_64_gcc-4.9/lib
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/qiwu/software/VisIt/cooley/visit/vtk/6.1.0/linux-rhel_6-x86_64_gcc-4.9/lib
+export LIBRARY_PATH=\${LIBRARY_PATH}:/home/qiwu/software/VisIt/cooley/visit/vtk/6.1.0/linux-rhel_6-x86_64_gcc-4.9/lib
+export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:/home/qiwu/software/VisIt/cooley/visit/vtk/6.1.0/linux-rhel_6-x86_64_gcc-4.9/lib
 #
 # run job
 echo "job: <\$SLURM_JOBID> node = $NN processes-per-node = $((NT / NN))"

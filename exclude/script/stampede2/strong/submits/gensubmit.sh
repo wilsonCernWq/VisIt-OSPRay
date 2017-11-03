@@ -20,8 +20,8 @@ cat >> sample-$NAME.sh <<EOF
 module load intel
 module load impi
 module load hdf5
-export LIBRARY_PATH=${LIBRARY_PATH}:/work/04915/qiwu/stampede2/software/VisIt/stampede2/visit/vtk/6.1.0/linux-x86_64_gcc-5.4/lib
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/work/04915/qiwu/stampede2/software/VisIt/stampede2/visit/vtk/6.1.0/linux-x86_64_gcc-5.4/lib
+export LIBRARY_PATH=\${LIBRARY_PATH}:/work/04915/qiwu/stampede2/software/VisIt/stampede2/visit/vtk/6.1.0/linux-x86_64_gcc-5.4/lib
+export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:/work/04915/qiwu/stampede2/software/VisIt/stampede2/visit/vtk/6.1.0/linux-x86_64_gcc-5.4/lib
 export I_MPI_PIN_DOMAIN=omp
 export OMP_NUM_THREADS=$NC
 export KMP_AFFINITY=verbose,granularity=core,compact,1,0
