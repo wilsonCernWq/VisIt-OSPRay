@@ -1,3 +1,5 @@
+import socket
+
 ###############################################################################
 # Class: JobSubmitter_qsub_ANL
 #
@@ -13,10 +15,18 @@
 ###############################################################################
 
 class JobSubmitter_qsub_ANL(JobSubmitter_qsub):
+
     def __init__(self, launcher):
         super(JobSubmitter_qsub_ANL, self).__init__(launcher)
+	self.onCray = False
 
+    ###########################################################################
+    #
+    # For aprun 
+    #
+    ###########################################################################
     def aprun_args(self, args):
+	self.onCray = True
         mpicmd = self.aprun()
         if self.parallel.sublaunchargs != None:
             mpicmd = mpicmd + self.parallel.sublaunchargs
@@ -24,7 +34,12 @@ class JobSubmitter_qsub_ANL(JobSubmitter_qsub):
             mpicmd = mpicmd + ["-n", self.parallel.np]
         if self.parallel.nn != None:
             mpicmd = mpicmd + ["-N", self.PPN()]
-        mpicmd = mpicmd + ["-cc", "depth", "-d", "256", "-j", "0"]
+	if int(self.PPN()) == 1: 
+	    # the program is running using MPI/MulthThreading hybrid 
+	    mpicmd = mpicmd + ["-d", GETENV("OMP_NUM_THREADS")]
+	else:
+	    mpicmd = mpicmd + ["-d", "1"]
+        mpicmd = mpicmd + ["-cc", "depth", "-j", "0"]
         mpicmd = mpicmd + self.VisItExecutable() + args
         return mpicmd
 
@@ -56,20 +71,55 @@ class JobSubmitter_qsub_ANL(JobSubmitter_qsub):
     def TFileSetup(self, tfile):
         tfile.write("cd %s\n" % os.path.abspath(os.curdir))
         tfile.write("ulimit -c 0\n")
-        env = self.AddEnvironment()[1]
-        tfile.write("export %s\n" % env)
-        tfile.write("export LIBRARY_PATH=${LIBRARY_PATH}:/home/qiwu/software/VisIt/theta/visit/vtk/6.1.0/linux-x86_64_cc/lib:/home/qiwu/software/PIDX/install/theta/lib\n")
-        tfile.write("export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/qiwu/software/VisIt/theta/visit/vtk/6.1.0/linux-x86_64_cc/lib:/home/qiwu/software/PIDX/install/theta/lib\n")
-        tfile.write("module unload PrgEnv-intel\n")
-        tfile.write("module load PrgEnv-gnu\n")
-        tfile.write("source /home/qiwu/software/embree-2.15.0.x86_64.linux/embree-vars.sh\n")
-	tfile.write("export CRAYPE_LINK_TYPE=dynamic\n")
-	tfile.write("export MPICH_MAX_THREAD_SAFETY=multiple\n")
-	tfile.write("export OSPRAY_THREADS=64\n")
-	tfile.write("export I_MPI_PIN_DOMAIN=omp\n")
-	tfile.write("export OMP_NUM_THREADS=256\n")
-	tfile.write("export KMP_AFFINITY=verbose,granularity=core,compact,1,0\n")
-	tfile.write("export CRAY_OMP_CHECK_AFFINITY=TRUE\n")
+	if (self.onCray):		
+            tfile.write("module unload PrgEnv-intel\n")
+            tfile.write("module load   PrgEnv-gnu\n")
+	    tfile.write("export CRAYPE_LINK_TYPE=dynamic\n")
+	    tfile.write("export MPICH_MAX_THREAD_SAFETY=multiple\n")
+	    tfile.write("export I_MPI_PIN_DOMAIN=omp\n")
+	    tfile.write("export KMP_AFFINITY=verbose,granularity=core,compact,1,0\n")
+	    tfile.write("export CRAY_OMP_CHECK_AFFINITY=TRUE\n")
+	    tfile.write("export OMP_NUM_THREADS=" + GETENV("OMP_NUM_THREADS") + "\n")
+	    tfile.write("export OSPRAY_THREADS=" + GETENV("OSPRAY_THREADS") + "\n")
+
+
+###############################################################################
+# Class: JobSubmitter_aprun_ANL
+#
+# Purpose:    Custom "aprun" job submitter for ANL.
+#
+# Programmer: Qi
+# Date:       
+#
+# Modifications:
+#   Add support for hybrid parallelism on Theta
+#
+###############################################################################
+
+class JobSubmitter_aprun_ANL(JobSubmitter_aprun):
+
+    def __init__(self, launcher):
+        super(JobSubmitter_aprun_ANL, self).__init__(launcher)
+
+    def CreateCommand(self, args, debugger):
+        parcmd = self.Executable()
+        if self.parallel.sublaunchargs != None:
+            parcmd = parcmd + self.parallel.sublaunchargs
+        if self.parallel.np != None:
+            parcmd = parcmd + ["-n", self.parallel.np]
+        if self.parallel.nn != None:
+            parcmd = parcmd + ["-N", self.PPN()]
+	if int(self.PPN()) == 1:
+	   parcmd = parcmd + ["-d", GETENV("OMP_NUM_THREADS")]
+	else:
+	   parcmd = parcmd + ["-d", "1"]
+        parcmd = parcmd + ["-cc", "depth", "-j", "0"]
+        parcmd = parcmd + self.VisItExecutable()
+        parcmd = parcmd + ["-plugindir", GETENV("VISITPLUGINDIR")]
+        parcmd = parcmd + ["-visithome", GETENV("VISITHOME")]
+        parcmd = parcmd + ["-visitarchhome", GETENV("VISITARCHHOME")]
+        parcmd = debugger.CreateCommand(parcmd + args)
+        return parcmd
 
 
 ###############################################################################
@@ -101,8 +151,12 @@ class ANLLauncher(MainLauncher):
     # be returned.
     #
     def JobSubmitterFactory(self, launch):
+    	print ">>>>>> " + socket.gethostname() + " <<<<<<"
+    	print ">>>>>> " + "launch with " + launch + " <<<<<<"
         if launch[:4] == "qsub":
             return JobSubmitter_qsub_ANL(self)
+        if launch[:5] == "aprun":
+            return JobSubmitter_aprun_ANL(self)
         return super(ANLLauncher, self).JobSubmitterFactory(launch)
 
 # Launcher creation function

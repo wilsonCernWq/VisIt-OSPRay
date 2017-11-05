@@ -3,16 +3,15 @@ import math
 from subprocess import call
 
 #-----------------------------------------------------------------------------
-server_path = "/gpfs/mira-home/qiwu/timings/visit/theta"
+server_path = "./"
 client_path = "./"
 datainfo = {
-    'HOSTNAME': "theta.alcf.anl.gov",
+    'HOSTNAME': "localhost",
     'FULLPATH': "/projects/Viz_Support/data/CoalBoiler_IDX/CCVars.idx",
     'TIMESTEP': 229829,
     'VARIABLE': "O2"
 }
-cmd_enter = "source /home/qiwu/bin/enterVisItJobs.sh " + server_path + "/"
-cmd_exit  = "source /home/qiwu/bin/exitVisItJobs.sh "  + server_path + "/"
+
 #-----------------------------------------------------------------------------
 # functions
 def makeColorControlPoint(color, position):
@@ -30,21 +29,7 @@ def makeOpacityControlPoint(x, height, width, xBias, yBias):
     oPoint.yBias = yBias
     return oPoint
 
-def makePlot(machine, atts, numThreads, numNodes, \
-             useOSPRay = True, usePascal = True, useDefault = True):
-
-    dirpath = client_path + "n" + str(numNodes) + "p" + str(numThreads)
-    if not os.path.isdir(dirpath):
-        os.makedirs(dirpath)
-
-    machine.GetLaunchProfiles(0).numProcessors = numThreads * numNodes
-    machine.GetLaunchProfiles(0).numNodes = numNodes
-    machine.GetLaunchProfiles(0).sublaunchPreCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPreCmd  = cmd_enter + dirpath
-    machine.GetLaunchProfiles(0).sublaunchPostCmdSet = True
-    machine.GetLaunchProfiles(0).sublaunchPostCmd = cmd_exit  + dirpath
-
-    OpenComputeEngine(machine)
+def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
     OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
     SetTimeSliderState(datainfo['TIMESTEP'])
     AddPlot("Volume", datainfo['VARIABLE'])
@@ -59,7 +44,7 @@ def makePlot(machine, atts, numThreads, numNodes, \
         # camera positions
         c = GetView3D()
         # front/back views
-        N = 10
+        N = 20
         for i in range(N):
             angle = float(i) / float(N) * 2 * math.pi
             cc = c
@@ -85,9 +70,6 @@ def makePlot(machine, atts, numThreads, numNodes, \
     # close all
     DeleteActivePlots()
     CloseDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
-    CloseComputeEngine(datainfo['HOSTNAME'])
-    # clean up data
-    call("mv visit*.png " + dirpath, shell=True)
 
 #-----------------------------------------------------------------------------
 # Set Default Option
@@ -151,7 +133,7 @@ VolumeAtts.skewFactor = 1
 VolumeAtts.limitsMode = VolumeAtts.OriginalData  # OriginalData, CurrentPlot
 VolumeAtts.sampling = VolumeAtts.Trilinear  # KernelBased, Rasterization, Trilinear
 VolumeAtts.rendererSamples = 3
-#transferFunction2DWidgets does not contain any TransferFunctionWidget objects.
+# transferFunction2DWidgets does not contain any TransferFunctionWidget objects.
 VolumeAtts.transferFunctionDim = 1
 VolumeAtts.lowGradientLightingReduction = VolumeAtts.Lower  # Off, Lowest, Lower, Low, Medium, High, Higher, Highest
 VolumeAtts.lowGradientLightingClampFlag = 0
@@ -160,12 +142,6 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
 #-----------------------------------------------------------------------------
 # open remote
-m = GetMachineProfile(datainfo['HOSTNAME'])
-# makePlot(m, VolumeAtts, 64, 512, True, False, False)
-makePlot(m, VolumeAtts, 64, 256, False, False, True)
-makePlot(m, VolumeAtts, 64, 128, False, False, True)
-# makePlot(m, VolumeAtts, 64, 64, False, False, True)
-# makePlot(m, VolumeAtts, 64, 32, False, False, True)
-# makePlot(m, VolumeAtts, 64, 16, False, False, True)
-# makePlot(m, VolumeAtts, 64, 8, False, False, True)
+makePlot(VolumeAtts, False, False, True)
 exit()
+
