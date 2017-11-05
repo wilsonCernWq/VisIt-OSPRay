@@ -161,9 +161,12 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 #-----------------------------------------------------------------------------
 # open remote
 m = GetMachineProfile(datainfo['HOSTNAME'])
+# VisIt OSPRay
+makePlot(m, VolumeAtts, 1, 8, True, False, False)
+# VisIt raycast
 # makePlot(m, VolumeAtts, 64, 512, True, False, False)
-makePlot(m, VolumeAtts, 64, 256, False, False, True)
-makePlot(m, VolumeAtts, 64, 128, False, False, True)
+# makePlot(m, VolumeAtts, 64, 256, False, False, True)
+# makePlot(m, VolumeAtts, 64, 128, False, False, True)
 # makePlot(m, VolumeAtts, 64, 64, False, False, True)
 # makePlot(m, VolumeAtts, 64, 32, False, False, True)
 # makePlot(m, VolumeAtts, 64, 16, False, False, True)
