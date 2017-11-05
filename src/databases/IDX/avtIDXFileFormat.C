@@ -168,19 +168,8 @@ void avtIDXFileFormat::loadBalance(){
       int curr_p2[3] = {curr_p1[0]+block_dim[0], curr_p1[1]+block_dim[1], curr_p1[2]+block_dim[2]};
       
       for(int d=0; d <3; d++){
-        curr_p1[d] = (curr_p1[d] > 0) ? curr_p1[d]-1 : 0;
+	//curr_p1[d] = (curr_p1[d] > 0) ? curr_p1[d]-1 : 0;
       	curr_p2[d] = (curr_p2[d] < box_high[d]) ? curr_p2[d]+1 : box_high[d];
-      }
-      
-      if (rank == 0) {
-	printf("%i \t box_low (%i, %i, %i) box_high (%i, %i, %i) \n"
-	       "\t curr_p1 (%i, %i, %i), curr_p2 (%i, %i, %i), "
-	       "box_dim (%i, %i, %i)\n", nb, 
-	       box_low[0],  box_low[1],  box_low[2],
-	       box_high[0], box_high[1], box_high[2],
-	       curr_p1[0], curr_p1[1], curr_p1[2],
-	       curr_p2[0], curr_p2[1], curr_p2[2],
-	       box_dim[0], box_dim[1], box_dim[2]);
       }
       
       PatchInfo newbox;
