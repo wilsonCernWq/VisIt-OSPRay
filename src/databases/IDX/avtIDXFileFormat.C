@@ -134,6 +134,7 @@ std::vector<int> computeGrid(int num) {
 
 void avtIDXFileFormat::loadBalance(){
 
+#if 1
   // This works only for single box
   int n = nprocs;
   int b = level_info.patchInfo.size();
@@ -156,21 +157,32 @@ void avtIDXFileFormat::loadBalance(){
   
     box.getBounds(box_low,box_high,eCells,"CC");
 
-    int box_dim[3] = {box_high[0]-box_low[0],box_high[1]-box_low[1],box_high[2]-box_low[2]};
+    int box_dim[3] = {box_high[0]-box_low[0]+1,box_high[1]-box_low[1]+1,box_high[2]-box_low[2]+1};
     int block_dim[3] = {box_dim[0]/block_decomp[0],box_dim[1]/block_decomp[1],box_dim[2]/block_decomp[2]};
 
     //printf("block dim [%d %d %d]\n", block_dim[0],block_dim[1],block_dim[2]);
     for(int nb=0; nb<c; nb++){
 
       int bid[3] = {nb % block_decomp[0], (nb / block_decomp[0]) % block_decomp[1], nb / (block_decomp[0] * block_decomp[1])};
-      int curr_p1[3] = { bid[0]*block_dim[0],bid[1]*block_dim[1],bid[2]*block_dim[2]};
+      int curr_p1[3] = {bid[0]*block_dim[0],bid[1]*block_dim[1],bid[2]*block_dim[2]};
       int curr_p2[3] = {curr_p1[0]+block_dim[0], curr_p1[1]+block_dim[1], curr_p1[2]+block_dim[2]};
-
+      
       for(int d=0; d <3; d++){
-        //curr_p1[d] = curr_p1[d] > 0 ? curr_p1[d]-1 : curr_p1[d];
-        curr_p2[d] = (curr_p2[d] < box_high[d]) ? curr_p2[d]+1 : curr_p2[d];
+        curr_p1[d] = (curr_p1[d] > 0) ? curr_p1[d]-1 : 0;
+      	curr_p2[d] = (curr_p2[d] < box_high[d]) ? curr_p2[d]+1 : box_high[d];
       }
-
+      
+      if (rank == 0) {
+	printf("%i \t box_low (%i, %i, %i) box_high (%i, %i, %i) \n"
+	       "\t curr_p1 (%i, %i, %i), curr_p2 (%i, %i, %i), "
+	       "box_dim (%i, %i, %i)\n", nb, 
+	       box_low[0],  box_low[1],  box_low[2],
+	       box_high[0], box_high[1], box_high[2],
+	       curr_p1[0], curr_p1[1], curr_p1[2],
+	       curr_p2[0], curr_p2[1], curr_p2[2],
+	       box_dim[0], box_dim[1], box_dim[2]);
+      }
+      
       PatchInfo newbox;
       newbox.setBounds(curr_p1,curr_p2,eCells,"CC");
       newboxes.push_back(newbox);
@@ -179,8 +191,7 @@ void avtIDXFileFormat::loadBalance(){
 
   }
 
-
-#if 0
+#else
 
     int maxdir = 0; // largest extent axis
     int maxextent = 0;
