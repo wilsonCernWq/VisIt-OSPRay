@@ -401,6 +401,7 @@ void OSPContext::SetRenderer(bool shading, double mtl[4], double dir[3])
     ospSet1i(renderer, "backgroundEnabled", 0);
     ospSet1i(renderer, "oneSidedLighting", 0);
     ospSet1i(renderer, "aoSamples", 0);
+    ospSet1i(renderer, "spp", slivr::CheckOSPRaySpp());
     if (shading)
     {
 	ospout << "[ospray] use lighting " 
