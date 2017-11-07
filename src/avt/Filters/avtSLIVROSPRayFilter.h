@@ -101,15 +101,16 @@ namespace slivr {
 
     inline int InitOSPRaySpp() {
 #ifndef VISIT_OSPRAY
-	int spp;
+	return 1;
+#else
+	int spp = 1;
 	const char* env_spp = std::getenv("OSPRAY_SPP");
 	if (env_spp) {
 	    if (atoi(env_spp) > 0) { 
 		spp = atoi(env_spp); 
 	    }
 	}	
-#else
-	return 1;
+	return spp;
 #endif
     }
     //! this function has to be inline, otherwise we need to 
