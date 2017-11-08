@@ -242,7 +242,7 @@ OSPVolumePatch::SetVolume
     ospSetVec3i(volume, "dimensions",  regionSize);
     ospSet1f(volume, "samplingRate", samplingRate);
     ospSet1i(volume, "adaptiveSampling", 0);
-    ospSet1i(volume, "preIntegration", 0);
+    ospSet1i(volume, "preIntegration", 1);
     ospSet1i(volume, "singleShade", 0);
     ospCommit(volume);
 }
