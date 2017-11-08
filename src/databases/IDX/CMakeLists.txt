@@ -59,12 +59,11 @@ ${VTK_INCLUDE_DIRS}
 FILE(STRINGS "${PIDX_INCLUDE_DIR}/PIDX_config.h" config)
 LIST(FIND config "#define PIDX_HAVE_MPI 1" have_mpi)
 IF (have_mpi GREATER 0)
-  # Try to find MPI only if MPI is not defined before
-  # To avoid MPI compilation error
-  IF (NOT MPI_C_COMPILER)
+  IF (NOT MPI_C_INCLUDE_PATH)
     FIND_PACKAGE(MPI REQUIRED)
-  ENDIF ()
-  IF (MPI_C_COMPILER)
+  ENDIF()
+
+  IF (MPI_C_INCLUDE_PATH)
     SET(PIDX_INCLUDE_DIR ${PIDX_INCLUDE_DIR} ${MPI_C_INCLUDE_PATH})
     SET(PIDX_MPI_LIBS ${MPI_C_LIBRARIES})
   ELSE()

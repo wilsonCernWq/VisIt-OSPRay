@@ -105,8 +105,18 @@ PIDXIO::~PIDXIO(){
  // terminate(0);
 }
 
-bool PIDXIO::openDataset(const String filename){
+std::vector<int> PIDXIO::getGlobalSize(){
+  
+  int ret = PIDX_serial_file_open(input_filename.c_str(), PIDX_MODE_RDONLY, global_size, &pidx_file);
 
+  std::vector<int> size(3);
+  for(int i=0;i<3;i++)
+    size[i] = (int)global_size[i];
+  return size;
+}
+
+bool PIDXIO::openDataset(const String filename){
+  
   if (rank == 0)  debug5 << "-----PIDXIO openDataset" << std::endl;
   
   //init_mpi();
@@ -229,7 +239,6 @@ bool PIDXIO::openDataset(const String filename){
 }
 
 unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, const char* varname){
-
   if (rank == 0) debug5 << "-----PIDXIO getData " << rank <<std::endl;
 
   init_mpi();
@@ -292,6 +301,8 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
   sprintf(debug_str,"%d: local box %lld %lld %lld size %lld %lld %lld time %d\n", rank, local_offset[0],local_offset[1],local_offset[2], local_size[0],local_size[1],local_size[2], timestate);
   debug5 << debug_str;
 
+  cout << debug_str;
+
   delete [] debug_str;
   
   PIDX_access pidx_access;
@@ -339,8 +350,8 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
 
   size_t this_size = (size_t)(local_size[0] * local_size[1] * local_size[2]);
 
-  void *data = malloc((size_t)((size_t)(bits_per_sample/8) * this_size * v_per_sample));//variable->values_per_sample);
-  memset(data, 0, ((size_t)((size_t)(bits_per_sample/8) * this_size * v_per_sample)));//variable->values_per_sample);
+  void *data = malloc((size_t)((bits_per_sample/8) * this_size * v_per_sample));//variable->values_per_sample);
+  memset(data, 0, ((size_t)(bits_per_sample/8) * this_size * v_per_sample));//variable->values_per_sample);
 
   ret = PIDX_variable_read_data_layout(variable, local_offset, local_size, data, PIDX_row_major);
   if (ret != PIDX_success)  terminate_with_error_msg("PIDX_variable_read_data_layout");

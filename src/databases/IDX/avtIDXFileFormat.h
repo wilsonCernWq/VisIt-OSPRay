@@ -128,12 +128,14 @@ class avtIDXFileFormat : public avtMTMDFileFormat
 
   private:
 
-    IDX_IO* reader;
+    PIDXIO* reader;
     bool reverse_endian;
     std::map<std::string, void_ref_ptr> mesh_boundaries;
     std::map<std::string, void_ref_ptr> mesh_domains;
 
     LevelInfo level_info;
+
+    LevelInfo input_patches;
 
     std::vector<double> timeIndex;
     std::vector<int> logTimeIndex;
@@ -145,7 +147,7 @@ class avtIDXFileFormat : public avtMTMDFileFormat
     void computeDomainBoundaries(const char* meshname, int timestate);
     void SetUpDomainConnectivity(const char* meshname);
 
-    void loadBalance();
+    void domainDecomposition();
 
 
 };
