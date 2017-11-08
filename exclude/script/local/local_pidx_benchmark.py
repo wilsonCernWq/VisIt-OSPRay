@@ -130,7 +130,7 @@ VolumeAtts.opacityVarMax = 0
 VolumeAtts.smoothData = 0
 VolumeAtts.samplesPerRay = 2
 # Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
-VolumeAtts.rendererType = VolumeAtts.OSPRaySLIVR  
+VolumeAtts.rendererType = VolumeAtts.RayCastingSLIVR  
 VolumeAtts.gradientType = VolumeAtts.CenteredDifferences  # CenteredDifferences, SobelOperator
 VolumeAtts.num3DSlices = 200
 VolumeAtts.scaling = VolumeAtts.Linear  # Linear, Log, Skew
@@ -145,8 +145,8 @@ VolumeAtts.lowGradientLightingClampFlag = 0
 VolumeAtts.lowGradientLightingClampValue = 1
 VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
-#------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # open remote
-makePlot(VolumeAtts, False, False, False)
+makePlot(VolumeAtts, False, True, False)
 exit()
 

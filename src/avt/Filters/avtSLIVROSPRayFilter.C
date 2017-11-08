@@ -78,18 +78,30 @@ OSPVolumePatch::Set
     // So we refresh volume everytime to fix the bug
     // which means we need to disable grid accelerator
     // to speed things up. Until I found the reason of crashing
-    if (true /*!finished*/) { 
+    if (ptr != dataPtr) {
+       ospout << "[ospray] update data" << std::endl;
+    };
+    if (true /*!finished*/) {
+	// Because we initialized the volume each frame
+	// we need to removed the old volume from model first
+	// if (finished) {
+	//     ospRemoveVolume(world, volume);
+	//     ospCommit(world);	    
+	// }
 	volumeType = OSP_INVALID;
 	InitVolume();
 	SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
-		  volumePBox, volumeBBox); 
+		  volumePBox, volumeBBox);
+	// now we add the volume back
+	// if (finished) { SetWorld(); }
     }
     /* OSPRay Model */
-    if (!finished) {
+    if (true/*!finished*/) {
 	worldType = OSP_INVALID; 
 	InitWorld();
 	SetWorld();
     }
+    /* update volume */
     finished = true;
 }
 
@@ -243,11 +255,11 @@ void OSPVolumePatch::InitFB(unsigned int width, unsigned int height) {
     CleanFBData(); CleanFB();	    
     framebuffer = ospNewFrameBuffer(imageSize, 
 				    OSP_FB_RGBA32F,
-				    OSP_FB_COLOR | OSP_FB_ACCUM);	    
+				    OSP_FB_COLOR);	    
 }
 void OSPVolumePatch::RenderFB() {
-    ospFrameBufferClear(framebuffer, OSP_FB_COLOR | OSP_FB_ACCUM);
-    ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+    // ospFrameBufferClear(framebuffer, OSP_FB_COLOR);
+    ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
     framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
 }
 float* OSPVolumePatch::GetFBData() {
@@ -299,7 +311,7 @@ void OSPContext::InitOSP(bool flag, int numThreads)
 	// setup debug 
 	if (DebugStream::Level5()) {
 	    ospout << " debug mode";
-	    ospDeviceSet1i(device, "debug", 1);
+	    ospDeviceSet1i(device, "debug", 0);
 	}
 	// setup number of threads (this can only be hard-coded)
 	if (numThreads > 0) {
@@ -322,23 +334,33 @@ void OSPContext::Render
 (float xMin, float xMax, float yMin, float yMax,
  int imgWidth, int imgHeight, float*& dest, OSPVolumePatch* volume) 
 {
-    // start timing
-    int renderIndex = visitTimer->StartTimer();
-	
     // render frame
+    int timing_setsubcamera = visitTimer->StartTimer();
     SetSubCamera(xMin, xMax, yMin, yMax);
+    visitTimer->StopTimer(timing_setsubcamera, "[OSPRay] Calling OSPContext::SetSubCamera");
+
+    int timing_setmodel = visitTimer->StartTimer();
     SetModel(volume->GetWorld());
+    visitTimer->StopTimer(timing_setmodel, "[OSPRay] Calling OSPContext::SetModel");
+
+    int timing_initfb = visitTimer->StartTimer();
     volume->InitFB(imgWidth, imgHeight);
+    visitTimer->StopTimer(timing_initfb, "[OSPRay] Calling OSPContext::InitFB");
+
+    int timing_renderfb = visitTimer->StartTimer();
     volume->RenderFB();
-	
-    // end timing
-    visitTimer->StopTimer(renderIndex, "Render OSPRay patch");
+    visitTimer->StopTimer(timing_renderfb, "[OSPRay] Calling OSPContext::RenderFB");
 
     // copy data
+    int timing_stdcopy = visitTimer->StartTimer();
     std::copy(volume->GetFBData(), 
 	      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
 	      dest);
+    visitTimer->StopTimer(timing_stdcopy, "[OSPRay] Calling OSPContext::std::copy");
+
+    int timing_cleanfbdata = visitTimer->StartTimer();
     volume->CleanFBData();
+    visitTimer->StopTimer(timing_cleanfbdata, "[OSPRay] Calling OSPContext::CleanFBData");
 }
 
 void OSPContext::InitPatch(int id) 
@@ -379,6 +401,7 @@ void OSPContext::SetRenderer(bool shading, double mtl[4], double dir[3])
     ospSet1i(renderer, "backgroundEnabled", 0);
     ospSet1i(renderer, "oneSidedLighting", 0);
     ospSet1i(renderer, "aoSamples", 0);
+    ospSet1i(renderer, "spp", slivr::CheckOSPRaySpp());
     if (shading)
     {
 	ospout << "[ospray] use lighting " 

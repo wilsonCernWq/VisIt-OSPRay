@@ -1,0 +1,165 @@
+import socket
+
+###############################################################################
+# Class: JobSubmitter_qsub_ANL
+#
+# Purpose:    Custom "qsub" job submitter for ANL.
+#
+# Programmer: Brad Whitlock
+# Date:       Thu May 17 14:22:04 PDT 2012
+#
+# Modifications:
+#   Cyrus Harrison, Tue Aug  1 15:31:48 PDT 2017
+#   Update for Cooley.
+#
+###############################################################################
+
+class JobSubmitter_qsub_ANL(JobSubmitter_qsub):
+
+    def __init__(self, launcher):
+        super(JobSubmitter_qsub_ANL, self).__init__(launcher)
+	self.onCray = False
+
+    ###########################################################################
+    #
+    # For aprun 
+    #
+    ###########################################################################
+    def aprun_args(self, args):
+	self.onCray = True
+        mpicmd = self.aprun()
+        if self.parallel.sublaunchargs != None:
+            mpicmd = mpicmd + self.parallel.sublaunchargs
+        if self.parallel.np != None:
+            mpicmd = mpicmd + ["-n", self.parallel.np]
+        if self.parallel.nn != None:
+            mpicmd = mpicmd + ["-N", self.PPN()]
+	if int(self.PPN()) == 1: 
+	    # the program is running using MPI/MulthThreading hybrid 
+	    mpicmd = mpicmd + ["-d", GETENV("OMP_NUM_THREADS")]
+	else:
+	    mpicmd = mpicmd + ["-d", "1"]
+        mpicmd = mpicmd + ["-cc", "depth", "-j", "0"]
+        mpicmd = mpicmd + self.VisItExecutable() + args
+        return mpicmd
+
+    def CreateFilename(self, root):
+        tdate = time.asctime()[11:19]
+        tuser = self.launcher.username()
+        return os.path.join("/home", tuser, "%s.%s.%s" % (root, tuser, tdate))
+
+    def AddEnvironment(self):
+        env = ""
+        env = env + "HOME=" + GETENV("HOME")
+        env = env + ":LIBPATH=" + GETENV("LIBPATH")
+        env = env + ":LD_LIBRARY_PATH=" + GETENV("LD_LIBRARY_PATH")
+        env = env + ":VISITHOME=" + GETENV("VISITHOME")
+        env = env + ":VISITARCHHOME=" + GETENV("VISITARCHHOME")
+        env = env + ":VISITPLUGINDIR=" + GETENV("VISITPLUGINDIR")
+        return ["--env", env]
+
+    def SetupPPN(self, nodes, procs, ppn, use_vis):
+        args = ["-n", nodes]
+        return args
+
+    def SetupTime(self):
+        args = []
+        if self.parallel.time != None:
+            args = ["-t", "%s" % self.parallel.time]
+        return args
+
+    def TFileSetup(self, tfile):
+        tfile.write("cd %s\n" % os.path.abspath(os.curdir))
+        tfile.write("ulimit -c 0\n")
+	if (self.onCray):		
+            tfile.write("module unload PrgEnv-intel\n")
+            tfile.write("module load   PrgEnv-gnu\n")
+	    tfile.write("export CRAYPE_LINK_TYPE=dynamic\n")
+	    tfile.write("export MPICH_MAX_THREAD_SAFETY=multiple\n")
+	    tfile.write("export I_MPI_PIN_DOMAIN=omp\n")
+	    tfile.write("export KMP_AFFINITY=verbose,granularity=core,compact,1,0\n")
+	    tfile.write("export CRAY_OMP_CHECK_AFFINITY=TRUE\n")
+	    tfile.write("export OMP_NUM_THREADS=" + GETENV("OMP_NUM_THREADS") + "\n")
+	    tfile.write("export OSPRAY_THREADS=" + GETENV("OSPRAY_THREADS") + "\n")
+
+
+###############################################################################
+# Class: JobSubmitter_aprun_ANL
+#
+# Purpose:    Custom "aprun" job submitter for ANL.
+#
+# Programmer: Qi
+# Date:       
+#
+# Modifications:
+#   Add support for hybrid parallelism on Theta
+#
+###############################################################################
+
+class JobSubmitter_aprun_ANL(JobSubmitter_aprun):
+
+    def __init__(self, launcher):
+        super(JobSubmitter_aprun_ANL, self).__init__(launcher)
+
+    def CreateCommand(self, args, debugger):
+        parcmd = self.Executable()
+        if self.parallel.sublaunchargs != None:
+            parcmd = parcmd + self.parallel.sublaunchargs
+        if self.parallel.np != None:
+            parcmd = parcmd + ["-n", self.parallel.np]
+        if self.parallel.nn != None:
+            parcmd = parcmd + ["-N", self.PPN()]
+	if int(self.PPN()) == 1:
+	   parcmd = parcmd + ["-d", GETENV("OMP_NUM_THREADS")]
+	else:
+	   parcmd = parcmd + ["-d", "1"]
+        parcmd = parcmd + ["-cc", "depth", "-j", "0"]
+        parcmd = parcmd + self.VisItExecutable()
+        parcmd = parcmd + ["-plugindir", GETENV("VISITPLUGINDIR")]
+        parcmd = parcmd + ["-visithome", GETENV("VISITHOME")]
+        parcmd = parcmd + ["-visitarchhome", GETENV("VISITARCHHOME")]
+        parcmd = debugger.CreateCommand(parcmd + args)
+        return parcmd
+
+
+###############################################################################
+# Class: ANLLauncher
+#
+# Purpose:    Custom launcher for ANL
+#
+# Programmer: Brad Whitlock
+# Date:       Thu May 17 14:22:04 PDT 2012
+#
+# Modifications:
+#   Cyrus Harrison, Tue Aug  1 15:31:48 PDT 2017
+#   Update for Cooley.
+#
+###############################################################################
+
+class ANLLauncher(MainLauncher):
+    def __init__(self):
+        super(ANLLauncher, self).__init__()
+
+    #
+    #  Avoid python home before job is submitted
+    #  
+    def SetupEnvironment(self):
+        super(ANLLauncher, self).SetupEnvironment()
+        UNSETENV("PYTHONHOME")
+    #
+    # Override the JobSubmitterFactory method so the custom job submitter can
+    # be returned.
+    #
+    def JobSubmitterFactory(self, launch):
+    	print ">>>>>> " + socket.gethostname() + " <<<<<<"
+    	print ">>>>>> " + "launch with " + launch + " <<<<<<"
+        if launch[:4] == "qsub":
+            return JobSubmitter_qsub_ANL(self)
+        if launch[:5] == "aprun":
+            return JobSubmitter_aprun_ANL(self)
+        return super(ANLLauncher, self).JobSubmitterFactory(launch)
+
+# Launcher creation function
+def createlauncher():
+    return ANLLauncher()
+

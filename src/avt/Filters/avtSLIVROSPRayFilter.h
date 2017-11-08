@@ -78,7 +78,7 @@ namespace slivr {
 	// OSPRAY_VERBOSE
 	const char* env_debug = std::getenv("OSPRAY_DEBUG");
 	const char* env_verbose = std::getenv("OSPRAY_VERBOSE");
-	const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");
+	const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");	
 	bool verbose = false;
 	if (env_debug) {
 	    if (atoi(env_debug) > 0) { verbose = true; }
@@ -98,12 +98,32 @@ namespace slivr {
 	}
 #endif
     }
+
+    inline int InitOSPRaySpp() {
+#ifndef VISIT_OSPRAY
+	return 1;
+#else
+	int spp = 1;
+	const char* env_spp = std::getenv("OSPRAY_SPP");
+	if (env_spp) {
+	    if (atoi(env_spp) > 0) { 
+		spp = atoi(env_spp); 
+	    }
+	}	
+	return spp;
+#endif
+    }
     //! this function has to be inline, otherwise we need to 
     //! modify library linkages
     inline bool CheckVerbose() // initialize OSPRAY_VERBOSE
     {
 	static bool OSPRAY_VERBOSE = slivr::InitVerbose();
 	return OSPRAY_VERBOSE;
+    }
+    inline int CheckOSPRaySpp()
+    {
+	static int spp = InitOSPRaySpp();
+	return spp;
     }
 };
 #define ospout \
