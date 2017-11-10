@@ -734,6 +734,11 @@ avtRayTracer::Execute(void)
 	extractor.setRGBBuffer  (opaqueImageData, screen[0],screen[1]);
 	int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
 	extractor.setBufferExtents(bufferScreenExtents);
+	// debug
+	WriteArrayToPPM("opaqueImage", 
+			opaqueImageData, screen[0], screen[1]);
+	WriteArrayGrayToPPM("opaqueDepth", 
+			    opaqueImageZB, screen[0], screen[1]);
     }
 
     //
@@ -842,10 +847,10 @@ avtRayTracer::Execute(void)
 		       << " Y = " << currMeta.screen_ur[1] << std::endl;
 		// // bug happens before this
 		// char ppmName[10]; sprintf(ppmName, "%d", i);
-		// WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/p"+ 
-		//  		std::string(ppmName),
-		//  		currData.imagePatch, 
-		//  		currMeta.dims[0], currMeta.dims[1]);
+		// WriteArrayToPPM("patch"+ 
+		//  		   std::string(ppmName),
+		//  		   currData.imagePatch, 
+		//  		   currMeta.dims[0], currMeta.dims[1]);
 		int currExtents[4] = 
 		    {currMeta.screen_ll[0], currMeta.screen_ur[0], 
 		     currMeta.screen_ll[1], currMeta.screen_ur[1]};
@@ -867,8 +872,8 @@ avtRayTracer::Execute(void)
 	    allPatchData.clear();
 
 	    // // bug happens before this
-	    // WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/composed",
-	    // 		    composedData, renderedWidth, renderedHeight);
+	    // WriteArrayToPPM("composed",
+	    // 		       composedData, renderedWidth, renderedHeight);
 
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;

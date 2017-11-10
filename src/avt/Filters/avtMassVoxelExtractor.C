@@ -2592,7 +2592,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	} 
     } 
     // else {
-    // 	WriteArrayToPPM("/home/sci/qwu/Desktop/debug/rendering/patch"+
+    // 	WriteArrayToPPM("patch-after-render"+
     // 			std::to_string(proc), imgArray, 
     // 			imgWidth, imgHeight);
     // }

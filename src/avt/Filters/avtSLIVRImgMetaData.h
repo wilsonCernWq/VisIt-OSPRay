@@ -208,5 +208,9 @@ WriteDepthBufferToPPM(std::string filename, float *data, int dimX, int dimY);
 
 void WriteArrayToPPM
 (std::string filename, float *image, int dimX, int dimY);
+void WriteArrayToPPM
+(std::string filename, unsigned char *image, int dimX, int dimY);
+void WriteArrayGrayToPPM
+(std::string filename , float * image, int dimX, int dimY);
 
 #endif//IMG_METADATA_H

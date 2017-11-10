@@ -890,9 +890,6 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], i
                     extentsSectionRecv[3] = endingYExtents;
 
                     BlendFrontToBack(imgData, imgExtents, extentsSectionRecv, intermediateImage, intermediateImageExtents);
-                    //debug5 << "Blend with: " << regionVector[index]  << "  extentsSectionRecv: " << extentsSectionRecv[0] << ", " << extentsSectionRecv[1] << "    " << extentsSectionRecv[2] << ", " << extentsSectionRecv[3] << ", "  << std::endl;
-                    //writeArrayToPPM("/home/pascal/Desktop/debugImages/composited_AFTER_recv_from_" + toStr(regionVector[index]) + "_at_" + toStr(myRank), intermediateImage, intermediateImageExtents[1]-intermediateImageExtents[0], intermediateImageExtents[3]-intermediateImageExtents[2]);
-
 
                     UpdateBoundingBox(intermediateImageBBox, extentsSectionRecv);
                     numBlends++;

@@ -330,6 +330,49 @@ void WriteArrayToPPM(std::string filename , float * image, int dimX, int dimY)
     outputFile.close();
 }
 
+void WriteArrayToPPM(std::string filename , unsigned char * image, 
+		     int dimX, int dimY)
+{
+    std::ofstream outputFile((filename+ ".ppm").c_str(), 
+			     std::ios::out | std::ios::binary);
+    outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
+    // for (int y=0; y<dimY; ++y)
+    // {
+    //     for (int x=0; x<dimX; ++x)
+    //     {
+    //         int index = (y * dimX + x)*3;
+    //         char color[3];
+    //         color[0] = CLAMP(image[index + 0], 0, 255);
+    //         color[1] = CLAMP(image[index + 1], 0, 255);
+    //         color[2] = CLAMP(image[index + 2], 0, 255);
+    //         outputFile.write(color,3);
+    //     }
+    // } 
+    outputFile.write((const char*)image, dimX * dimY * 3);
+    outputFile.close();
+}
+
+void WriteArrayGrayToPPM(std::string filename , float * image, 
+			 int dimX, int dimY)
+{
+    std::ofstream outputFile((filename+ ".ppm").c_str(), 
+			     std::ios::out | std::ios::binary);
+    outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
+    for (int y=0; y<dimY; ++y)
+    {
+        for (int x=0; x<dimX; ++x)
+        {
+            int index = (y * dimX + x);
+            char color[3];
+            color[0] = CLAMP(image[index], 0.f, 1.f) * 255;
+            color[1] = CLAMP(image[index], 0.f, 1.f) * 255;
+            color[2] = CLAMP(image[index], 0.f, 1.f) * 255;
+            outputFile.write(color,3);
+        }
+    } 
+    outputFile.close();
+}
+
 // ****************************************************************************
 //  Struct:  convexHull
 //
