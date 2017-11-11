@@ -193,17 +193,16 @@ namespace slivr
 //  Creation:    
 //
 // ****************************************************************************
-void 
-CreateColorPPM
-(std::string filename, unsigned char *data, int width, int height);
+void
+CreateColorPPM(std::string filename, unsigned char *data, int width, int height);
 
-void 
+void
 WriteOutputToFile(std::string filename, float *data, int dimX, int dimY);
 
-void 
+void
 WriteOutputToFileByLine(std::string filename, float *data, int dimX, int dimY);
 
-void 
+void
 WriteDepthBufferToPPM(std::string filename, float *data, int dimX, int dimY);
 
 void WriteArrayToPPM

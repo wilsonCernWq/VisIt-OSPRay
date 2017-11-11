@@ -196,7 +196,7 @@ avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
     materialProperties[2] = 0.0; 
     materialProperties[3] = 15.0;
     
-    depthBuffer = NULL;
+    depthBuffer    = NULL;
     rgbColorBuffer = NULL;
 
     ospray = NULL;
@@ -733,7 +733,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     // if it is an empty node
     if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
     { 
-	return; 
+	    return;
     }
 
     //----------------------------------------------------------
@@ -747,7 +747,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
     while (!nodes.empty())
     {
 	//-----------------------------------------------
-        // initialize tree structure
+    // initialize tree structure
 	//-----------------------------------------------
 	datatree_childindex *ci=nodes.top();
 	avtDataTree_p ch=ci->dt;
@@ -1149,125 +1149,126 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
     //---------------------------------------------------------
     if (modeIs3D && ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
-	ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "modeIs3D = " << modeIs3D << std::endl
-	       << "[avtSamplePointExtractor] RasterBasedSample "
-	       << "DataObjectType = VTK_RECTILINEAR_GRID"
-	       << std::endl;
-	//-----------------------------
-	// Initialization
-	//-----------------------------
-	avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
-	const double *xform = NULL;
-	if (atts.GetRectilinearGridHasTransform()) { xform = atts.GetRectilinearGridTransform(); }
-	massVoxelExtractor->SetGridsAreInWorldSpace
-	    (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
-	avtSamplePoints_p samples = GetTypedOutput();
-	int numVars = samples->GetNumberOfRealVariables();
-	std::vector<std::string> varnames;
-	std::vector<int>         varsizes;
-	for (int i = 0 ; i < numVars ; i++)
-	{
-	    varnames.push_back(samples->GetVariableName(i));
-	    varsizes.push_back(samples->GetVariableSize(i));
-	    // debug5 << varsizes[i] << " " << varnames[i] << std::endl;
-	    // size of the variable (in case it is not a single number ?)
-	    // name of the variable
-	}
+        ospout << "[avtSamplePointExtractor] RasterBasedSample "
+               << "modeIs3D = " << modeIs3D << std::endl
+               << "[avtSamplePointExtractor] RasterBasedSample "
+               << "DataObjectType = VTK_RECTILINEAR_GRID"
+               << std::endl;
+        //-----------------------------
+        // Initialization
+        //-----------------------------
+        avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
+        const double *xform = NULL;
+        if (atts.GetRectilinearGridHasTransform()) { xform = atts.GetRectilinearGridTransform(); }
+        massVoxelExtractor->SetGridsAreInWorldSpace
+            (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
+        avtSamplePoints_p samples = GetTypedOutput();
+        int numVars = samples->GetNumberOfRealVariables();
+        std::vector<std::string> varnames;
+        std::vector<int>         varsizes;
+        for (int i = 0 ; i < numVars ; i++)
+        {
+            varnames.push_back(samples->GetVariableName(i));
+            varsizes.push_back(samples->GetVariableSize(i));
+            // debug5 << varsizes[i] << " " << varnames[i] << std::endl;
+            // size of the variable (in case it is not a single number ?)
+            // name of the variable
+        }
 
-	//-----------------------------
-	// Compositing Setup
-	//-----------------------------
-	int timings_setup_extractor = visitTimer->StartTimer();
-	if (rayCastingSLIVR == true)
-	{
-	    massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
-	    massVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
-	    massVoxelExtractor->setBufferExtents(bufferExtents);
-	    massVoxelExtractor->SetViewDirection(viewDirection);
-	    massVoxelExtractor->SetMVPMatrix(modelViewProj);
-	    massVoxelExtractor->SetClipPlanes(clipPlanes);
-	    massVoxelExtractor->SetPanPercentages(panPercentage);
-	    massVoxelExtractor->SetImageZoom(imageZoom); 
-	    massVoxelExtractor->SetRendererSampleRate(rendererSampleRate); 
-	    massVoxelExtractor->SetDepthExtents(depthExtents);
-	    massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
-	    massVoxelExtractor->SetLighting(lighting);
-	    massVoxelExtractor->SetLightDirection(lightDirection);
-	    massVoxelExtractor->SetMatProperties(materialProperties);
-	    massVoxelExtractor->SetTransferFn(transferFn1D);
-	    // pass reference to ospray
-	    massVoxelExtractor->SetOSPRayContext(ospray);
-	    massVoxelExtractor->SetFullImageExtents(fullImageExtents);
-	}
-	// timing
-	visitTimer->StopTimer(timings_setup_extractor, 
-			      "avtSamplePointExtractor::RasterBasedSample "
-			      "Setup RectlinearGrid Extractor");
+        //-----------------------------
+        // Compositing Setup
+        //-----------------------------
+        int timings_setup_extractor = visitTimer->StartTimer();
+        if (rayCastingSLIVR == true)
+        {
+            massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
+            massVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
+            massVoxelExtractor->setBufferExtents(bufferExtents);
+            massVoxelExtractor->SetViewDirection(viewDirection);
+            massVoxelExtractor->SetMVPMatrix(modelViewProj);
+            massVoxelExtractor->SetClipPlanes(clipPlanes);
+            massVoxelExtractor->SetPanPercentages(panPercentage);
+            massVoxelExtractor->SetImageZoom(imageZoom);
+            massVoxelExtractor->SetRendererSampleRate(rendererSampleRate);
+            massVoxelExtractor->SetDepthExtents(depthExtents);
+            massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
+            massVoxelExtractor->SetLighting(lighting);
+            massVoxelExtractor->SetLightDirection(lightDirection);
+            massVoxelExtractor->SetMatProperties(materialProperties);
+            massVoxelExtractor->SetTransferFn(transferFn1D);
+            // pass reference to ospray
+            massVoxelExtractor->SetOSPRayContext(ospray);
+            massVoxelExtractor->SetFullImageExtents(fullImageExtents);
+        }
+        // timing
+        visitTimer->StopTimer(timings_setup_extractor,
+                              "avtSamplePointExtractor::RasterBasedSample "
+                              "Setup RectlinearGrid Extractor");
 
-	//-----------------------------
-	// Extract
-	//-----------------------------	
-	int timings_extract = visitTimer->StartTimer();
-	massVoxelExtractor->Extract((vtkRectilinearGrid *)ds, 
-				    varnames, varsizes);
-	visitTimer->StopTimer(timings_extract, 
-			      "avtSamplePointExtractor::RasterBasedSample "
-			      "Do Extraction");
+        //-----------------------------
+        // Extract
+        //-----------------------------
+        int timings_extract = visitTimer->StartTimer();
+        massVoxelExtractor->Extract((vtkRectilinearGrid *)ds,
+                                    varnames, varsizes);
+        visitTimer->StopTimer(timings_extract,
+                              "avtSamplePointExtractor::RasterBasedSample "
+                              "Do Extraction");
 
-	//-----------------------------
-	// Get rendering results
-	// put them into a proper vector, sort them based on z value
-	//-----------------------------
-	int timings_get_result = visitTimer->StartTimer();
-	if (rayCastingSLIVR == true)
-	{
-	    slivr::ImgMetaData tmpImageMetaPatch;
-	    tmpImageMetaPatch = initMetaPatch(patchCount);
-	    massVoxelExtractor->getImageDimensions(
-		tmpImageMetaPatch.inUse,
-		tmpImageMetaPatch.dims,
-		tmpImageMetaPatch.screen_ll, 
-		tmpImageMetaPatch.screen_ur, 
-		tmpImageMetaPatch.eye_z, 
-		tmpImageMetaPatch.clip_z);	   
-	    if (tmpImageMetaPatch.inUse == 1)
-	    {
-		tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
-		tmpImageMetaPatch.destProcId = tmpImageMetaPatch.procId;
-		imageMetaPatchVector.push_back(tmpImageMetaPatch);		
-		slivr::ImgData tmpImageDataHash;
-		tmpImageDataHash.procId = tmpImageMetaPatch.procId;
-		tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
-		tmpImageDataHash.imagePatch = 
-		    new float[tmpImageMetaPatch.dims[0] * 
-			      tmpImageMetaPatch.dims[1] * 4];
-		massVoxelExtractor->getComputedImage
-		    (tmpImageDataHash.imagePatch);
-		imgDataHashMap.insert
-		    (std::pair<int, slivr::ImgData>
+        //-----------------------------
+        // Get rendering results
+        // put them into a proper vector, sort them based on z value
+        //-----------------------------
+        int timings_get_result = visitTimer->StartTimer();
+        if (rayCastingSLIVR == true)
+        {
+            slivr::ImgMetaData tmpImageMetaPatch;
+            tmpImageMetaPatch = initMetaPatch(patchCount);
+            massVoxelExtractor->getImageDimensions(
+                tmpImageMetaPatch.inUse,
+                tmpImageMetaPatch.dims,
+                tmpImageMetaPatch.screen_ll,
+                tmpImageMetaPatch.screen_ur,
+                tmpImageMetaPatch.eye_z,
+                tmpImageMetaPatch.clip_z);
+            if (tmpImageMetaPatch.inUse == 1)
+            {
+                tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
+                tmpImageMetaPatch.destProcId = tmpImageMetaPatch.procId;
+                imageMetaPatchVector.push_back(tmpImageMetaPatch);
+                slivr::ImgData tmpImageDataHash;
+                tmpImageDataHash.procId = tmpImageMetaPatch.procId;
+                tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
+                tmpImageDataHash.imagePatch =
+                    new float[tmpImageMetaPatch.dims[0] *
+                              tmpImageMetaPatch.dims[1] * 4];
+                massVoxelExtractor->getComputedImage
+                    (tmpImageDataHash.imagePatch);
+                imgDataHashMap.insert
+                    (std::pair<int, slivr::ImgData>
 		     (tmpImageDataHash.patchNumber, tmpImageDataHash));
-		patchCount++;
-	    }
-	}
-	visitTimer->StopTimer(timings_get_result, 
-			      "avtSamplePointExtractor::RasterBasedSample "
-			      "Get Result");
-	// timing
-	visitTimer->StopTimer(timingsIndex, 
-			  "avtSamplePointExtractor::RasterBasedSample "
-			  "RectlinearGrid");
-	return;
+                patchCount++;
+            }
+        }
+        visitTimer->StopTimer(timings_get_result,
+                              "avtSamplePointExtractor::RasterBasedSample "
+                              "Get Result");
+        // timing
+        visitTimer->StopTimer(timingsIndex,
+                              "avtSamplePointExtractor::RasterBasedSample "
+                              "RectlinearGrid");
+        return;
     }
 
     //---------------------------------------------------------
     // Other Grid
     //---------------------------------------------------------
     ospout << "[avtSamplePointExtractor] RasterBasedSample "
-	   << "modeIs3D = " << modeIs3D << " " << std::endl;
+           << "modeIs3D = " << modeIs3D << " " << std::endl;
     if (rayCastingSLIVR == true)
     {
-	std::cerr << "Warning: Dataset is not a VTK_RECTILINEAR_GRID." << std::endl
+	std::cerr << (int)(ds->GetDataObjectType()) << std::endl
+		  << "Warning: Dataset is not a VTK_RECTILINEAR_GRID." << std::endl
 		  << "         Currently Ray Casting: SLIVR/OSPRay-SLIVR renderer" << std::endl
 		  << "         only support rectilinear grid." << std::endl;
     }
@@ -1293,7 +1294,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    EXCEPTION1(InvalidCellTypeException, "surfaces or anything outside"
 		       " the finite element zoo.");
 
-	if (j == 0) { CheckCellType(cell->GetCellType()); }
+	CheckCellType(cell->GetCellType());
 	switch (cell->GetCellType())
 	{
 	case VTK_HEXAHEDRON:
@@ -1337,8 +1338,8 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 	    break;
 
 	default:
-	    EXCEPTION1(InvalidCellTypeException, "surfaces or anything outside"
-		       " the finite element zoo.");
+	    EXCEPTION1(InvalidCellTypeException,
+		       "surfaces or anything outside the finite element zoo.");
 	}
 	int currentMilestone = (int)(((double) j) / numCells * 10);
 	if (currentMilestone > lastMilestone)

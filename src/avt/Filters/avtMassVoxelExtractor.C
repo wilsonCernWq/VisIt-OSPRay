@@ -2302,6 +2302,18 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	gnX = dims[0] - 1;
 	gnY = dims[1] - 1;
         gnZ = dims[2] - 1;
+
+	// debug the meaning of the ghost zoom
+	// for (int z = 0; z < gnZ; ++z) {
+	//     for (int y = 0; y < gnY; ++y) {
+	// 	for (int x = 0; x < gnX; ++x) {
+	// 	    std::cout << (int)ghosts[z*gnY*gnX+y*gnX+x] << " ";
+	// 	}
+	// 	std::cout << std::endl;
+	//     }
+	//     std::cout << std::endl << std::endl;
+	// }
+	
 	for (int y = 1; y < (gnY-1); ++y) {
 	    for (int z = 1; z < (gnZ-1); ++z) {
 		if (!ghost_bound[0]) {
@@ -2489,6 +2501,7 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	
 	// Create volume and model
 	int timing_create_volume = visitTimer->StartTimer();
+	// ospray->SetBgBuffer(rgbColorBuffer, depthBuffer, bufferExtents); // segfault ??
 	volume->Set(volumeDataType, volumePointer,
 		    X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox, 
 		    materialProperties, (float)rendererSampleRate, lighting);

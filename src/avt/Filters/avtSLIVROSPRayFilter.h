@@ -321,16 +321,16 @@ class OSPContext
     OSPLight dLight;
     OSPLight sLight; // constant sun light
     OSPData  lightdata;
-    OSPRenderer             renderer;
-    unsigned char           rendererType;
-    OSPCamera               camera;
-    unsigned char           cameraType;
-    OSPTransferFunction     transferfcn;
-    unsigned char           transferfcnType;
+    OSPRenderer          renderer;
+    unsigned char        rendererType;
+    OSPCamera            camera;
+    unsigned char        cameraType;
+    OSPTransferFunction  transferfcn;
+    unsigned char        transferfcnType;
     // -- DVR mode variable --
-    OSPModel                modelDVR;
-    OSPFrameBuffer          fbDVR;
-    float                  *fbDataDVR;
+    OSPModel             modelDVR;
+    OSPFrameBuffer       fbDVR;
+    float               *fbDataDVR;
     std::vector<osp::box3f> volumeRegionsDVR;
     // class parameters
     osp::vec3f regionScaling;
@@ -338,6 +338,9 @@ class OSPContext
     float r_pany;
     float zoom;
     int   screenSize[2];
+    float         *bgDepthBuffer; // depth buffer for the background and other plots
+    unsigned char *bgColorBuffer; // bounding box + pseudo color + ...
+    int            bgExtents[4];  // extents of the buffer(minX, maxX, minY, max)
     // ospray mode
     bool  refreshData;
     bool  enableDVR; // (not used yet) Distributed Volume Renderer
@@ -393,6 +396,14 @@ class OSPContext
     void SetDVRMode(bool mode) { enableDVR = mode; } 
 
     // parameters
+    void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
+	bgColorBuffer = color;
+	bgDepthBuffer = depth;
+	bgExtents[0] = extents[0];
+	bgExtents[1] = extents[1];
+	bgExtents[2] = extents[2];
+	bgExtents[3] = extents[3];
+    }
     void SetScaling(double s[3]) { 
 	regionScaling.x = (float)s[0];
 	regionScaling.y = (float)s[1];

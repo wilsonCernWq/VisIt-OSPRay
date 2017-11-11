@@ -735,10 +735,9 @@ avtRayTracer::Execute(void)
 	int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
 	extractor.setBufferExtents(bufferScreenExtents);
 	// debug
-	WriteArrayToPPM("opaqueImage", 
-			opaqueImageData, screen[0], screen[1]);
-	WriteArrayGrayToPPM("opaqueDepth", 
-			    opaqueImageZB, screen[0], screen[1]);
+	// different rank will receive identical opaque image
+	WriteArrayToPPM("opaqueImage", opaqueImageData, screen[0], screen[1]);
+	WriteArrayGrayToPPM("opaqueDepth", opaqueImageZB, screen[0], screen[1]);
     }
 
     //
