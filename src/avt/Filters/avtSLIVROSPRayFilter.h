@@ -493,9 +493,9 @@ struct OSPVisItContext
     ~OSPVisItContext() {	
 	// clean stuffs
 	volumes.clear();
-	//renderer.Clean();
-	//camera.Clean();
-	//transferfcn.Clean();
+	renderer.Clean();
+	camera.Clean();
+	transferfcn.Clean();
     }
 
     // helper
