@@ -145,14 +145,12 @@ public:
     { rayCastingSLIVR = _rayCastingSLIVR; };
     void                  SetRendererSampleRate(double r)
     { rendererSampleRate = r; }
-    // ospray
-    void                  SetOSPRay(OSPContext *ptr) { ospray = ptr; }
-    void                  SetOSPRayRefresh(bool flag) { osprayRefresh = flag; }
+
+    void                  SetOSPRay(OSPVisItContext *ptr) { ospray = ptr; }
 protected:
     
     // ospray integration
-    OSPContext *ospray;
-    bool        osprayRefresh;
+    OSPVisItContext *ospray;
 
     avtSLIVRImgCommunicator imgComm;
     avtViewInfo             view;

@@ -105,9 +105,7 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
     virtual bool             FilterUnderstandsTransformedRectMesh();
 
     // ospray integration
-    OSPContext *ospray;
-    bool        osprayRefresh;
-
+    OSPVisItContext *ospray;
 };
 
 

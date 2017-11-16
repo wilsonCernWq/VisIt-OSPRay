@@ -240,7 +240,7 @@ public:
     { for (int i=0;i<4; i++) bufferExtents[i] = _extents[i]; }
 
     // Qi add for ospray  
-    void SetOSPRayContext(OSPContext* o) { ospray = o; }
+    void SetOSPRay(OSPVisItContext* o) { ospray = o; }
     void SetRendererSampleRate(double r) { rendererSampleRate = r; }
     void SetFullImageExtents(int extents[4]) 
     {
@@ -316,7 +316,7 @@ protected:
     //
     // OSPRay stuffs
     //
-    OSPContext               *ospray;
+    OSPVisItContext               *ospray;
     double                    rendererSampleRate;
     
 protected:

@@ -103,7 +103,6 @@ avtVolumeFilter::avtVolumeFilter()
 {
     primaryVariable = NULL;
     ospray = NULL;
-    osprayRefresh = true;
 }
 
 
@@ -401,12 +400,8 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     software->InsertOpaqueImage(opaque_image);
     if (avtCallback::UseOSPRay()) 
     {
-	if (osprayRefresh && ospray == NULL) {
-	    ospray = new OSPContext();
-	}
+	if (ospray == NULL) { ospray = new OSPVisItContext(); }
 	software->SetOSPRay(ospray);
-	software->SetOSPRayRefresh(osprayRefresh);
-	osprayRefresh = false;
     }
     //
     // Set up the transfer function

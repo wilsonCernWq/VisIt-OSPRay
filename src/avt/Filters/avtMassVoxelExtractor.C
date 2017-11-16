@@ -2448,7 +2448,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 		      << "         One of the dataset might be missing "
 		      << std::endl;
 	}
-	OSPVolumePatch* volume = ospray->GetPatch(patch);
 	// shift grid and make it cel centered for cell data
 	double volumePBox[6] = {
 	    // for cell centered data, we put the voxel on its left boundary
@@ -2501,9 +2500,10 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	
 	// Create volume and model
 	int timing_create_volume = visitTimer->StartTimer();
-	volume->Set(volumeDataType, volumePointer,
-		    X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox, 
-		    materialProperties, (float)rendererSampleRate, lighting);
+	ospray->GetPatch(patch)->Set(volumeDataType, volumePointer,
+				     X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox, 
+				     materialProperties, (float)rendererSampleRate,
+				     lighting);
 	visitTimer->StopTimer(timing_create_volume, 
 			      "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
 			      "OSPRay Create Volume");
@@ -2514,11 +2514,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	    (scalarRange[0] <= tFVisibleRange[1]))
 	{
 	    ospray->Render(xMin, xMax, yMin, yMax,
-			   imgWidth, imgHeight, imgArray, volume);
+			   imgWidth, imgHeight, imgArray,
+			   ospray->GetPatch(patch));
 	    patchDrawn = 1;
 
 	}
-	volume->CleanFB();
 	visitTimer->StopTimer(timing_render_volume, 
 			      "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
 			      "OSPRay Render Volume");	

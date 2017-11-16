@@ -156,7 +156,6 @@ avtRayTracer::avtRayTracer()
     materialProperties[3] = 15.0;
     // ospray
     ospray = NULL;
-    osprayRefresh = true;
 }
 
 
@@ -668,18 +667,18 @@ avtRayTracer::Execute(void)
 	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
 	    // initialize ospray
 	    // -- multi-threading enabled
-	    ospray->InitOSP(osprayRefresh);
+	    ospray->InitOSP();
 	    // camera
 	    ospout << "[avrRayTracer] make ospray camera" << std::endl;
 	    if (!view.orthographic)
 	    {
-		ospray->InitCamera(OSP_PERSPECTIVE);
+		ospray->camera.Init(OSPVisItCamera::PERSPECTIVE);
 	    }
 	    else 
 	    {
-		ospray->InitCamera(OSP_ORTHOGRAPHIC);
+		ospray->camera.Init(OSPVisItCamera::ORTHOGRAPHIC);
 	    }
-	    ospray->SetCamera
+	    ospray->camera.Set
 		(view.camera,view.focus, view.viewUp, viewDirection,
 		 sceneSize, aspect, view.viewAngle, view.imageZoom,
 		 view.imagePan, fullImageExtents, screen);
@@ -687,16 +686,16 @@ avtRayTracer::Execute(void)
 	    // transfer function
 	    ospout  << "[avrRayTracer] make ospray transfer function" 
 		    << std::endl;
-	    ospray->InitTransferFunction();
-	    ospray->SetTransferFunction
-		((OSPContext::OSPColor*)transferFn1D->GetTableFloat(), 
+	    ospray->transferfcn.Init();
+	    ospray->transferfcn.Set
+		((OSPVisItColor*)transferFn1D->GetTableFloat(), 
 		 transferFn1D->GetNumberOfTableEntries(),
 		 (float)transferFn1D->GetMin(),
 		 (float)transferFn1D->GetMax());
 	    // renderer
 	    ospout << "[avrRayTracer] make ospray renderer" << std::endl;
-	    ospray->InitRenderer();
-	    ospray->SetRenderer(lighting, materialProperties, viewDirection);
+	    ospray->renderer.Init();
+	    ospray->renderer.Set(materialProperties, viewDirection, lighting);
 	    // check memory
 	    slivr::CheckMemoryHere("avtRayTracer::Execute after ospray");
 	}
@@ -721,7 +720,7 @@ avtRayTracer::Execute(void)
 	extractor.SetMVPMatrix(model_to_screen_transform);
 	extractor.SetFullImageExtents(fullImageExtents);
 	// sending ospray
-	extractor.SetOSPRayContext(ospray);
+	extractor.SetOSPRay(ospray);
 
 	//
 	// Capture background
@@ -739,7 +738,7 @@ avtRayTracer::Execute(void)
 	WriteArrayToPPM("opaqueImage", opaqueImageData, screen[0], screen[1]);
 	WriteArrayGrayToPPM("opaqueDepth", opaqueImageZB, screen[0], screen[1]);
 	if (avtCallback::UseOSPRay()) { // bg buffer
-	    ospray->SetBgBuffer(opaqueImageData, opaqueImageZB, bufferScreenExtents); // segfault ??
+	    ospray->SetBgBuffer(opaqueImageData, opaqueImageZB, bufferScreenExtents);
 	}
     }
 

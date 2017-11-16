@@ -145,10 +145,12 @@ namespace slivr {
 // ****************************************************************************
 // this struct will contain informations related to one volume
 #ifdef VISIT_OSPRAY
-class OSPVolumePatch 
+class OSPVisItContext;
+class OSPVisItVolume 
 {    
  private:
-    // object references 
+    OSPVisItContext *parent;
+    // object references
     // (those objects are created and handled by other parts of the program)
     // (shouldnt be deleted in this struct)
     OSPTransferFunction transferfcn;
@@ -195,7 +197,7 @@ class OSPVolumePatch
     
  public:
     // constructor
-    OSPVolumePatch(int id) {
+    OSPVisItVolume(int id) {
 	// object references 
 	transferfcn = NULL;
 	renderer    = NULL;
@@ -231,9 +233,8 @@ class OSPVolumePatch
     }
 
     // destructor
-    ~OSPVolumePatch() { Clean(); }    
+    ~OSPVisItVolume() { Clean(); }    
     void Clean() {
-	CleanFBData();
 	CleanFB();
 	CleanVolume();	
 	CleanWorld();
@@ -299,13 +300,13 @@ class OSPVolumePatch
     /* 	}	 */
     /* } */
     void CleanFB() {
-	if (framebuffer != NULL) { 
-	    ospFreeFrameBuffer(framebuffer); 	    
-	    framebuffer = NULL;
-	}
 	if (framebufferData != NULL) { 
 	    ospUnmapFrameBuffer(framebufferData, framebuffer); 
 	    framebufferData = NULL;
+	}
+	if (framebuffer != NULL) { 
+	    ospFreeFrameBuffer(framebuffer); 	    
+	    framebuffer = NULL;
 	}
 	if (framebufferBg != NULL) {
 	    ospRelease(framebufferBg); 	    
@@ -313,6 +314,13 @@ class OSPVolumePatch
 	}
     }
 };
+
+    /* enum { */
+    /* 	BLOCK_BRICKED_VOLUME, */
+    /* 	SHARED_STRUCT_VOLUME, */
+    /* 	VISIT_VOLUME, */
+    /* 	INVALID_VOLUME, */
+    /* } rendererType; */
 
 // ****************************************************************************
 //  Struct:  OSPContext
@@ -324,98 +332,176 @@ class OSPVolumePatch
 //  Creation:   
 //
 // ****************************************************************************
-class OSPContext
+struct OSPVisItLight
 {
- public:
-    struct OSPColor
-    {
-	float R;
-	float G;
-	float B;
-	float A;
-    };
- private:
-    // ospray objects
-    std::vector<OSPVolumePatch> volumePatch;
     OSPLight aLight;
     OSPLight dLight;
     OSPLight sLight; // constant sun light
     OSPData  lightdata;
-    OSPRenderer          renderer;
-    unsigned char        rendererType;
-    OSPCamera            camera;
-    unsigned char        cameraType;
-    OSPTransferFunction  transferfcn;
-    unsigned char        transferfcnType;
-    // -- DVR mode variable --
-    OSPModel             modelDVR;
-    OSPFrameBuffer       fbDVR;
-    float               *fbDataDVR;
-    std::vector<osp::box3f> volumeRegionsDVR;
-    // class parameters
-    osp::vec3f regionScaling;
-    float r_panx;
-    float r_pany;
-    float zoom;
-    int   screenSize[2];
-    float         *bgDepthBuffer; // depth buffer for the background and other plots
-    unsigned char *bgColorBuffer; // bounding box + pseudo color + ...
-    int            bgExtents[4];  // extents of the buffer(minX, maxX, minY, max)
-    // ospray mode
-    bool  refreshData;
-    bool  enableDVR; // (not used yet) Distributed Volume Renderer
- public:
-    OSPContext() {
-	// ospray objects
+    OSPVisItLight() {
 	aLight = NULL;
 	dLight = NULL;
 	sLight = NULL;
 	lightdata = NULL;
-	renderer        = NULL;
-	rendererType    = OSP_INVALID;
-	camera          = NULL;
-	cameraType      = OSP_INVALID;
-	transferfcn     = NULL;
-	transferfcnType = OSP_INVALID;
-	//--- DVR ---
-	modelDVR        = NULL;
-	fbDVR           = NULL;
-	fbDataDVR       = NULL;
-	// class parameters
+    }
+    ~OSPVisItLight() { Clean(); }
+    void Clean() {/* TODO should we delete them? */}
+    void Init(const OSPRenderer& renderer);
+    void Set(double materialProperties[4], double viewDirection[3]);
+};
+
+struct OSPVisItRenderer
+{
+public:
+    enum State {
+	INVALID, /* TODO do we need this actually ? */
+	SCIVIS,
+    } rendererType;
+    OSPRenderer renderer;
+    OSPVisItLight lights;
+    // properties
+    int aoSamples;
+    int spp; //!< samples per pixel
+    bool flagOneSidedLighting;
+    bool flagShadowsEnabled;
+    bool flagAoTransparencyEnabled;    
+    OSPTexture2D maxDepthTexture;
+public:
+    OSPVisItRenderer() {
+	renderer = NULL;
+	rendererType = INVALID;
+	aoSamples = 0;
+	spp = slivr::CheckOSPRaySpp();
+	flagOneSidedLighting = false;
+	flagShadowsEnabled = false;
+	flagAoTransparencyEnabled = false;
+	maxDepthTexture = NULL;
+    }
+    ~OSPVisItRenderer() { Clean(); }
+    void Clean() {
+	if (renderer != NULL) {
+	    lights.Clean();
+	    ospRelease(renderer);
+	    renderer = NULL;
+	    rendererType = INVALID;
+	}
+    }
+    void Init();
+    void Set(double materialProperties[4], double viewDirection[3], bool);
+    void SetCamera(const OSPCamera& camera);
+    void SetModel(const OSPModel& world);
+};
+
+struct OSPVisItCamera
+{
+public:
+    enum State {
+	INVALID,
+	PERSPECTIVE,
+	ORTHOGRAPHIC,
+    } cameraType;
+    OSPCamera camera;
+    float panx; // this is a ratio [0, 1]
+    float pany; // this is a ratio [0, 1]
+    float zoom; 
+    int   size[2];
+
+public:
+    OSPVisItCamera() {
+	camera = NULL;
+	cameraType = INVALID;
+	panx = 0.0f;
+	pany = 0.0f;
+	zoom = 1.0f;
+	size[0] = size[1] = 0.0f;
+    }
+    ~OSPVisItCamera() { Clean(); }
+    void Clean() {
+	if (camera != NULL) {
+	    ospRelease(camera);
+	    camera = NULL;
+	    cameraType = INVALID;
+	}
+    }
+    void Init(State type);
+    void Set(const double campos[3],
+	     const double camfocus[3],
+	     const double camup[3], 
+	     const double camdir[3],
+	     const double sceneSize[2],
+	     const double aspect,
+	     const double viewAngle,
+	     const double zoomratio,
+	     const double imagepan[2], 
+	     const int imageExtents[4],
+	     const int screenExtents[2]);
+    void SetScreen(float xMin, float xMax, float yMin, float yMax);
+};
+
+struct OSPVisItColor{ float R,G,B, A; };
+
+struct OSPVisItTransferFunction
+{
+public:
+    enum State { INVALID, PIECEWISE_LINEAR, } transferfcnType;
+    OSPTransferFunction  transferfcn;
+public:
+    OSPVisItTransferFunction() {
+	transferfcn = NULL;
+	transferfcnType = INVALID;
+    }
+    void Clean() {
+	if (transferfcn != NULL) {
+	    ospRelease(transferfcn);
+	    transferfcn = NULL;
+	    transferfcnType = INVALID;
+	}
+    }
+    void Init();
+    void Set(const OSPVisItColor* table,
+	     const unsigned int size, 
+	     const float datamin,
+	     const float datamax);
+};
+
+struct OSPVisItContext
+{
+ public:
+    //
+    friend class OSPVisItVolume;
+    //
+    OSPVisItRenderer renderer;
+    OSPVisItCamera   camera;
+    OSPVisItTransferFunction transferfcn;
+    std::vector<OSPVisItVolume> volumes;
+    // class parameters
+    osp::vec3f regionScaling;
+    float         *bgDepthBuffer; // depth buffer for the background and other plots
+    unsigned char *bgColorBuffer; // bounding box + pseudo color + ...
+    int            bgExtents[4];  // extents of the buffer(minX, maxX, minY, max)
+    // ospray mode
+    bool initialized;
+ public:
+    OSPVisItContext() {
 	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
-	r_panx = 0.0f;
-	r_pany = 0.0f;
-	zoom   = 1.0f;
-	screenSize[0] = screenSize[1] = 0.0f;
 	bgDepthBuffer = NULL;
 	bgColorBuffer = NULL;
-	// ospray mode
-	refreshData = false;
-	enableDVR   = false; // Distributed Volume Renderer
+	initialized = false;
     }
     // expose this in header
     // because this will be called in other libraries
-    ~OSPContext() {	
+    ~OSPVisItContext() {	
 	// clean stuffs
-	volumePatch.clear();
-	if (renderer    != NULL) {
-	    ospRelease(lightdata);
-	    ospRelease(renderer); 
-	}
-	if (camera      != NULL) { ospRelease(camera); }
-	if (transferfcn != NULL) { ospRelease(transferfcn); }
-	rendererType    = OSP_INVALID;
-	cameraType      = OSP_INVALID;
-	transferfcnType = OSP_INVALID;
+	volumes.clear();
+	//renderer.Clean();
+	//camera.Clean();
+	//transferfcn.Clean();
     }
 
     // helper
     void Render(float xMin, float xMax, float yMin, float yMax,
 		int imgWidth, int imgHeight, 
-		float*& dest, OSPVolumePatch* volume);
-    // flags
-    bool IsDVRMode() { return enableDVR; }
-    void SetDVRMode(bool mode) { enableDVR = mode; } 
+		float*& dest, OSPVisItVolume* volume);
 
     // parameters
     void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
@@ -433,29 +519,9 @@ class OSPContext
     }
 
     // patch 
-    void InitOSP(bool flag, int numThreads = 0);
+    void InitOSP(int numThreads = 0);
     void InitPatch(int id);
-    OSPVolumePatch* GetPatch(int id) { return &volumePatch[id]; }
-
-    // ospRenderer component
-    void InitRenderer();
-    void SetRenderer(bool shading, double mtl[4], double dir[3]);
-    void SetModel(OSPModel world);
-
-    // ospCamera component
-    void InitCamera(unsigned char type);
-    void SetCamera
-    (const double campos[3], const double camfocus[3], const double camup [3], 
-     const double camdir[3], const double sceneSize[2], const double aspect,
-     const double viewAngle, const double zoomratio, const double imagepan[2], 
-     const int imageExtents[4], const int screenExtents[2]);
-    void SetSubCamera(float xMin, float xMax, float yMin, float yMax);
-
-    // ospTransferFunction component  
-    void InitTransferFunction();
-    void SetTransferFunction
-    (const OSPColor* table, const unsigned int size, 
-     const float datamin, const float datamax);
+    OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
 };
 #endif//VISIT_OSPRAY
 

@@ -175,7 +175,7 @@ public:
 	void             setBufferExtents(int _extents[4])
 	{ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
 	void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
-	void             SetOSPRayContext(OSPContext* o) { ospray = o; }
+	void             SetOSPRay(OSPVisItContext* o) { ospray = o; }
 	void             SetFullImageExtents(int extents[4]) 
 	{
 	    fullImageExtents[0] = extents[0];
@@ -266,7 +266,7 @@ protected:
 	//
 	// OSPRay stuffs
 	//
-	OSPContext      *ospray;
+	OSPVisItContext      *ospray;
 	double           rendererSampleRate;
 
 	//
