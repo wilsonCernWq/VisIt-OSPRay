@@ -2501,7 +2501,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
 	
 	// Create volume and model
 	int timing_create_volume = visitTimer->StartTimer();
-	// ospray->SetBgBuffer(rgbColorBuffer, depthBuffer, bufferExtents); // segfault ??
 	volume->Set(volumeDataType, volumePointer,
 		    X, Y, Z, nX, nY, nZ, volumePBox, volumeBBox, 
 		    materialProperties, (float)rendererSampleRate, lighting);

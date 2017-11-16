@@ -738,6 +738,9 @@ avtRayTracer::Execute(void)
 	// different rank will receive identical opaque image
 	WriteArrayToPPM("opaqueImage", opaqueImageData, screen[0], screen[1]);
 	WriteArrayGrayToPPM("opaqueDepth", opaqueImageZB, screen[0], screen[1]);
+	if (avtCallback::UseOSPRay()) { // bg buffer
+	    ospray->SetBgBuffer(opaqueImageData, opaqueImageZB, bufferScreenExtents); // segfault ??
+	}
     }
 
     //

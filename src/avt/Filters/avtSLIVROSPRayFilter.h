@@ -153,7 +153,10 @@ class OSPVolumePatch
     // (shouldnt be deleted in this struct)
     OSPTransferFunction transferfcn;
     OSPRenderer         renderer;
-    
+    float         *bgDepthBuffer; // depth buffer for the background and other plots
+    unsigned char *bgColorBuffer; // bounding box + pseudo color + ...
+    // int            bgExtents[4];  // extents of the buffer(minX, maxX, minY, max)
+
     // objects owned by the struct
     // -- ospray model ---
     OSPModel            world;
@@ -161,6 +164,7 @@ class OSPVolumePatch
     // --- ospray framebuffer ---
     OSPFrameBuffer      framebuffer;
     float              *framebufferData;
+    OSPTexture2D        framebufferBg;
     // --- ospray volume ---
     OSPVolume           volume;
     unsigned char       volumeType;
@@ -199,7 +203,8 @@ class OSPVolumePatch
 	world           = NULL;
 	worldType       = OSP_INVALID;
 	framebuffer     = NULL;
-	framebufferData = NULL;    
+	framebufferData = NULL;
+	framebufferBg   = NULL;
 	volume          = NULL;
 	volumeType      = OSP_INVALID;
 	voxelDataType   = OSP_VOID_PTR;
@@ -245,6 +250,14 @@ class OSPVolumePatch
     void SetScaling(const osp::vec3f& s) { regionScaling = s; }
     void SetTransferFunction(const OSPTransferFunction& t) { transferfcn = t; }
     void SetRenderer(const OSPRenderer& r) { renderer = r; }
+    void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
+	bgColorBuffer = color;
+	bgDepthBuffer = depth;
+	/* bgExtents[0] = extents[0]; */
+	/* bgExtents[1] = extents[1]; */
+	/* bgExtents[2] = extents[2]; */
+	/* bgExtents[3] = extents[3]; */
+    }
 
     // ospModel component
     OSPModel GetWorld() { return world; }
@@ -279,19 +292,26 @@ class OSPVolumePatch
     void InitFB(unsigned int width, unsigned int height);
     void RenderFB();
     float* GetFBData();
-    void CleanFBData() {
+    /* void CleanFBData() { */
+    /* 	if (framebufferData != NULL) {  */
+    /* 	    ospUnmapFrameBuffer(framebufferData, framebuffer);  */
+    /* 	    framebufferData = NULL; */
+    /* 	}	 */
+    /* } */
+    void CleanFB() {
+	if (framebuffer != NULL) { 
+	    ospFreeFrameBuffer(framebuffer); 	    
+	    framebuffer = NULL;
+	}
 	if (framebufferData != NULL) { 
 	    ospUnmapFrameBuffer(framebufferData, framebuffer); 
 	    framebufferData = NULL;
 	}
+	if (framebufferBg != NULL) {
+	    ospRelease(framebufferBg); 	    
+	    framebufferBg = NULL;
+	}
     }
-    void CleanFB() {	   
-	if (framebuffer != NULL) { 
-	    ospFreeFrameBuffer(framebuffer); 	    
-	    framebuffer = NULL;
-	}	
-    }
-
 };
 
 // ****************************************************************************
@@ -367,6 +387,8 @@ class OSPContext
 	r_pany = 0.0f;
 	zoom   = 1.0f;
 	screenSize[0] = screenSize[1] = 0.0f;
+	bgDepthBuffer = NULL;
+	bgColorBuffer = NULL;
 	// ospray mode
 	refreshData = false;
 	enableDVR   = false; // Distributed Volume Renderer
@@ -399,10 +421,10 @@ class OSPContext
     void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
 	bgColorBuffer = color;
 	bgDepthBuffer = depth;
-	bgExtents[0] = extents[0];
-	bgExtents[1] = extents[1];
-	bgExtents[2] = extents[2];
-	bgExtents[3] = extents[3];
+	/* bgExtents[0] = extents[0]; */
+	/* bgExtents[1] = extents[1]; */
+	/* bgExtents[2] = extents[2]; */
+	/* bgExtents[3] = extents[3]; */
     }
     void SetScaling(double s[3]) { 
 	regionScaling.x = (float)s[0];

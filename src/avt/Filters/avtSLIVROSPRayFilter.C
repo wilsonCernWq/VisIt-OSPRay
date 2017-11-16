@@ -63,10 +63,9 @@ double slivr::rad2deg (double radins) {
 
 // other function
 void 
-OSPVolumePatch::Set
-(int type, void *ptr, double *X, double *Y, double *Z, 
- int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6], 
- double mtl[4], float sr, bool shading)
+OSPVolumePatch::Set(int type, void *ptr, double *X, double *Y, double *Z, 
+		    int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6], 
+		    double mtl[4], float sr, bool shading)
 {
     /* OSPRay Volume */
     specularKs    = (float)mtl[2];
@@ -142,9 +141,9 @@ void OSPVolumePatch::InitVolume(unsigned char type) {
     }
 }
 void 
-OSPVolumePatch::SetVolume
-(int type, void *ptr, double *X, double *Y, double *Z, 
- int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6]) 
+OSPVolumePatch::SetVolume(int type, void *ptr, double *X, double *Y, double *Z, 
+			  int nX, int nY, int nZ,
+			  double volumePBox[6], double volumeBBox[6]) 
 {
     // calculate volume data type
     if (type == VTK_UNSIGNED_CHAR) {
@@ -248,14 +247,23 @@ OSPVolumePatch::SetVolume
 }
 
 // framebuffer component     
-void OSPVolumePatch::InitFB(unsigned int width, unsigned int height) {
+void OSPVolumePatch::InitFB(unsigned int width, unsigned int height,
+			    int xMin, int xMax, int yMin, int yMax)
+{
+    // preparation
     osp::vec2i imageSize;
     imageSize.x = width;
     imageSize.y = height;
-    CleanFBData(); CleanFB();	    
+    // create background depth buffer
+    //std::vector<float> depthBuffer(width);
+    // create framebuffer
+    CleanFB();	    
     framebuffer = ospNewFrameBuffer(imageSize, 
 				    OSP_FB_RGBA32F,
-				    OSP_FB_COLOR);	    
+				    OSP_FB_COLOR);
+    // framebufferBg = ospNewTexture2D(imageSize,
+    // 				    OSP_TEXTURE_R32F,
+    // 				    NULL);
 }
 void OSPVolumePatch::RenderFB() {
     // ospFrameBufferClear(framebuffer, OSP_FB_COLOR);
@@ -330,37 +338,29 @@ void OSPContext::InitOSP(bool flag, int numThreads)
 }
 
 // We use this function to minimize interface
-void OSPContext::Render
-(float xMin, float xMax, float yMin, float yMax,
- int imgWidth, int imgHeight, float*& dest, OSPVolumePatch* volume) 
+void OSPContext::Render(float xMin, float xMax, float yMin, float yMax,
+			int imgWidth, int imgHeight,
+			float*& dest, OSPVolumePatch* volume) 
 {
-    // render frame
-    int timing_setsubcamera = visitTimer->StartTimer();
+    int timing_SetSubCamera = visitTimer->StartTimer();
     SetSubCamera(xMin, xMax, yMin, yMax);
-    visitTimer->StopTimer(timing_setsubcamera, "[OSPRay] Calling OSPContext::SetSubCamera");
+    visitTimer->StopTimer(timing_SetSubCamera, "[OSPRay] Calling OSPContext::SetSubCamera");
 
-    int timing_setmodel = visitTimer->StartTimer();
+    int timing_SetModel = visitTimer->StartTimer();
     SetModel(volume->GetWorld());
-    visitTimer->StopTimer(timing_setmodel, "[OSPRay] Calling OSPContext::SetModel");
+    visitTimer->StopTimer(timing_SetModel, "[OSPRay] Calling OSPContext::SetModel");
 
-    int timing_initfb = visitTimer->StartTimer();
+    int timing_InitFB = visitTimer->StartTimer();
     volume->InitFB(imgWidth, imgHeight);
-    visitTimer->StopTimer(timing_initfb, "[OSPRay] Calling OSPContext::InitFB");
+    visitTimer->StopTimer(timing_InitFB, "[OSPRay] Calling OSPContext::InitFB");
 
-    int timing_renderfb = visitTimer->StartTimer();
+    int timing_RenderFB = visitTimer->StartTimer();
     volume->RenderFB();
-    visitTimer->StopTimer(timing_renderfb, "[OSPRay] Calling OSPContext::RenderFB");
+    visitTimer->StopTimer(timing_RenderFB, "[OSPRay] Calling OSPContext::RenderFB");
 
-    // copy data
     int timing_stdcopy = visitTimer->StartTimer();
-    std::copy(volume->GetFBData(), 
-	      volume->GetFBData() + (imgWidth * imgHeight) * 4, 
-	      dest);
+    std::copy(volume->GetFBData(), volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
     visitTimer->StopTimer(timing_stdcopy, "[OSPRay] Calling OSPContext::std::copy");
-
-    int timing_cleanfbdata = visitTimer->StartTimer();
-    volume->CleanFBData();
-    visitTimer->StopTimer(timing_cleanfbdata, "[OSPRay] Calling OSPContext::CleanFBData");
 }
 
 void OSPContext::InitPatch(int id) 
@@ -379,6 +379,7 @@ void OSPContext::InitPatch(int id)
     volumePatch[id].SetDVRFlag(enableDVR);
     volumePatch[id].SetFinishedFlag(!refreshData); // reset volume for new data
     // if the data is refreshed -> not complete
+    volumePatch[id].SetBgBuffer(bgColorBuffer, bgDepthBuffer, bgExtents);
 }
 
 // ospRenderer component
@@ -396,7 +397,7 @@ void OSPContext::InitRenderer()
 }
 
 void OSPContext::SetRenderer(bool shading, double mtl[4], double dir[3]) 
-{
+{    
     ospSetObject(renderer, "camera", camera);
     ospSet1i(renderer, "backgroundEnabled", 0);
     ospSet1i(renderer, "oneSidedLighting", 0);
