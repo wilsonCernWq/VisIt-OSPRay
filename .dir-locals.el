@@ -4,4 +4,4 @@
 ((nil
   (c-basic-offset . 4)
   (c-default-style . "linux")))
-
+(setq-default indent-tabs-mode nil)

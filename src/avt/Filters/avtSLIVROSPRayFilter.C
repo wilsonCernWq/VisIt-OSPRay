@@ -61,6 +61,7 @@ double slivr::rad2deg (double radins) {
     return radins / 4.0 / atan (1.0) * 180.0;
 }
 
+#ifdef VISIT_OSPRAY
 // other function
 void 
 OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z, 
@@ -390,36 +391,36 @@ void OSPVisItCamera::Init(State type)
 	}
     }
 }
-void OSPVisItCamera::Set(const double campos[3], 
-			 const double camfocus[3], 
-			 const double camup [3], 
-			 const double camdir[3],
+void OSPVisItCamera::Set(const double camp[3], 
+			 const double camf[3], 
+			 const double camu[3], 
+			 const double camd[3],
 			 const double sceneSize[2],
 			 const double aspect, 
-			 const double viewAngle, 
-			 const double zoomratio, 
-			 const double imagepan[2],
-			 const int imageExtents[4],
+			 const double fovy, 
+			 const double zoom_ratio, 
+			 const double pan_ratio[2],
+			 const int bufferExtents[4],
 			 const int screenExtents[2]) 
 {
-    osp::vec3f camPos, camDir, camUp;
-    camPos.x = campos[0]; camPos.y = campos[1]; camPos.z = campos[2];    
-    camDir.x = camdir[0]; camDir.y = camdir[1]; camDir.z = camdir[2];
-    camUp.x  = camup[0];  camUp.y  = camup[1];  camUp.z  = camup[2];
-    panx = imagepan[0] * zoomratio;
-    pany = imagepan[1] * zoomratio;
+    osp::vec3f camP, camD, camU;
+    camP.x = camp[0]; camP.y = camp[1]; camP.z = camp[2];    
+    camD.x = camd[0]; camD.y = camd[1]; camD.z = camd[2];
+    camU.x = camu[0]; camU.y = camu[1]; camU.z = camu[2];
+    panx = pan_ratio[0] * zoom_ratio;
+    pany = pan_ratio[1] * zoom_ratio;
     size[0] = screenExtents[0];
     size[1] = screenExtents[1];
-    zoom = zoomratio;
-    ospSetVec3f(camera, "pos", camPos);
-    ospSetVec3f(camera, "dir", camDir);
-    ospSetVec3f(camera, "up",  camUp);
+    zoom = zoom_ratio;
+    ospSetVec3f(camera, "pos", camP);
+    ospSetVec3f(camera, "dir", camD);
+    ospSetVec3f(camera, "up",  camU);
     ospSet1f(camera, "aspect", aspect);
-    if      (cameraType == PERSPECTIVE)  { ospSet1f(camera, "fovy", viewAngle); }
+    if      (cameraType == PERSPECTIVE)  { ospSet1f(camera, "fovy", fovy); }
     else if (cameraType == ORTHOGRAPHIC) { ospSet1f(camera, "height", sceneSize[1]); }
     ospCommit(camera);
-    this->SetScreen(imageExtents[0], imageExtents[1],
-		    imageExtents[2], imageExtents[3]);
+    this->SetScreen(bufferExtents[0], bufferExtents[1],
+		    bufferExtents[2], bufferExtents[3]);
 }
 void OSPVisItCamera::SetScreen(float xMin, float xMax, float yMin, float yMax) 
 {
@@ -492,16 +493,11 @@ void OSPVisItTransferFunction::Set(const OSPVisItColor *table,
 }
 
 
-
-
-
-
-
 // ****************************************************************************
 //  Struct:  OSPContext
 //
 //  Purpose:
-//    Holds information about patches but not the image 
+//
 //
 //  Programmer:  
 //  Creation:   
@@ -604,9 +600,7 @@ void OSPVisItContext::InitPatch(int id)
     // if the data is refreshed -> not complete
     volumes[id].SetBgBuffer(bgColorBuffer, bgDepthBuffer, bgExtents);
 }
-
-
-
+#endif//VISIT_OSPRAY
 
 
 // ****************************************************************************

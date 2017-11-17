@@ -58,33 +58,55 @@
 # define OSP_VALID                    6
 #endif
 
-namespace slivr {
-    // output stream
+// ****************************************************************************
+// Debug ostreams customized for ospray
+// ****************************************************************************
+namespace slivr 
+{
     extern std::ostream *osp_out;
     extern std::ostream *osp_err;
-    //! this function has to be inline, otherwise we need to 
-    //! modify library linkages
-    // detect environmental variables
+};
+
+// ****************************************************************************
+// Those function has to be inline, otherwise we need to link this library 
+// to other components manually
+// ****************************************************************************
+namespace slivr 
+{
+    // ************************************************************************
+    //
+    // Detect verbose from environmental variable
+    //
+    // ************************************************************************
     inline bool InitVerbose() 
     {
 #ifndef VISIT_OSPRAY
 	return false;
 #else
-	/* OSPRay defined environmental variables */
-	// OSPRAY_THREADS, OSPRAY_SET_AFFINITY
-	// OSPRAY_DEBUG, OSPRAY_LOG_LEVEL
+        // ********************************************************************
+	//
+	// OSPRay defines following environmental variables
+	//
+	// OSPRAY_THREADS
+	// OSPRAY_SET_AFFINITY
+	// OSPRAY_DEBUG
+	// OSPRAY_LOG_LEVEL
 	// OSPRAY_LOG_OUTPUT
-	/* visit shortcuts*/
+	//
+	// We define one more environmental variable here
+	//
 	// OSPRAY_VERBOSE
-	const char* env_debug = std::getenv("OSPRAY_DEBUG");
-	const char* env_verbose = std::getenv("OSPRAY_VERBOSE");
+	//
+        // ********************************************************************
+	const char* env_verbose   = std::getenv("OSPRAY_VERBOSE");
+	const char* env_debug     = std::getenv("OSPRAY_DEBUG");
 	const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");	
 	bool verbose = false;
-	if (env_debug) {
-	    if (atoi(env_debug) > 0) { verbose = true; }
-	}
 	if (env_verbose) {
 	    if (atoi(env_verbose) > 0) { verbose = true; }
+	}
+	if (env_debug) {
+	    if (atoi(env_debug) > 0) { verbose = true; }
 	}
 	if (env_log_level) {
 	    if (atoi(env_log_level) > 0) { verbose = true; }
@@ -99,6 +121,11 @@ namespace slivr {
 #endif
     }
 
+    // ************************************************************************
+    //
+    // Detect sample per pixel from environmental variable
+    //
+    // ************************************************************************
     inline int InitOSPRaySpp() {
 #ifndef VISIT_OSPRAY
 	return 1;
@@ -113,8 +140,6 @@ namespace slivr {
 	return spp;
 #endif
     }
-    //! this function has to be inline, otherwise we need to 
-    //! modify library linkages
     inline bool CheckVerbose() // initialize OSPRAY_VERBOSE
     {
 	static bool OSPRAY_VERBOSE = slivr::InitVerbose();
@@ -126,6 +151,12 @@ namespace slivr {
 	return spp;
     }
 };
+
+// ****************************************************************************
+//
+// Over-write ostream marcos
+//
+// ****************************************************************************
 #define ospout \
     if (!slivr::CheckVerbose() && !DebugStream::Level5()) ; \
     else (*slivr::osp_out)
@@ -134,20 +165,21 @@ namespace slivr {
     else (*slivr::osp_err)
 
 // ****************************************************************************
-//  Struct:  OSPVolumePatch
+//  Struct:  OSPVisItVolume
 //
 //  Purpose:
-//    Holds information about patches but not the image 
+//    
 //
-//  Programmer:  
+//  Programmer: Qi WU
 //  Creation:   
 //
 // ****************************************************************************
-// this struct will contain informations related to one volume
 #ifdef VISIT_OSPRAY
 class OSPVisItContext;
 class OSPVisItVolume 
-{    
+{
+ private:
+    friend class OSPVisItContext;
  private:
     OSPVisItContext *parent;
     // object references
@@ -314,24 +346,21 @@ class OSPVisItVolume
 	}
     }
 };
+#endif//VISIT_OSPRAY
 
-    /* enum { */
-    /* 	BLOCK_BRICKED_VOLUME, */
-    /* 	SHARED_STRUCT_VOLUME, */
-    /* 	VISIT_VOLUME, */
-    /* 	INVALID_VOLUME, */
-    /* } rendererType; */
 
 // ****************************************************************************
-//  Struct:  OSPContext
+//  Struct:  OSPVisItLight
 //
 //  Purpose:
-//    Holds information about patches but not the image 
 //
-//  Programmer:  
+//
+//  Programmer: Qi WU
 //  Creation:   
 //
 // ****************************************************************************
+
+#ifdef VISIT_OSPRAY
 struct OSPVisItLight
 {
     OSPLight aLight;
@@ -349,7 +378,21 @@ struct OSPVisItLight
     void Init(const OSPRenderer& renderer);
     void Set(double materialProperties[4], double viewDirection[3]);
 };
+#endif//VISIT_OSPRAY
 
+
+// ****************************************************************************
+//  Struct:  OSPVisItRenderer
+//
+//  Purpose:
+//
+//
+//  Programmer: Qi WU
+//  Creation:   
+//
+// ****************************************************************************
+
+#ifdef VISIT_OSPRAY
 struct OSPVisItRenderer
 {
 public:
@@ -391,7 +434,21 @@ public:
     void SetCamera(const OSPCamera& camera);
     void SetModel(const OSPModel& world);
 };
+#endif//VISIT_OSPRAY
 
+
+// ****************************************************************************
+//  Struct:  OSPVisItCamera
+//
+//  Purpose:
+//
+//
+//  Programmer: Qi WU
+//  Creation:   
+//
+// ****************************************************************************
+
+#ifdef VISIT_OSPRAY
 struct OSPVisItCamera
 {
 public:
@@ -424,22 +481,49 @@ public:
 	}
     }
     void Init(State type);
-    void Set(const double campos[3],
-	     const double camfocus[3],
-	     const double camup[3], 
-	     const double camdir[3],
+    void Set(const double camp[3], 
+	     const double camf[3], 
+	     const double camu[3], 
+	     const double camd[3],
 	     const double sceneSize[2],
-	     const double aspect,
-	     const double viewAngle,
-	     const double zoomratio,
-	     const double imagepan[2], 
-	     const int imageExtents[4],
+	     const double aspect, 
+	     const double fovy, 
+	     const double zoom_ratio, 
+	     const double pan_ratio[2],
+	     const int bufferExtents[4],
 	     const int screenExtents[2]);
     void SetScreen(float xMin, float xMax, float yMin, float yMax);
 };
+#endif//VISIT_OSPRAY
 
-struct OSPVisItColor{ float R,G,B, A; };
 
+// ****************************************************************************
+//  Struct:  OSPVisItColor
+//
+//  Purpose:
+//
+//
+//  Programmer: Qi WU
+//  Creation:   
+//
+// ****************************************************************************
+
+#ifdef VISIT_OSPRAY
+struct OSPVisItColor { float R,G,B, A; };
+#endif//VISIT_OSPRAY
+
+// ****************************************************************************
+//  Struct:  OSPVisItTransferFunction
+//
+//  Purpose:
+//
+//
+//  Programmer: Qi WU
+//  Creation:   
+//
+// ****************************************************************************
+
+#ifdef VISIT_OSPRAY
 struct OSPVisItTransferFunction
 {
 public:
@@ -463,17 +547,55 @@ public:
 	     const float datamin,
 	     const float datamax);
 };
+#endif//VISIT_OSPRAY
 
-struct OSPVisItContext
+
+// ****************************************************************************
+//  Struct:  OSPVisItContext
+//
+//  Purpose:
+//
+//
+//  Programmer: Qi WU
+//  Creation:   
+//
+// ****************************************************************************
+
+class OSPVisItContext
 {
  public:
-    //
+    // ************************************************************************
+    // We expose this in header because iy will be called in other components
+    // where we dont have direct library linkage
+    // ************************************************************************
+    OSPVisItContext() 
+    {
+#ifdef VISIT_OSPRAY
+	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
+	bgDepthBuffer = NULL;
+	bgColorBuffer = NULL;
+	initialized = false;
+#endif//VISIT_OSPRAY
+    }
+    ~OSPVisItContext() {	
+#ifdef VISIT_OSPRAY
+	// clean stuffs
+	volumes.clear();
+	renderer.Clean();
+	camera.Clean();
+	transferfcn.Clean();
+#endif//VISIT_OSPRAY
+    }
+
+#ifdef VISIT_OSPRAY
+private:
     friend class OSPVisItVolume;
-    //
+ public:
     OSPVisItRenderer renderer;
     OSPVisItCamera   camera;
     OSPVisItTransferFunction transferfcn;
     std::vector<OSPVisItVolume> volumes;
+private:
     // class parameters
     osp::vec3f regionScaling;
     float         *bgDepthBuffer; // depth buffer for the background and other plots
@@ -482,27 +604,10 @@ struct OSPVisItContext
     // ospray mode
     bool initialized;
  public:
-    OSPVisItContext() {
-	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
-	bgDepthBuffer = NULL;
-	bgColorBuffer = NULL;
-	initialized = false;
-    }
-    // expose this in header
-    // because this will be called in other libraries
-    ~OSPVisItContext() {	
-	// clean stuffs
-	volumes.clear();
-	renderer.Clean();
-	camera.Clean();
-	transferfcn.Clean();
-    }
-
     // helper
     void Render(float xMin, float xMax, float yMin, float yMax,
 		int imgWidth, int imgHeight, 
 		float*& dest, OSPVisItVolume* volume);
-
     // parameters
     void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
 	bgColorBuffer = color;
@@ -522,8 +627,9 @@ struct OSPVisItContext
     void InitOSP(int numThreads = 0);
     void InitPatch(int id);
     OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
-};
 #endif//VISIT_OSPRAY
+};
+
 
 // ****************************************************************************
 //  Namespace:  slivr
@@ -531,7 +637,7 @@ struct OSPVisItContext
 //  Purpose:
 //    
 //
-//  Programmer:  
+//  Programmer: Qi WU
 //  Creation:   
 //
 // ****************************************************************************

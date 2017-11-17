@@ -515,13 +515,7 @@ avtRayTracer::Execute(void)
 	// Camera Settings
 	//
 	vtkCamera *sceneCam = vtkCamera::New();
-	if (avtCallback::UseOSPRay()) // this is not mapped to ospray yet
-	{ 
-	    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
-	}
-	else {
-	    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
-	}
+	sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
 	sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
 	sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
 	sceneCam->SetViewAngle(view.viewAngle);
@@ -538,7 +532,7 @@ avtRayTracer::Execute(void)
 	matScale->Identity(); 
 	if (avtCallback::UseOSPRay())
 	{ 
-	    // This is set in line 686 ospray->SetScaling(scale);
+	    // This is set in line 686 "ospray->SetScaling(scale)"
 	}
 	else 
 	{
@@ -678,10 +672,17 @@ avtRayTracer::Execute(void)
 	    {
 		ospray->camera.Init(OSPVisItCamera::ORTHOGRAPHIC);
 	    }
-	    ospray->camera.Set
-		(view.camera,view.focus, view.viewUp, viewDirection,
-		 sceneSize, aspect, view.viewAngle, view.imageZoom,
-		 view.imagePan, fullImageExtents, screen);
+	    ospray->camera.Set(view.camera,
+			       view.focus, 
+			       view.viewUp, 
+			       viewDirection,
+			       sceneSize, 
+			       aspect, 
+			       view.viewAngle, 
+			       view.imageZoom,
+			       view.imagePan, 
+			       fullImageExtents, 
+			       screen);
 	    ospray->SetScaling(scale);
 	    // transfer function
 	    ospout  << "[avrRayTracer] make ospray transfer function" 
