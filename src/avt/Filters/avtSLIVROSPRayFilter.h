@@ -182,14 +182,14 @@ class OSPVisItVolume
     friend class OSPVisItContext;
  private:
     OSPVisItContext *parent;
-    // object references
-    // (those objects are created and handled by other parts of the program)
-    // (shouldnt be deleted in this struct)
-    OSPTransferFunction transferfcn;
-    OSPRenderer         renderer;
-    float         *bgDepthBuffer; // depth buffer for the background and other plots
-    unsigned char *bgColorBuffer; // bounding box + pseudo color + ...
-    // int            bgExtents[4];  // extents of the buffer(minX, maxX, minY, max)
+    /* // object references */
+    /* // (those objects are created and handled by other parts of the program) */
+    /* // (shouldnt be deleted in this struct) */
+    /* OSPTransferFunction transferfcn; */
+    /* OSPRenderer         renderer; */
+    /* float         *bgDepthBuffer; // depth buffer for the background and other plots */
+    /* unsigned char *bgColorBuffer; // bounding box + pseudo color + ... */
+    /* // int            bgExtents[4];  // extents of the buffer(minX, maxX, minY, max) */
 
     // objects owned by the struct
     // -- ospray model ---
@@ -231,8 +231,8 @@ class OSPVisItVolume
     // constructor
     OSPVisItVolume(int id) {
 	// object references 
-	transferfcn = NULL;
-	renderer    = NULL;
+	//transferfcn = NULL;
+	//renderer    = NULL;
 	// objects owned by the struct
 	world           = NULL;
 	worldType       = OSP_INVALID;
@@ -280,17 +280,17 @@ class OSPVisItVolume
     void SetDVRFlag(bool mode) { enableDVR = mode; }
     bool GetFinishedFlag() { return finished; }
     void SetFinishedFlag(bool f) { finished = f; } 
-    void SetScaling(const osp::vec3f& s) { regionScaling = s; }
-    void SetTransferFunction(const OSPTransferFunction& t) { transferfcn = t; }
-    void SetRenderer(const OSPRenderer& r) { renderer = r; }
-    void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
-	bgColorBuffer = color;
-	bgDepthBuffer = depth;
+    //void SetScaling(const osp::vec3f& s) { regionScaling = s; }
+    //void SetTransferFunction(const OSPTransferFunction& t) { transferfcn = t; }
+    //void SetRenderer(const OSPRenderer& r) { renderer = r; }
+    //void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
+	//bgColorBuffer = color;
+	//bgDepthBuffer = depth;
 	/* bgExtents[0] = extents[0]; */
 	/* bgExtents[1] = extents[1]; */
 	/* bgExtents[2] = extents[2]; */
 	/* bgExtents[3] = extents[3]; */
-    }
+    //}
 
     // ospModel component
     OSPModel GetWorld() { return world; }

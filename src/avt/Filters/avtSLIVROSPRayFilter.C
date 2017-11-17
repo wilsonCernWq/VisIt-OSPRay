@@ -79,7 +79,7 @@ OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     // which means we need to disable grid accelerator
     // to speed things up. Until I found the reason of crashing
     if (ptr != dataPtr) {
-       ospout << "[ospray] update data" << std::endl;
+        ospout << "[ospray] update data" << std::endl;
     };
     if (true /*!finished*/) {
 	// Because we initialized the volume each frame
@@ -191,7 +191,7 @@ OSPVisItVolume::SetVolume(int type, void *ptr, double *X, double *Y, double *Z,
 
     // other objects
     ospSetString(volume, "voxelType", dataType.c_str());
-    ospSetObject(volume, "transferFunction", transferfcn);
+    ospSetObject(volume, "transferFunction", parent->transferfcn.transferfcn);
 
     // commit voxel data
     if (voxelData != NULL) { 
@@ -219,20 +219,20 @@ OSPVisItVolume::SetVolume(int type, void *ptr, double *X, double *Y, double *Z,
     osp::vec3f scaledSpacing;
     osp::vec3f scaledOrigin;
 
-    scaledBBoxLower.x = regionLowerClip.x * regionScaling.x;
-    scaledBBoxUpper.x = regionUpperClip.x * regionScaling.x;
-    scaledSpacing.x = regionSpacing.x * regionScaling.x;
-    scaledOrigin.x  = regionStart.x * regionScaling.x;
+    scaledBBoxLower.x = regionLowerClip.x * parent->regionScaling.x;
+    scaledBBoxUpper.x = regionUpperClip.x * parent->regionScaling.x;
+    scaledSpacing.x   = regionSpacing.x   * parent->regionScaling.x;
+    scaledOrigin.x    = regionStart.x     * parent->regionScaling.x;
 
-    scaledBBoxLower.y = regionLowerClip.y * regionScaling.y;
-    scaledBBoxUpper.y = regionUpperClip.y * regionScaling.y;
-    scaledSpacing.y = regionSpacing.y * regionScaling.y;
-    scaledOrigin.y  = regionStart.y * regionScaling.y;
+    scaledBBoxLower.y = regionLowerClip.y * parent->regionScaling.y;
+    scaledBBoxUpper.y = regionUpperClip.y * parent->regionScaling.y;
+    scaledSpacing.y   = regionSpacing.y   * parent->regionScaling.y;
+    scaledOrigin.y    = regionStart.y     * parent->regionScaling.y;
 
-    scaledBBoxLower.z = regionLowerClip.z * regionScaling.z;
-    scaledBBoxUpper.z = regionUpperClip.z * regionScaling.z;
-    scaledSpacing.z = regionSpacing.z * regionScaling.z;
-    scaledOrigin.z  = regionStart.z * regionScaling.z;
+    scaledBBoxLower.z = regionLowerClip.z * parent->regionScaling.z;
+    scaledBBoxUpper.z = regionUpperClip.z * parent->regionScaling.z;
+    scaledSpacing.z   = regionSpacing.z   * parent->regionScaling.z;
+    scaledOrigin.z    = regionStart.z     * parent->regionScaling.z;
 
     ospSet1i(volume, "useGridAccelerator", 0);
     ospSetVec3f(volume, "volumeClippingBoxLower", scaledBBoxLower);
@@ -259,7 +259,7 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     // create background depth buffer
     // std::vector<float> depthBuffer(width * height);
     // create framebuffer
-    CleanFB();	    
+    CleanFB();
     framebuffer = ospNewFrameBuffer(imageSize, 
 				    OSP_FB_RGBA32F,
 				    OSP_FB_COLOR);
@@ -269,7 +269,7 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
 }
 void OSPVisItVolume::RenderFB() {
     // ospFrameBufferClear(framebuffer, OSP_FB_COLOR);
-    ospRenderFrame(framebuffer, renderer, OSP_FB_COLOR);
+    ospRenderFrame(framebuffer, parent->renderer.renderer, OSP_FB_COLOR);
     framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
 }
 float* OSPVisItVolume::GetFBData() {
@@ -557,8 +557,8 @@ void OSPVisItContext::InitOSP(int numThreads)
 
 // We use this function to minimize interface
 void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
-			int imgWidth, int imgHeight,
-			float*& dest, OSPVisItVolume* volume) 
+			     int imgWidth, int imgHeight,
+			     float*& dest, OSPVisItVolume* volume) 
 {
     int timing_SetSubCamera = visitTimer->StartTimer();
     camera.SetScreen(xMin, xMax, yMin, yMax);
@@ -592,13 +592,14 @@ void OSPVisItContext::InitPatch(int id)
     if (volumes.size() == id) { 
 	volumes.push_back(id); 
     }
-    volumes[id].SetScaling(regionScaling);
-    volumes[id].SetTransferFunction(transferfcn.transferfcn);
-    volumes[id].SetRenderer(renderer.renderer);
+    volumes[id].parent = this;
+    //volumes[id].SetScaling(regionScaling);
+    //volumes[id].SetTransferFunction(transferfcn.transferfcn);
+    //volumes[id].SetRenderer(renderer.renderer);    
     //volumes[id].SetDVRFlag(enableDVR);
     //volumes[id].SetFinishedFlag(initialized); // reset volume for new data
     // if the data is refreshed -> not complete
-    volumes[id].SetBgBuffer(bgColorBuffer, bgDepthBuffer, bgExtents);
+    // volumes[id].SetBgBuffer(bgColorBuffer, bgDepthBuffer, bgExtents);
 }
 #endif//VISIT_OSPRAY
 
