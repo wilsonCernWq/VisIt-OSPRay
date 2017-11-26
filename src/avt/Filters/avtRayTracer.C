@@ -697,6 +697,7 @@ avtRayTracer::Execute(void)
 	    ospout << "[avrRayTracer] make ospray renderer" << std::endl;
 	    ospray->renderer.Init();
 	    ospray->renderer.Set(materialProperties, viewDirection, lighting);
+	    ospray->SetDataBounds(dbounds);
 	    // check memory
 	    slivr::CheckMemoryHere("avtRayTracer::Execute after ospray");
 	}

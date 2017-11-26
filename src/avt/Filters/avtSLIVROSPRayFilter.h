@@ -601,6 +601,7 @@ private:
     float         *bgDepthBuffer; // depth buffer for the background and other plots
     unsigned char *bgColorBuffer; // bounding box + pseudo color + ...
     int            bgExtents[4];  // extents of the buffer(minX, maxX, minY, max)
+    double bounds[6];
     // ospray mode
     bool initialized;
  public:
@@ -609,6 +610,11 @@ private:
 		int imgWidth, int imgHeight, 
 		float*& dest, OSPVisItVolume* volume);
     // parameters
+    void SetDataBounds(double dbounds[6]) {
+	std::cout << "xxx" << std::endl;
+	for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
+	std::cout << "yyy" << std::endl;
+    }
     void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
 	bgColorBuffer = color;
 	bgDepthBuffer = depth;

@@ -210,14 +210,29 @@ OSPVisItVolume::SetVolume(int type, void *ptr, double *X, double *Y, double *Z,
     // -- no lighting by default
     ospout << "[ospray] setting specular value to " << specularKs << std::endl;
     osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularKs;
+    std::cout << "zzz 0" << std::endl;
     ospSetVec3f(volume, "specular", Ks);
+    std::cout << "zzz 1" << std::endl;
     ospSet1f(volume, "Ns", specularNs);
+    std::cout << "zzz 2" << std::endl;
     ospSet1i(volume, "gradientShadingEnabled", (int)enableShading);
+    std::cout << "zzz 3" << std::endl;
     // -- other properties
     osp::vec3f scaledBBoxLower;
     osp::vec3f scaledBBoxUpper;
     osp::vec3f scaledSpacing;
     osp::vec3f scaledOrigin;
+
+    osp::vec3f scaledGlobalBBoxLower;
+    osp::vec3f scaledGlobalBBoxUpper;
+
+    scaledGlobalBBoxLower.x = parent->bounds[0] * regionScaling.x;
+    scaledGlobalBBoxUpper.x = parent->bounds[1] * regionScaling.x;
+    scaledGlobalBBoxLower.y = parent->bounds[2] * regionScaling.y;
+    scaledGlobalBBoxUpper.y = parent->bounds[3] * regionScaling.y;
+    scaledGlobalBBoxLower.z = parent->bounds[4] * regionScaling.z;
+    scaledGlobalBBoxUpper.z = parent->bounds[5] * regionScaling.z;
+    std::cout << "zzz" << std::endl;
 
     scaledBBoxLower.x = regionLowerClip.x * parent->regionScaling.x;
     scaledBBoxUpper.x = regionUpperClip.x * parent->regionScaling.x;
@@ -244,6 +259,10 @@ OSPVisItVolume::SetVolume(int type, void *ptr, double *X, double *Y, double *Z,
     ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 1);
     ospSet1i(volume, "singleShade", 0);
+
+    ospSetVec3f(volume, "volumeGlobalBoundingBoxLower", scaledGlobalBBoxLower);
+    ospSetVec3f(volume, "volumeGlobalBoundingBoxUpper", scaledGlobalBBoxUpper);
+
     ospCommit(volume);
 }
 
