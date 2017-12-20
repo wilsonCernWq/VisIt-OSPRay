@@ -338,12 +338,12 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 bool
 avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
 {
-	if (coord[0] > volBounds[0] && coord[0] < volBounds[1])
-	    if (coord[1] > volBounds[2] && coord[1] < volBounds[3])
-		if (coord[2] > volBounds[4] && coord[2] < volBounds[5])
-		    return true;
-	
-	return false;
+    if (coord[0] > volBounds[0] && coord[0] < volBounds[1])
+	if (coord[1] > volBounds[2] && coord[1] < volBounds[3])
+	    if (coord[2] > volBounds[4] && coord[2] < volBounds[5])
+		return true;
+    
+    return false;
 }
 
 // ****************************************************************************
@@ -492,16 +492,20 @@ avtRayTracer::Execute(void)
     extractor.SetJittering(true);
     extractor.SetInput(trans.GetOutput());
     if (trilinearInterpolation)
-	extractor.SetTrilinear(true);
+    { 
+	extractor.SetTrilinear(true); 
+    }
 
     //
     // Before Rendering
     //
     double dbounds[6];  // Extents of the volume in world coordinates
     vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
+    vtkMatrix4x4  *screen_to_model_transform = vtkMatrix4x4::New();
     vtkImageData  *opaqueImageVTK = NULL;
     unsigned char *opaqueImageData = NULL;
     float         *opaqueImageZB = NULL;
+    std::vector<float> opaqueImageDepth(screen[0] * screen[1], oldFarPlane);
     int            fullImageExtents[4];
 
     //
@@ -510,7 +514,6 @@ avtRayTracer::Execute(void)
     if (rayCastingSLIVR)
     {
 	extractor.SetRayCastingSLIVR(true);
-
 	//
 	// Camera Settings
 	//
@@ -544,8 +547,13 @@ avtRayTracer::Execute(void)
 	vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
 	vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
 	vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
+
+	ospout << "[avrRayTracer] matViewModelScale: " 
+	       << *matViewModelScale << std::endl;
+
 	matViewModel->Delete();
 	matScale->Delete();
+
 	// Zooming
 	vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
 	vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
@@ -553,8 +561,16 @@ avtRayTracer::Execute(void)
 	matZoom->SetElement(0, 0, view.imageZoom); 
 	matZoom->SetElement(1, 1, view.imageZoom);
 	vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, matZoomViewModelScale);
+
+	ospout << "[avrRayTracer] matZoomViewModelScale: " 
+	       << *matZoomViewModelScale << std::endl;
+
+	ospout << "[avrRayTracer] matZoom: " 
+	       << *matZoom << std::endl;
+
 	matViewModelScale->Delete();
 	matZoom->Delete();
+
 	// Projection: 
         // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
 	// The Z buffer that is passed from visit is in clip scape with z
@@ -562,30 +578,35 @@ avtRayTracer::Execute(void)
 	// nearz and farz. So, the projection matrix from VTK is hijacked here
 	// and adjusted to be within -1 and 1 too.
 	// Same as in 
-	// avtWorldSpaceToImageSpaceTransform::CalculatePerspectiveTransform
+	// https://www.vtk.org/doc/release/6.1/html/classvtkCamera.html#a4d9a509bf60f1555a70ecdee758c2753
 	vtkMatrix4x4 *matProj = sceneCam->GetProjectionTransformMatrix
 	    (aspect, oldNearPlane, oldFarPlane);
+	matProj->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
+			    (oldFarPlane-oldNearPlane));
+	matProj->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
+			    (oldFarPlane-oldNearPlane));	
+	ospout << "[avrRayTracer] matProj: " 
+	       << *matProj << std::endl;
+
 	double sceneSize[2];
 	if (!view.orthographic)
 	{
-	    matProj->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
-				(oldFarPlane-oldNearPlane));
-	    matProj->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
-				(oldFarPlane-oldNearPlane));
 	    sceneSize[0] = 2.0 * oldNearPlane / matProj->GetElement(0, 0);
 	    sceneSize[1] = 2.0 * oldNearPlane / matProj->GetElement(1, 1);
 	}
 	else
 	{
-	    matProj->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
-	    matProj->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
-				(oldFarPlane-oldNearPlane));
+	    // matProj->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
+	    // matProj->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
+	    // 			(oldFarPlane-oldNearPlane));
 	    sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
 	    sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
 	}
 	// Compute model_to_screen_transform matrix
 	vtkMatrix4x4::Multiply4x4(matProj,matZoomViewModelScale,
 				  model_to_screen_transform);
+	vtkMatrix4x4::Invert(model_to_screen_transform,
+			     screen_to_model_transform);
 	matZoomViewModelScale->Delete();
 	matProj->Delete();
 	// Get the full image extents of the volume
@@ -643,6 +664,8 @@ avtRayTracer::Execute(void)
 	       << sceneSize[1] << std::endl;
 	ospout << "[avrRayTracer] model_to_screen_transform: " 
 	       << *model_to_screen_transform << std::endl;
+	ospout << "[avrRayTracer] screen_to_model_transform: " 
+	       << *screen_to_model_transform << std::endl;
 	ospout << "[avrRayTracer] screen: " 
 	       << screen[0] << " " << screen[1] << std::endl;
 	ospout << "[avrRayTracer] data bounds: " << std::endl
@@ -737,12 +760,36 @@ avtRayTracer::Execute(void)
 	extractor.setBufferExtents(bufferScreenExtents);
 	// debug
 	// different rank will receive identical opaque image
-	if (PAR_Rank() == 0) {
-	    WriteArrayToPPM("opaqueImage", opaqueImageData, screen[0], screen[1]);
-	    WriteArrayGrayToPPM("opaqueDepth", opaqueImageZB, screen[0], screen[1]);
-	}
-	if (avtCallback::UseOSPRay()) { // bg buffer
-	    ospray->SetBgBuffer(opaqueImageData, opaqueImageZB, bufferScreenExtents);
+	// if (PAR_Rank() == 0) {
+	//     WriteArrayToPPM("opaqueImage", opaqueImageData, 
+	// 		    screen[0], screen[1]);
+	//     WriteArrayGrayToPPM("opaqueDepth", opaqueImageZB, 
+	// 			screen[0], screen[1]);
+	// }
+	if (avtCallback::UseOSPRay()) 
+	{
+	    // for (int y = 0; y < screen[1]; ++y) 		    
+	    // {
+	    // 	for (int x = 0; x < screen[0]; ++x) 
+	    // 	{
+	    // 	    int index = x + y * screen[0];
+	    // 	    int    screenCoord[2] = {x, y};
+	    // 	    double screenDepth = opaqueImageZB[index] * 2 - 1;
+	    // 	    double worldCoord[3];
+	    // 	    slivr::ProjectScreenToWorld
+	    // 		(screenCoord, screenDepth, 
+	    // 		 screen[0], screen[1],
+	    // 		 panPercentage, 
+	    // 		 view.imageZoom, 
+	    // 		 screen_to_model_transform, 
+	    // 		 worldCoord);
+	    // 	    //std::cout << x << " " << y << " " << screenDepth << std::endl;
+	    // 	    opaqueImageDepth[index] = worldCoord[2];		    
+	    // 	}
+	    // }
+	    // ospray->SetBgBuffer(opaqueImageData, 
+	    // 			opaqueImageDepth.data(), 
+	    // 			bufferScreenExtents);
 	}
     }
 
@@ -903,9 +950,6 @@ avtRayTracer::Execute(void)
 	    //
 	    // Blend in with bounding box and other visit plots
 	    //
-	    vtkMatrix4x4 *screen_to_model_transform = vtkMatrix4x4::New();
-	    vtkMatrix4x4::Invert(model_to_screen_transform, screen_to_model_transform);
-
 	    int compositedImageWidth  = 
 		fullImageExtents[1] - fullImageExtents[0];
 	    int compositedImageHeight = 
@@ -969,8 +1013,6 @@ avtRayTracer::Execute(void)
 				     panPercentage, 
 				     view.imageZoom, 
 				     screen_to_model_transform, worldCoordinates);
-				// unProject(_x, _y, _tempZ, worldCoordinates,
-				// 	  screen[0], screen[1], screen_to_model_transform);
 
 				if (checkInBounds(dbounds, worldCoordinates))
 				{
@@ -1190,9 +1232,6 @@ avtRayTracer::Execute(void)
 		//
 		// Blend in with bounding box and other visit plots
 		//
-		vtkMatrix4x4 *screen_to_model_transform = vtkMatrix4x4::New();
-		vtkMatrix4x4::Invert(model_to_screen_transform,screen_to_model_transform);
-
 		int compositedImageWidth  = imgComm.finalImageExtents[1] 
 		    - imgComm.finalImageExtents[0];
 		int compositedImageHeight = imgComm.finalImageExtents[3] 
@@ -1343,7 +1382,6 @@ avtRayTracer::Execute(void)
 		}
 		img->Delete();
 		SetOutput(whole_image);
-		screen_to_model_transform->Delete();
 	    }
 
 	    debug5 << "RC SLIVR: Done!" << std::endl;
@@ -1355,6 +1393,7 @@ avtRayTracer::Execute(void)
 	    if (localPatchesDepth != NULL)
 		delete []localPatchesDepth;
 	    model_to_screen_transform->Delete();
+	    screen_to_model_transform->Delete();
 	    	    
 	}
 

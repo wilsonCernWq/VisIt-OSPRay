@@ -81,19 +81,13 @@ OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     if (ptr != dataPtr) {
         ospout << "[ospray] update data" << std::endl;
     };
-    if (true /*!finished*/) {
+    if (true/*!finished*/) {
 	// Because we initialized the volume each frame
 	// we need to removed the old volume from model first
-	// if (finished) {
-	//     ospRemoveVolume(world, volume);
-	//     ospCommit(world);	    
-	// }
 	volumeType = OSP_INVALID;
 	InitVolume();
 	SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
 		  volumePBox, volumeBBox);
-	// now we add the volume back
-	// if (finished) { SetWorld(); }
     }
     /* OSPRay Model */
     if (true/*!finished*/) {
@@ -264,19 +258,34 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     osp::vec2i imageSize;
     imageSize.x = width;
     imageSize.y = height;
-    // create background depth buffer
-    // std::vector<float> depthBuffer(width * height);
+    // // create max depth texture
+    // std::vector<float> maxDepth(width * height);
+    // const int Xs = 
+    // 	floor(parent->camera.imgS.x * parent->camera.size[0]);
+    // const int Ys = 
+    // 	floor(parent->camera.imgS.y * parent->camera.size[1]);
+    // for (int i = 0; i < width; ++i) {
+    // 	for (int j = 0; j < height; ++j) {
+    // 	    maxDepth[i + j * width] = 
+    // 		parent->renderer.maxDepthBuffer[Xs + i + (Ys + j) * width];
+    // 	}
+    // }
+    // framebufferBg = ospNewTexture2D(imageSize,
+    // 				    OSP_TEXTURE_R32F,
+    // 				    maxDepth.data(), 
+    // 				    OSP_TEXTURE_FILTER_NEAREST);
+    // ospCommit(framebufferBg);
+    // ospSetObject(parent->renderer.renderer, "maxDepthTexture", framebufferBg);
+    // ospCommit(parent->renderer.renderer);
+    // ospRelease(framebufferBg);
+    // framebufferBg = NULL;
     // create framebuffer
     CleanFB();
     framebuffer = ospNewFrameBuffer(imageSize, 
 				    OSP_FB_RGBA32F,
 				    OSP_FB_COLOR);
-    // framebufferBg = ospNewTexture2D(imageSize,
-    // 				    OSP_TEXTURE_R32F,
-    // 				    NULL);
 }
 void OSPVisItVolume::RenderFB() {
-    // ospFrameBufferClear(framebuffer, OSP_FB_COLOR);
     ospRenderFrame(framebuffer, parent->renderer.renderer, OSP_FB_COLOR);
     framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
 }
@@ -432,7 +441,6 @@ void OSPVisItCamera::Set(const double camp[3],
 }
 void OSPVisItCamera::SetScreen(float xMin, float xMax, float yMin, float yMax) 
 {
-    osp::vec2f imgS, imgE;
     float r_xl = xMin/size[0] - panx; 
     float r_yl = yMin/size[1] - pany; 
     float r_xu = xMax/size[0] - panx;
@@ -526,24 +534,13 @@ void OSPVisItContext::InitOSP(int numThreads)
         ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
 #endif
 	// load ospray module
-	// if (enableDVR) {
-	//     OSPError err = ospLoadModule("mpi");
-	//     if (err != OSP_NO_ERROR) {
-	// 	osperr << "[Error] can't load ospray MPI module" << std::endl;
-	//     }
-	// }
 	OSPError err = ospLoadModule("visit");
 	if (err != OSP_NO_ERROR) {
 	    osperr << "[Error] can't load visit module" << std::endl;
 	}
 	// initialize ospray
         ospout << "[ospray] Initialize OSPRay";
-	// if (false/*enableDVR*/) {
-	//     device = ospNewDevice("mpi_distributed");
-	//     ospDeviceSet1i(device, "masterRank", 0);
-	// } else {
-	    device = ospNewDevice();
-	// }
+	device = ospNewDevice();	
 	// setup debug 
 	if (DebugStream::Level5()) {
 	    ospout << " debug mode";
@@ -601,13 +598,6 @@ void OSPVisItContext::InitPatch(int id)
 	volumes.push_back(id); 
     }
     volumes[id].parent = this;
-    //volumes[id].SetScaling(regionScaling);
-    //volumes[id].SetTransferFunction(transferfcn.transferfcn);
-    //volumes[id].SetRenderer(renderer.renderer);    
-    //volumes[id].SetDVRFlag(enableDVR);
-    //volumes[id].SetFinishedFlag(initialized); // reset volume for new data
-    // if the data is refreshed -> not complete
-    // volumes[id].SetBgBuffer(bgColorBuffer, bgDepthBuffer, bgExtents);
 }
 #endif//VISIT_OSPRAY
 

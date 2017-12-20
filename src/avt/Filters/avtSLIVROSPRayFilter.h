@@ -182,14 +182,6 @@ class OSPVisItVolume
     friend class OSPVisItContext;
  private:
     OSPVisItContext *parent;
-    /* // object references */
-    /* // (those objects are created and handled by other parts of the program) */
-    /* // (shouldnt be deleted in this struct) */
-    /* OSPTransferFunction transferfcn; */
-    /* OSPRenderer         renderer; */
-    /* float         *bgDepthBuffer; // depth buffer for the background and other plots */
-    /* unsigned char *bgColorBuffer; // bounding box + pseudo color + ... */
-    /* // int            bgExtents[4];  // extents of the buffer(minX, maxX, minY, max) */
 
     // objects owned by the struct
     // -- ospray model ---
@@ -211,7 +203,7 @@ class OSPVisItVolume
 
     // metadata for volume
     int                 patchId;       // volume patch id
-    bool                finished;    // check if this volume is initialized
+    bool                finished;      // check if this volume is initialized
     bool                enableShading;
     bool                enableDVR;     // Distributed Volume Renderer
     float               specularKs;
@@ -230,9 +222,6 @@ class OSPVisItVolume
  public:
     // constructor
     OSPVisItVolume(int id) {
-	// object references 
-	//transferfcn = NULL;
-	//renderer    = NULL;
 	// objects owned by the struct
 	world           = NULL;
 	worldType       = OSP_INVALID;
@@ -273,24 +262,15 @@ class OSPVisItVolume
     }
     
     // other function
-    void Set(int type, void *ptr, double *X, double *Y, double *Z, 
-	     int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6],
+    void Set(int type, void *ptr, 
+	     double *X, double *Y, double *Z, 
+	     int nX, int nY, int nZ, 
+	     double volumePBox[6], double volumeBBox[6],
 	     double mtl[4], float sr, bool shading);
     bool GetDVRFlag() { return enableDVR; }
     void SetDVRFlag(bool mode) { enableDVR = mode; }
     bool GetFinishedFlag() { return finished; }
     void SetFinishedFlag(bool f) { finished = f; } 
-    //void SetScaling(const osp::vec3f& s) { regionScaling = s; }
-    //void SetTransferFunction(const OSPTransferFunction& t) { transferfcn = t; }
-    //void SetRenderer(const OSPRenderer& r) { renderer = r; }
-    //void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
-	//bgColorBuffer = color;
-	//bgDepthBuffer = depth;
-	/* bgExtents[0] = extents[0]; */
-	/* bgExtents[1] = extents[1]; */
-	/* bgExtents[2] = extents[2]; */
-	/* bgExtents[3] = extents[3]; */
-    //}
 
     // ospModel component
     OSPModel GetWorld() { return world; }
@@ -325,12 +305,6 @@ class OSPVisItVolume
     void InitFB(unsigned int width, unsigned int height);
     void RenderFB();
     float* GetFBData();
-    /* void CleanFBData() { */
-    /* 	if (framebufferData != NULL) {  */
-    /* 	    ospUnmapFrameBuffer(framebufferData, framebuffer);  */
-    /* 	    framebufferData = NULL; */
-    /* 	}	 */
-    /* } */
     void CleanFB() {
 	if (framebufferData != NULL) { 
 	    ospUnmapFrameBuffer(framebufferData, framebuffer); 
@@ -407,8 +381,9 @@ public:
     int spp; //!< samples per pixel
     bool flagOneSidedLighting;
     bool flagShadowsEnabled;
-    bool flagAoTransparencyEnabled;    
-    OSPTexture2D maxDepthTexture;
+    bool flagAoTransparencyEnabled;
+    float       *maxDepthBuffer;  // depth buffer for the background (shared, never delete)
+    osp::vec2i   maxDepthSize;    // buffer extents (minX, maxX, minY, max)  
 public:
     OSPVisItRenderer() {
 	renderer = NULL;
@@ -418,7 +393,6 @@ public:
 	flagOneSidedLighting = false;
 	flagShadowsEnabled = false;
 	flagAoTransparencyEnabled = false;
-	maxDepthTexture = NULL;
     }
     ~OSPVisItRenderer() { Clean(); }
     void Clean() {
@@ -462,7 +436,7 @@ public:
     float pany; // this is a ratio [0, 1]
     float zoom; 
     int   size[2];
-
+    osp::vec2f imgS, imgE;
 public:
     OSPVisItCamera() {
 	camera = NULL;
@@ -471,6 +445,10 @@ public:
 	pany = 0.0f;
 	zoom = 1.0f;
 	size[0] = size[1] = 0.0f;
+	imgS.x = 0.f;
+	imgS.y = 0.f;
+	imgE.x = 0.f;
+	imgE.y = 0.f;
     }
     ~OSPVisItCamera() { Clean(); }
     void Clean() {
@@ -572,8 +550,6 @@ class OSPVisItContext
     {
 #ifdef VISIT_OSPRAY
 	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
-	bgDepthBuffer = NULL;
-	bgColorBuffer = NULL;
 	initialized = false;
 #endif//VISIT_OSPRAY
     }
@@ -597,10 +573,7 @@ private:
     std::vector<OSPVisItVolume> volumes;
 private:
     // class parameters
-    osp::vec3f regionScaling;
-    float         *bgDepthBuffer; // depth buffer for the background
-    unsigned char *bgColorBuffer; // bounding box + pseudo color + ...
-    int            bgExtents[4];  // buffer extents (minX, maxX, minY, max)
+    osp::vec3f     regionScaling;
     double bounds[6];
     // ospray mode
     bool initialized;
@@ -614,19 +587,15 @@ private:
 	for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
     }
     void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
-	bgColorBuffer = color;
-	bgDepthBuffer = depth;
-	/* bgExtents[0] = extents[0]; */
-	/* bgExtents[1] = extents[1]; */
-	/* bgExtents[2] = extents[2]; */
-	/* bgExtents[3] = extents[3]; */
+	renderer.maxDepthBuffer = depth;
+	renderer.maxDepthSize.x = extents[1] - extents[0];
+	renderer.maxDepthSize.y = extents[3] - extents[2];
     }
     void SetScaling(double s[3]) { 
 	regionScaling.x = (float)s[0];
 	regionScaling.y = (float)s[1];
 	regionScaling.z = (float)s[2]; 
     }
-
     // patch 
     void InitOSP(int numThreads = 0);
     void InitPatch(int id);
