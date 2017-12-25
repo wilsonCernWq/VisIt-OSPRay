@@ -260,10 +260,16 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     imageSize.y = height;
     // create max depth texture
     std::vector<float> maxDepth(width * height);
+    //
+    // The reason I use round(r * (N-1)) instead of floor(r * N) is that during the
+    // composition phase, there will be a wired offset between rendered image and the
+    // background, which is about one pixel in size. Using round(r * (N - 1)) can remove
+    // the problem
+    //
     const int Xs = 
-    	floor(parent->camera.imgS.x * parent->camera.size[0]);
+    	round(parent->camera.imgS.x * (parent->camera.size[0]-1));
     const int Ys = 
-    	floor(parent->camera.imgS.y * parent->camera.size[1]);
+    	round(parent->camera.imgS.y * (parent->camera.size[1]-1));
     for (int i = 0; i < width; ++i) {
     	for (int j = 0; j < height; ++j) {
     	    maxDepth[i + j * width] = 
