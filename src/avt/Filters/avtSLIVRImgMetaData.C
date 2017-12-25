@@ -124,7 +124,7 @@ slivr::ProjectScreenToWorld
     // do projection
     double worldHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
-	(x - screenWidth/2.0)/(screenWidth/2.0),
+	(x - screenWidth/2.0) /(screenWidth/2.0),
 	(y - screenHeight/2.0)/(screenHeight/2.0),
 	z, 1.0};
     imvp->MultiplyPoint(clipHCoord, worldHCoord);
@@ -150,6 +150,48 @@ slivr::ProjectScreenToWorld
     worldCoord[0] = worldHCoord[0]/worldHCoord[3];
     worldCoord[1] = worldHCoord[1]/worldHCoord[3];
     worldCoord[2] = worldHCoord[2]/worldHCoord[3];
+}
+
+void
+slivr::ProjectScreenToCamera
+(const int screenCoord[2], const double z,
+ const int screenWidth, const int screenHeight, 
+ vtkMatrix4x4 *imvp, double cameraCoord[3])
+{
+    // remove panning
+    const int x = screenCoord[0];
+    const int y = screenCoord[1];
+    
+    // do projection
+    double cameraHCoord[4] = {0,0,0,1};
+    double clipHCoord[4] = {
+	(x - screenWidth/2.0) /(screenWidth/2.0),
+	(y - screenHeight/2.0)/(screenHeight/2.0),
+	z,
+	1.0};
+    imvp->MultiplyPoint(clipHCoord, cameraHCoord);
+    if (cameraHCoord[3] == 0) {
+	debug5 << "slivr::ProjectScreenToWorld "
+	       << "Zero Division During Projection" 
+	       << std::endl;
+	std::cerr << "world coordinates: (" 
+		  << cameraHCoord[0] << ", " 
+		  << cameraHCoord[1] << ", " 
+		  << cameraHCoord[2] << ", " 
+		  << cameraHCoord[3] << ")" << std::endl
+		  << "clip space coordinate: ("
+		  << clipHCoord[0] << ", " 
+		  << clipHCoord[1] << ", " 
+		  << clipHCoord[2] << ", "
+		  << clipHCoord[3] << std::endl;
+	std::cerr << "Matrix: " << *imvp << std::endl;
+	EXCEPTION1(VisItException, "Zero Division During Projection");
+    }
+    
+    // normalize world space coordinate	
+    cameraCoord[0] = cameraHCoord[0]/cameraHCoord[3];
+    cameraCoord[1] = cameraHCoord[1]/cameraHCoord[3];
+    cameraCoord[2] = cameraHCoord[2]/cameraHCoord[3];
 }
 
 void

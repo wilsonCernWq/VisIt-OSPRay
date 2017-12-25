@@ -70,6 +70,11 @@ namespace slivr
 	 const double panPercentage[2], const double imageZoom,
 	 vtkMatrix4x4 *imvp, double worldCoord[3]);
 
+    void ProjectScreenToCamera
+	(const int screenCoord[2], const double z,
+	 const int screenWidth, const int screenHeight, 
+	 vtkMatrix4x4 *imvp, double cameraCoord[3]);
+
     inline void ProjectScreenToWorld
 	(const int x, const int y, const double z,
 	 const int screenWidth, const int screenHeight, 

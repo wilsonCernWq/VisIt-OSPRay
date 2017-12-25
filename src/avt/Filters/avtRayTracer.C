@@ -585,10 +585,10 @@ avtRayTracer::Execute(void)
 	vtkMatrix4x4::Invert(matProj,
 			     screen_to_camera_transform);
 	// Debug
-	ospout << "matZoom " << *matZoom << std::endl;
-	ospout << "matViewModel " << *matViewModel << std::endl;
-	ospout << "matScale " << *matScale << std::endl;
-	ospout << "matProj " << *matProj << std::endl;
+	ospout << "[avrRayTracer] matZoom " << *matZoom << std::endl;
+	ospout << "[avrRayTracer] matViewModel " << *matViewModel << std::endl;
+	ospout << "[avrRayTracer] matScale " << *matScale << std::endl;
+	ospout << "[avrRayTracer] matProj " << *matProj << std::endl;
 	// Cleanup
 	matScale->Delete();
 	matViewModel->Delete();
@@ -759,11 +759,9 @@ avtRayTracer::Execute(void)
 	    	    int    screenCoord[2] = {x, y};
 	    	    double screenDepth = opaqueImageZB[index] * 2 - 1;
 	    	    double worldCoord[3];
-	    	    slivr::ProjectScreenToWorld
+	    	    slivr::ProjectScreenToCamera
 	    		(screenCoord, screenDepth, 
 	    		 screen[0], screen[1],
-	    		 panPercentage, 
-	    		 view.imageZoom, 
 	    		 screen_to_camera_transform, 
 	    		 worldCoord);
 		    opaqueImageDepth[index] = -worldCoord[2];
