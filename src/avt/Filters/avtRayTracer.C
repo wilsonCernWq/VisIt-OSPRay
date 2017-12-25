@@ -152,7 +152,7 @@ avtRayTracer::avtRayTracer()
     lightPosition[3] = 1.0;
     materialProperties[0] = 0.4; 
     materialProperties[1] = 0.75;
-    materialProperties[3] = 0.0;
+    materialProperties[2] = 0.0;
     materialProperties[3] = 15.0;
     // ospray
     ospray = NULL;
