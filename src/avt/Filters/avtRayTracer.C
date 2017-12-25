@@ -441,7 +441,8 @@ avtRayTracer::Execute(void)
     // Initialization and Debug
     //=======================================================================//
     // check memory in the beginning
-    slivr::CheckMemoryHere("avtRayTracer::Execute");
+    ospout << "[avrRayTracer] entering execute" << std::endl;
+    slivr::CheckMemoryHere("[avtRayTracer] Execute", "ospout");
 
     // initialize current time
     int timingIndex = visitTimer->StartTimer();
@@ -490,12 +491,9 @@ avtRayTracer::Execute(void)
     extractor.SetKernelBasedSampling(doKernel);
     extractor.RegisterRayFunction(rayfoo);
     extractor.SetJittering(true);
-    extractor.SetInput(trans.GetOutput());
-    if (trilinearInterpolation)
-    { 
-	extractor.SetTrilinear(true); 
-    }
-
+    extractor.SetInput(trans.GetOutput());        
+    extractor.SetTrilinear(trilinearInterpolation); 
+	
     //
     // Before Rendering
     //
@@ -673,7 +671,7 @@ avtRayTracer::Execute(void)
 	// ospray stuffs
 	//===================================================================//
 	if (avtCallback::UseOSPRay()) {
-	    slivr::CheckMemoryHere("avtRayTracer::Execute before ospray");
+	    slivr::CheckMemoryHere("[avtRayTracer] Execute before ospray", "ospout");
 	    // initialize ospray
 	    // -- multi-threading enabled
 	    ospray->InitOSP();
@@ -714,7 +712,7 @@ avtRayTracer::Execute(void)
 	    ospray->renderer.Set(materialProperties, viewDirection, lighting);
 	    ospray->SetDataBounds(dbounds);
 	    // check memory
-	    slivr::CheckMemoryHere("avtRayTracer::Execute after ospray");
+	    slivr::CheckMemoryHere("[avtRayTracer] Execute after ospray", "ospout");
 	}
 
 	// 
@@ -779,6 +777,8 @@ avtRayTracer::Execute(void)
 	    			opaqueImageDepth.data(), 
 	    			bufferScreenExtents);
 	}
+	// TODO We cannot delete camera here, why ?
+	//sceneCam->Delete();
     }
 
     //
@@ -1088,9 +1088,7 @@ avtRayTracer::Execute(void)
 	    img->Delete();
 	    SetOutput(whole_image);
 
-	    if (composedData != NULL) {
-		delete [] composedData;
-	    }
+	    if (composedData != NULL) {	delete [] composedData; }
 
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
@@ -1375,7 +1373,13 @@ avtRayTracer::Execute(void)
 	    if (composedData != NULL)
 		delete []composedData;
 	    if (localPatchesDepth != NULL)
-		delete []localPatchesDepth;	    	    
+		delete []localPatchesDepth;
+
+	    //
+	    // Memory	   
+	    //
+	    slivr::CheckMemoryHere
+		("[avtRayTracer] Execute parallel compositing done", "ospout");
 	}
 		
 	// time compositing
