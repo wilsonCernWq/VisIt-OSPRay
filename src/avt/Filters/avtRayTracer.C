@@ -502,6 +502,7 @@ avtRayTracer::Execute(void)
     double dbounds[6];  // Extents of the volume in world coordinates
     vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
     vtkMatrix4x4  *screen_to_model_transform = vtkMatrix4x4::New();
+    vtkMatrix4x4  *screen_to_camera_transform = vtkMatrix4x4::New();
     vtkImageData  *opaqueImageVTK = NULL;
     unsigned char *opaqueImageData = NULL;
     float         *opaqueImageZB = NULL;
@@ -547,13 +548,6 @@ avtRayTracer::Execute(void)
 	vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
 	vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
 	vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
-
-	ospout << "[avrRayTracer] matViewModelScale: " 
-	       << *matViewModelScale << std::endl;
-
-	matViewModel->Delete();
-	matScale->Delete();
-
 	// Zooming
 	vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
 	vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
@@ -561,16 +555,6 @@ avtRayTracer::Execute(void)
 	matZoom->SetElement(0, 0, view.imageZoom); 
 	matZoom->SetElement(1, 1, view.imageZoom);
 	vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, matZoomViewModelScale);
-
-	ospout << "[avrRayTracer] matZoomViewModelScale: " 
-	       << *matZoomViewModelScale << std::endl;
-
-	ospout << "[avrRayTracer] matZoom: " 
-	       << *matZoom << std::endl;
-
-	matViewModelScale->Delete();
-	matZoom->Delete();
-
 	// Projection: 
         // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
 	// The Z buffer that is passed from visit is in clip scape with z
@@ -581,13 +565,10 @@ avtRayTracer::Execute(void)
 	// https://www.vtk.org/doc/release/6.1/html/classvtkCamera.html#a4d9a509bf60f1555a70ecdee758c2753
 	vtkMatrix4x4 *matProj = sceneCam->GetProjectionTransformMatrix
 	    (aspect, oldNearPlane, oldFarPlane);
-	matProj->SetElement(2, 2, -(oldFarPlane+oldNearPlane)   / 
-			    (oldFarPlane-oldNearPlane));
-	matProj->SetElement(2, 3, -(2*oldFarPlane*oldNearPlane) / 
-			    (oldFarPlane-oldNearPlane));	
-	ospout << "[avrRayTracer] matProj: " 
-	       << *matProj << std::endl;
-
+	matProj->SetElement(2, 2,
+			    -(oldFarPlane+oldNearPlane) / (oldFarPlane-oldNearPlane));
+	matProj->SetElement(2, 3,
+			    -(2*oldFarPlane*oldNearPlane) / (oldFarPlane-oldNearPlane));   
 	double sceneSize[2];
 	if (!view.orthographic)
 	{
@@ -596,9 +577,6 @@ avtRayTracer::Execute(void)
 	}
 	else
 	{
-	    // matProj->SetElement(2, 2, -2.0 / (oldFarPlane-oldNearPlane));
-	    // matProj->SetElement(2, 3, -(oldFarPlane+oldNearPlane) / 
-	    // 			(oldFarPlane-oldNearPlane));
 	    sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
 	    sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
 	}
@@ -607,6 +585,18 @@ avtRayTracer::Execute(void)
 				  model_to_screen_transform);
 	vtkMatrix4x4::Invert(model_to_screen_transform,
 			     screen_to_model_transform);
+	vtkMatrix4x4::Invert(matProj,
+			     screen_to_camera_transform);
+	// Debug
+	ospout << "matZoom" << *matZoom << std::endl;
+	ospout << "matViewModel" << *matViewModel << std::endl;
+	ospout << "matScale" << *matScale << std::endl;
+	ospout << "matProj" << *matProj << std::endl;
+	// Cleanup
+	matScale->Delete();
+	matViewModel->Delete();
+	matViewModelScale->Delete();
+	matZoom->Delete();
 	matZoomViewModelScale->Delete();
 	matProj->Delete();
 	// Get the full image extents of the volume
@@ -662,10 +652,6 @@ avtRayTracer::Execute(void)
 	ospout << "[avrRayTracer] sceneSize: " 
 	       << sceneSize[0] << " " 
 	       << sceneSize[1] << std::endl;
-	ospout << "[avrRayTracer] model_to_screen_transform: " 
-	       << *model_to_screen_transform << std::endl;
-	ospout << "[avrRayTracer] screen_to_model_transform: " 
-	       << *screen_to_model_transform << std::endl;
 	ospout << "[avrRayTracer] screen: " 
 	       << screen[0] << " " << screen[1] << std::endl;
 	ospout << "[avrRayTracer] data bounds: " << std::endl
@@ -677,6 +663,13 @@ avtRayTracer::Execute(void)
 	       << "\t" << fullImageExtents[1] << std::endl
 	       << "\t" << fullImageExtents[2] << " "
 	       << "\t" << fullImageExtents[3] << std::endl;
+	ospout << "[avrRayTracer] model_to_screen_transform: " 
+	       << *model_to_screen_transform << std::endl;
+	ospout << "[avrRayTracer] screen_to_model_transform: " 
+	       << *screen_to_model_transform << std::endl;
+	ospout << "[avrRayTracer] screen_to_camera_transform: " 
+	       << *screen_to_camera_transform << std::endl;
+
 	//===================================================================//
 	// ospray stuffs
 	//===================================================================//
@@ -726,7 +719,7 @@ avtRayTracer::Execute(void)
 	}
 
 	// 
-	// continuation of previous pipeline
+	// Continuation of previous pipeline
 	//
 	if (parallelOn == false) {
 	    extractor.SetRayCastingSLIVRParallel(true);
@@ -768,28 +761,31 @@ avtRayTracer::Execute(void)
 	// }
 	if (avtCallback::UseOSPRay()) 
 	{
-	    // for (int y = 0; y < screen[1]; ++y) 		    
-	    // {
-	    // 	for (int x = 0; x < screen[0]; ++x) 
-	    // 	{
-	    // 	    int index = x + y * screen[0];
-	    // 	    int    screenCoord[2] = {x, y};
-	    // 	    double screenDepth = opaqueImageZB[index] * 2 - 1;
-	    // 	    double worldCoord[3];
-	    // 	    slivr::ProjectScreenToWorld
-	    // 		(screenCoord, screenDepth, 
-	    // 		 screen[0], screen[1],
-	    // 		 panPercentage, 
-	    // 		 view.imageZoom, 
-	    // 		 screen_to_model_transform, 
-	    // 		 worldCoord);
-	    // 	    //std::cout << x << " " << y << " " << screenDepth << std::endl;
-	    // 	    opaqueImageDepth[index] = worldCoord[2];		    
-	    // 	}
-	    // }
-	    // ospray->SetBgBuffer(opaqueImageData, 
-	    // 			opaqueImageDepth.data(), 
-	    // 			bufferScreenExtents);
+	    for (int y = 0; y < screen[1]; ++y) 		    
+	    {
+	    	for (int x = 0; x < screen[0]; ++x) 
+	    	{
+	    	    int index = x + y * screen[0];
+	    	    int    screenCoord[2] = {x, y};
+	    	    double screenDepth = opaqueImageZB[index] * 2 - 1;
+	    	    double worldCoord[3];
+	    	    slivr::ProjectScreenToWorld
+	    		(screenCoord, screenDepth, 
+	    		 screen[0], screen[1],
+	    		 panPercentage, 
+	    		 view.imageZoom, 
+	    		 screen_to_camera_transform, 
+	    		 worldCoord);
+		    opaqueImageDepth[index] = -worldCoord[2];
+	    	    // std::cout << x << " " << y << " "
+		    // 	      << screenDepth << " "
+		    // 	      << opaqueImageDepth[index] << " "
+		    // 	      << std::endl;
+	    	}
+	    }
+	    ospray->SetBgBuffer(opaqueImageData, 
+	    			opaqueImageDepth.data(), 
+	    			bufferScreenExtents);
 	}
     }
 
@@ -1104,10 +1100,6 @@ avtRayTracer::Execute(void)
 		delete [] composedData;
 	    }
 
-	    // clean up
-	    screen_to_model_transform->Delete();
-	    model_to_screen_transform->Delete();
-
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
 	    slivr::CheckMemoryHere
@@ -1391,12 +1383,9 @@ avtRayTracer::Execute(void)
 	    if (composedData != NULL)
 		delete []composedData;
 	    if (localPatchesDepth != NULL)
-		delete []localPatchesDepth;
-	    model_to_screen_transform->Delete();
-	    screen_to_model_transform->Delete();
-	    	    
+		delete []localPatchesDepth;	    	    
 	}
-
+		
 	// time compositing
 	visitTimer->StopTimer(timingCompositinig, "Compositing");
 	
@@ -1556,12 +1545,19 @@ avtRayTracer::Execute(void)
     }
 
     //
+    // Clean up
+    //
+    screen_to_model_transform->Delete();
+    model_to_screen_transform->Delete();
+    screen_to_camera_transform->Delete();
+    
+    //
     // Stop timer 
     //
     visitTimer->StopTimer(timingIndex, "Ray Tracing");
 
     //
-    // write timing to file
+    // Write timing to file
     //
     visitTimer->DumpTimings();
 }

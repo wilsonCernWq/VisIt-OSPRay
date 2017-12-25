@@ -258,27 +258,28 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     osp::vec2i imageSize;
     imageSize.x = width;
     imageSize.y = height;
-    // // create max depth texture
-    // std::vector<float> maxDepth(width * height);
-    // const int Xs = 
-    // 	floor(parent->camera.imgS.x * parent->camera.size[0]);
-    // const int Ys = 
-    // 	floor(parent->camera.imgS.y * parent->camera.size[1]);
-    // for (int i = 0; i < width; ++i) {
-    // 	for (int j = 0; j < height; ++j) {
-    // 	    maxDepth[i + j * width] = 
-    // 		parent->renderer.maxDepthBuffer[Xs + i + (Ys + j) * width];
-    // 	}
-    // }
-    // framebufferBg = ospNewTexture2D(imageSize,
-    // 				    OSP_TEXTURE_R32F,
-    // 				    maxDepth.data(), 
-    // 				    OSP_TEXTURE_FILTER_NEAREST);
-    // ospCommit(framebufferBg);
-    // ospSetObject(parent->renderer.renderer, "maxDepthTexture", framebufferBg);
-    // ospCommit(parent->renderer.renderer);
-    // ospRelease(framebufferBg);
-    // framebufferBg = NULL;
+    // create max depth texture
+    std::vector<float> maxDepth(width * height);
+    const int Xs = 
+    	floor(parent->camera.imgS.x * parent->camera.size[0]);
+    const int Ys = 
+    	floor(parent->camera.imgS.y * parent->camera.size[1]);
+    for (int i = 0; i < width; ++i) {
+    	for (int j = 0; j < height; ++j) {
+    	    maxDepth[i + j * width] = 
+    		parent->renderer.maxDepthBuffer
+		[Xs + i + (Ys + j) * parent->renderer.maxDepthSize.x];
+    	}
+    }
+    framebufferBg = ospNewTexture2D(imageSize,
+    				    OSP_TEXTURE_R32F,
+    				    maxDepth.data(), 
+    				    OSP_TEXTURE_FILTER_NEAREST);
+    ospCommit(framebufferBg);
+    ospSetObject(parent->renderer.renderer, "maxDepthTexture", framebufferBg);
+    ospCommit(parent->renderer.renderer);
+    ospRelease(framebufferBg);
+    framebufferBg = NULL;
     // create framebuffer
     CleanFB();
     framebuffer = ospNewFrameBuffer(imageSize, 

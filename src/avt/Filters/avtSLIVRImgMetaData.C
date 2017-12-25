@@ -231,83 +231,6 @@ slivr::ProjectWorldToScreenCube
 //  Creation:    
 //
 // ****************************************************************************
-// void 
-// CreateColorPPM
-// (std::string filename, unsigned char *data, int width, int height)
-// {
-//     std::ofstream outputFile((filename+ ".ppm").c_str(), 
-// 			     std::ios::out | std::ios::binary);
-//     outputFile << "P6\n" << width << "\n" << height << "\n" << 255 << "\n";    
-//     for (int y=0; y<height; ++y){
-//         for (int x=0; x<width; ++x){
-//             int index = ((y * width) + x)*3;            
-//             char color[3];
-//             color[0] = data[index+0];  // red
-//             color[1] = data[index+1];  // green   
-//             color[2] = data[index+2];  // blue
-//             outputFile.write(color,3);
-//         }
-//     }    
-//     outputFile.close();
-// }
-
-// void 
-// WriteOutputToFile( std::string filename, float * data, int dimX, int dimY )
-// {
-//     std::ofstream outputFile( (filename+ ".txt").c_str(), std::ios::out);
-//     outputFile << "Dims: " << dimX << ", " << dimY << "\n";
- 
-//     for (int y=0; y<dimY; ++y)
-//     {
-//         for (int x=0; x<dimX; ++x)
-//         {
-//             int index = (y * dimX + x);
-//             outputFile << data[index] << ", ";
-//         }
-//         outputFile  << "\n";
-//     }
- 
-//     outputFile.close();
-// }
-
-// void 
-// WriteOutputToFileByLine(std::string filename, float * data, int dimX, int dimY)
-// {
-//     std::ofstream outputFile( (filename+ ".txt").c_str(), std::ios::out);
-//     outputFile << "Dims: " << dimX << ", " << dimY << "\n";
- 
-//     for (int y=0; y<dimY; ++y)
-//     {
-//         for (int x=0; x<dimX; ++x)
-//         {
-//             int index = (y * dimX + x);
-//             outputFile << x  << ", " << y << " : " << data[index] << "\n";
-//         }
-//         outputFile  << "\n";
-//     } 
-//     outputFile.close();
-// }
-
-// void WriteDepthBufferToPPM
-// (std::string filename , float * data, int dimX, int dimY)
-// {
-//     std::ofstream outputFile((filename+ ".ppm").c_str(), 
-// 			     std::ios::out | std::ios::binary);
-//     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
-//     for (int y=dimY-1; y>=0; --y)
-//     {
-//         for (int x=0; x<dimX; ++x)
-//         {
-//             int index = (y * dimX + x); 
-//             char color[3];
-//             color[0] = data[index] * 255;  // red
-//             color[1] = data[index] * 255;  // green
-//             color[2] = data[index] * 255;  // blue
-//             outputFile.write(color,3);
-//         }
-//     } 
-//     outputFile.close();
-// }
 
 void WriteArrayToPPM(std::string filename , float * image, int dimX, int dimY)
 {
@@ -338,7 +261,7 @@ void WriteArrayToPPM(std::string filename , unsigned char * image,
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
-	outputFile.write((const char*)image[y * dimX * 3], dimX * 3);
+	outputFile.write(reinterpret_cast<char*>(&image[y * dimX * 3]), dimX * 3);
     } 
     outputFile.close();
 }
