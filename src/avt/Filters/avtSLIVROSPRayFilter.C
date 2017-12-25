@@ -483,17 +483,6 @@ void OSPVisItTransferFunction::Set(const OSPVisItColor *table,
 	colors.push_back(color);
 	opacities.push_back(table[i].A);
     }
-    // if (PAR_Rank() == 0) {
-    // 	printf("\n\n");
-    // 	for (int i = 0; i < size; ++i) {
-    // 	    printf("vec3f(%f,%f,%f),\n",colors[i].x,colors[i].y,colors[i].z);
-    // 	}
-    // 	printf("\n{");
-    // 	for (int i = 0; i < size; ++i) {
-    // 	    printf("%f,",opacities[i]);
-    // 	}
-    // 	printf("}\n");
-    // }
     OSPData colorData   = 
 	ospNewData(colors.size(), OSP_FLOAT3, colors.data());
     OSPData opacityData = 
@@ -616,7 +605,10 @@ void OSPVisItContext::InitPatch(int id)
 
 void slivr::CheckMemoryHere(const std::string& message, std::string debugN)
 {
-    if (debugN.compare("debug5") == 0) {
+    if (debugN.compare("ospout") == 0) {	
+	slivr::CheckMemoryHere(message, *osp_out);
+    }
+    else if (debugN.compare("debug5") == 0) {
 	if (DebugStream::Level5()) {
 	    slivr::CheckMemoryHere(message, DebugStream::Stream5());
 	}       

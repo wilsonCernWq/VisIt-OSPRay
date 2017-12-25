@@ -555,20 +555,19 @@ avtRayTracer::Execute(void)
 	matZoom->SetElement(0, 0, view.imageZoom); 
 	matZoom->SetElement(1, 1, view.imageZoom);
 	vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, matZoomViewModelScale);
-	// Projection: 
-        // http://www.codinglabs.net/article_world_view_projection_matrix.aspx
-	// The Z buffer that is passed from visit is in clip scape with z
-	// limits of -1 and 1. However, using VTK, the z limits are withing
-	// nearz and farz. So, the projection matrix from VTK is hijacked here
-	// and adjusted to be within -1 and 1 too.
-	// Same as in 
-	// https://www.vtk.org/doc/release/6.1/html/classvtkCamera.html#a4d9a509bf60f1555a70ecdee758c2753
-	vtkMatrix4x4 *matProj = sceneCam->GetProjectionTransformMatrix
-	    (aspect, oldNearPlane, oldFarPlane);
-	matProj->SetElement(2, 2,
-			    -(oldFarPlane+oldNearPlane) / (oldFarPlane-oldNearPlane));
-	matProj->SetElement(2, 3,
-			    -(2*oldFarPlane*oldNearPlane) / (oldFarPlane-oldNearPlane));   
+	// Projection:
+	//
+	// https://www.vtk.org/doc/release/6.1/html/classvtkCamera.html
+	// HASH: #a4d9a509bf60f1555a70ecdee758c2753
+	//
+	// The Z buffer that is passed from visit is in clip scape with z limits of -1 and 1.
+	// However, using VTK 6.1.0, the z limits are wired. So, the projection matrix from
+	// VTK is hijacked here and adjusted to be within -1 and 1 too
+	//
+	// Actually the correct way of using VTK GetProjectionTransformMatrix is to set
+	// near and far plane as -1 and 1
+	//
+	vtkMatrix4x4 *matProj = sceneCam->GetProjectionTransformMatrix(aspect, -1, 1);
 	double sceneSize[2];
 	if (!view.orthographic)
 	{
@@ -588,10 +587,10 @@ avtRayTracer::Execute(void)
 	vtkMatrix4x4::Invert(matProj,
 			     screen_to_camera_transform);
 	// Debug
-	ospout << "matZoom" << *matZoom << std::endl;
-	ospout << "matViewModel" << *matViewModel << std::endl;
-	ospout << "matScale" << *matScale << std::endl;
-	ospout << "matProj" << *matProj << std::endl;
+	ospout << "matZoom " << *matZoom << std::endl;
+	ospout << "matViewModel " << *matViewModel << std::endl;
+	ospout << "matScale " << *matScale << std::endl;
+	ospout << "matProj " << *matProj << std::endl;
 	// Cleanup
 	matScale->Delete();
 	matViewModel->Delete();
@@ -751,14 +750,7 @@ avtRayTracer::Execute(void)
 	extractor.setRGBBuffer  (opaqueImageData, screen[0],screen[1]);
 	int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
 	extractor.setBufferExtents(bufferScreenExtents);
-	// debug
-	// different rank will receive identical opaque image
-	// if (PAR_Rank() == 0) {
-	//     WriteArrayToPPM("opaqueImage", opaqueImageData, 
-	// 		    screen[0], screen[1]);
-	//     WriteArrayGrayToPPM("opaqueDepth", opaqueImageZB, 
-	// 			screen[0], screen[1]);
-	// }
+	// Set the background to OSPRay
 	if (avtCallback::UseOSPRay()) 
 	{
 	    for (int y = 0; y < screen[1]; ++y) 		    
@@ -802,7 +794,7 @@ avtRayTracer::Execute(void)
     }
 
     // Qi debug
-    slivr::CheckMemoryHere("avtRayTracer::Execute raytracing setup done");
+    slivr::CheckMemoryHere("[avtRayTracer] Execute raytracing setup done", "ospout");
 
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
@@ -926,7 +918,7 @@ avtRayTracer::Execute(void)
 	    // Qi debug
 	    debug5 << "Serial compositing done!" << std::endl;
 	    slivr::CheckMemoryHere
-		("avtRayTracer::Execute serial compositing done");
+		("[avtRayTracer] Execute serial compositing done", "ospout");
 	    debug5 << "Final image compositing start!" << std::endl;
 
 	    //
@@ -1103,7 +1095,7 @@ avtRayTracer::Execute(void)
 	    // check time
 	    debug5 << "Final compositing done!" << std::endl;
 	    slivr::CheckMemoryHere
-		("avtRayTracer::Execute final compositing done");
+		("[avtRayTracer] Execute final compositing done", "ospout");
 
 	} else { 
 
