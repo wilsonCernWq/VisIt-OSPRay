@@ -90,6 +90,16 @@ namespace slivr
 	(const double cube[6], const int screenWidth, const int screenHeight, 
 	 const double panPercentage[2], const double imageZoom, 
 	 vtkMatrix4x4 *mvp,int screenExtents[4], double depthExtents[2]);
+
+    void ComposeBackground(int screen[2],
+			   int compositedImageExtents[4],
+			   int compositedImageWidth,
+			   int compositedImageHeight,
+			   float *compositedImageBuffer,
+			   unsigned char *opaqueImageColor,
+			   float         *opaqueImageDepth,
+			   unsigned char *&imgFinal);
+
 };
 
 // ****************************************************************************
@@ -134,11 +144,11 @@ namespace slivr
     struct ImgData
     {
 	// acts as a key
-	int procId;      // processor that produced the patch
-	int patchNumber; // id of the patch on that processor
+	int procId;        // processor that produced the patch
+	int patchNumber;   // id of the patch on that processor
 	float *imagePatch; // the image data - RGBA
 	ImgData() { imagePatch = NULL; }
-	bool operator==(const ImgData &a){
+	bool operator==(const ImgData &a) {
 	    return (patchNumber == a.patchNumber);
 	}
     };

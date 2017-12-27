@@ -262,6 +262,203 @@ slivr::ProjectWorldToScreenCube
     }
 }
 
+// bool
+// CheckInBounds(double volBounds[6], double coord[3])
+// {
+//     if (coord[0] > volBounds[0] && coord[0] < volBounds[1])
+// 	if (coord[1] > volBounds[2] && coord[1] < volBounds[3])
+// 	    if (coord[2] > volBounds[4] && coord[2] < volBounds[5])
+// 		return true;    
+//     return false;
+// }
+
+// bool
+// Intersect(double bounds[6], double ray[3], double cameraPos[3], double &tMin, double &tMax)
+// {
+//     double t1, t2, tXMin, tXMax, tYMin, tYMax, tZMin, tZMax;
+//     double invRay[3];
+    
+//     for (int i=0; i<3; i++)
+// 	invRay[i] = 1.0 / ray[i];
+    
+//     // X
+//     t1 = (bounds[0] - cameraPos[0]) * invRay[0];
+//     t2 = (bounds[1] - cameraPos[0]) * invRay[0];    
+//     tXMin = std::min(t1, t2);
+//     tXMax = std::max(t1, t2);    
+    
+//     // Y
+//     t1 = (bounds[2] - cameraPos[1]) * invRay[1];
+//     t2 = (bounds[3] - cameraPos[1]) * invRay[1];    
+//     tYMin = std::min(t1, t2);
+//     tYMax = std::max(t1, t2);    
+    
+//     // Z
+//     t1 = (bounds[4] - cameraPos[2]) * invRay[2];
+//     t2 = (bounds[5] - cameraPos[2]) * invRay[2];    
+//     tZMin = std::min(t1, t2);
+//     tZMax = std::max(t1, t2);    
+    
+//     // Comparing
+//     if ((tXMin > tYMax) || (tYMin > tXMax))
+// 	return false;
+    
+//     tMin = t1 = std::max(tXMin, tYMin);
+//     tMax = t2 = std::min(tXMax, tYMax);    
+    
+//     if ((t1 > tZMax) || (tZMin > t2))
+// 	return false;
+    
+//     tMin = std::max(t1, tZMin);
+//     tMax = std::min(t2, tYMax);
+    
+//     return true;
+// }
+
+void
+slivr::ComposeBackground(int screen[2],
+			 int compositedImageExtents[4],
+			 int compositedImageWidth,
+			 int compositedImageHeight,
+			 float *compositedImageBuffer,
+			 unsigned char *opaqueImageColor,
+			 float         *opaqueImageDepth,
+			 unsigned char *&imgFinal)
+{
+    for (int _y = 0; _y < screen[1]; _y++)
+    {
+	for (int _x = 0; _x < screen[0]; _x++)
+	{
+	    int indexScreen     = _y * screen[0] + _x;
+	    int indexComposited =
+		(_y - compositedImageExtents[2]) * compositedImageWidth +
+		(_x - compositedImageExtents[0]);
+
+	    bool insideComposited = 
+		((_x >= compositedImageExtents[0] && _x < compositedImageExtents[1]) &&
+		 (_y >= compositedImageExtents[2] && _y < compositedImageExtents[3]));
+
+	    if (insideComposited)
+	    {
+		if (compositedImageBuffer[indexComposited*4 + 3] == 0)
+		{
+		    // No data from rendering here! - Good
+		    imgFinal[indexScreen * 3 + 0] = opaqueImageColor[indexScreen * 3 + 0];
+		    imgFinal[indexScreen * 3 + 1] = opaqueImageColor[indexScreen * 3 + 1];
+		    imgFinal[indexScreen * 3 + 2] = opaqueImageColor[indexScreen * 3 + 2];
+		}
+		else
+		{
+		    // Volume in front
+		    float alpha = (1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
+		    imgFinal[indexScreen * 3 + 0] = 
+			CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
+			      compositedImageBuffer[indexComposited * 4 + 0] * 255.f,
+			      0.f, 255.f);
+		    imgFinal[indexScreen * 3 + 1] = 
+			CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
+			      compositedImageBuffer[indexComposited * 4 + 1] * 255.f,
+			      0.f, 255.f);
+		    imgFinal[indexScreen * 3 + 2] =
+			CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
+			      compositedImageBuffer[indexComposited * 4 + 2] * 255.f,
+			      0.f, 255.f);
+		}
+		//     if (opaqueImageDepth[indexScreen] != 1)
+		//     {
+		// 	// Might need to do some blending
+		// 	double worldCoord[3];
+		// 	double screenDepth = opaqueImageZB[index] * 2 - 1;
+		// 	slivr::ProjectScreenToWorld
+		// 	    (_x, _y, screenDepth, 
+		// 	     screen[0], screen[1],
+		// 	     panPercentage, 
+		// 	     view.imageZoom, 
+		// 	     screen_to_model_transform, worldCoord);
+
+		// 	if (CheckInBounds(dbounds, worldCoordinates))
+		// 	{
+		// 	    // Completely inside bounding box
+		// 	    float alpha = 1.0 - compositedImageBuffer[indexComposited*4+3];
+		// 	    imgFinal[indexScreen*3 + 0] = 
+		// 		std::min((((float)opaqueImageRGB[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ),1.0) * 255;
+		// 	    imgFinal[index*3 + 1] = 
+		// 		std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ),1.0) * 255;
+		// 	    imgFinal[index*3 + 2] = 
+		// 		std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ),1.0) * 255;
+		// 	}
+		// 	else
+		// 	{
+		// 	    // Intersect inside with bounding box
+		// 	    double ray[3], tMin, tMax;
+		// 	    computeRay( view.camera, worldCoordinates, ray);
+		// 	    if ( intersect(dbounds, ray, view.camera, tMin, tMax) )
+		// 	    {
+		// 		double tIntersect = std::min( (worldCoordinates[0]-view.camera[0])/ray[0],
+		// 					      std::min( (worldCoordinates[1]-view.camera[1])/ray[1], 
+		// 							(worldCoordinates[2]-view.camera[2])/ray[2] ) );
+		// 		if (tMin <= tIntersect)
+		// 		{
+		// 		    // Volume in front
+		// 		    float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
+		// 		    imgFinal[indexScreen * 3 + 0] = 
+		// 			CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
+		// 			      compositedImageBuffer[indexComposited * 4 + 0] * 255.f,
+		// 			      0.f, 255.f);
+		// 		    imgFinal[indexScreen * 3 + 1] = 
+		// 			CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
+		// 			      compositedImageBuffer[indexComposited * 4 + 1] * 255.f,
+		// 			      0.f, 255.f);
+		// 		    imgFinal[indexScreen * 3 + 2] =
+		// 			CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
+		// 			      compositedImageBuffer[indexComposited * 4 + 2] * 255.f,
+		// 			      0.f, 255.f);
+		// 		}
+		// 		else
+		// 		{
+		// 		    // box infront
+		// 		    imgFinal[indexScreen * 3 + 0] = opaqueImageData[indexScreen * 3 + 0];
+		// 		    imgFinal[indexScreen * 3 + 1] = opaqueImageData[indexScreen * 3 + 1];
+		// 		    imgFinal[indexScreen * 3 + 2] = opaqueImageData[indexScreen * 3 + 2];
+		// 		}
+		// 	    }
+		// 	    else
+		// 	    {
+		// 		float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
+		// 		imgFinal[index*3 + 0] = 
+		// 		    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
+		// 		imgFinal[index*3 + 1] = 
+		// 		    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
+		// 		imgFinal[index*3 + 2] = 
+		// 		    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
+		// 	    }
+		// 	}
+		//     }
+		//     else
+		//     {
+		// 	//opaqueImageZB[index] == 1 - Only data, no background : Good
+		// 	float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
+		// 	imgFinal[index*3 + 0] = 
+		// 	    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
+		// 	imgFinal[index*3 + 1] = 
+		// 	    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
+		// 	imgFinal[index*3 + 2] = 
+		// 	    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
+		//     }
+		// }
+
+	    }
+	    else
+	    {
+		// Outside bounding box: Use the background : Good
+		imgFinal[indexScreen * 3 + 0] = opaqueImageColor[indexScreen * 3 + 0];
+		imgFinal[indexScreen * 3 + 1] = opaqueImageColor[indexScreen * 3 + 1];
+		imgFinal[indexScreen * 3 + 2] = opaqueImageColor[indexScreen * 3 + 2];
+	    }
+	}
+    }
+}
+
 
 // ****************************************************************************
 //  Function:  

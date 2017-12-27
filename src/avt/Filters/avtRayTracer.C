@@ -967,7 +967,7 @@ avtRayTracer::Execute(void)
 		avtImageRepresentation::NewImage(screen[0], screen[1]);
 	    whole_image->GetImage() = img;
 	    unsigned char *imgFinal = NULL;
-	    imgFinal = new unsigned char[screen[0] * screen[1] * 3];
+	    // >> Why ?? // imgFinal = new unsigned char[screen[0] * screen[1] * 3];
 	    imgFinal = whole_image->GetImage().GetRGBBuffer();
 	    // Blend in with bounding box and other visit plots
 	    int compositedImageWidth  = 
@@ -1258,21 +1258,21 @@ avtRayTracer::Execute(void)
 		//
 		avtImage_p whole_image;
 		whole_image = new avtImage(this);
-		vtkImageData *img = 
-		    avtImageRepresentation::NewImage(screen[0], screen[1]);
+		vtkImageData *img = avtImageRepresentation::NewImage(screen[0], screen[1]);
 		whole_image->GetImage() = img;
-
 		unsigned char *imgFinal = NULL;
-		imgFinal = new unsigned char[screen[0] * screen[1] * 3]();
+		// >> Why ?? //imgFinal = new unsigned char[screen[0] * screen[1] * 3]();
 		imgFinal = whole_image->GetImage().GetRGBBuffer();
 
 		//
 		// Blend in with bounding box and other visit plots
 		//
-		int compositedImageWidth  = imgComm.finalImageExtents[1] 
-		    - imgComm.finalImageExtents[0];
-		int compositedImageHeight = imgComm.finalImageExtents[3] 
-		    - imgComm.finalImageExtents[2];
+		int compositedImageWidth  =
+		    imgComm.finalImageExtents[1] -
+		    imgComm.finalImageExtents[0];
+		int compositedImageHeight =
+		    imgComm.finalImageExtents[3] -
+		    imgComm.finalImageExtents[2];
 
 		debug5 << "Place in image ~ screen " 
 		       <<  screen[0] << ", " << screen[1] 
@@ -1298,125 +1298,134 @@ avtRayTracer::Execute(void)
 		// dbounds[3] = dbounds[3]-0.00;
 		// dbounds[4] = dbounds[4]+0.00;
 		// dbounds[5] = dbounds[5]-0.00;
-		      
-		for (int _y=0; _y<screen[1]; _y++)
-		{
-		    for (int _x=0; _x<screen[0]; _x++)
-		    {
-			int index = _y*screen[0] + _x;
-			int indexComposited = (_y-imgComm.finalImageExtents[2])*compositedImageWidth + (_x-imgComm.finalImageExtents[0]);
 
-			bool insideComposited = false;
-			if (_x >= imgComm.finalImageExtents[0] && _x < imgComm.finalImageExtents[1]) {
-			    if (_y >= imgComm.finalImageExtents[2] && _y < imgComm.finalImageExtents[3]) {
-				insideComposited = true;
-			    }
-			}
+		slivr::ComposeBackground(screen,
+					 imgComm.finalImageExtents,
+					 compositedImageWidth,
+					 compositedImageHeight,
+					 imgComm.GetFinalImageBuffer(),
+					 opaqueImageData,
+					 opaqueImageZB,
+					 imgFinal);
+
+		// for (int _y = 0; _y < screen[1]; _y++)
+		// {
+		//     for (int _x = 0; _x < screen[0]; _x++)
+		//     {
+		// 	int index = _y*screen[0] + _x;
+		// 	int indexComposited = (_y-imgComm.finalImageExtents[2])*compositedImageWidth + (_x-imgComm.finalImageExtents[0]);
+
+		// 	bool insideComposited = false;
+		// 	if (_x >= imgComm.finalImageExtents[0] && _x < imgComm.finalImageExtents[1]) {
+		// 	    if (_y >= imgComm.finalImageExtents[2] && _y < imgComm.finalImageExtents[3]) {
+		// 		insideComposited = true;
+		// 	    }
+		// 	}
 
 
-			if ( insideComposited )
-			{
-			    if (imgComm.GetFinalImageBuffer()[indexComposited*4 + 3] == 0)
-			    {
-				// No data from rendering here! - Good
-				imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
-				imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
-				imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
-			    }
-			    else
-			    {
-				if (opaqueImageZB[index] != 1)
-				{
-				    // Might need to do some blending
-				    double worldCoordinates[3];
-				    int screenCoord[2] = {_x, _y};
-				    double screenDepth = opaqueImageZB[index] * 2 - 1;
-				    slivr::ProjectScreenToWorld
-					(screenCoord, screenDepth, 
-					 screen[0], screen[1],
-					 panPercentage, 
-					 view.imageZoom, 
-					 screen_to_model_transform, worldCoordinates);
-				    //unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], screen_to_model_transform);
+		// 	if ( insideComposited )
+		// 	{
+		// 	    if (imgComm.GetFinalImageBuffer()[indexComposited*4 + 3] == 0)
+		// 	    {
+		// 		// No data from rendering here! - Good
+		// 		imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+		// 		imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+		// 		imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
+		// 	    }
+		// 	    else
+		// 	    {
+		// 		if (opaqueImageZB[index] != 1)
+		// 		{
+		// 		    // Might need to do some blending
+		// 		    double worldCoordinates[3];
+		// 		    int screenCoord[2] = {_x, _y};
+		// 		    double screenDepth = opaqueImageZB[index] * 2 - 1;
+		// 		    slivr::ProjectScreenToWorld
+		// 			(screenCoord, screenDepth, 
+		// 			 screen[0], screen[1],
+		// 			 panPercentage, 
+		// 			 view.imageZoom, 
+		// 			 screen_to_model_transform, worldCoordinates);
+		// 		    //unProject(_x, _y, _tempZ, worldCoordinates, screen[0], screen[1], screen_to_model_transform);
 
-				    if ( checkInBounds(dbounds, worldCoordinates) )
-				    {
-					// Completely inside bounding box
-					float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
-					imgFinal[index*3 + 0] = 
-					    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ),1.0) * 255;
-					imgFinal[index*3 + 1] = 
-					    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ),1.0) * 255;
-					imgFinal[index*3 + 2] = 
-					    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ),1.0) * 255;
-				    }
-				    else
-				    {
-					// Intersect inside with bounding box
-					double ray[3], tMin, tMax;
-					computeRay( view.camera, worldCoordinates, ray);
-					if ( intersect(dbounds, ray, view.camera, tMin, tMax) )
-					{
-					    double tIntersect = std::min( (worldCoordinates[0]-view.camera[0])/ray[0],
-									  std::min( (worldCoordinates[1]-view.camera[1])/ray[1], 
-										    (worldCoordinates[2]-view.camera[2])/ray[2] ) );
+		// 		    if ( checkInBounds(dbounds, worldCoordinates) )
+		// 		    {
+		// 			// Completely inside bounding box
+		// 			float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
+		// 			imgFinal[index*3 + 0] = 
+		// 			    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ),1.0) * 255;
+		// 			imgFinal[index*3 + 1] = 
+		// 			    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ),1.0) * 255;
+		// 			imgFinal[index*3 + 2] = 
+		// 			    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ),1.0) * 255;
+		// 		    }
+		// 		    else
+		// 		    {
+		// 			// Intersect inside with bounding box
+		// 			double ray[3], tMin, tMax;
+		// 			computeRay( view.camera, worldCoordinates, ray);
+		// 			if ( intersect(dbounds, ray, view.camera, tMin, tMax) )
+		// 			{
+		// 			    double tIntersect = std::min( (worldCoordinates[0]-view.camera[0])/ray[0],
+		// 							  std::min( (worldCoordinates[1]-view.camera[1])/ray[1], 
+		// 								    (worldCoordinates[2]-view.camera[2])/ray[2] ) );
 
-					    if (tMin <= tIntersect)
-					    {
-						float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
-						imgFinal[index*3 + 0] = 
-						    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
-						imgFinal[index*3 + 1] = 
-						    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
-						imgFinal[index*3 + 2] =
-						    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
-						// volume infront
-					    }
-					    else
-					    {
-						// box infront
-						imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
-						imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
-						imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
-						//debug5 << "  intersection - box infront!" << endl;
-					    }
-					}
-					else
-					{
-					    float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
-					    imgFinal[index*3 + 0] = 
-						std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
-					    imgFinal[index*3 + 1] = 
-						std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
-					    imgFinal[index*3 + 2] = 
-						std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
-					}
-				    }
-				}
-				else
-				{
-				    //opaqueImageZB[index] == 1 - Only data, no background : Good
-				    float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
-				    imgFinal[index*3 + 0] = 
-					std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
-				    imgFinal[index*3 + 1] = 
-					std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
-				    imgFinal[index*3 + 2] = 
-					std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
-				}
-			    }
+		// 			    if (tMin <= tIntersect)
+		// 			    {
+		// 				float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
+		// 				imgFinal[index*3 + 0] = 
+		// 				    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
+		// 				imgFinal[index*3 + 1] = 
+		// 				    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
+		// 				imgFinal[index*3 + 2] =
+		// 				    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
+		// 				// volume infront
+		// 			    }
+		// 			    else
+		// 			    {
+		// 				// box infront
+		// 				imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+		// 				imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+		// 				imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
+		// 				//debug5 << "  intersection - box infront!" << endl;
+		// 			    }
+		// 			}
+		// 			else
+		// 			{
+		// 			    float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
+		// 			    imgFinal[index*3 + 0] = 
+		// 				std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
+		// 			    imgFinal[index*3 + 1] = 
+		// 				std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
+		// 			    imgFinal[index*3 + 2] = 
+		// 				std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
+		// 			}
+		// 		    }
+		// 		}
+		// 		else
+		// 		{
+		// 		    //opaqueImageZB[index] == 1 - Only data, no background : Good
+		// 		    float alpha = (1.0 - imgComm.GetFinalImageBuffer()[indexComposited*4+3]);
+		// 		    imgFinal[index*3 + 0] = 
+		// 			std::min((((float)opaqueImageData[index*3 + 0]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 0] ), 1.0) * 255;
+		// 		    imgFinal[index*3 + 1] = 
+		// 			std::min((((float)opaqueImageData[index*3 + 1]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 1] ), 1.0) * 255;
+		// 		    imgFinal[index*3 + 2] = 
+		// 			std::min((((float)opaqueImageData[index*3 + 2]/255.0) * alpha + imgComm.GetFinalImageBuffer()[indexComposited*4 + 2] ), 1.0) * 255;
+		// 		}
+		// 	    }
 
-			}
-			else
-			{
-			    // Outside bounding box: Use the background : Good
-			    imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
-			    imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
-			    imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
-			}
+		// 	}
+		// 	else
+		// 	{
+		// 	    // Outside bounding box: Use the background : Good
+		// 	    imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+		// 	    imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+		// 	    imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
+		// 	}
 
-		    }
-		}
+		//     }
+		// }
 		img->Delete();
 		SetOutput(whole_image);
 	    }
