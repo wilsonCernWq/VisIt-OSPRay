@@ -645,17 +645,17 @@ avtRayTracer::Execute(void)
 	       << "  shear[2]: " << view.shear[2] << std::endl
 	       << "  oldNearPlane: " << oldNearPlane << std::endl
 	       << "  oldFarPlane:  " << oldFarPlane  << std::endl
-	       << "  aspect: " << aspect << std::endl;
-	ospout << "[avrRayTracer] sceneSize: " 
+	       << "  aspect: " << aspect << std::endl
+	       << "[avrRayTracer] sceneSize: " 
 	       << sceneSize[0] << " " 
-	       << sceneSize[1] << std::endl;
-	ospout << "[avrRayTracer] screen: " 
-	       << screen[0] << " " << screen[1] << std::endl;
-	ospout << "[avrRayTracer] data bounds: " << std::endl
+	       << sceneSize[1] << std::endl
+	       << "[avrRayTracer] screen: " 
+	       << screen[0] << " " << screen[1] << std::endl
+	       << "[avrRayTracer] data bounds: " << std::endl
 	       << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
 	       << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
-	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl;
-	ospout << "[avrRayTracer] full image extents: " << std::endl
+	       << "\t" << dbounds[4] << " " << dbounds[5] << std::endl
+	       << "[avrRayTracer] full image extents: " << std::endl
 	       << "\t" << fullImageExtents[0] << " "
 	       << "\t" << fullImageExtents[1] << std::endl
 	       << "\t" << fullImageExtents[2] << " "
@@ -765,10 +765,6 @@ avtRayTracer::Execute(void)
 	    		 screen_to_camera_transform, 
 	    		 worldCoord);
 		    opaqueImageDepth[index] = -worldCoord[2];
-	    	    // std::cout << x << " " << y << " "
-		    // 	      << screenDepth << " "
-		    // 	      << opaqueImageDepth[index] << " "
-		    // 	      << std::endl;
 	    	}
 	    }
 	    ospray->SetBgBuffer(opaqueImageData, 
