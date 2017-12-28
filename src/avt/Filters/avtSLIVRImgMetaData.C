@@ -37,7 +37,7 @@
 *****************************************************************************/
 
 #include "avtSLIVRImgMetaData.h"
-
+#include "avtSLIVROSPRayFilter.h"
 #include <avtMemory.h>
 #include <avtParallel.h>
 #include <ImproperUseException.h>
@@ -273,6 +273,16 @@ slivr::ComposeBackground(int screen[2],
 			 float         *opaqueImageDepth,
 			 unsigned char *&imgFinal)
 {
+#ifdef VISIT_OSPRAY    
+    ospray::visit::ComposeBackground(screen,
+				     compositedImageExtents,
+				     compositedImageWidth,
+				     compositedImageHeight,
+				     compositedImageBuffer,
+				     opaqueImageColor,
+				     opaqueImageDepth,
+				     imgFinal);
+#else
     for (int _y = 0; _y < screen[1]; _y++)
     {
 	for (int _x = 0; _x < screen[0]; _x++)
@@ -322,6 +332,7 @@ slivr::ComposeBackground(int screen[2],
 	    }
 	}
     }
+#endif
 }
 
 
