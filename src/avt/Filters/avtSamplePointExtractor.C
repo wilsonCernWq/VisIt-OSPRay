@@ -267,8 +267,7 @@ avtSamplePointExtractor::~avtSamplePointExtractor()
         delete arbitrator;
         arbitrator = NULL;
     }
-
-    delImgPatches();
+    DelImgPatches();
 }
 
 
@@ -860,7 +859,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 
 
 // ****************************************************************************
-//  Method: avtSamplePointExtractor::delImgPatches
+//  Method: avtSamplePointExtractor::DelImgPatches
 //
 //  Purpose:
 //      allocates space to the pointer address and copy the image generated to it
@@ -872,7 +871,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 //
 // ****************************************************************************
 void
-avtSamplePointExtractor::delImgPatches(){
+avtSamplePointExtractor::DelImgPatches(){
     imageMetaPatchVector.clear();
     for (iter_t it = imgDataHashMap.begin(); 
 	 it != imgDataHashMap.end(); it++)
@@ -1181,9 +1180,9 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         int timings_setup_extractor = visitTimer->StartTimer();
         if (rayCastingSLIVR == true)
         {
-            massVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
-            massVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
-            massVoxelExtractor->setBufferExtents(bufferExtents);
+            massVoxelExtractor->SetDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
+            massVoxelExtractor->SetRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
+            massVoxelExtractor->SetBufferExtents(bufferExtents);
             massVoxelExtractor->SetViewDirection(viewDirection);
             massVoxelExtractor->SetMVPMatrix(modelViewProj);
             massVoxelExtractor->SetClipPlanes(clipPlanes);
@@ -1191,7 +1190,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             massVoxelExtractor->SetImageZoom(imageZoom);
             massVoxelExtractor->SetRendererSampleRate(rendererSampleRate);
             massVoxelExtractor->SetDepthExtents(depthExtents);
-            massVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
+            massVoxelExtractor->SetProcIdPatchID(PAR_Rank(),num);
             massVoxelExtractor->SetLighting(lighting);
             massVoxelExtractor->SetLightDirection(lightDirection);
             massVoxelExtractor->SetMatProperties(materialProperties);
@@ -1224,7 +1223,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         {
             slivr::ImgMetaData tmpImageMetaPatch;
             tmpImageMetaPatch = initMetaPatch(patchCount);
-            massVoxelExtractor->getImageDimensions(
+            massVoxelExtractor->GetImageDimensions(
                 tmpImageMetaPatch.inUse,
                 tmpImageMetaPatch.dims,
                 tmpImageMetaPatch.screen_ll,
@@ -1242,7 +1241,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
                 tmpImageDataHash.imagePatch =
                     new float[tmpImageMetaPatch.dims[0] *
                               tmpImageMetaPatch.dims[1] * 4];
-                massVoxelExtractor->getComputedImage
+                massVoxelExtractor->GetComputedImage
                     (tmpImageDataHash.imagePatch);
                 imgDataHashMap.insert
                     (std::pair<int, slivr::ImgData>

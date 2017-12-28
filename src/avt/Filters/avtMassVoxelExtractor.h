@@ -160,19 +160,19 @@ public:
 	//
 	// Getting the image
 	//
-	void             getImageDimensions
+	void             GetImageDimensions
 	    (int &, int dims[2], int screen_ll[2], int screen_ur[2], float &, float &);
-	void             getComputedImage(float *);
-	void             setProcIdPatchID(int _proc, int _patch)
+	void             GetComputedImage(float *);
+	void             SetProcIdPatchID(int _proc, int _patch)
 	{ proc = _proc; patch = _patch; }
 
 	//
 	// Set the background information
         //
-	void             setDepthBuffer(float *_zBuffer, int size) { depthBuffer=_zBuffer; }
-	void             setRGBBuffer(unsigned char  *_colorBuffer, int width, int height)
+	void             SetDepthBuffer(float *_zBuffer, int size) { depthBuffer=_zBuffer; }
+	void             SetRGBBuffer(unsigned char  *_colorBuffer, int width, int height)
 	{ rgbColorBuffer=_colorBuffer; };
-	void             setBufferExtents(int _extents[4])
+	void             SetBufferExtents(int _extents[4])
 	{ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
 	void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
 	void             SetOSPRay(OSPVisItContext* o) { ospray = o; }
@@ -256,10 +256,10 @@ protected:
 						  int &, int &);
 
 	// Trilinear and RC SLIVR
-	double           trilinearInterpolate(double vals[8], float distRight, float distTop, float distBack);
-	void             computeIndices(int dims[3], int indices[6], int returnIndices[8]);
-	void             computeIndicesVert(int dims[3], int indices[6], int returnIndices[8]);
-	void             getIndexandDistFromCenter(float dist, int index,   
+	double           TrilinearInterpolate(double vals[8], float distRight, float distTop, float distBack);
+	void             ComputeIndices(int dims[3], int indices[6], int returnIndices[8]);
+	void             ComputeIndicesVert(int dims[3], int indices[6], int returnIndices[8]);
+	void             GetIndexandDistFromCenter(float dist, int index,   
 						   int &index_before, int &index_after,  
 						   float &dist_before, float &dist_after);
 
@@ -306,16 +306,14 @@ protected:
 	int              xMin, xMax, yMin, yMax;
 	//
 	// RC SLIVR Only
-	void             normalize(float vec[3]);
-	void             reflect(float vec[3], float normal[3], float refl[3]);
-	float            dot(float vecA[3], float vecB[3])
-	{ return ((vecA[0]*vecB[0]) + (vecA[1]*vecB[1]) + (vecA[2]*vecB[2])); }
-	void             unProject(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height);
-	void             computePixelColor(double source_rgb[4], double dest_rgb[4], float _gradient[3]);
+	void             ComputePixelColor(double source_rgb[4],
+					   double dest_rgb[4],
+					   float gradient[3]);
 	//
 	// added for raycasting slivr
-	void             GetSegmentRCSLIVR(int x, int y, double depthsExtents[2], 
-					   double *_origin, double *_terminus);
+	void             GetSegmentRCSLIVR(int x, int y,
+					   double depthsExtents[2],
+					   double *, double *);
 	void             SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y);
 	void             ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *, 
 						      std::vector<std::string> &varnames,

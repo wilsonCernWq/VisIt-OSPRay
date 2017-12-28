@@ -324,7 +324,7 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 
 
 // ****************************************************************************
-//  Method: avtRayTracer::checkInBounds
+//  Method: avtRayTracer::CheckInBounds
 //
 //  Purpose:
 //    Checks whether a coordinate value (coord) falls into a volume (volBounds)
@@ -336,7 +336,7 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 //
 // ****************************************************************************
 bool
-avtRayTracer::checkInBounds(double volBounds[6], double coord[3])
+avtRayTracer::CheckInBounds(double volBounds[6], double coord[3])
 {
     if (coord[0] > volBounds[0] && coord[0] < volBounds[1])
 	if (coord[1] > volBounds[2] && coord[1] < volBounds[3])
@@ -449,6 +449,7 @@ void CheckSectionStop(int& timingDetail, const std::string& str) {
 void
 avtRayTracer::Execute(void)
 {
+    ospray::visit::experiment_visit();    
     //=======================================================================//
     // Initialization and Debug
     //=======================================================================//
@@ -730,9 +731,10 @@ avtRayTracer::Execute(void)
 	// 
 	// Continuation of previous pipeline
 	//
-	if (parallelOn == false) {
-	    extractor.SetRayCastingSLIVRParallel(true);
-	}
+	// >>> this is not used ?
+	// if (parallelOn == false) {
+	//     extractor.SetRayCastingSLIVRParallel(true);
+	// }
 	extractor.SetJittering(false);
 	extractor.SetLighting(lighting);
 	extractor.SetLightDirection(lightDirection);
@@ -756,10 +758,10 @@ avtRayTracer::Execute(void)
 	opaqueImageData = 
 	    (unsigned char *)opaqueImageVTK->GetScalarPointer(0, 0, 0);
 	opaqueImageZB   = opaqueImage->GetImage().GetZBuffer();
-	extractor.setDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
-	extractor.setRGBBuffer  (opaqueImageData, screen[0],screen[1]);
 	int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
-	extractor.setBufferExtents(bufferScreenExtents);
+	extractor.SetDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
+	extractor.SetRGBBuffer  (opaqueImageData, screen[0],screen[1]);
+	extractor.SetBufferExtents(bufferScreenExtents);
 	// Set the background to OSPRay
 	if (avtCallback::UseOSPRay()) 
 	{
@@ -850,7 +852,7 @@ avtRayTracer::Execute(void)
 	    std::vector<slivr::ImgMetaData> allPatchMeta;
 	    std::vector<slivr::ImgData>     allPatchData;
 	    // get the number of patches
-	    int numPatches = extractor.getImgPatchSize();	    
+	    int numPatches = extractor.GetImgPatchSize();	    
 	    for (int i=0; i<numPatches; i++)
 	    {
 	    	allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
@@ -1151,7 +1153,7 @@ avtRayTracer::Execute(void)
 	    // contains the metadata to composite the image
 	    std::vector<slivr::ImgMetaData> allImgMetaData; 
 	    // get the number of patches for current rank
-	    int numPatches = extractor.getImgPatchSize(); 
+	    int numPatches = extractor.GetImgPatchSize(); 
 	    int imgExtents[4] = {0,0,0,0}; // minX, maxX, minY, maxY
 	    int imgSize[2];                // x, y
 	    float *composedData = NULL;
@@ -1971,7 +1973,7 @@ avtRayTracer::TightenClippingPlanes(const avtViewInfo &view,
 //
 // ****************************************************************************
 void
-avtRayTracer::computeRay(double camera[3], double position[3], double ray[3])
+avtRayTracer::ComputeRay(double camera[3], double position[3], double ray[3])
 {
 	for (int i=0; i<3; i++)
 		ray[i] = position[i] - camera[i];
@@ -1995,7 +1997,8 @@ avtRayTracer::computeRay(double camera[3], double position[3], double ray[3])
 //
 // ****************************************************************************
 bool
-avtRayTracer::intersect(double bounds[6], double ray[3], double cameraPos[3], double &tMin, double &tMax)
+avtRayTracer::Intersect(double bounds[6], double ray[3], double cameraPos[3],
+			double &tMin, double &tMax)
 {
 	double t1, t2, tXMin, tXMax, tYMin, tYMax, tZMin, tZMax;
 	double invRay[3];

@@ -167,7 +167,7 @@ public:
     virtual const char       *GetType(void)
     { return "avtSamplePointExtractor"; };
     virtual const char       *GetDescription(void)
-    { return "Extracting sample points";};
+    { return "Extracting sample points"; };
     void                      RegisterRayFunction(avtRayFunction *_rf) { rayfoo = _rf; };
     void                      RestrictToTile(int, int, int, int);
     void                      StartTiling(void) { shouldDoTiling = true; }; // added by Qi 
@@ -182,44 +182,74 @@ public:
     void                      SetTrilinear(bool _t) { trilinearInterpolation = _t; };
     void                      SetRayCastingSLIVR(bool _s) { rayCastingSLIVR = _s; };
     void                      SetRayCastingSLIVRParallel(bool _p)
-    { rayCastingSLIVRParallel = _p; };
+    {
+	rayCastingSLIVRParallel = _p;
+    };
     void                      SetLighting(bool _l) { lighting = _l; };
     void                      SetLightPosition(double _lp[4])
-    { for (int i=0;i<4;i++) { lightPosition[i] = _lp[i]; } }
+    {
+	for (int i=0;i<4;i++) { lightPosition[i] = _lp[i]; }
+    }
     void                      SetLightDirection(double _ld[3])
-    { for (int i=0;i<3;i++) { lightDirection[i] = _ld[i]; } }
+    {
+	for (int i=0;i<3;i++) { lightDirection[i] = _ld[i]; }
+    }
     void                      SetMatProperties(double _matProp[4])
-    { for (int i=0;i<4;i++) { materialProperties[i] = _matProp[i]; } }
+    {
+	for (int i=0;i<4;i++) { materialProperties[i] = _matProp[i]; }
+    }
     void                      SetTransferFn(avtOpacityMap *_transferFn1D)
-    { transferFn1D = _transferFn1D; };
+    {
+	transferFn1D = _transferFn1D;
+    };
     void                      SetViewDirection(double *_vD) 
-    { std::copy(_vD, _vD + 3, viewDirection); }
+    {
+	std::copy(_vD, _vD + 3, viewDirection);
+    }
     void                      SetClipPlanes(double _camClip[2])
-    { clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
+    {
+	clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1];
+    }
     void                      SetPanPercentages(double _pan[2])
-    { panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1]; }
+    {
+	panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1];
+    }
     void                      SetImageZoom(double _zoom) { imageZoom = _zoom; }
     void                      SetDepthExtents(double _depthExtents[2])
-    { depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1]; }
+    {
+	depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1];
+    }
     void                      SetMVPMatrix(vtkMatrix4x4 *_mvp)
-    { modelViewProj->DeepCopy(_mvp); }
+    {
+	modelViewProj->DeepCopy(_mvp);
+    }
 
-    void                      getSpatialExtents(double _spatialExtents[6])
-    { for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
-    void                      getAvgPatchExtents(double _avgPatchExtents[6])
-    { for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i]; }
-    void                      getCellDimension(double _cellDimension[6])
-    { for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i]; }
-    void                      getProjectedExents(int _projectedExtents[4])
-    { for (int i=0; i<4; i++) _projectedExtents[i]=projectedImageExtents[i]; }
+    void                      GetSpatialExtents(double _spatialExtents[6])
+    {
+	for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i];
+    }
+    void                      GetAvgPatchExtents(double _avgPatchExtents[6])
+    {
+	for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i];
+    }
+    void                      GetCellDimension(double _cellDimension[6])
+    {
+	for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i];
+    }
+    void                      GetProjectedExents(int _projectedExtents[4])
+    {
+	for (int i=0; i<4; i++) _projectedExtents[i]=projectedImageExtents[i];
+    }
     //
     // Getting image information
     //
     // gets the max number of patches it could have
-    int                       getTotalAssignedPatches() 
-    { return totalAssignedPatches; } 
+    int                       GetTotalAssignedPatches() 
+    {
+	return totalAssignedPatches;
+    }    
     // gets the number of patches
-    int                       getImgPatchSize(){ return patchCount;};
+    int                       GetImgPatchSize(){ return patchCount;};
 
     // gets the metadata
     slivr::ImgMetaData&       GetImgMetaPatch(int patchId)
@@ -229,15 +259,21 @@ public:
 	(int patchId, slivr::ImgData &tempImgData);
 
     // deletes patches
-    void                      delImgPatches();
+    void                      DelImgPatches();
     // Set background buffer
-    void                      setDepthBuffer(float *_zBuffer, int _size)
-    { depthBuffer = _zBuffer; }
-    void                      setRGBBuffer(unsigned char  *_colorBuffer, 
+    void                      SetDepthBuffer(float *_zBuffer, int _size)
+    {
+	depthBuffer = _zBuffer;
+    }
+    void                      SetRGBBuffer(unsigned char *_colorBuffer, 
 					   int _width, int _height)
-    { rgbColorBuffer = _colorBuffer; };
-    void                      setBufferExtents(int _extents[4])
-    { for (int i=0;i<4; i++) bufferExtents[i] = _extents[i]; }
+    {
+	rgbColorBuffer = _colorBuffer;
+    }
+    void                      SetBufferExtents(int _extents[4])
+    {
+	for (int i=0;i<4; i++) bufferExtents[i] = _extents[i];
+    }
 
     // Qi add for ospray  
     void SetOSPRay(OSPVisItContext* o) { ospray = o; }

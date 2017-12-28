@@ -74,6 +74,74 @@
 #include <limits>
 
 // ****************************************************************************
+//  Method: Dot
+//
+//  Purpose:
+//      Dot product for vectors
+//
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+float Dot (float vecA[3], float vecB[3])
+{
+    return ((vecA[0] * vecB[0]) + (vecA[1] * vecB[1]) + (vecA[2] * vecB[2]));
+}
+
+
+// ****************************************************************************
+//  Method: Normalize
+//
+//  Purpose:
+//      Normalize vector
+//
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+void Normalize(float vec[3])
+{
+    float inverse_sqrt_sum_squared = sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]);
+    if (inverse_sqrt_sum_squared != 0)
+	inverse_sqrt_sum_squared = 1.0/inverse_sqrt_sum_squared;
+    for (int i=0;i<3; i++)
+	vec[i] = vec[i]*inverse_sqrt_sum_squared;
+}
+
+
+// ****************************************************************************
+//  Method: Reflect
+//
+//  Purpose:
+//      Reflect vector
+//
+//  Programmer: Pascal Grosset
+//  Creation:   August 14, 2016
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+void Reflect(float vec[3], float normal[3], float refl[3])
+{
+    // Vnew = -2*(V dot N)*N + V
+    // out = incidentVec - 2.f * Dot(incidentVec, normal) * normal;
+    float vDotN = Dot(vec,normal);
+    for (int i=0; i<3; i++)
+    {
+        refl[i] = -2.0 * vDotN * normal[i] + vec[i];
+    }
+    Normalize(refl);
+}
+
+
+// ****************************************************************************
 //  Method: avtMassVoxelExtractor constructor
 //
 //  Arguments:
@@ -1173,7 +1241,7 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
 
 
 // ****************************************************************************
-//  Method: avtMassVoxelExtractor::getIndexandDistFromCenter
+//  Method: avtMassVoxelExtractor::GetIndexandDistFromCenter
 //
 //  Purpose:
 //      Compute distance
@@ -1186,7 +1254,7 @@ avtMassVoxelExtractor::FindSegmentIntersections(const double *origin,
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::getIndexandDistFromCenter
+avtMassVoxelExtractor::GetIndexandDistFromCenter
 (float dist, int index, 
  int &index_before, int &index_after, 
  float &dist_before, float &dist_after)
@@ -1210,7 +1278,7 @@ avtMassVoxelExtractor::getIndexandDistFromCenter
 
 
 // ****************************************************************************
-//  Method: avtSLIVRImgCommunicator::computeIndices
+//  Method: avtSLIVRImgCommunicator::ComputeIndices
 //
 //  Purpose:
 //      computing indices
@@ -1224,7 +1292,7 @@ avtMassVoxelExtractor::getIndexandDistFromCenter
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::computeIndices(int dims[3], int indices[6], int returnIndices[8])
+avtMassVoxelExtractor::ComputeIndices(int dims[3], int indices[6], int returnIndices[8])
 {
     returnIndices[0] = (indices[4])*((dims[0]-1)*(dims[1]-1)) + (indices[2])*(dims[0]-1) + (indices[0]);
     returnIndices[1] = (indices[4])*((dims[0]-1)*(dims[1]-1)) + (indices[2])*(dims[0]-1) + (indices[1]);
@@ -1240,7 +1308,7 @@ avtMassVoxelExtractor::computeIndices(int dims[3], int indices[6], int returnInd
 }
 
 // ****************************************************************************
-//  Method: avtSLIVRImgCommunicator::computeIndicesVert
+//  Method: avtSLIVRImgCommunicator::ComputeIndicesVert
 //
 //  Purpose:
 //      Compute indices for vertices
@@ -1253,7 +1321,7 @@ avtMassVoxelExtractor::computeIndices(int dims[3], int indices[6], int returnInd
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int returnIndices[8])
+avtMassVoxelExtractor::ComputeIndicesVert(int dims[3], int indices[6], int returnIndices[8])
 {
     returnIndices[0] = (indices[4])*((dims[0])*(dims[1])) + (indices[2])*(dims[0]) + (indices[0]);
     returnIndices[1] = (indices[4])*((dims[0])*(dims[1])) + (indices[2])*(dims[0]) + (indices[1]);
@@ -1270,7 +1338,7 @@ avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int retur
 
 
 // ****************************************************************************
-//  Method: avtSLIVRImgCommunicator::trilinearInterpolate
+//  Method: avtSLIVRImgCommunicator::TrilinearInterpolate
 //
 //  Purpose:
 //      Trilinear interpolation
@@ -1283,7 +1351,7 @@ avtMassVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int retur
 // ****************************************************************************
 
 double
-avtMassVoxelExtractor::trilinearInterpolate
+avtMassVoxelExtractor::TrilinearInterpolate
 (double vals[8], float distRight, float distTop, float distBack)
 {
     float dist_from_right = 1.0 - distRight;
@@ -1378,9 +1446,9 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
 	    float z_back  = prop[2];        z_front  = 1. - z_back;
 
 	    // get the index and distance from the center of the neighbouring cells
-	    getIndexandDistFromCenter(x_right, newInd[0], index_left, index_right,   dist_from_left, dist_from_right);
-	    getIndexandDistFromCenter(y_top,   newInd[1], index_bottom,index_top,    dist_from_bottom,dist_from_top);
-	    getIndexandDistFromCenter(z_back,  newInd[2], index_front, index_back,   dist_from_front, dist_from_back);
+	    GetIndexandDistFromCenter(x_right, newInd[0], index_left, index_right,   dist_from_left, dist_from_right);
+	    GetIndexandDistFromCenter(y_top,   newInd[1], index_bottom,index_top,    dist_from_bottom,dist_from_top);
+	    GetIndexandDistFromCenter(z_back,  newInd[2], index_front, index_back,   dist_from_front, dist_from_back);
 
 
 	    indices[4] = index_front;       indices[5] = index_back;
@@ -1421,7 +1489,7 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
 	    //
 	    if (ncell_arrays > 0){
 		int indexT[8];
-		computeIndices(dims, indices, indexT);
+		ComputeIndices(dims, indices, indexT);
 
 		for (int l = 0 ; l < ncell_arrays ; l++)            // ncell_arrays: usually 1
 		{
@@ -1430,7 +1498,7 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
 		    double values[8];
 		    for (int m = 0 ; m < cell_size[l] ; m++){       // cell_size[l] usually 1
 			AssignEight(cell_vartypes[l], values, indexT, cell_size[l], m, cell_array);
-			double scalarValue = trilinearInterpolate(values, dist_from_left, dist_from_bottom, dist_from_front);
+			double scalarValue = TrilinearInterpolate(values, dist_from_left, dist_from_bottom, dist_from_front);
 
 			tmpSampleList[count][cell_index[l]+m] = scalarValue;
 		    }
@@ -1443,7 +1511,7 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
 	    if (npt_arrays > 0)
 	    {
 		int indexT[8];
-		computeIndicesVert(dims, indices, indexT);
+		ComputeIndicesVert(dims, indices, indexT);
 
 		for (int l = 0 ; l < npt_arrays ; l++)
 		{
@@ -1452,7 +1520,7 @@ avtMassVoxelExtractor::SampleVariable(int first, int last, int w, int h)
 		    for (int m = 0 ; m < pt_size[l] ; m++)
 		    {
 			AssignEight(pt_vartypes[l], values, indexT, pt_size[l], m, pt_array);
-			double scalarValue = trilinearInterpolate(values, x_left, y_bottom, z_front);
+			double scalarValue = TrilinearInterpolate(values, x_left, y_bottom, z_front);
 
 			tmpSampleList[count][pt_index[l]+m] = scalarValue;
 		    }
@@ -2740,9 +2808,12 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 	float z_back  = prop[2];        float z_front  = 1. - z_back;		
 
 	// get the index and distance from the center of the neighbouring cells
-	getIndexandDistFromCenter(x_right, newInd[0], index_left,   index_right,  dist_from_left, dist_from_right);
-	getIndexandDistFromCenter(y_top,   newInd[1], index_bottom, index_top,    dist_from_bottom,dist_from_top);
-	getIndexandDistFromCenter(z_back,  newInd[2], index_front,  index_back,   dist_from_front, dist_from_back);
+	GetIndexandDistFromCenter(x_right, newInd[0], index_left,   index_right,
+				  dist_from_left, dist_from_right);
+	GetIndexandDistFromCenter(y_top,   newInd[1], index_bottom, index_top,
+				  dist_from_bottom,dist_from_top);
+	GetIndexandDistFromCenter(z_back,  newInd[2], index_front,  index_back,
+				  dist_from_front, dist_from_back);
 
 	int indices[6];
 	indices[4] = index_front;       indices[5] = index_back;
@@ -2776,7 +2847,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 	if (ncell_arrays > 0)
 	{
 	    int indexT[8];
-	    computeIndices(dims, indices, indexT);
+	    ComputeIndices(dims, indices, indexT);
 
 	    // ncell_arrays: usually 1
 	    for (int l = 0 ; l < ncell_arrays ; l++)
@@ -2790,7 +2861,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 		    AssignEight(cell_vartypes[l], values, indexT, 
 				cell_size[l], m, cell_array);
 		    double scalarValue = 
-			trilinearInterpolate(values, 
+			TrilinearInterpolate(values, 
 					     dist_from_left, 
 					     dist_from_bottom, 
 					     dist_from_front);
@@ -2849,11 +2920,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[0] = ind[0];
 			    }
 
-			    getIndexandDistFromCenter(xRight, gradInd[0],  indexLeft, indexRight,  distFromLeft, distFromRight);
+			    GetIndexandDistFromCenter(xRight, gradInd[0],  indexLeft, indexRight,  distFromLeft, distFromRight);
 			    gradIndices[0] = indexLeft;    gradIndices[1] = indexRight;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(cell_vartypes[0], gradVals, indexGrad, 1, 0, cell_array);
-			    vals[0] = trilinearInterpolate(gradVals, distFromLeft, dist_from_bottom, dist_from_front);
+			    vals[0] = TrilinearInterpolate(gradVals, distFromLeft, dist_from_bottom, dist_from_front);
 
 			    //
 			    // find x+h
@@ -2866,11 +2937,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[0] = ind[0];
 			    }
 
-			    getIndexandDistFromCenter(xRight, gradInd[0],  indexLeft, indexRight,  distFromLeft, distFromRight);
+			    GetIndexandDistFromCenter(xRight, gradInd[0],  indexLeft, indexRight,  distFromLeft, distFromRight);
 			    gradIndices[0] = indexLeft;    gradIndices[1] = indexRight;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(cell_vartypes[0], gradVals, indexGrad, 1, 0, cell_array);
-			    vals[1] = trilinearInterpolate(gradVals, distFromLeft, dist_from_bottom, dist_from_front);
+			    vals[1] = TrilinearInterpolate(gradVals, distFromLeft, dist_from_bottom, dist_from_front);
 
 
 
@@ -2892,11 +2963,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[1] = ind[1];
 			    }
 
-			    getIndexandDistFromCenter(yTop, gradInd[1],  indexBottom, indexTop,  distFromBottom, distFromTop);
+			    GetIndexandDistFromCenter(yTop, gradInd[1],  indexBottom, indexTop,  distFromBottom, distFromTop);
 			    gradIndices[2] = indexBottom ;    gradIndices[3] = indexTop;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(cell_vartypes[0], gradVals, indexGrad, 1, 0, cell_array);
-			    vals[2] = trilinearInterpolate(gradVals, dist_from_left, distFromBottom, dist_from_front);
+			    vals[2] = TrilinearInterpolate(gradVals, dist_from_left, distFromBottom, dist_from_front);
 
 			    //
 			    // find y+h
@@ -2910,11 +2981,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[1] = ind[1];
 			    }
 
-			    getIndexandDistFromCenter(yTop, gradInd[1],  indexBottom, indexTop,  distFromBottom, distFromTop);
+			    GetIndexandDistFromCenter(yTop, gradInd[1],  indexBottom, indexTop,  distFromBottom, distFromTop);
 			    gradIndices[2] = indexBottom;    gradIndices[3] = indexTop;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(cell_vartypes[0], gradVals, indexGrad, 1, 0, cell_array);
-			    vals[3] = trilinearInterpolate(gradVals, dist_from_left, distFromBottom, dist_from_front);
+			    vals[3] = TrilinearInterpolate(gradVals, dist_from_left, distFromBottom, dist_from_front);
 
 
 			    //
@@ -2935,11 +3006,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[2] = ind[2];
 			    }
 
-			    getIndexandDistFromCenter(zBack, gradInd[2],  indexFront, indexBack,  distFromFront, distFromBack);
+			    GetIndexandDistFromCenter(zBack, gradInd[2],  indexFront, indexBack,  distFromFront, distFromBack);
 			    gradIndices[4] = indexFront;    gradIndices[5] = indexBack;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(cell_vartypes[0], gradVals, indexGrad, 1, 0, cell_array);
-			    vals[4] = trilinearInterpolate(gradVals, dist_from_left, dist_from_bottom, distFromFront);
+			    vals[4] = TrilinearInterpolate(gradVals, dist_from_left, dist_from_bottom, distFromFront);
 
 			    //
 			    // z+h
@@ -2952,24 +3023,24 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[2] = ind[2];
 			    }
 
-			    getIndexandDistFromCenter(zBack, gradInd[2],  indexFront, indexBack,  distFromFront, distFromBack);
+			    GetIndexandDistFromCenter(zBack, gradInd[2],  indexFront, indexBack,  distFromFront, distFromBack);
 			    gradIndices[4] = indexFront;    gradIndices[5] = indexBack;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(cell_vartypes[0], gradVals, indexGrad, 1, 0, cell_array);
-			    vals[5] = trilinearInterpolate(gradVals, dist_from_left, dist_from_bottom, distFromFront);
+			    vals[5] = TrilinearInterpolate(gradVals, dist_from_left, dist_from_bottom, distFromFront);
 
 
 			    gradient[0] = (1.0/(2.0*gradientOffset)) * (vals[1] - vals[0]);
 			    gradient[1] = (1.0/(2.0*gradientOffset)) * (vals[3] - vals[2]);
 			    gradient[2] = (1.0/(2.0*gradientOffset)) * (vals[5] - vals[4]);
 
-			    normalize(gradient);
+			    Normalize(gradient);
 			}
 
 			//
 			// Compute the color
 			//
-			computePixelColor(source_rgb, dest_rgb, gradient);
+			ComputePixelColor(source_rgb, dest_rgb, gradient);
 		    }		    
 		}
 	    }
@@ -2981,7 +3052,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 	if (npt_arrays > 0)
 	{
 	    int indexT[8];
-	    computeIndicesVert(dims, indices, indexT);
+	    ComputeIndicesVert(dims, indices, indexT);
 
 	    for (int l = 0 ; l < npt_arrays ; l++)
 	    {
@@ -2990,7 +3061,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 		for (int m = 0 ; m < pt_size[l] ; m++)
 		{
 		    AssignEight(pt_vartypes[l], values, indexT, pt_size[l], m, pt_array);
-		    double scalarValue = trilinearInterpolate(values, x_left, y_bottom, z_front);
+		    double scalarValue = TrilinearInterpolate(values, x_left, y_bottom, z_front);
 		    double source_rgb[4];
 		    int retVal = transferFn1D->QueryTF(scalarValue,source_rgb);
 		    if ( ((retVal == 0)||(source_rgb[3]==0)) || (source_rgb[0]==0 && source_rgb[1]==0 && source_rgb[2]==0) )
@@ -3037,11 +3108,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[0] = ind[0];
 			    }
 
-			    getIndexandDistFromCenter(xRight, gradInd[0],  indexLeft, indexRight,  distFromLeft, distFromRight);
+			    GetIndexandDistFromCenter(xRight, gradInd[0],  indexLeft, indexRight,  distFromLeft, distFromRight);
 			    gradIndices[0] = indexLeft;    gradIndices[1] = indexRight;
-			    computeIndicesVert(dims, gradIndices, indexGrad);
+			    ComputeIndicesVert(dims, gradIndices, indexGrad);
 			    AssignEight(pt_vartypes[0], gradVals, indexGrad, 1, 0, pt_array);
-			    vals[0] = trilinearInterpolate(gradVals, x_left-gradientOffset, y_bottom, z_front);
+			    vals[0] = TrilinearInterpolate(gradVals, x_left-gradientOffset, y_bottom, z_front);
 
 			    //
 			    // find x+h
@@ -3054,11 +3125,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[0] = ind[0];
 			    }
 
-			    getIndexandDistFromCenter(xRight, gradInd[0],  indexLeft, indexRight,  distFromLeft, distFromRight);
+			    GetIndexandDistFromCenter(xRight, gradInd[0],  indexLeft, indexRight,  distFromLeft, distFromRight);
 			    gradIndices[0] = indexLeft;    gradIndices[1] = indexRight;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(pt_vartypes[0], gradVals, indexGrad, 1, 0, pt_array);
-			    vals[1] = trilinearInterpolate(gradVals, x_left+gradientOffset, y_bottom, z_front);
+			    vals[1] = TrilinearInterpolate(gradVals, x_left+gradientOffset, y_bottom, z_front);
 
 
 
@@ -3080,11 +3151,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[1] = ind[1];
 			    }
 
-			    getIndexandDistFromCenter(yTop, gradInd[1],  indexBottom, indexTop,  distFromBottom, distFromTop);
+			    GetIndexandDistFromCenter(yTop, gradInd[1],  indexBottom, indexTop,  distFromBottom, distFromTop);
 			    gradIndices[2] = indexBottom ;    gradIndices[3] = indexTop;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(pt_vartypes[0], gradVals, indexGrad, 1, 0, pt_array);
-			    vals[2] = trilinearInterpolate(gradVals, x_left, y_bottom-gradientOffset, z_front);
+			    vals[2] = TrilinearInterpolate(gradVals, x_left, y_bottom-gradientOffset, z_front);
 
 			    //
 			    // find y+h
@@ -3098,11 +3169,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[1] = ind[1];
 			    }
 
-			    getIndexandDistFromCenter(yTop, gradInd[1],  indexBottom, indexTop,  distFromBottom, distFromTop);
+			    GetIndexandDistFromCenter(yTop, gradInd[1],  indexBottom, indexTop,  distFromBottom, distFromTop);
 			    gradIndices[2] = indexBottom;    gradIndices[3] = indexTop;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(pt_vartypes[0], gradVals, indexGrad, 1, 0, pt_array);
-			    vals[3] = trilinearInterpolate(gradVals, x_left, y_bottom+gradientOffset, z_front);
+			    vals[3] = TrilinearInterpolate(gradVals, x_left, y_bottom+gradientOffset, z_front);
 
 
 			    //
@@ -3124,11 +3195,11 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[2] = ind[2];
 			    }
 
-			    getIndexandDistFromCenter(zBack, gradInd[2],  indexFront, indexBack,  distFromFront, distFromBack);
+			    GetIndexandDistFromCenter(zBack, gradInd[2],  indexFront, indexBack,  distFromFront, distFromBack);
 			    gradIndices[4] = indexFront;    gradIndices[5] = indexBack;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(pt_vartypes[0], gradVals, indexGrad, 1, 0, pt_array);
-			    vals[4] = trilinearInterpolate(gradVals, x_left, y_bottom, z_front-gradientOffset);
+			    vals[4] = TrilinearInterpolate(gradVals, x_left, y_bottom, z_front-gradientOffset);
 
 			    //
 			    // z+h
@@ -3141,24 +3212,24 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 				gradInd[2] = ind[2];
 			    }
 
-			    getIndexandDistFromCenter(zBack, gradInd[2],  indexFront, indexBack,  distFromFront, distFromBack);
+			    GetIndexandDistFromCenter(zBack, gradInd[2],  indexFront, indexBack,  distFromFront, distFromBack);
 			    gradIndices[4] = indexFront;    gradIndices[5] = indexBack;
-			    computeIndices(dims, gradIndices, indexGrad);
+			    ComputeIndices(dims, gradIndices, indexGrad);
 			    AssignEight(pt_vartypes[0], gradVals, indexGrad, 1, 0, pt_array);
-			    vals[5] = trilinearInterpolate(gradVals, x_left, y_bottom, z_front+gradientOffset);
+			    vals[5] = TrilinearInterpolate(gradVals, x_left, y_bottom, z_front+gradientOffset);
 
 
 			    gradient[0] = (1.0/(2.0*gradientOffset)) * (vals[1] - vals[0]);
 			    gradient[1] = (1.0/(2.0*gradientOffset)) * (vals[3] - vals[2]);
 			    gradient[2] = (1.0/(2.0*gradientOffset)) * (vals[5] - vals[4]);
 
-			    normalize(gradient);
+			    Normalize(gradient);
 			}
 
 			//
 			// Compute the color
 			//
-			computePixelColor(source_rgb, dest_rgb, gradient);
+			ComputePixelColor(source_rgb, dest_rgb, gradient);
 		    }
 		}
 	    }
@@ -3176,103 +3247,7 @@ avtMassVoxelExtractor::SampleVariableRCSLIVR
 
 
 // ****************************************************************************
-//  Method: avtMassVoxelExtractor::normalize
-//
-//  Purpose:
-//      Normalize vector
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 14, 2016
-//
-//  Modifications:
-//
-// ****************************************************************************
-
-void
-avtMassVoxelExtractor::normalize(float vec[3])
-{
-    float inverse_sqrt_sum_squared = sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]);
-    if (inverse_sqrt_sum_squared != 0)
-	inverse_sqrt_sum_squared = 1.0/inverse_sqrt_sum_squared;
-    for (int i=0;i<3; i++)
-	vec[i] = vec[i]*inverse_sqrt_sum_squared;
-}
-
-
-// ****************************************************************************
-//  Method: avtMassVoxelExtractor::reflect
-//
-//  Purpose:
-//      Reflect vector
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 14, 2016
-//
-//  Modifications:
-//
-// ****************************************************************************
-
-void
-avtMassVoxelExtractor::reflect(float vec[3], float normal[3], float refl[3])
-{
-    //Vnew = -2*(V dot N)*N + V
-    //out = incidentVec - 2.f * Dot(incidentVec, normal) * normal;
-    float vDotN = dot(vec,normal);
-    for (int i=0; i<3; i++)
-	refl[i] = -2.0 * vDotN * normal[i] + vec[i];
-
-    normalize(refl);
-}
-
-
-// ****************************************************************************
-//  Method: avtMassVoxelExtractor::unProject
-//
-//  Purpose:
-//      Convert from screen coordinates to world coordinates
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 14, 2016
-//
-//  Modifications:
-//
-// ****************************************************************************
-
-void
-avtMassVoxelExtractor::unProject
-(int _x, int _y, float _z, double _worldCoordinates[3], int _width, int _height)
-{
-    slivr::ProjectScreenToWorld(_x, _y, _z, _width, _height, 
-				panPercentage, imageZoom, screen_to_model_transform,
-				_worldCoordinates);
-    // // remove panning
-    // _x -= round(_width * panPercentage[0] * imageZoom);
-    // _y -= round(_height * panPercentage[1] * imageZoom); 
-
-    // double worldCoordinates[4] = {0,0,0,1};
-    // double in[4] = {0,0,0,1};
-    // in[0] = (_x - _width/2. )/(_width/2.);
-    // in[1] = (_y - _height/2.)/(_height/2.);
-    // in[2] = _z;
-
-    // screen_to_model_transform->MultiplyPoint(in, worldCoordinates);
-
-    // if (worldCoordinates[3] == 0)
-    // 	debug5 << "avtMassVoxelExtractor::unProject division by 0 error!" << endl;
-
-    // worldCoordinates[0] = worldCoordinates[0]/worldCoordinates[3];
-    // worldCoordinates[1] = worldCoordinates[1]/worldCoordinates[3];
-    // worldCoordinates[2] = worldCoordinates[2]/worldCoordinates[3];
-    // worldCoordinates[3] = worldCoordinates[3]/worldCoordinates[3];
-
-    // _worldCoordinates[0] = worldCoordinates[0];
-    // _worldCoordinates[1] = worldCoordinates[1];
-    // _worldCoordinates[2] = worldCoordinates[2];
-}
-
-
-// ****************************************************************************
-//  Method: avtMassVoxelExtractor::getImageDimensions
+//  Method: avtMassVoxelExtractor::GetImageDimensions
 //
 //  Purpose:
 //      Transfers the metadata of the patch
@@ -3285,7 +3260,7 @@ avtMassVoxelExtractor::unProject
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::getImageDimensions
+avtMassVoxelExtractor::GetImageDimensions
 (int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], 
  float &eyesDepth, float &clipDepth)
 {
@@ -3315,7 +3290,7 @@ avtMassVoxelExtractor::getImageDimensions
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::getComputedImage(float *image)
+avtMassVoxelExtractor::GetComputedImage(float *image)
 {
     memcpy(image, imgArray, 4*imgDims[0]*imgDims[1]*sizeof(float));
     if (imgArray != NULL) {
@@ -3342,7 +3317,7 @@ avtMassVoxelExtractor::getComputedImage(float *image)
 // ****************************************************************************
 
 void
-avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4], float _gradient[3])
+avtMassVoxelExtractor::ComputePixelColor(double source_rgb[4], double dest_rgb[4], float _gradient[3])
 {
     if (dest_rgb[3] >= 0.99)
     {
@@ -3358,7 +3333,7 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
 	dir[1] = -view_direction[1];
 	dir[2] = -view_direction[2];
 
-	normalize(dir);
+	Normalize(dir);
 
 	double temp_rgb[4];
 	temp_rgb[0] = source_rgb[0];
@@ -3367,7 +3342,7 @@ avtMassVoxelExtractor::computePixelColor(double source_rgb[4], double dest_rgb[4
 	temp_rgb[3] = source_rgb[3];
 
 	// cos(angle) = a.b;  angle between normal and light
-	float normal_dot_light = dot(_gradient,dir);   // angle between light and normal;
+	float normal_dot_light = Dot(_gradient,dir);   // angle between light and normal;
 	if (normal_dot_light < 0)
 	    normal_dot_light = -normal_dot_light;
 

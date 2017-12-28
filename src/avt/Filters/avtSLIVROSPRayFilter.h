@@ -50,6 +50,7 @@
 
 #ifdef VISIT_OSPRAY
 # include "ospray/ospray.h"
+# include "ospray/visit/VisItModuleCommon.h"
 # define OSP_PERSPECTIVE              1
 # define OSP_ORTHOGRAPHIC             2
 # define OSP_BLOCK_BRICKED_VOLUME     3

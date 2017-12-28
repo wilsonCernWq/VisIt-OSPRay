@@ -187,10 +187,10 @@ protected:
                                                 vtkMatrix4x4 *,
                                                 double &, double &);
 
-    void                  computeRay(double camera[3], 
+    void                  ComputeRay(double camera[3], 
 				     double position[3], double ray[3]);
-    bool                  checkInBounds(double volBounds[6], double coord[3]);
-    bool                  intersect(double bounds[6], double ray[3], 
+    bool                  CheckInBounds(double volBounds[6], double coord[3]);
+    bool                  Intersect(double bounds[6], double ray[3], 
 				    double cameraPos[3], 
 				    double &tMin, double &tMax);
 
