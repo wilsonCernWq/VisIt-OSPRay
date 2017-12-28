@@ -945,7 +945,7 @@ avtRayTracer::Execute(void)
 	    allPatchData.clear();
 	    // // bug happens before this
 	    // WriteArrayToPPM("composed",
-	    // 		       composedData, renderedWidth, renderedHeight);
+	    // 		    composedData, renderedWidth, renderedHeight);
 	    //-----------------------------------------------------------------------------//
 	    CheckSectionStop(timingDetail,
 			     "Serial-Compose: Blend Images");
@@ -987,134 +987,141 @@ avtRayTracer::Execute(void)
 		   << fullImageExtents[1] << ", " 
 		   << fullImageExtents[2] << ", " 
 		   << fullImageExtents[3] << std::endl;
+
 	    // Blend
-	    for (int _y=0; _y<screen[1]; _y++) 
-	    {
-		for (int _x=0; _x<screen[0]; _x++)
-		{
+	    slivr::ComposeBackground(screen,
+	    			     fullImageExtents,
+	    			     compositedImageWidth,
+	    			     compositedImageHeight,
+	    			     composedData,
+	    			     opaqueImageData,
+	    			     opaqueImageZB,
+	    			     imgFinal);	    
 
-		    int index = _y*screen[0] + _x;
-		    int indexComposited = 
-			(_y-fullImageExtents[2]) * compositedImageWidth + 
-			(_x-fullImageExtents[0]);
-
-		    bool insideComposited = false;
-		    if (_x >= fullImageExtents[0] && 
-			_x < fullImageExtents[1])
-		     	if (_y >= fullImageExtents[2] && 
-			    _y < fullImageExtents[3])
-		     	    insideComposited = true;
-
-		    if (insideComposited)
-		    {
-			if (composedData[indexComposited*4 + 3] == 0)
-			{
-			    // No data from rendering here!
-			    imgFinal[index*3 + 0] = 
-				opaqueImageData[index*3 + 0];
-			    imgFinal[index*3 + 1] = 
-				opaqueImageData[index*3 + 1];
-			    imgFinal[index*3 + 2] = 
-				opaqueImageData[index*3 + 2];
-			}
-			else
-			{
-			    if (opaqueImageZB[index] != 1)
-			    {
-				// Might need to do some blending
-				double worldCoordinates[3];
-				int screenCoord[2] = {_x, _y};
-				double screenDepth = opaqueImageZB[index] * 2 - 1;
-				slivr::ProjectScreenToWorld
-				    (screenCoord, screenDepth, 
-				     screen[0], screen[1],
-				     panPercentage, 
-				     view.imageZoom, 
-				     screen_to_model_transform, worldCoordinates);
-
-				if (checkInBounds(dbounds, worldCoordinates))
-				{
-				    // Completely inside bounding box
-				    float alpha =
-					composedData[indexComposited*4+3];
-				    float oneMinusAlpha = 
-					(1.0 - 
-					 composedData[indexComposited*4+3]);
-				    imgFinal[index*3 + 0] = 
-					std::min((((float)opaqueImageData[index*3 + 0]/255.0) 
-						  * oneMinusAlpha  
-						  + composedData[indexComposited*4 + 0]), 1.0) * 255;
-				    imgFinal[index*3 + 1] = 
-					std::min((((float)opaqueImageData[index*3 + 1]/255.0) 
-						  * oneMinusAlpha
-						  + composedData[indexComposited*4 + 1]), 1.0) * 255;
-				    imgFinal[index*3 + 2] = 
-					std::min((((float)opaqueImageData[index*3 + 2]/255.0) 
-						  * oneMinusAlpha 
-						  + composedData[indexComposited*4 + 2]), 1.0) * 255;
-				}
-				else
-				{
-				    // Intersect inside with bounding box
-				    double ray[3], tMin, tMax;
-				    computeRay( view.camera, worldCoordinates, ray);
-				    if ( intersect(dbounds, ray, view.camera, tMin, tMax) )
-				    {
-					double tIntersect = 
-					    std::min((worldCoordinates[0]-view.camera[0])/ray[0],
-						     std::min((worldCoordinates[1]-view.camera[1])/ray[1], 
-							      (worldCoordinates[2]-view.camera[2])/ray[2]));
-					if (tMin <= tIntersect)
-					{
-					    // volume infront
-					    float alpha = composedData[indexComposited*4+3];
-					    float oneMinusAlpha = (1.0 - composedData[indexComposited*4+3]);
-					    imgFinal[index*3 + 0] = 
-						std::min((((float)opaqueImageData[index*3 + 0]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 0]), 1.0) * 255;
-					    imgFinal[index*3 + 1] = 
-						std::min((((float)opaqueImageData[index*3 + 1]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 1]), 1.0) * 255;
-					    imgFinal[index*3 + 2] = 
-						std::min((((float)opaqueImageData[index*3 + 2]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 2]), 1.0) * 255;
-					}
-					else
-					{
-					    // box infront
-					    imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
-					    imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
-					    imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
-					}
-				    }
-				    else
-				    {
-					imgFinal[index*3 + 0] = (composedData[indexComposited*4 + 0]) * 255;
-					imgFinal[index*3 + 1] = (composedData[indexComposited*4 + 1]) * 255;
-					imgFinal[index*3 + 2] = (composedData[indexComposited*4 + 2]) * 255;
-				    }
-				}
-			    }
-			    else
-			    {
-				// Inside bounding box but only background - Good
-				float alpha = composedData[indexComposited*4+3];
-				float oneMinusAlpha = (1.0 - composedData[indexComposited*4+3]);
-				imgFinal[index*3 + 0] = 
-				    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 0]), 1.0) * 255;
-				imgFinal[index*3 + 1] = 
-				    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 1]), 1.0) * 255;
-				imgFinal[index*3 + 2] =
-				    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 2]), 1.0) * 255;
-			    }
-			}
-		    }
-		    else
-		    {
-			// Outside bounding box: Use the background - Good
-			imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
-			imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
-			imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
-		    }
-		}
-	    }
+	    // for (int _y=0; _y<screen[1]; _y++) 
+	    // {
+	    // 	for (int _x=0; _x<screen[0]; _x++)
+	    // 	{
+	    // 	    int index = _y*screen[0] + _x;
+	    // 	    int indexComposited = 
+	    // 		(_y-fullImageExtents[2]) * compositedImageWidth + 
+	    // 		(_x-fullImageExtents[0]);
+	    // 	    bool insideComposited = false;
+	    // 	    if (_x >= fullImageExtents[0] && 
+	    // 		_x < fullImageExtents[1])
+	    // 	     	if (_y >= fullImageExtents[2] && 
+	    // 		    _y < fullImageExtents[3])
+	    // 	     	    insideComposited = true;
+	    // 	    if (insideComposited)
+	    // 	    {
+	    // 		if (composedData[indexComposited*4 + 3] == 0)
+	    // 		{
+	    // 		    // No data from rendering here!
+	    // 		    imgFinal[index*3 + 0] = 
+	    // 			opaqueImageData[index*3 + 0];
+	    // 		    imgFinal[index*3 + 1] = 
+	    // 			opaqueImageData[index*3 + 1];
+	    // 		    imgFinal[index*3 + 2] = 
+	    // 			opaqueImageData[index*3 + 2];
+	    // 		}
+	    // 		else
+	    // 		{
+	    // 		    if (opaqueImageZB[index] != 1)
+	    // 		    {
+	    // 			// Might need to do some blending
+	    // 			double worldCoordinates[3];
+	    // 			int screenCoord[2] = {_x, _y};
+	    // 			double screenDepth = opaqueImageZB[index] * 2 - 1;
+	    // 			slivr::ProjectScreenToWorld
+	    // 			    (screenCoord, screenDepth, 
+	    // 			     screen[0], screen[1],
+	    // 			     panPercentage, 
+	    // 			     view.imageZoom, 
+	    // 			     screen_to_model_transform, worldCoordinates);
+	    // 			if (checkInBounds(dbounds, worldCoordinates))
+	    // 			{
+	    // 			    // Completely inside bounding box
+	    // 			    float alpha =
+	    // 				composedData[indexComposited*4+3];
+	    // 			    float oneMinusAlpha = 
+	    // 				(1.0 - 
+	    // 				 composedData[indexComposited*4+3]);
+	    // 			    imgFinal[index*3 + 0] = 
+	    // 				std::min((((float)opaqueImageData[index*3 + 0]/255.0) 
+	    // 					  * oneMinusAlpha  
+	    // 					  + composedData[indexComposited*4 + 0]), 1.0) * 255;
+	    // 			    imgFinal[index*3 + 1] = 
+	    // 				std::min((((float)opaqueImageData[index*3 + 1]/255.0) 
+	    // 					  * oneMinusAlpha
+	    // 					  + composedData[indexComposited*4 + 1]), 1.0) * 255;
+	    // 			    imgFinal[index*3 + 2] = 
+	    // 				std::min((((float)opaqueImageData[index*3 + 2]/255.0) 
+	    // 					  * oneMinusAlpha 
+	    // 					  + composedData[indexComposited*4 + 2]), 1.0) * 255;
+	    // 			}
+	    // 			else
+	    // 			{
+	    // 			    // Intersect inside with bounding box
+	    // 			    double ray[3], tMin, tMax;
+	    // 			    computeRay( view.camera, worldCoordinates, ray);
+	    // 			    if ( intersect(dbounds, ray, view.camera, tMin, tMax) )
+	    // 			    {
+	    // 				double tIntersect = 
+	    // 				    std::min((worldCoordinates[0]-view.camera[0])/ray[0],
+	    // 					     std::min((worldCoordinates[1]-view.camera[1])/ray[1], 
+	    // 						      (worldCoordinates[2]-view.camera[2])/ray[2]));
+	    // 				if (tMin <= tIntersect)
+	    // 				{
+	    // 				    // volume infront
+	    // 				    float alpha = composedData[indexComposited*4+3];
+	    // 				    float oneMinusAlpha = (1.0 - composedData[indexComposited*4+3]);
+	    // 				    imgFinal[index*3 + 0] = 
+	    // 					std::min((((float)opaqueImageData[index*3 + 0]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 0]), 1.0) * 255;
+	    // 				    imgFinal[index*3 + 1] = 
+	    // 					std::min((((float)opaqueImageData[index*3 + 1]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 1]), 1.0) * 255;
+	    // 				    imgFinal[index*3 + 2] = 
+	    // 					std::min((((float)opaqueImageData[index*3 + 2]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 2]), 1.0) * 255;
+	    // 				}
+	    // 				else
+	    // 				{
+	    // 				    // box infront
+	    // 				    imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+	    // 				    imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+	    // 				    imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
+	    // 				}
+	    // 			    }
+	    // 			    else
+	    // 			    {
+	    // 				imgFinal[index*3 + 0] = (composedData[indexComposited*4 + 0]) * 255;
+	    // 				imgFinal[index*3 + 1] = (composedData[indexComposited*4 + 1]) * 255;
+	    // 				imgFinal[index*3 + 2] = (composedData[indexComposited*4 + 2]) * 255;
+	    // 			    }
+	    // 			}
+	    // 		    }
+	    // 		    else
+	    // 		    {
+	    // 			// Inside bounding box but only background - Good
+	    // 			float alpha = composedData[indexComposited*4+3];
+	    // 			float oneMinusAlpha = (1.0 - composedData[indexComposited*4+3]);
+	    // 			imgFinal[index*3 + 0] = 
+	    // 			    std::min((((float)opaqueImageData[index*3 + 0]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 0]), 1.0) * 255;
+	    // 			imgFinal[index*3 + 1] = 
+	    // 			    std::min((((float)opaqueImageData[index*3 + 1]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 1]), 1.0) * 255;
+	    // 			imgFinal[index*3 + 2] =
+	    // 			    std::min((((float)opaqueImageData[index*3 + 2]/255.0) * oneMinusAlpha + composedData[indexComposited*4 + 2]), 1.0) * 255;
+	    // 		    }
+	    // 		}
+	    // 	    }
+	    // 	    else
+	    // 	    {
+	    // 		// Outside bounding box: Use the background - Good
+	    // 		imgFinal[index*3 + 0] = opaqueImageData[index*3 + 0];
+	    // 		imgFinal[index*3 + 1] = opaqueImageData[index*3 + 1];
+	    // 		imgFinal[index*3 + 2] = opaqueImageData[index*3 + 2];
+	    // 	    }
+	    // 	}
+	    // }
+	    
 	    // Cleanup
 	    img->Delete();
 	    SetOutput(whole_image);
@@ -1230,10 +1237,10 @@ avtRayTracer::Execute(void)
 			      "Parallel-Compose: Some Cleanup");
 	    //-----------------------------------------------------------------------------//
 	    if (regions != NULL)
-		delete []regions;
+		delete [] regions;
 	    regions = NULL;
 	    if (imgComm.intermediateImage != NULL)
-		delete []imgComm.intermediateImage;
+		delete [] imgComm.intermediateImage;
 	    imgComm.intermediateImage = NULL;		
 	    imgComm.Barrier();
 	    //-----------------------------------------------------------------------------//
@@ -1276,7 +1283,7 @@ avtRayTracer::Execute(void)
 
 		debug5 << "Place in image ~ screen " 
 		       <<  screen[0] << ", " << screen[1] 
-		       << "  compositedImageWidth: " << compositedImageWidth 
+		       << "  compositedImageWidth: "  << compositedImageWidth 
 		       << "  compositedImageHeight: " << compositedImageHeight
 		       << "  fullImageExtents: "
 		       << fullImageExtents[0] << ", " 
