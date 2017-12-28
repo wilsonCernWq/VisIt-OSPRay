@@ -449,7 +449,7 @@ void CheckSectionStop(int& timingDetail, const std::string& str) {
 void
 avtRayTracer::Execute(void)
 {
-    ospray::visit::experiment_visit();    
+    ospray::visit::Experiment();
     //=======================================================================//
     // Initialization and Debug
     //=======================================================================//
@@ -991,7 +991,7 @@ avtRayTracer::Execute(void)
 		   << fullImageExtents[3] << std::endl;
 
 	    // Blend
-	    slivr::ComposeBackground(screen,
+	    ospray::visit::ComposeBackground(screen,
 	    			     fullImageExtents,
 	    			     compositedImageWidth,
 	    			     compositedImageHeight,
@@ -999,6 +999,15 @@ avtRayTracer::Execute(void)
 	    			     opaqueImageData,
 	    			     opaqueImageZB,
 	    			     imgFinal);	    
+
+	    // slivr::ComposeBackground(screen,
+	    // 			     fullImageExtents,
+	    // 			     compositedImageWidth,
+	    // 			     compositedImageHeight,
+	    // 			     composedData,
+	    // 			     opaqueImageData,
+	    // 			     opaqueImageZB,
+	    // 			     imgFinal);	    
 
 	    // for (int _y=0; _y<screen[1]; _y++) 
 	    // {
@@ -1308,14 +1317,23 @@ avtRayTracer::Execute(void)
 		// dbounds[4] = dbounds[4]+0.00;
 		// dbounds[5] = dbounds[5]-0.00;
 
-		slivr::ComposeBackground(screen,
-					 imgComm.finalImageExtents,
-					 compositedImageWidth,
-					 compositedImageHeight,
-					 imgComm.GetFinalImageBuffer(),
-					 opaqueImageData,
-					 opaqueImageZB,
-					 imgFinal);
+		ospray::visit::ComposeBackground(screen,
+						 imgComm.finalImageExtents,
+						 compositedImageWidth,
+						 compositedImageHeight,
+						 imgComm.GetFinalImageBuffer(),
+						 opaqueImageData,
+						 opaqueImageZB,
+						 imgFinal);
+				
+		// slivr::ComposeBackground(screen,
+		// 			 imgComm.finalImageExtents,
+		// 			 compositedImageWidth,
+		// 			 compositedImageHeight,
+		// 			 imgComm.GetFinalImageBuffer(),
+		// 			 opaqueImageData,
+		// 			 opaqueImageZB,
+		// 			 imgFinal);
 
 		// for (int _y = 0; _y < screen[1]; _y++)
 		// {
