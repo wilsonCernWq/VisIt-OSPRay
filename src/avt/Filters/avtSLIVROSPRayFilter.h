@@ -39,14 +39,14 @@
 #ifndef AVT_OSPRAY_FILTER_H
 #define AVT_OSPRAY_FILTER_H
 
+#include <DebugStream.h>
+#include <TimingsManager.h>
+#include <vtkType.h>
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
 #include <string>
 #include <vector>
-
-#include <vtkType.h>
-#include <DebugStream.h>
 
 #ifdef VISIT_OSPRAY
 # include "ospray/ospray.h"
@@ -623,6 +623,16 @@ namespace slivr
 			 std::string debugN = "debug5");
     void CheckMemoryHere(const std::string& message, 
 			 std::ostream& out);
+    inline void CheckSectionStart(const std::string& c, const std::string& f, int& timingDetail, const std::string& str) {
+	debug5 << c << "::" << f << " " << str << " Start" << std::endl;
+	timingDetail = visitTimer->StartTimer();	    
+    }
+    
+    inline void CheckSectionStop(const std::string& c, const std::string& f, int& timingDetail, const std::string& str) {
+	visitTimer->StopTimer(timingDetail, (c + "::" + f + " " + str).c_str());
+	slivr::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(), "ospout");
+	debug5 << c << "::" << f << " " << str << " Done" << std::endl;
+    }
 };
 
 #endif//AVT_OSPRAY_FILTER_H

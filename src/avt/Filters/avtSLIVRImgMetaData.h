@@ -99,7 +99,6 @@ namespace slivr
 			   unsigned char *opaqueImageColor,
 			   float         *opaqueImageDepth,
 			   unsigned char *&imgFinal);
-
 };
 
 // ****************************************************************************

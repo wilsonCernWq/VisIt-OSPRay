@@ -155,8 +155,8 @@ public:
     { return "Doing compositing for ray casting SLIVR"; };	
 
     float* GetFinalImageBuffer () { return imgBuffer; }
-    int GetNumProcs ()            { return numProcs;};
-    int GetMyId ()                { return myRank;};
+    int GetNumProcs ()            { return numProcs; }
+    int GetMyId ()                { return myRank; }
     
     void BlendFrontToBack
 	(const float *, const int srcExtents[4], const int blendExtents[4], 
@@ -172,14 +172,13 @@ public:
     void Barrier();
     void RegionAllocation(const int, int *&);
 
-
     // Both currently unused but good for simple testing
     void SerialDirectSend
 	(int, float*, int*, float*, float bgColor[4], int, int);
 
-    int  parallelDirectSendManyPatches
-	(std::multimap<int, slivr::ImgData>,
-	 std::vector<slivr::ImgMetaData>,
+    int  ParallelDirectSendManyPatches
+	(const std::multimap<int, slivr::ImgData>&,
+	 const std::vector<slivr::ImgMetaData>&,
 	 int, int*, int, int tags[2], int exts[4]);
 
     //------------------------------------------------------------------------------//

@@ -45,6 +45,7 @@
 #include <avtParallel.h>
 #include <ImproperUseException.h>
 #include <DebugStream.h>
+#include <TimingsManager.h>
 
 #include <cmath>
 #include <time.h>       /* time */
@@ -1099,7 +1100,7 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 
 
 // ****************************************************************************
-//  Method: avtSLIVRImgCommunicator::parallelDirectSendManyPatches
+//  Method: avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 //
 //  Purpose:
 //      Parallel Direct Send rendering that can blend individual patches
@@ -1111,26 +1112,15 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 //
 // **************************************************************************
 
-void CheckSectionStart(int& timingDetail, const std::string& str) {
-    debug5 << "avtRayTracer::Execute " << str << " Start" << std::endl;
-    timingDetail = visitTimer->StartTimer();	    
-}
-
-void CheckSectionStop(int& timingDetail, const std::string& str) {
-    visitTimer->StopTimer(timingDetail, ("avtRayTracer::Execute " + str).c_str());
-    slivr::CheckMemoryHere(("[avtRayTracer] Execute " + str).c_str(), "ospout");
-    debug5 << "avtRayTracer::Execute " << str << " Done" << std::endl;
-}
-
 int
 avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
-(std::multimap<int, slivr::ImgData> imgDataHashMap, 
- std::vector<slivr::ImgMetaData> imageMetaPatchVector, 
- int numPatches,
- int region[],
- int numRegions, 
- int tags[2],
- int fullImageExtents[4])
+    (const std::multimap<int, slivr::ImgData> &imgDataHashMap, 
+     const std::vector<slivr::ImgMetaData> &imageMetaPatchVector, 
+     int numPatches,
+     int *region,
+     int numRegions, 
+     int tags[2],
+     int fullImageExtents[4])
 {
     int myRegionHeight = 0;
 #ifdef PARALLEL
@@ -1219,7 +1209,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 	_patchExtents[2]=temp.screen_ll[1];   // minY
 	_patchExtents[3]=temp.screen_ur[1];   // maxY
 
-	std::multimap<int, slivr::ImgData>::iterator it = imgDataHashMap.find( i );
+	const std::multimap<int, slivr::ImgData>::const_iterator it = imgDataHashMap.find( i );
 
 	int from, to;
 	int numRegionIntescection = findRegionsForPatch(_patchExtents, fullImageExtents, numRegions, from, to);
@@ -1290,7 +1280,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 	for (int j=0; j<extentsPerPartiton[i].size(); j+=6)
 	{
 	    int _patchID = extentsPerPartiton[i][j + 0];
-	    std::multimap<int, slivr::ImgData>::iterator it = imgDataHashMap.find( _patchID );
+	    const std::multimap<int, slivr::ImgData>::const_iterator it = imgDataHashMap.find( _patchID );
 
 	    int _width = (extentsPerPartiton[i][j+2] - extentsPerPartiton[i][j+1]);
 	    int _bufferSize = _width * (extentsPerPartiton[i][j+4] - extentsPerPartiton[i][j+3]) * 4;
