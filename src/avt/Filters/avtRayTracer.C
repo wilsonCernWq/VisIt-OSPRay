@@ -450,7 +450,7 @@ void
 avtRayTracer::Execute(void)
 {
 #ifdef VISIT_OSPRAY    
-    ospray::visit::Experiment();
+    //ospray::visit::Experiment();
 #endif
     //=======================================================================//
     // Initialization and Debug

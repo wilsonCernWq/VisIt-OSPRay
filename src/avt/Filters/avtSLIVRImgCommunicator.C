@@ -41,6 +41,7 @@
 // ************************************************************************* //
 
 #include <avtSLIVRImgCommunicator.h>
+#include <avtSLIVROSPRayFilter.h>
 #include <avtParallel.h>
 #include <ImproperUseException.h>
 #include <DebugStream.h>
@@ -142,7 +143,8 @@ void avtSLIVRImgCommunicator::Barrier() {
 // ***************************************************************************
 
 void
-avtSLIVRImgCommunicator::RegionAllocation(const int numMPIRanks, int *& regions)
+avtSLIVRImgCommunicator::RegionAllocation(const int numMPIRanks,
+					  int *& regions)
 {
     regions = new int[numMPIRanks];
     // Initial allocation: partition for section rank
@@ -164,9 +166,10 @@ avtSLIVRImgCommunicator::RegionAllocation(const int numMPIRanks, int *& regions)
 // ****************************************************************************
 
 void
-avtSLIVRImgCommunicator::ColorImage
-(float *&srcImage, const int widthSrc,
- const int heightSrc, const float color[4])
+avtSLIVRImgCommunicator::ColorImage(float *&srcImage,
+				    const int widthSrc,
+				    const int heightSrc,
+				    const float color[4])
 {
     #pragma omp parallel for
     for (int i = 0; i < heightSrc * widthSrc; ++i) {
@@ -193,9 +196,10 @@ avtSLIVRImgCommunicator::ColorImage
 // ****************************************************************************
 
 void
-avtSLIVRImgCommunicator::PlaceImage
-(const float *srcImage, const int srcExtents[4], 
- float *&dstImage, const int dstExtents[4])
+avtSLIVRImgCommunicator::PlaceImage(const float *srcImage,
+				    const int srcExtents[4], 
+				    float *&dstImage,
+				    const int dstExtents[4])
 {
     const int srcX = srcExtents[1] - srcExtents[0];
     const int srcY = srcExtents[3] - srcExtents[2];
@@ -237,8 +241,9 @@ avtSLIVRImgCommunicator::PlaceImage
 //
 // **************************************************************************
 void
-avtSLIVRImgCommunicator::BlendWithBackground
-(float *&image, const int extents[4], const float bgColor[4])
+avtSLIVRImgCommunicator::BlendWithBackground(float *&image,
+					     const int extents[4],
+					     const float bgColor[4])
 {
     const int pixelSize = (extents[3]-extents[2]) * (extents[1]-extents[0]);
     // estimated potential speedup: 2.240
@@ -269,10 +274,19 @@ avtSLIVRImgCommunicator::BlendWithBackground
 // **************************************************************************
 
 void
-avtSLIVRImgCommunicator::BlendFrontToBack
-(const float *srcImage, const int srcExtents[4], const int blendExtents[4], 
- float *&dstImage, const int dstExtents[4])
-{  
+avtSLIVRImgCommunicator::BlendFrontToBack(const float *srcImage,
+					  const int srcExtents[4],
+					  const int blendExtents[4], 
+					  float *&dstImage,
+					  const int dstExtents[4])
+{
+#ifdef VISIT_OSPRAY
+    ospray::visit::BlendFrontToBack(blendExtents,
+				    srcExtents,
+				    srcImage,
+				    dstExtents,
+				    dstImage);
+#else    
     debug5 << ">>> avtSLIVRImgCommunicator::BlendFrontToBack" << std::endl;
     // image sizes
     const int srcX = srcExtents[1] - srcExtents[0];
@@ -314,6 +328,7 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 	    }
 	}
     }
+#endif
 }
 
 
@@ -331,10 +346,19 @@ avtSLIVRImgCommunicator::BlendFrontToBack
 // **************************************************************************
 
 void
-avtSLIVRImgCommunicator::BlendBackToFront
-(const float *srcImage, const int srcExtents[4], const int blendExtents[4], 
- float *&dstImage, const int dstExtents[4])
+avtSLIVRImgCommunicator::BlendBackToFront(const float *srcImage,
+					  const int srcExtents[4],
+					  const int blendExtents[4], 
+					  float *&dstImage,
+					  const int dstExtents[4])
 {
+#ifdef VISIT_OSPRAY
+    ospray::visit::BlendBackToFront(blendExtents,
+				    srcExtents,
+				    srcImage,
+				    dstExtents,
+				    dstImage);
+#else    
     debug5 << ">>> avtSLIVRImgCommunicator::BlendBackToFront" << std::endl;
     // image sizes
     const int srcX = srcExtents[1] - srcExtents[0];
@@ -373,6 +397,7 @@ avtSLIVRImgCommunicator::BlendBackToFront
 		      0.0f, 1.0f);
 	}
     }
+#endif
 }
 
 
@@ -389,9 +414,10 @@ avtSLIVRImgCommunicator::BlendBackToFront
 //
 // **************************************************************************
 void
-avtSLIVRImgCommunicator::BlendFrontToBack
-(const float * srcImage, const int srcExtents[4], 
- float *& dstImage, const int dstExtents[4])
+avtSLIVRImgCommunicator::BlendFrontToBack(const float * srcImage,
+					  const int srcExtents[4], 
+					  float *& dstImage,
+					  const int dstExtents[4])
 {
     BlendFrontToBack(srcImage, srcExtents, srcExtents, dstImage, dstExtents);
 }
@@ -432,8 +458,8 @@ avtSLIVRImgCommunicator::BlendBackToFront
 // **************************************************************************
 
 void
-avtSLIVRImgCommunicator::UpdateBoundingBox
-(int currentBoundingBox[4], const int imageExtents[4])
+avtSLIVRImgCommunicator::UpdateBoundingBox(int currentBoundingBox[4],
+					   const int imageExtents[4])
 {
     if ((currentBoundingBox[0] == 0 && currentBoundingBox[1] == 0) && 
 	(currentBoundingBox[2] == 0 && currentBoundingBox[3] == 0))
@@ -473,12 +499,13 @@ avtSLIVRImgCommunicator::UpdateBoundingBox
 // **************************************************************************
 
 void
-avtSLIVRImgCommunicator::GatherDepthAtRoot
-(const int numlocalPatches, const float *localPatchesDepth,
- int &totalPatches, int *&patchCountPerRank, float *&allPatchesDepth)
+avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
+					   const float *localPatchesDepth,
+					   int &totalPatches,
+					   int *&patchCountPerRank,
+					   float *&allPatchesDepth)
 {
 #ifdef PARALLEL
-
     // Get how many patches are coming from each MPI rank
     totalPatches = 0;
     int *patchesOffset = NULL;
@@ -526,7 +553,6 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot
     if (myRank == 0 && patchesOffset != NULL)
     { delete [] patchesOffset; }
     patchesOffset = NULL;
-
 #endif
 }
 
@@ -547,24 +573,32 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot
 // **************************************************************************
 
 void
-avtSLIVRImgCommunicator::SerialDirectSend
-(int localNumPatches, float *localPatchesDepth, 
- int *extents, float *imgData, float bgColor[4], int width, int height)
+avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
+					  float *localPatchesDepth, 
+					  int *extents,
+					  float *imgData,
+					  float bgColor[4],
+					  int width, int height)
 {
 #ifdef PARALLEL
-    // print out 
+    //
+    // Message
+    //
     debug5 << "-- Serial Direct Send --" << std::endl;
 
     float *recvImage = NULL;
     int tags[2] = {5781, 5782};
-
-    // retrieve depth info through MPI
+    //
+    // Retrieve depth info through MPI
+    //
     int    totalPatches; // total number of patches
     int   *totalPatchCountsPerRank = NULL;
     float *totalPatchDepths = NULL;
     GatherDepthAtRoot(localNumPatches, localPatchesDepth,
 		      totalPatches, totalPatchCountsPerRank, totalPatchDepths);
-
+    //
+    //
+    //
     if (myRank == 0)
     {
         // Root
@@ -589,7 +623,7 @@ avtSLIVRImgCommunicator::SerialDirectSend
 
         recvImage = new float[width*height*4]();
         imgBuffer = new float[width*height*4]();
-
+	
         int localIndex = 0;
 
         // Compositing
@@ -605,7 +639,6 @@ avtSLIVRImgCommunicator::SerialDirectSend
 		// recv image
                 MPI_Recv(recvImage, width*height*4, MPI_FLOAT, rank,
 			 tags[1],  MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
                 dstPos[0]  = dstPos[0];                     
 		dstPos[1]  = dstPos[1];
                 dstSize[0] = recvParams[2]-recvParams[0];   
@@ -618,15 +651,12 @@ avtSLIVRImgCommunicator::SerialDirectSend
                 recvParams[1] = extents[ localIndex*4 + 1];
                 recvParams[2] = extents[ localIndex*4 + 2];
                 recvParams[3] = extents[ localIndex*4 + 3];
-
                 recvImage = &imgData[ localIndex*(width*height*4) ];
                 localIndex++;
             }
-
             BlendFrontToBack(recvImage, recvParams, imgBuffer, imgExtents);
         }
         BlendWithBackground(imgBuffer, imgExtents, bgColor);
-
     }
     else
     {
@@ -635,8 +665,7 @@ avtSLIVRImgCommunicator::SerialDirectSend
         {
             int imgSize = 
 		(extents[i*4 + 1] - extents[i*4 + 0]) *
-		(extents[i*4 + 3] - extents[i*4 + 2]) * 4;
-	    
+		(extents[i*4 + 3] - extents[i*4 + 2]) * 4;	    
             if (imgSize > 0)
             {
                 MPI_Send(&extents[i*4],
@@ -660,7 +689,6 @@ avtSLIVRImgCommunicator::SerialDirectSend
     recvImage = NULL;
     totalPatchCountsPerRank = NULL;
     totalPatchDepths = NULL;
-
 #endif
 }
 
@@ -670,8 +698,9 @@ avtSLIVRImgCommunicator::SerialDirectSend
 //  Method: avtSLIVRImgCommunicator::parallelDirectSend
 //
 //  Purpose:
-//      Parallel Direct Send rendering that can blend convex patches from each MPI rank.
-//      However, since we are not guaranteed to have convex patches. It's not used.
+//      Parallel Direct Send rendering that can blend convex patches from each
+//      MPI rank. However, since we are not guaranteed to have convex patches.
+//      It's not used.
 //
 //  Programmer: Pascal Grosset
 //  Creation:   August 19, 2016
@@ -680,12 +709,17 @@ avtSLIVRImgCommunicator::SerialDirectSend
 //
 // **************************************************************************
 void
-avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4])
+avtSLIVRImgCommunicator::parallelDirectSend(float *imgData,
+					    int imgExtents[4],
+					    int region[],
+					    int numRegions,
+					    int tags[2],
+					    int fullImageExtents[4])
 {
 #ifdef PARALLEL
     //
     // Determine position in region (myPositionInRegion)
-    int width =  fullImageExtents[1]-fullImageExtents[0];
+    int width  = fullImageExtents[1]-fullImageExtents[0];
     int height = fullImageExtents[3]-fullImageExtents[2];
 
     //debug5 << "fullImageExtents: " << fullImageExtents[0] << ", " << fullImageExtents[1] << "   " << fullImageExtents[2] << ", " << fullImageExtents[3] << endl;
@@ -694,7 +728,9 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], i
     int myPositionInRegion = -1;
     bool inRegion = true;
     std::vector<int> regionVector(region, region+numRegions);
-    std::vector<int>::iterator it = std::find(regionVector.begin(), regionVector.end(), myRank);
+    std::vector<int>::iterator it = std::find(regionVector.begin(),
+					      regionVector.end(),
+					      myRank);
 
     if (it == regionVector.end())
     {
@@ -710,7 +746,10 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData, int imgExtents[4], i
     int lastRegionHeight = height - regionHeight*(numRegions-1);
 
     // Extents of my region
-    int myStartingHeight = fullImageExtents[2] + myPositionInRegion * regionHeight;
+    int myStartingHeight =
+	fullImageExtents[2] +
+	myPositionInRegion *
+	regionHeight;
     int myEndingHeight = myStartingHeight + regionHeight;
     if (myPositionInRegion == numRegions-1)
         myEndingHeight = fullImageExtents[3];
@@ -1071,12 +1110,27 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 //  Modifications:
 //
 // **************************************************************************
+
+void CheckSectionStart(int& timingDetail, const std::string& str) {
+    debug5 << "avtRayTracer::Execute " << str << " Start" << std::endl;
+    timingDetail = visitTimer->StartTimer();	    
+}
+
+void CheckSectionStop(int& timingDetail, const std::string& str) {
+    visitTimer->StopTimer(timingDetail, ("avtRayTracer::Execute " + str).c_str());
+    slivr::CheckMemoryHere(("[avtRayTracer] Execute " + str).c_str(), "ospout");
+    debug5 << "avtRayTracer::Execute " << str << " Done" << std::endl;
+}
+
 int
-avtSLIVRImgCommunicator::parallelDirectSendManyPatches
+avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 (std::multimap<int, slivr::ImgData> imgDataHashMap, 
  std::vector<slivr::ImgMetaData> imageMetaPatchVector, 
- int numPatches, int region[], int numRegions, 
- int tags[2], int fullImageExtents[4])
+ int numPatches,
+ int region[],
+ int numRegions, 
+ int tags[2],
+ int fullImageExtents[4])
 {
     int myRegionHeight = 0;
 #ifdef PARALLEL
@@ -1122,7 +1176,7 @@ avtSLIVRImgCommunicator::parallelDirectSendManyPatches
 	
     //
     // Region boundaries
-    computeRegionExtents(numProcs,height);
+    computeRegionExtents(numProcs,height); // ?
     int myStartingHeight = getScreenRegionStart
 	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
     int myEndingHeight   = getScreenRegionEnd
