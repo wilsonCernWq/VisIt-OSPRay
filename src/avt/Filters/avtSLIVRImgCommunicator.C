@@ -41,11 +41,8 @@
 // ************************************************************************* //
 
 #include <avtSLIVRImgCommunicator.h>
-#include <avtSLIVROSPRayFilter.h>
 #include <avtParallel.h>
-#include <ImproperUseException.h>
-#include <DebugStream.h>
-#include <TimingsManager.h>
+#include <avtSLIVROSPRayFilter.h>
 
 #include <cmath>
 #include <time.h>       /* time */
@@ -82,10 +79,10 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
     intermediateImageBBox[0] = intermediateImageBBox[1] = 0.0;
     intermediateImageBBox[2] = intermediateImageBBox[3] = 0.0;
 #ifdef PARALLEL
-    MPI_Comm_size(VISIT_MPI_COMM, &numProcs);
+    MPI_Comm_size(VISIT_MPI_COMM, &numRanks);
     MPI_Comm_rank(VISIT_MPI_COMM, &myRank);
 #else
-    numProcs = 1;
+    numRanks = 1;
     myRank = 0;
 #endif
     totalPatches = 0;
@@ -144,12 +141,11 @@ void avtSLIVRImgCommunicator::Barrier() {
 // ***************************************************************************
 
 void
-avtSLIVRImgCommunicator::RegionAllocation(const int numMPIRanks,
-					  int *& regions)
+avtSLIVRImgCommunicator::RegionAllocation(int *& regions)
 {
-    regions = new int[numMPIRanks];
+    regions = new int[numRanks];
     // Initial allocation: partition for section rank
-    for (int i=0; i<numMPIRanks; i++) { regions[i] = i; }
+    for (int i=0; i<numRanks; i++) { regions[i] = i; }
 }
 
 
@@ -507,7 +503,7 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
     int *patchesOffset = NULL;
 
     if (myRank == 0) // root!
-    { patchCountPerRank = new int[numProcs](); }
+    { patchCountPerRank = new int[numRanks](); }
 
     // reference
     // https://www.mpich.org/static/docs/v3.1/www3/MPI_Gather.html
@@ -523,10 +519,10 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
     // gather number of patch group
     if (myRank == 0)
     {
-        patchesOffset = new int[numProcs]();
+        patchesOffset = new int[numRanks]();
         patchesOffset[0] = 0; // a bit redundant
 
-        for (int i=0; i<numProcs; i++)
+        for (int i=0; i<numRanks; i++)
         {
             totalPatches += patchCountPerRank[i];
             if (i == 0)
@@ -606,7 +602,7 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
         std::multimap<float,int> sortedPatches;
 
         int patchId = 0;
-        for (int i=0; i<numProcs; i++) {
+        for (int i=0; i<numRanks; i++) {
             for (int j=0; j<totalPatchCountsPerRank[i]; j++) {
                 sortedPatches.insert
 		    (std::make_pair(totalPatchDepths[patchId++],i));
@@ -1117,12 +1113,16 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
      int tags[2],
      int fullImageExtents[4])
 {
+
+    int timingDetail;
+
     int myRegionHeight = 0;
 #ifdef PARALLEL
     debug5 << "Parallel Direct Send" << endl;
 
     //
     // Some initializations
+    //
     for (int i=0; i<4; i++)
     {
 	intermediateImageExtents[i] = 0;
@@ -1130,58 +1130,80 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     }
 
     //
-    // Find my position in region
+    // Find My Position in Regions
+    //
+    //---------------------------------------------------------------------//
+    slivr::CheckSectionStart("avtSLIVRImgCommunicator", 
+			     "ParallelDirectSendManyPatches", timingDetail,
+			     "Find My position in Regions");
+    //---------------------------------------------------------------------//
     compositingDone = false;
     int myPositionInRegion = -1;
     bool inRegion = true;
     std::vector<int> regionVector(region, region+numRegions);
-    std::vector<int>::iterator it = std::find(regionVector.begin(), 
-					      regionVector.end(), myRank);
-
+    const std::vector<int>::const_iterator it = std::find(regionVector.begin(), 
+							  regionVector.end(), 
+							  myRank);
     if (it == regionVector.end())
     {
 	inRegion = false;
 	debug5 << myRank << " ~ SHOULD NOT HAPPEN!!!!: Not found " 
 	       << myRank <<  " !!!" << std::endl;
     }
-    else
+    else 
+    {
 	myPositionInRegion = it - regionVector.begin();
-
+    }
     int width =  fullImageExtents[1]-fullImageExtents[0];
     int height = fullImageExtents[3]-fullImageExtents[2];
-
+    //---------------------------------------------------------------------//
+    slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
+			    "ParallelDirectSendManyPatches", timingDetail,
+			    "Find My position in Regions");
     debug5 << myRank << " ~ myPositionInRegion: " 
-	   << myPositionInRegion << ", numProcs: " << numProcs << std::endl;
+	   << myPositionInRegion << ", numRanks: " << numRanks << std::endl;
     debug5 << "width: " << width << ", height : " << height 
 	   << " | fullImageExtents: "
 	   << fullImageExtents[0] << ", " 
 	   << fullImageExtents[1] << ", " 
-	   << fullImageExtents[2] << ", " 
+	   << fullImageExtents[2] << ", "
 	   << fullImageExtents[3] << std::endl;
-	
+    //---------------------------------------------------------------------//
+        
     //
-    // Region boundaries
-    computeRegionExtents(numProcs,height); // ?
+    // Compute Region Boundaries
+    //
+    //---------------------------------------------------------------------//
+    slivr::CheckSectionStart("avtSLIVRImgCommunicator", 
+			     "ParallelDirectSendManyPatches", timingDetail,
+			     "Compute Region Boundaries");
+    //---------------------------------------------------------------------//
+    computeRegionExtents(numRanks, height); // ?
     int myStartingHeight = getScreenRegionStart
 	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
     int myEndingHeight   = getScreenRegionEnd
 	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
     myRegionHeight = CLAMP((myEndingHeight-myStartingHeight), 0, height);
+    //---------------------------------------------------------------------//
+    slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
+			    "ParallelDirectSendManyPatches", timingDetail,
+			    "Compute Region Boundaries");
+    debug5 << "myStartingHeight: " << myStartingHeight << ", "
+	   << "myEndingHeight: "   << myEndingHeight   << ", "
+	   << "myRegionHeight: "   << myRegionHeight   << std::endl;
+    //---------------------------------------------------------------------//
 
-    debug5 << "myStartingHeight: " << myStartingHeight 
-	   << ", myEndingHeight: " << myEndingHeight 
-	   << ", myRegionHeight: " << myRegionHeight << std::endl;
-
-
+    //
     // Size of one buffer
+    //
     int sizeOneBuffer = getMaxRegionHeight() * width * 4;
 
     //
     // Determine how many patches and pixel to send to each region
+    //
     std::vector<int> numPatchesPerRegion;
     std::vector<int> areaPerRegion;
     std::set<int> numOfRegions;
-
     numPatchesPerRegion.resize(numRegions);
     areaPerRegion.resize(numRegions);
 

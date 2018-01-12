@@ -40,17 +40,20 @@
 //                          avtSLIVRImgCommunicator.h                       //
 // *************************************************************************//
 
-#ifndef AVT_IMG_COMMUNICATOR_H
-#define AVT_IMG_COMMUNICATOR_H
+#ifndef AVT_SLIVR_IMG_COMMUNICATOR_H
+#define AVT_SLIVR_IMG_COMMUNICATOR_H
 
 #include <filters_exports.h>
 #include <pipeline_exports.h>
 
-#include <avtSamplePointExtractor.h>
+//#include <avtSamplePointExtractor.h>
+//#include <avtSLIVROSPRayFilter.h>
 #include <avtSLIVRImgMetaData.h>
-
-#include <algorithm>
 #include <string>
+#include <vector>
+#include <map>
+#include <algorithm>
+#include <utility>
 
 #ifdef PARALLEL
 #  include <mpi.h>
@@ -89,7 +92,7 @@ class avtSLIVRImgCommunicator
 { 
 private:
     // basic MPI information
-    int numProcs; // total number of processes (# of ranks)
+    int numRanks; // total number of processes (# of ranks)
     int myRank;   // my rank id
 
     // flags for patch
@@ -155,8 +158,8 @@ public:
     { return "Doing compositing for ray casting SLIVR"; };	
 
     float* GetFinalImageBuffer () { return imgBuffer; }
-    int GetNumProcs ()            { return numProcs; }
-    int GetMyId ()                { return myRank; }
+    int GetNumRanks ()            { return numRanks; }
+    int GetMyRank ()              { return myRank; }
     
     void BlendFrontToBack
 	(const float *, const int srcExtents[4], const int blendExtents[4], 
@@ -170,7 +173,7 @@ public:
 	(const float *, const int srcExtents[4], float *&, const int dstExtents[4]);
 
     void Barrier();
-    void RegionAllocation(const int, int *&);
+    void RegionAllocation(int *&);
 
     // Both currently unused but good for simple testing
     void SerialDirectSend
@@ -193,4 +196,4 @@ public:
     void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight);
 };
 
-#endif
+#endif//AVT_SLIVR_IMG_COMMUNICATOR_H

@@ -454,7 +454,7 @@ avtRayTracer::Execute(void)
     //=======================================================================//
     // start of original pipeline
     //=======================================================================//
-    bool parallelOn = (imgComm.GetNumProcs() == 1) ? false : true;
+    bool parallelOn = (imgComm.GetNumRanks() == 1) ? false : true;
     if (rayfoo == NULL)
     {
 	debug1 << "Never set ray function for ray tracer." << endl;
@@ -1073,9 +1073,9 @@ avtRayTracer::Execute(void)
 	    //
 	    int tags[2] = {1081, 1681};
 	    int tagGather = 2681;
-	    int numProcs = imgComm.GetNumProcs();
+	    int numProcs = imgComm.GetNumRanks();
 	    int *regions = NULL;
-	    imgComm.RegionAllocation(numProcs, regions);
+	    imgComm.RegionAllocation(regions);
 	    debug5 << "region allocation done!" << std::endl;
 	    int myRegionHeight =
 		imgComm.ParallelDirectSendManyPatches
@@ -1086,7 +1086,7 @@ avtRayTracer::Execute(void)
 				 imgComm.intermediateImageExtents, 
 				 imgComm.intermediateImageExtents, 
 				 tagGather, fullImageExtents, myRegionHeight);
-	    debug5 << imgComm.GetMyId() << " gather done! " << std::endl;
+	    debug5 << imgComm.GetMyRank() << " gather done! " << std::endl;
 	    //-----------------------------------------------------------------------------//
 	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
 				    "Parallel-Compose: Parallel Direct Send");
