@@ -179,7 +179,7 @@ public:
     int  ParallelDirectSendManyPatches
 	(const std::multimap<int, slivr::ImgData>&,
 	 const std::vector<slivr::ImgMetaData>&,
-	 int, int*, int, int tags[2], int exts[4]);
+	 int, int*, int, int tags[2], int fullImageExtents[4]);
 
     //------------------------------------------------------------------------------//
 

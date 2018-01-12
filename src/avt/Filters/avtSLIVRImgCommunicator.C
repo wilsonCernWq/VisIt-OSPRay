@@ -172,7 +172,6 @@ avtSLIVRImgCommunicator::ColorImage(float *&srcImage,
 				    const int heightSrc,
 				    const float color[4])
 {
-    #pragma omp parallel for
     for (int i = 0; i < heightSrc * widthSrc; ++i) {
 	const int srcIndex = 4 * i;
 	srcImage[srcIndex+0] = color[0];
@@ -211,7 +210,6 @@ avtSLIVRImgCommunicator::PlaceImage(const float *srcImage,
     const int endingX = std::min(srcExtents[1], dstExtents[1]);
     const int endingY = std::min(srcExtents[3], dstExtents[3]);
     
-    #pragma omp parallel for collapse(2)
     for (int y = startingY; y < endingY; ++y) {
 	for (int x = startingX; x < endingX; ++x) {
 	    // index in the sub-image
@@ -248,7 +246,6 @@ avtSLIVRImgCommunicator::BlendWithBackground(float *&image,
 {
     const int pixelSize = (extents[3]-extents[2]) * (extents[1]-extents[0]);
     // estimated potential speedup: 2.240
-    #pragma omp parallel for
     for (int i = 0; i < pixelSize; ++i)
     {
         const int   idx = i * 4;
@@ -304,7 +301,6 @@ avtSLIVRImgCommunicator::BlendFrontToBack(const float *srcImage,
     const int endY = 
 	std::min(std::min(blendExtents[3], srcExtents[3]), dstExtents[3]);
     
-    #pragma omp parallel for collapse(2)
     for (int y = startY; y < endY; ++y) {
 	for (int x = startX; x < endX; ++x) {
 	    // get indices
@@ -376,7 +372,6 @@ avtSLIVRImgCommunicator::BlendBackToFront(const float *srcImage,
     const int endY = 
 	std::min(std::min(blendExtents[3], srcExtents[3]), dstExtents[3]);
     
-    #pragma omp parallel for collapse(2)
     for (int y = startY; y < endY; ++y) {
 	for (int x = startX; x < endX; ++x) {
 	    // get indices
@@ -1115,7 +1110,7 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 int
 avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     (const std::multimap<int, slivr::ImgData> &imgDataHashMap, 
-     const std::vector<slivr::ImgMetaData> &imageMetaPatchVector, 
+     const std::vector<slivr::ImgMetaData>    &imageMetaPatchVector, 
      int numPatches,
      int *region,
      int numRegions, 
