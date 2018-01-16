@@ -46,8 +46,6 @@
 #include <filters_exports.h>
 #include <pipeline_exports.h>
 
-//#include <avtSamplePointExtractor.h>
-//#include <avtSLIVROSPRayFilter.h>
 #include <avtSLIVRImgMetaData.h>
 #include <string>
 #include <vector>
