@@ -57,9 +57,11 @@
 #  include <mpi.h>
 #endif
 
-#include <IceT.h>
 #ifdef PARALLEL
-#  include <IceTMPI.h>
+#  ifdef HAVE_ICET
+#    include <GL/ice-t.h>
+#    include <GL/ice-t_mpi.h>
+#  endif
 #endif
 
 #define MSG_DATA   100

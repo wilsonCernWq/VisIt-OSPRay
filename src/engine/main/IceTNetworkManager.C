@@ -55,8 +55,7 @@
 #include <UnexpectedValueException.h>
 #include <VisWindow.h>
 
-#include <IceTGL.h>
-#include <IceTMPI.h>
+#include <GL/ice-t_mpi.h>
 #include <mpi.h>
 #include <vtkImageData.h>
 
@@ -197,7 +196,7 @@ IceTNetworkManager::IceTNetworkManager(void): NetworkManager(), renderings(0)
     DEBUG_ONLY(ICET(icetDiagnostics(ICET_DIAG_FULL)));
 
     ICET(icetStrategy(ICET_STRATEGY_REDUCE));
-    ICET(icetGLDrawCallback(render));
+    ICET(icetDrawFunc(render));
 
     ICET(icetDisable(ICET_DISPLAY));
     ICET(icetInputOutputBuffers(
@@ -445,8 +444,8 @@ IceTNetworkManager::Render(
             else
                 ICET(icetStrategy(ICET_STRATEGY_REDUCE));
 
-            ICET(icetGLDrawCallback(render));
-            ICET(icetGLDrawFrame());
+            ICET(icetDrawFunc(render));
+            ICET(icetDrawFrame());
 
             // Now that we're done rendering, we need to post process the image.
             debug3 << "IceTNM: Starting readback." << std::endl;
