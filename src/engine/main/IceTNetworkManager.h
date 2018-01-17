@@ -40,7 +40,7 @@
 #define ICET_NETWORK_MANAGER_H
 
 #include <NetworkManager.h>
-#include <GL/ice-t.h>
+#include <IceT.h>
 #include <engine_main_exports.h>
 
 class Engine;
