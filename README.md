@@ -39,6 +39,20 @@ it or run `./premake.sh --help` to learn its usage.
 
 ### Building VisIt
 
+```
+Working Copy Root Path: /home/sci/qwu/VisIt/visitOSPRayCPU/visit-trunk/src
+URL: http://visit.ilight.com/svn/visit/trunk/src
+Relative URL: ^/trunk/src
+Repository Root: http://visit.ilight.com/svn/visit
+Repository UUID: 18c085ea-50e0-402c-830e-de6fd14e8384
+Revision: 31961
+Node Kind: directory
+Schedule: normal
+Last Changed Author: brugger
+Last Changed Rev: 31961
+Last Changed Date: 2017-11-09 04:20:20 -0700 (Thu, 09 Nov 2017)
+```
+
 ## System Information
 
 Getting information about the platform
