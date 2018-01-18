@@ -274,14 +274,14 @@ slivr::ComposeBackground(int screen[2],
 			 unsigned char *&imgFinal)
 {
 #ifdef VISIT_OSPRAY    
-    ospray::visit::ComposeBackground(screen,
-				     compositedImageExtents,
-				     compositedImageWidth,
-				     compositedImageHeight,
-				     compositedImageBuffer,
-				     opaqueImageColor,
-				     opaqueImageDepth,
-				     imgFinal);
+    visit::ComposeBackground(screen,
+			     compositedImageExtents,
+			     compositedImageWidth,
+			     compositedImageHeight,
+			     compositedImageBuffer,
+			     opaqueImageColor,
+			     opaqueImageDepth,
+			     imgFinal);
 #else
     for (int _y = 0; _y < screen[1]; _y++)
     {

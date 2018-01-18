@@ -275,11 +275,11 @@ avtSLIVRImgCommunicator::BlendFrontToBack(const float *srcImage,
 					  const int dstExtents[4])
 {
 #ifdef VISIT_OSPRAY
-    ospray::visit::BlendFrontToBack(blendExtents,
-				    srcExtents,
-				    srcImage,
-				    dstExtents,
-				    dstImage);
+    visit::BlendFrontToBack(blendExtents,
+			    srcExtents,
+			    srcImage,
+			    dstExtents,
+			    dstImage);
 #else    
     debug5 << ">>> avtSLIVRImgCommunicator::BlendFrontToBack" << std::endl;
     // image sizes
@@ -346,11 +346,11 @@ avtSLIVRImgCommunicator::BlendBackToFront(const float *srcImage,
 					  const int dstExtents[4])
 {
 #ifdef VISIT_OSPRAY
-    ospray::visit::BlendBackToFront(blendExtents,
-				    srcExtents,
-				    srcImage,
-				    dstExtents,
-				    dstImage);
+    visit::BlendBackToFront(blendExtents,
+			    srcExtents,
+			    srcImage,
+			    dstExtents,
+			    dstImage);
 #else    
     debug5 << ">>> avtSLIVRImgCommunicator::BlendBackToFront" << std::endl;
     // image sizes
