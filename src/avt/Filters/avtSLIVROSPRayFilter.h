@@ -435,6 +435,10 @@ public:
     OSPCamera camera;
     float panx; // this is a ratio [0, 1]
     float pany; // this is a ratio [0, 1]
+    float r_xl; 
+    float r_yl;
+    float r_xu;
+    float r_yu;
     float zoom; 
     int   size[2];
     osp::vec2f imgS, imgE;

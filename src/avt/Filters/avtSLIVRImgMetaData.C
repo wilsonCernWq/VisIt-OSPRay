@@ -165,7 +165,7 @@ slivr::ProjectScreenToCamera
     // do projection
     double cameraHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
-	(x - screenWidth/2.0) /(screenWidth/2.0),
+	(x - screenWidth /2.0)/(screenWidth /2.0),
 	(y - screenHeight/2.0)/(screenHeight/2.0),
 	z,
 	1.0};

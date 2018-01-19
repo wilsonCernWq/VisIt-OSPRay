@@ -278,10 +278,10 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     // It seems this is the correct way of doing it
     //
     const int Xs = 
-    	std::min((int)round(parent->camera.imgS.x * parent->camera.size[0]),
+    	std::min((int)round(parent->camera.r_xl * parent->camera.size[0]),
 		 parent->camera.size[0]-1);
     const int Ys =
-	std::min((int)round(parent->camera.imgS.y * parent->camera.size[1]),
+	std::min((int)round(parent->camera.r_yl * parent->camera.size[1]),
 		 parent->camera.size[1]-1);
     for (int i = 0; i < width; ++i) {
     	for (int j = 0; j < height; ++j) {
@@ -459,10 +459,10 @@ void OSPVisItCamera::Set(const double camp[3],
 }
 void OSPVisItCamera::SetScreen(float xMin, float xMax, float yMin, float yMax) 
 {
-    float r_xl = xMin/size[0] - panx; 
-    float r_yl = yMin/size[1] - pany; 
-    float r_xu = xMax/size[0] - panx;
-    float r_yu = yMax/size[1] - pany;	
+    r_xl = xMin/size[0] - panx; 
+    r_yl = yMin/size[1] - pany; 
+    r_xu = xMax/size[0] - panx;
+    r_yu = yMax/size[1] - pany;	
     imgS.x = (r_xl - 0.5f) / zoom + 0.5f;
     imgS.y = (r_yl - 0.5f) / zoom + 0.5f;
     imgE.x = (r_xu - 0.5f) / zoom + 0.5f;
