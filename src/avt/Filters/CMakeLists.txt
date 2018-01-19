@@ -122,7 +122,6 @@ avtTiledImageCompositor.C
 avtTimeLoopCollectorFilter.C
 avtTimeLoopFilter.C
 avtTransform.C
-avtValueImageCompositer.C
 avtVertexNormalsFilter.C
 avtWarpFilter.C
 avtWholeImageCompositerNoZ.C
@@ -188,7 +187,7 @@ LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_D
 
 #********************************* SERIAL ************************************
 ADD_LIBRARY(avtfilters_ser ${AVTFILTERS_SOURCES})
-TARGET_LINK_LIBRARIES(avtfilters_ser visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_ser avtdatabase_ser avtdbatts ${EAVL_LIB} ${VTKM_LIB} vtkFiltersModeling)
+TARGET_LINK_LIBRARIES(avtfilters_ser visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_ser avtdatabase_ser avtdbatts vtkFiltersModeling ${EAVL_LIB} ${VTKM_LIB})
 IF (VISIT_OSPRAY) 
   TARGET_LINK_LIBRARIES(avtfilters_ser ${OSPRAY_LIBRARIES})
 ENDIF (VISIT_OSPRAY) 
@@ -201,7 +200,7 @@ VISIT_INSTALL_TARGETS(avtfilters_ser)
 #********************************* PARALLEL **********************************
 IF(VISIT_PARALLEL)
     ADD_PARALLEL_LIBRARY(avtfilters_par ${AVTFILTERS_SOURCES})
-    TARGET_LINK_LIBRARIES(avtfilters_par visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_par avtdatabase_par avtdbatts ${EAVL_LIB} ${VTKM_LIB} vtkFiltersModeling)
+    TARGET_LINK_LIBRARIES(avtfilters_par visitcommon lightweight_visit_vtk visit_vtk avtmath avtview avtpipeline_par avtdatabase_par avtdbatts vtkFiltersModeling ${EAVL_LIB} ${VTKM_LIB})
     IF (VISIT_OSPRAY) 
       TARGET_LINK_LIBRARIES(avtfilters_par ${OSPRAY_LIBRARIES})
     ENDIF (VISIT_OSPRAY) 
