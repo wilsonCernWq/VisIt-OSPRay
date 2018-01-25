@@ -4,7 +4,7 @@
     <Field name="host" type="string">theta.alcf.anl.gov</Field>
     <Field name="userName" type="string">qiwu</Field>
     <Field name="hostAliases" type="string">"tnt.alcf.anl.gov login1 login#.tnt.alcf.anl.gov theta.alcf.anl.gov thetalogin#.alcf.anl.gov vs##-mgmt.alcf.anl.gov vs##-mgmt vs##"</Field>
-    <Field name="directory" type="string">/home/qiwu/software/VisIt/visit-trunk/build-theta</Field>
+    <Field name="directory" type="string">/home/qiwu/software/VisIt/theta/visit-trunk/build</Field>
     <Field name="shareOneBatchJob" type="bool">false</Field>
     <Field name="sshPortSpecified" type="bool">false</Field>
     <Field name="sshPort" type="int">22</Field>
