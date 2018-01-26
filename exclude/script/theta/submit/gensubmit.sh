@@ -25,6 +25,7 @@ export PATH=/home/qiwu/software/VisIt/theta/visit/python/2.7.11/linux-x86_64_cc/
 
 #
 #
+module unload xalt
 module unload PrgEnv-intel
 module load PrgEnv-gnu
 source /home/qiwu/software/embree-2.15.0.x86_64.linux/embree-vars.sh
