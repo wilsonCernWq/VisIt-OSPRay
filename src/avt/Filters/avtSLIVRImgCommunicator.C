@@ -78,6 +78,7 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
     intermediateImageExtents[2] = intermediateImageExtents[3] = 0.0;
     intermediateImageBBox[0] = intermediateImageBBox[1] = 0.0;
     intermediateImageBBox[2] = intermediateImageBBox[3] = 0.0;
+
 #ifdef PARALLEL
     MPI_Comm_size(VISIT_MPI_COMM, &numRanks);
     MPI_Comm_rank(VISIT_MPI_COMM, &myRank);
@@ -85,6 +86,20 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
     numRanks = 1;
     myRank = 0;
 #endif
+
+#if defined(PARALLEL) && defined (HAVE_ICET)
+//    icetInitialized = false;
+    // for (int i = 0; i < 16; ++i) 
+    // {       
+    // 	icetMatProj[i] = (i % 5) == 0 ? 1.0 : 0.0;
+    // 	icetMatMV  [i] = (i % 5) == 0 ? 1.0 : 0.0;
+    // }
+    // icetBgColor[0] = 0.0f;
+    // icetBgColor[1] = 0.0f;
+    // icetBgColor[2] = 0.0f;
+    // icetBgColor[3] = 0.0f;
+#endif
+
     totalPatches = 0;
     intermediateImage = NULL;
     imgBuffer = NULL;
@@ -1140,7 +1155,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     int myPositionInRegion = -1;
     bool inRegion = true;
     std::vector<int> regionVector(region, region+numRegions);
-    const std::vector<int>::const_iterator it = std::find(regionVector.begin(), 
+    const std::vector<int>::const_iterator it = std::find(regionVector.begin(),
 							  regionVector.end(), 
 							  myRank);
     if (it == regionVector.end())
@@ -1206,7 +1221,8 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     //---------------------------------------------------------------------//
     slivr::CheckSectionStart("avtSLIVRImgCommunicator", 
 			     "ParallelDirectSendManyPatches", timingDetail,
-			     "Determine How Many Patches and Pixel to Send to Each Region");
+			     "Determine How Many Patches and Pixel to Send "
+			     "to Each Region");
     //---------------------------------------------------------------------//
     std::vector<int> numPatchesPerRegion;
     std::vector<int> areaPerRegion;
@@ -1216,7 +1232,9 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 
     // 2D array: extents for each partition
     std::vector < std::vector<float> > extentsPerPartiton;
-    for (int i=0; i<numRegions; i++) { extentsPerPartiton.push_back(std::vector<float>()); }
+    for (int i=0; i<numRegions; i++) { 
+	extentsPerPartiton.push_back(std::vector<float>()); 
+    }
     debug5 << "Parallel Direct Send ~ numPatches " << numPatches << endl;
     int totalSendBufferSize = 0;
     for (int i=0; i<numPatches; i++)
@@ -1228,9 +1246,13 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 	_patchExtents[1]=temp.screen_ur[0];   // maxX
 	_patchExtents[2]=temp.screen_ll[1];   // minY
 	_patchExtents[3]=temp.screen_ur[1];   // maxY
-	const std::multimap<int, slivr::ImgData>::const_iterator it = imgDataHashMap.find( i );
+	const std::multimap<int, slivr::ImgData>::const_iterator it = 
+	    imgDataHashMap.find( i );
 	int from, to;
-	int numRegionIntescection = findRegionsForPatch(_patchExtents, fullImageExtents, numRegions, from, to);
+	int numRegionIntescection = findRegionsForPatch(_patchExtents, 
+							fullImageExtents,
+							numRegions, 
+							from, to);
 	if (numRegionIntescection <= 0) continue;
 	debug5 << "\nParallel Direct Send ~ patch " << i 
 	       << "  from:" << from << "  to:" << to 
@@ -1269,7 +1291,8 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     //---------------------------------------------------------------------//
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
 			    "ParallelDirectSendManyPatches", timingDetail,
-			    "Determine How Many Patches and Pixel to Send to Each Region");
+			    "Determine How Many Patches and Pixel to Send "
+			    "to Each Region");
     //---------------------------------------------------------------------//
 
 
