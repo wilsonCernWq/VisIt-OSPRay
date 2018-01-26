@@ -283,18 +283,18 @@ slivr::ComposeBackground(int screen[2],
 			     opaqueImageDepth,
 			     imgFinal);
 #else
-    for (int _y = 0; _y < screen[1]; _y++)
+    for (int y = 0; y < screen[1]; y++)
     {
-	for (int _x = 0; _x < screen[0]; _x++)
+	for (int x = 0; x < screen[0]; x++)
 	{
-	    int indexScreen     = _y * screen[0] + _x;
+	    int indexScreen     = y * screen[0] + x;
 	    int indexComposited =
-		(_y - compositedImageExtents[2]) * compositedImageWidth +
-		(_x - compositedImageExtents[0]);
+		(y - compositedImageExtents[2]) * compositedImageWidth +
+		(x - compositedImageExtents[0]);
 
 	    bool insideComposited = 
-		((_x >= compositedImageExtents[0] && _x < compositedImageExtents[1]) &&
-		 (_y >= compositedImageExtents[2] && _y < compositedImageExtents[3]));
+		((x >= compositedImageExtents[0] && x < compositedImageExtents[1]) &&
+		 (y >= compositedImageExtents[2] && y < compositedImageExtents[3]));
 
 	    if (insideComposited)
 	    {
