@@ -40,7 +40,7 @@
 #define ICET_NETWORK_MANAGER_H
 
 #include <NetworkManager.h>
-#include <GL/ice-t.h>
+#include <IceT.h>
 #include <engine_main_exports.h>
 
 class Engine;
@@ -123,5 +123,6 @@ class ENGINE_MAIN_API IceTNetworkManager: public NetworkManager
     IceTCommunicator comm;
     IceTContext context;
     unsigned int renderings; ///< counts how many renderings we've done.
+    IceTImage result;
 };
 #endif /* ICET_NETWORK_MANAGER_H */

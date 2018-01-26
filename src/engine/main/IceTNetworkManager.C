@@ -55,7 +55,8 @@
 #include <UnexpectedValueException.h>
 #include <VisWindow.h>
 
-#include <GL/ice-t_mpi.h>
+#include <IceTGL.h>
+#include <IceTMPI.h>
 #include <mpi.h>
 #include <vtkImageData.h>
 
@@ -70,7 +71,7 @@
 
 #define ICET_CHECK_ERROR                                                    \
     do {                                                                    \
-        GLenum err = icetGetError();                                        \
+        IceTEnum err = icetGetError();	  				    \
         const char *es = NULL;                                              \
         switch(err) {                                                       \
             case ICET_NO_ERROR: es = "no error"; break;                     \
@@ -88,7 +89,7 @@
 
 #define PR_ICET_MPI                                                        \
     do {                                                                   \
-        GLint rank, nproc, ntiles;                                         \
+        IceTInt rank, nproc, ntiles;                                       \
         ICET(icetGetIntegerv(ICET_RANK, &rank));                           \
         ICET(icetGetIntegerv(ICET_NUM_PROCESSES, &nproc));                 \
         ICET(icetGetIntegerv(ICET_NUM_TILES, &ntiles));                    \
@@ -102,12 +103,19 @@
         stmt;             \
         ICET_CHECK_ERROR; \
     } while(0)
+#   define ICET_RET(stmt, ret)	\
+    do {			\
+        ret = stmt;		\
+        ICET_CHECK_ERROR;	\
+    } while(0)
 #else
 #   define ICET(stmt) stmt
+#   define ICET_RET(stmt, ret) ret = stmt
 #endif
 
-static void SendImageToRenderNodes(int, int, bool, GLubyte * const,
-                                   GLuint * const);
+static void SendImageToRenderNodes(int, int, bool, 
+				   IceTUByte * const, 
+				   IceTFloat * const);
 
 // ****************************************************************************
 //  Method: lerp
@@ -145,24 +153,24 @@ lerp(in value, in imin, in imax, out omin, out omax)
 //    Query the correct depth max from IceT.
 //
 // ****************************************************************************
-static float *
-utofv(const unsigned int * const src, size_t n_elem)
-{
-    float *res = new float[n_elem];
-    unsigned int depth_max;
-    {
-      // IceT gives an unsigned int, but the accessor function only accepts
-      // GLint.  We'll grab the latter and rely on a conversion to get the
-      // correct type.
-      GLint far_depth;
-      icetGetIntegerv(ICET_ABSOLUTE_FAR_DEPTH, &far_depth);
-      depth_max = far_depth;
-    }
-    for(size_t i=0; i < n_elem; ++i) {
-        res[i] = lerp(src[i], 0U,depth_max, 0.0f,1.0f);
-    }
-    return res;
-}
+// static float *
+// utofv(const unsigned int * const src, size_t n_elem)
+// {
+//     float *res = new float[n_elem];
+//     unsigned int depth_max;
+//     {
+//       // IceT gives an unsigned int, but the accessor function only accepts
+//       // GLint.  We'll grab the latter and rely on a conversion to get the
+//       // correct type.
+//      GLint far_depth;
+//      icetGetIntegerv(ICET_ABSOLUTE_FAR_DEPTH, &far_depth);
+//      depth_max = far_depth;
+//     }
+//     for(size_t i=0; i < n_elem; ++i) {
+//         res[i] = lerp(src[i], 0U, depth_max, 0.0f,1.0f);
+//     }
+//     return res;
+// }
 
 // IceT render callback.
 // IceT needs to control the render; it calls the user render function as
@@ -186,9 +194,13 @@ extern "C" void render();
 // ****************************************************************************
 IceTNetworkManager::IceTNetworkManager(void): NetworkManager(), renderings(0)
 {
+    result = icetImageNull();
+
     this->comm = icetCreateMPICommunicator(VISIT_MPI_COMM);
     DEBUG_ONLY(ICET_CHECK_ERROR);
     this->context = icetCreateContext(comm);
+    DEBUG_ONLY(ICET_CHECK_ERROR);
+    icetGLInitialize();
     DEBUG_ONLY(ICET_CHECK_ERROR);
 
     ICET(icetSetContext(this->context));
@@ -196,13 +208,13 @@ IceTNetworkManager::IceTNetworkManager(void): NetworkManager(), renderings(0)
     DEBUG_ONLY(ICET(icetDiagnostics(ICET_DIAG_FULL)));
 
     ICET(icetStrategy(ICET_STRATEGY_REDUCE));
-    ICET(icetDrawFunc(render));
+    ICET(icetGLDrawCallback(render));
 
-    ICET(icetDisable(ICET_DISPLAY));
-    ICET(icetInputOutputBuffers(
-            ICET_COLOR_BUFFER_BIT | ICET_DEPTH_BUFFER_BIT, /* inputs */
-            ICET_COLOR_BUFFER_BIT | ICET_DEPTH_BUFFER_BIT  /* outputs */
-        ));
+    ICET(icetDisable(ICET_GL_DISPLAY));
+    ICET(icetCompositeMode(ICET_COMPOSITE_MODE_Z_BUFFER));
+    ICET(icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_UBYTE)); 
+    ICET(icetSetDepthFormat(ICET_IMAGE_DEPTH_FLOAT));
+    ICET(icetDisable(ICET_COMPOSITE_ONE_BUFFER));
 
     DEBUG_ONLY(PR_ICET_MPI);
 }
@@ -239,7 +251,7 @@ IceTNetworkManager::TileLayout(size_t width, size_t height) const
            << " single tile display." << std::endl;
 
     ICET(icetResetTiles());
-    const GLint this_mpi_rank_gets_an_image = 0;
+    const IceTInt this_mpi_rank_gets_an_image = 0;
     ICET(icetAddTile(0,0, width, height, this_mpi_rank_gets_an_image));
 }
 
@@ -385,23 +397,39 @@ IceTNetworkManager::Render(
             // However, IceT \emph{always} needs the Z buffer internally -- the
             // flag only differentiates between `compositing' methodologies
             // (painter-style or `over' operator) on input.
-            GLenum inputs = ICET_COLOR_BUFFER_BIT;
-            GLenum outputs = ICET_COLOR_BUFFER_BIT;
-            // Scratch all that, I guess.  That might be the correct way to go
-            // about things in the long run, but IceT only gives us back half an
-            // image if we don't set the depth buffer bit.  The compositing is a
-            // bit wrong, but there's not much else we can do..
-            // Consider removing the `hack' if a workaround is found.
-            if (/*hack*/true/*hack*/) // || !this->MemoMultipass(viswin))
-            {
-                inputs |= ICET_DEPTH_BUFFER_BIT;
-            }
-            if(needZB)
-            {
-                outputs |= ICET_DEPTH_BUFFER_BIT;
-            }
-            ICET(icetInputOutputBuffers(inputs, outputs));
 
+            // IceTEnum inputs = ICET_COLOR_BUFFER_BIT;
+            // IceTEnum outputs = ICET_COLOR_BUFFER_BIT;
+            // // Scratch all that, I guess.  That might be the correct way to go
+            // // about things in the long run, but IceT only gives us back half an
+            // // image if we don't set the depth buffer bit.  The compositing is a
+            // // bit wrong, but there's not much else we can do..
+            // // Consider removing the `hack' if a workaround is found.
+            // if (/*hack*/true/*hack*/) // || !this->MemoMultipass(viswin))
+            // {
+            //     inputs |= ICET_DEPTH_BUFFER_BIT;
+            // }
+            // if(needZB)
+            // {
+            //     outputs |= ICET_DEPTH_BUFFER_BIT;
+            // }
+	    //ICET(icetInputOutputBuffers(inputs, outputs));
+
+	    if(needZB)
+	    {
+		ICET(icetCompositeMode(ICET_COMPOSITE_MODE_Z_BUFFER));
+		ICET(icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_UBYTE));
+		ICET(icetSetDepthFormat(ICET_IMAGE_DEPTH_FLOAT));
+		ICET(icetDisable(ICET_COMPOSITE_ONE_BUFFER));
+	    }
+	    else 
+	    {
+		ICET(icetCompositeMode(ICET_COMPOSITE_MODE_BLEND));
+		ICET(icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_UBYTE));
+		ICET(icetSetDepthFormat(ICET_IMAGE_DEPTH_NONE));
+		ICET(icetEnable(ICET_COMPOSITE_ONE_BUFFER));
+	    }
+	    
             // If there is a backdrop image, we need to tell IceT so that it can
             // composite correctly.
             if(viswin->GetBackgroundMode() != AnnotationAttributes::Solid)
@@ -410,6 +438,8 @@ IceTNetworkManager::Render(
             }
             else
             {
+		const double* bgcolor = viswin->GetBackgroundColor();
+		glClearColor(bgcolor[0], bgcolor[1], bgcolor[2], bgcolor[3]);
                 ICET(icetDisable(ICET_CORRECT_COLORED_BACKGROUND));
             }
 
@@ -449,8 +479,8 @@ IceTNetworkManager::Render(
             else
                 ICET(icetStrategy(ICET_STRATEGY_REDUCE));
 
-            ICET(icetDrawFunc(render));
-            ICET(icetDrawFrame());
+            ICET(icetGLDrawCallback(render));
+	    ICET_RET(icetGLDrawFrame(), result);
 
             // Now that we're done rendering, we need to post process the image.
             debug3 << "IceTNM: Starting readback." << std::endl;
@@ -683,9 +713,13 @@ avtImage_p
 IceTNetworkManager::Readback(VisWindow * const viswin,
                              bool readZ) const
 {
-    GLboolean have_image;
-
-    ICET(icetGetBooleanv(ICET_COLOR_BUFFER_VALID, &have_image));
+    IceTEnum color_format;
+    ICET_RET(icetImageGetColorFormat(result), color_format);
+    IceTEnum depth_format;
+    ICET_RET(icetImageGetDepthFormat(result), depth_format);
+    bool have_image = 
+	(color_format == ICET_IMAGE_COLOR_RGBA_UBYTE) &
+	(depth_format == ICET_IMAGE_DEPTH_FLOAT);
 
     int width=-42, height=-42, width_start, height_start;
     // This basically gets the width and the height.
@@ -694,12 +728,12 @@ IceTNetworkManager::Readback(VisWindow * const viswin,
     viswin->GetCaptureRegion(width_start, height_start, width, height,
                              renderState.viewportedMode);
 
-    GLubyte *pixels = NULL;
-    GLuint *depth = NULL;
+    IceTUByte *pixels = NULL;
+    IceTFloat *depth = NULL;
 
-    if(readZ && have_image == GL_TRUE)
+    if(readZ && have_image)
     {
-        depth = icetGetDepthBuffer();
+        depth = icetImageGetDepthf(result);
         DEBUG_ONLY(ICET_CHECK_ERROR);
     }
     // We can't delete pointers IceT gives us.  However if we're a receiving
@@ -707,10 +741,10 @@ IceTNetworkManager::Readback(VisWindow * const viswin,
     // them.
     bool dynamic = false;
 
-    if(have_image == GL_TRUE)
+    if(have_image)
     {
         // We have an image.  First read it back from IceT.
-        pixels = icetGetColorBuffer();
+	pixels = icetImageGetColorub(result);
         DEBUG_ONLY(ICET_CHECK_ERROR);
 
         this->VerifyColorFormat(); // Bail out if we don't get GL_RGBA data.
@@ -719,12 +753,12 @@ IceTNetworkManager::Readback(VisWindow * const viswin,
         // Purpose of static pixel_ptr ... if I delete this memory too soon (i.e. along
         // with "depth"), then there is a crash ... it is being used after the function
         // exits.  So just wait until the next render to free it.
-        static GLubyte *pixel_ptr = NULL;
+        static IceTUByte *pixel_ptr = NULL;
         if (pixel_ptr != NULL)
            delete [] pixel_ptr;
-        pixel_ptr = new GLubyte[4*width*height];
+        pixel_ptr = new IceTUByte[4*width*height];
         pixels = pixel_ptr;
-        depth = new GLuint[width*height];
+        depth = new IceTFloat[width*height];
 
         dynamic = true;
     }
@@ -753,7 +787,7 @@ IceTNetworkManager::Readback(VisWindow * const viswin,
     if(readZ)
     {
         debug4 << "Converting depth values ..." << std::endl;
-        visit_depth_buffer = utofv(depth, width*height);
+        visit_depth_buffer = depth;
     }
 
     avtSourceFromImage screenCapSrc(image, visit_depth_buffer);
@@ -761,7 +795,6 @@ IceTNetworkManager::Readback(VisWindow * const viswin,
     visit_img->Update(screenCapSrc.GetGeneralContract());
     visit_img->SetSource(NULL);
     image->Delete();
-    delete[] visit_depth_buffer;
     if(dynamic)
     {
         delete[] depth;
@@ -842,19 +875,22 @@ void IceTNetworkManager::FormatDebugImage(char* out, size_t len,
 void
 IceTNetworkManager::VerifyColorFormat() const
 {
-    GLint color_format;
-    ICET(icetGetIntegerv(ICET_COLOR_FORMAT, &color_format));
-    if(color_format != GL_RGBA)
+    IceTEnum color_format;
+    ICET_RET(icetImageGetColorFormat(result), color_format);
+    if(color_format != ICET_IMAGE_COLOR_RGBA_UBYTE)
     {
         const char *str;
         switch(color_format)
         {
-            case GL_RGB: str = "GL_RGB"; break;
-            case GL_BGR: str = "GL_BGR"; break;
-            case GL_BGRA: str = "GL_BGRA"; break;
+            case ICET_IMAGE_COLOR_RGBA_FLOAT: 
+		str = "ICET_IMAGE_COLOR_RGBA_FLOAT"; break;
+            case ICET_IMAGE_COLOR_NONE: 
+		str = "ICET_IMAGE_COLOR_NONE"; break;
             default: str = "unexpected error case"; break;
         }
-        EXCEPTION2(UnexpectedValueException, "GL_RGBA", std::string(str));
+        EXCEPTION2(UnexpectedValueException, 
+		   "ICET_IMAGE_COLOR_RGBA_UBYTE", 
+		   std::string(str));
     }
 }
 
@@ -898,20 +934,18 @@ render()
 // ****************************************************************************
 static void
 SendImageToRenderNodes(int width, int height, bool Z,
-                       GLubyte * const pixels,
-                       GLuint * const depth)
+                       IceTUByte * const pixels,
+                       IceTFloat * const depth)
 {
-    GLint n_tiles, n_procs, rank;
-    GLboolean have_image;
+    IceTInt n_tiles, n_procs, rank;
 
     ICET(icetGetIntegerv(ICET_NUM_TILES, &n_tiles));
     ICET(icetGetIntegerv(ICET_NUM_PROCESSES, &n_procs));
     ICET(icetGetIntegerv(ICET_RANK, &rank));
-    ICET(icetGetBooleanv(ICET_COLOR_BUFFER_VALID, &have_image));
 
-    //              4: assuming GL_RGBA.
+    // 4: assuming GL_RGBA.
     MPI_Bcast(pixels, 4*width*height, MPI_BYTE, 0, VISIT_MPI_COMM);
     if(Z) {
-        MPI_Bcast(depth, width*height, MPI_UNSIGNED, 0, VISIT_MPI_COMM);
+        MPI_Bcast(depth, width*height, MPI_FLOAT, 0, VISIT_MPI_COMM);
     }
 }

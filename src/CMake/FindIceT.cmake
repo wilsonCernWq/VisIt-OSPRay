@@ -50,7 +50,15 @@
 # Use the ICET_DIR hint from the config-site .cmake file 
 # Except on windows, where it is part of the repo.
 
+#INCLUDE(${VISIT_SOURCE_DIR}/CMake/SetUpThirdParty.cmake)
+
+#SET_UP_THIRD_PARTY(ICET lib include icet icet_strategies icet_mpi)
+
 INCLUDE(${VISIT_SOURCE_DIR}/CMake/SetUpThirdParty.cmake)
 
-SET_UP_THIRD_PARTY(ICET lib include icet icet_strategies icet_mpi)
+SET_UP_THIRD_PARTY(ICET lib include IceTCore IceTMPI IceTGL)
+
+SET(ICET_INCLUDE_DIR ${ICET_INCLUDE_DIR} ${ICET_INCLUDE_DIRS})
+SET(ICET_LIB ${ICET_CORE_LIBS} ${ICET_MPI_LIBS})
+SET(ICET_OPENGL ${ICET_GL_LIBS})
 
