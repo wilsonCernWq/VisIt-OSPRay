@@ -1,7 +1,7 @@
-#/usr/bin/cmake
+#/home/sci/qwu/software/Lagodelcielo/VisIt/visit/cmake/3.8.1/linux-x86_64_gcc-7.2/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Thu Jan 18 19:38:47 MST 2018
+## created: Wed Jan 24 11:51:49 MST 2018
 ## system: Linux lagodelcielo 4.4.104-39-default #1 SMP Thu Jan 4 08:11:03 UTC 2018 (7db1912) x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -9,22 +9,22 @@
 ## Setup VISITHOME & VISITARCH variables.
 ##
 SET(VISITHOME /home/sci/qwu/software/Lagodelcielo/VisIt/visit)
-SET(VISITARCH linux-x86_64_gcc-7)
+SET(VISITARCH linux-x86_64_gcc-7.2)
 
 ## Compiler flags.
 ##
-VISIT_OPTION_DEFAULT(VISIT_C_COMPILER gcc-7 TYPE FILEPATH)
-VISIT_OPTION_DEFAULT(VISIT_CXX_COMPILER g++-7 TYPE FILEPATH)
-VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER no TYPE FILEPATH)
-VISIT_OPTION_DEFAULT(VISIT_C_FLAGS " -m64 -fPIC  -O3 -g -fvisibility=hidden" TYPE STRING)
-VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O3 -g -fvisibility=hidden" TYPE STRING)
+VISIT_OPTION_DEFAULT(VISIT_C_COMPILER gcc TYPE FILEPATH)
+VISIT_OPTION_DEFAULT(VISIT_CXX_COMPILER g++ TYPE FILEPATH)
+VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER /usr/bin/gfortran TYPE FILEPATH)
+VISIT_OPTION_DEFAULT(VISIT_C_FLAGS " -m64 -fPIC  -O2 -g -std=c++98 -fvisibility=hidden" TYPE STRING)
+VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O2 -g -std=c++98 -fvisibility=hidden" TYPE STRING)
 
 ##
 ## Parallel Build Setup.
 ##
 VISIT_OPTION_DEFAULT(VISIT_PARALLEL ON TYPE BOOL)
 ## (configured w/ mpi compiler wrapper)
-VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /usr/lib64/mpi/gcc/openmpi/bin/mpicc TYPE FILEPATH)
+VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /usr/lib64/mpi/gcc/mvapich2/bin/mpicc TYPE FILEPATH)
 
 ##
 ## VisIt Thread Option
@@ -121,6 +121,11 @@ SET(embree_DIR /home/sci/qwu/software/embree-2.17.0.x86_64.linux)
 SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
 SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
+
+##
+## IceT 2.1.0
+##
+SET(IceT_DIR /home/sci/qwu/software/Lagodelcielo/icet/install/lib)
 
 ##
 ## PIDX

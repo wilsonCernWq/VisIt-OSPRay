@@ -11,7 +11,6 @@
 SET(VISITHOME /home/sci/qwu/software/Hastur/VisIt/visit)
 SET(VISITARCH linux-x86_64_gcc-4.8)
 
-##
 ## Compiler flags.
 ##
 IF (VISIT_USE_ICC)
@@ -96,6 +95,12 @@ VISIT_OPTION_DEFAULT(VISIT_HDF5_DIR ${VISITHOME}/hdf5/1.8.14/${VISITARCH})
 VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz /usr/lib z TYPE STRING)
 
 ##
+## Ice-T
+##
+VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/1.0.0/${VISITARCH})
+##
+
+##
 ## NetCDF
 ##
 VISIT_OPTION_DEFAULT(VISIT_NETCDF_DIR ${VISITHOME}/netcdf/4.1.1/${VISITARCH})
@@ -126,11 +131,11 @@ SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
 
 ##
+## IceT 2.1.0
+##
+SET(IceT_DIR /home/sci/qwu/software/Hastur/icet/install/lib)
+
+##
 ## PIDX
 ##
 SET(PIDX_DIR /home/sci/qwu/software/Hastur/PIDX/install)
-
-##
-## Ice-T
-##
-VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/1.0.0/${VISITARCH})

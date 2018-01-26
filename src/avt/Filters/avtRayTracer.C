@@ -819,16 +819,113 @@ avtRayTracer::Execute(void)
 	// time rendering
 	visitTimer->StopTimer(timingVolToImg, "AllPatchRendering");
 
+	//
+	// Image Compositing
+	//
 	int timingCompositinig = visitTimer->StartTimer();
 	int timingDetail;
+
+	//---------------------------------------------------------------------------------//
+	// If each rank has only one patch, we use IceT to compose
+	//---------------------------------------------------------------------------------//
+	if (extractor.GetImgPatchSize() == 1 && false) 	
+	{
+	    // Setup Local Tile
+	    slivr::ImgMetaData currMeta = extractor.GetImgMetaPatch(0);
+	    slivr::ImgData     currData;
+	    currData.imagePatch = NULL;
+	    extractor.GetAndDelImgData /* do shallow copy inside */
+		(currMeta.patchNumber, currData);
+	    std::cout << "[avtRayTracer] "
+		      << "Rank " << PAR_Rank() << std::endl
+		      << "current patch depth = " << currMeta.eye_z << std::endl
+		      << "current patch size = " 
+		      << currMeta.dims[0] << ", " 
+		      << currMeta.dims[1] << std::endl
+		      << "current patch starting" 
+		      << " X = " << currMeta.screen_ll[0] 
+		      << " Y = " << currMeta.screen_ll[1] << std::endl
+		      << "current patch ending" 
+		      << " X = " << currMeta.screen_ur[0] 
+		      << " Y = " << currMeta.screen_ur[1] << std::endl;
+	    
+	    /////////////////////////////////////////////////////////////////////////////////
+	    //
+	    // First Composition
+	    //
+	    /////////////////////////////////////////////////////////////////////////////////
+	    // Initialization
+	    float *composedData = NULL;
+	    int composedW, composedH;
+	    int composedExtents[4];
+	    if (PAR_Size() > 1)
+	    { 
+		// composedW = fullImageExtents[1] - fullImageExtents[0];
+		// composedH = fullImageExtents[3] - fullImageExtents[2];
+		// composedExtents[0] = fullImageExtents[0];
+		// composedExtents[1] = fullImageExtents[1];
+		// composedExtents[2] = fullImageExtents[2];
+		// composedExtents[3] = fullImageExtents[3];
+		// int currExtents[4] = 
+		//     {std::max(currMeta.screen_ll[0]-fullImageExtents[0], 0), 
+		//      std::min(currMeta.screen_ur[0]-fullImageExtents[0], composedW), 
+		//      std::max(currMeta.screen_ll[1]-fullImageExtents[2], 0),
+		//      std::min(currMeta.screen_ur[1]-fullImageExtents[2], composedH)};
+		// // visit::CompositeInit(composedW, composedH);
+		// // visit::CompositeSetTile(currData.imagePatch, currExtents,
+		// // 			currMeta.eye_z, composedData);
+		// // Bug 
+		// char ppmName[10]; sprintf(ppmName, "%d", PAR_Rank());
+		// WriteArrayToPPM("patch"+ std::string(ppmName),
+		// 		currData.imagePatch, currMeta.dims[0], currMeta.dims[1]);
+		// if (currData.imagePatch != NULL) {
+		//     delete[] currData.imagePatch; 
+		//     currData.imagePatch = NULL;
+		// }
+	    } else {
+		composedW = currMeta.dims[0];
+		composedH = currMeta.dims[1];
+		composedExtents[0] = fullImageExtents[0];
+		composedExtents[1] = fullImageExtents[0] + composedW;
+		composedExtents[2] = fullImageExtents[2];
+		composedExtents[3] = fullImageExtents[2] + composedH;
+		composedData = currData.imagePatch;
+		currData.imagePatch = NULL;
+	    }
+	    
+	    /////////////////////////////////////////////////////////////////////////////////
+	    //
+	    // Final Composition for Displaying
+	    //
+	    /////////////////////////////////////////////////////////////////////////////////
+	    avtImage_p whole_image;
+	    whole_image = new avtImage(this);
+	    vtkImageData *img = avtImageRepresentation::NewImage(screen[0], screen[1]);
+	    whole_image->GetImage() = img;
+	    unsigned char *imgFinal = NULL;
+	    imgFinal = whole_image->GetImage().GetRGBBuffer();
+	    slivr::ComposeBackground(screen,
+	    			     composedExtents,
+				     composedW,
+				     composedH,
+	    			     composedData,
+	    			     opaqueImageData,
+	    			     opaqueImageZB,
+	    			     imgFinal);
+	    // Cleanup
+	    img->Delete();
+	    SetOutput(whole_image);
+	    if (composedData != NULL) { delete [] composedData; composedData = NULL; }
+	}
 	//
 	// SERIAL: Image Composition
 	//
-	if (parallelOn == false)
+	else if (parallelOn == false)
 	{
+	    /////////////////////////////////////////////////////////////////////////////////
 	    // SERIAL : Single Processor
-	    debug5 << "Serial Compositing!" << std::endl;
-
+	    /////////////////////////////////////////////////////////////////////////////////
+	    debug5 << "avtRayTracer::Execute SERIAL : Single Processor" << std::endl;
 
 	    /////////////////////////////////////////////////////////////////////////////////
 	    //
@@ -996,14 +1093,16 @@ avtRayTracer::Execute(void)
 	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
 				    "Serial-Compose: Final Composition for Displaying");
 	    //-----------------------------------------------------------------------------//
-
-	} else { 
-
-	    //
-	    // Parallel
-	    //
-	    debug5 << "Parallel compositing" << std::endl;
-
+	} 
+	//
+	// PARALLEL: Image Composition
+	//
+	else
+	{ 
+	    /////////////////////////////////////////////////////////////////////////////////
+	    // PARALLEL: Multiple Processors
+	    /////////////////////////////////////////////////////////////////////////////////
+	    debug5 << "avtRayTracer::Execute PARALLEL: Multiple Processors" << std::endl;
 
 	    /////////////////////////////////////////////////////////////////////////////////
 	    //
