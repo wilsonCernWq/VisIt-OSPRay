@@ -54,14 +54,14 @@
 #include <utility>
 
 #ifdef PARALLEL
-#  include <mpi.h>
-#endif
-
-#ifdef PARALLEL
-#  ifdef HAVE_ICET
+#  ifdef VISIT_ICET 
 #    include <IceT.h>
 #    include <IceTMPI.h>
 #  endif
+#endif
+
+#ifdef PARALLEL
+#  include <mpi.h>
 #endif
 
 #define MSG_DATA   100
@@ -97,9 +97,9 @@ public:
     virtual const char *GetDescription(void) 
     { return "Doing compositing for ray casting SLIVR"; };	
 
-    float* GetFinalImageBuffer () { return imgBuffer; }
-    int GetParSize ()            { return numRanks; }
-    int GetParRank ()              { return myRank; }
+    float* GetFinalImageBuffer () { return finalImage; }
+    int GetParSize ()             { return mpiSize;   }
+    int GetParRank ()             { return mpiRank;   }
     
     void BlendFrontToBack(const float *, const int srcExtents[4],
 			  const int blendExtents[4], 
@@ -115,35 +115,65 @@ public:
     void Barrier();
 
     //-----------------------------------------------------------------------//
+    // Different Algorithms
+    //-----------------------------------------------------------------------//
+
+    //-----------------------------------------------------------------------//
+    // IceT
+    //-----------------------------------------------------------------------//
+public:
+    void IceTInit(int W, int H);
+
+    //-----------------------------------------------------------------------//
     // Both currently unused but good for simple testing
     //-----------------------------------------------------------------------//
+private:
+    void GatherDepthAtRoot(const int, const float *, int &, int *&, float *&);
+public:
     void SerialDirectSend
 	(int, float*, int*, float*, float bgColor[4], int, int);
 
     //-----------------------------------------------------------------------//
-    //
+    // Parallel Direct Send
     //-----------------------------------------------------------------------//
+public:
     void RegionAllocation(int *&);
     int  ParallelDirectSendManyPatches
 	(const std::multimap<int, slivr::ImgData>&,
 	 const std::vector<slivr::ImgMetaData>&,
 	 int, int*, int, int tags[2], int fullImageExtents[4]);
 
-    //-----------------------------------------------------------------------//
-
-    void getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage);  // get the final composited image
-
-
-    int findRegionsForPatch(int patchExtents[4], int screenProjectedExtents[4], int numRegions, int &from, int &to);
-
-
-    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);	
-    void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight);
-
 private:
     // basic MPI information
-    int numRanks; // total number of processes (# of ranks)
-    int myRank;   // my rank id
+    int mpiSize; // total number of processes (# of ranks)
+    int mpiRank; // my rank id
+
+    // Final image is here
+    float *finalImage;
+
+#ifdef VISIT_ICET
+    IceTContext icetContext;
+    IceTCommunicator icetComm;
+    IceTDouble  icetMatProj[16];
+    IceTDouble  icetMatMV  [16];
+    IceTFloat   icetBgColor[4];
+    IceTInt     icetScreen[2];
+    struct Image
+    {
+    	const float* data;
+    	int extents[4];
+    	float depth;
+    	void SetTile(const float* d, const int e[4], const float& z)
+    	{
+    	    data = d;
+    	    extents[0] = e[0];
+    	    extents[1] = e[1];
+    	    extents[2] = e[2];
+    	    extents[3] = e[3];
+    	    depth = z;
+    	}
+    } icetImageLocal;
+#endif
 
     // flags for patch
     int totalPatches;
@@ -154,53 +184,22 @@ private:
     int regularRegionSize;
     std::vector<int> regionRankExtents;
 
-    // Final image is here
-    float *imgBuffer; 
-
-#if defined(PARALLEL) && defined (HAVE_ICET)
-//    bool icetInitialized;
-    //int  icetScreen[2];
-    //IceTContext icetContext;
-    //IceTCommunicator icetComm;
-//    IceTDouble  icetMatProj[16];
-//    IceTDouble  icetMatMV  [16];
-//    IceTFloat   icetBgColor[4];
-    /* struct Image */
-    /* { */
-    /* 	const float* data; */
-    /* 	int extents[4]; */
-    /* 	float depth; */
-    /* 	void SetTile(const float* d, const int e[4], const float& z) */
-    /* 	{ */
-    /* 	    data = d; */
-    /* 	    extents[0] = e[0]; */
-    /* 	    extents[1] = e[1]; */
-    /* 	    extents[2] = e[2]; */
-    /* 	    extents[3] = e[3]; */
-    /* 	    depth = z; */
-    /* 	} */
-    /* } icetImageLocal; */
-#endif
-
-public:
-    int finalImageExtents[4];
-    int finalBB[4];
-    float *intermediateImage; // Intermediate image, e.g. in parallel direct send
-    int intermediateImageExtents[4];
-    int intermediateImageBBox[4];
-
 private:
+    //-----------------------------------------------------------------------//
     void ColorImage(float *&, const int, const int, const float color[4]);
     void PlaceImage
 	(const float *, const int srcExtents[4], 
 	 float *&, const int dstExtents[4]);
     void BlendWithBackground
 	(float *&, const int extents[4], const float bgColor[4]);
+    //-----------------------------------------------------------------------//
     void UpdateBoundingBox
 	(int currentBoundingBox[4], const int imageExtents[4]);
-    void GatherDepthAtRoot(const int, const float *, int &, int *&, float *&);
+    //-----------------------------------------------------------------------//
 
-    //--------------------------------------------------------------------------------//
+// CLEAN UP BELOW
+private:
+    //-----------------------------------------------------------------------//
       
     void computeRegionExtents(int numRanks, int height);
 	
@@ -218,6 +217,27 @@ private:
 	return CLAMP(getRegionEnd(region)+screenImgMinY, 
 		     screenImgMinY, screenImgMaxY); 
     }
+
+public:
+    //-----------------------------------------------------------------------//
+
+    void getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage);  // get the final composited image
+
+
+    int findRegionsForPatch(int patchExtents[4], int screenProjectedExtents[4], int numRegions, int &from, int &to);
+
+
+    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);	
+    void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight);
+
+public:
+    // TODO: Remove all public fields
+    int finalImageExtents[4];
+    int finalBB[4];
+    float *intermediateImage; // Intermediate image, e.g. in parallel direct send
+    int intermediateImageExtents[4];
+    int intermediateImageBBox[4];
+
 
 };
 

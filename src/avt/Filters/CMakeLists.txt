@@ -163,21 +163,19 @@ IF (VISIT_OSPRAY)
     INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
 ENDIF ()
 
-IF(ICET_FOUND)		
-    # If we have Ice-T then add -DHAVE_ICET to the compilation flags.		
-    # We need to link with OpenGL on Mac when we have IceT.		
-    IF(APPLE)		
-        SET(ICET_OPENGL ${OPENGL_gl_LIBRARY})		
-    ENDIF(APPLE)		
-    # full path IceT libraries 		
-    SET(ICET_FULL_LIB "")		
-    FOREACH(X ${ICET_LIB})		
-        LIST(APPEND ICET_FULL_LIB "${ICET_LIBRARY_DIR}/${X}")		
-    ENDFOREACH()		
-    SET(ICET_LINK_LIB ${ICET_FULL_LIB} ${ICET_OPENGL})  		
-    # add include path		
-    INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})		
-ENDIF(ICET_FOUND)		
+IF(VISIT_PARALLEL)
+    IF(ICET_FOUND)		
+        # If we have Ice-T then add -DHAVE_ICET to the compilation flags.		
+        # We need to link with OpenGL on Mac when we have IceT.		
+        IF(APPLE)		
+            SET(ICET_OPENGL ${OPENGL_gl_LIBRARY})		
+        ENDIF(APPLE)		
+        # Add libraries 		
+        SET(ICET_LIBS ${ICET_LIB} ${ICET_OPENGL})  		
+        # Add include path		
+        INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})		
+    ENDIF(ICET_FOUND)		
+ENDIF(VISIT_PARALLEL)
 
 # Add link directories
 LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_DIRS} ${MESA_LIBRARY_DIR} ${GLEW_LIBRARY_DIR})
@@ -188,10 +186,6 @@ TARGET_LINK_LIBRARIES(avtfilters_ser visitcommon lightweight_visit_vtk visit_vtk
 IF (VISIT_OSPRAY) 
     TARGET_LINK_LIBRARIES(avtfilters_ser ${OSPRAY_LIBRARIES})
 ENDIF (VISIT_OSPRAY) 
-IF(ICET_FOUND)		
-    ADD_TARGET_DEFINITIONS(avtfilters_ser "HAVE_ICET")		
-    TARGET_LINK_LIBRARIES(avtfilters_ser ${ICET_LINK_LIB})		
-ENDIF(ICET_FOUND)
 VISIT_INSTALL_TARGETS(avtfilters_ser)
 
 #********************************* PARALLEL **********************************
@@ -202,8 +196,8 @@ IF(VISIT_PARALLEL)
         TARGET_LINK_LIBRARIES(avtfilters_par ${OSPRAY_LIBRARIES})
     ENDIF (VISIT_OSPRAY)
     IF(ICET_FOUND)		
-        ADD_TARGET_DEFINITIONS(avtfilters_par "HAVE_ICET")		
-        TARGET_LINK_LIBRARIES(avtfilters_par ${ICET_LINK_LIB})		
+        ADD_TARGET_DEFINITIONS(avtfilters_par "VISIT_ICET")		
+        TARGET_LINK_LIBRARIES(avtfilters_par ${ICET_LIBS})
     ENDIF(ICET_FOUND)
     VISIT_INSTALL_TARGETS(avtfilters_par)
 ENDIF(VISIT_PARALLEL)

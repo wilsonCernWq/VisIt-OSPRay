@@ -80,29 +80,24 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
     intermediateImageBBox[2] = intermediateImageBBox[3] = 0.0;
 
 #ifdef PARALLEL
-    MPI_Comm_size(VISIT_MPI_COMM, &numRanks);
-    MPI_Comm_rank(VISIT_MPI_COMM, &myRank);
+    MPI_Comm_size(VISIT_MPI_COMM, &mpiSize);
+    MPI_Comm_rank(VISIT_MPI_COMM, &mpiRank);
 #else
-    numRanks = 1;
-    myRank = 0;
+    mpiSize = 1;
+    mpiRank = 0;
 #endif
 
-#if defined(PARALLEL) && defined (HAVE_ICET)
-//    icetInitialized = false;
-    // for (int i = 0; i < 16; ++i) 
-    // {       
-    // 	icetMatProj[i] = (i % 5) == 0 ? 1.0 : 0.0;
-    // 	icetMatMV  [i] = (i % 5) == 0 ? 1.0 : 0.0;
-    // }
-    // icetBgColor[0] = 0.0f;
-    // icetBgColor[1] = 0.0f;
-    // icetBgColor[2] = 0.0f;
-    // icetBgColor[3] = 0.0f;
+#ifdef VISIT_ICET
+    icetComm = icetCreateMPICommunicator(MPI_COMM_WORLD);
+    icetContext = icetCreateContext(icetComm);
 #endif
+
+    finalImage = NULL;
+
+
 
     totalPatches = 0;
     intermediateImage = NULL;
-    imgBuffer = NULL;
 }
 
 // ****************************************************************************
@@ -119,7 +114,11 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 
 avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 {
-    if (myRank == 0) { if (imgBuffer != NULL) { delete []imgBuffer; } }
+    if (mpiRank == 0) { if (finalImage != NULL) { delete []finalImage; } }
+#ifdef VISIT_ICET
+    icetDestroyContext(icetContext);
+    icetDestroyMPICommunicator(icetComm);
+#endif
 }
 
 // ****************************************************************************
@@ -139,28 +138,6 @@ void avtSLIVRImgCommunicator::Barrier() {
 #ifdef PARALLEL
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
-}
-
-
-// ****************************************************************************
-//  Method: avtSLIVRImgCommunicator::regionAllocation
-//
-//  Purpose:
-//      Arbitrarily allocates regions to MPI ranks
-//
-//  Programmer: Pascal Grosset
-//  Creation:   August 19, 2016
-//
-//  Modifications:
-//
-// ***************************************************************************
-
-void
-avtSLIVRImgCommunicator::RegionAllocation(int *& regions)
-{
-    regions = new int[numRanks];
-    // Initial allocation: partition for section rank
-    for (int i=0; i<numRanks; i++) { regions[i] = i; }
 }
 
 
@@ -491,6 +468,44 @@ avtSLIVRImgCommunicator::UpdateBoundingBox(int currentBoundingBox[4],
     { currentBoundingBox[3] = imageExtents[3]; }
 }
 
+void 
+avtSLIVRImgCommunicator::IceTInit(int W, int H)
+{
+#ifdef VISIT_ICET
+    for (int i = 0; i < 16; ++i) 
+    {       
+    	icetMatProj[i] = (i % 5) == 0 ? 1.0 : 0.0;
+    	icetMatMV  [i] = (i % 5) == 0 ? 1.0 : 0.0;
+    }
+    icetBgColor[0] = 0.0f;
+    icetBgColor[1] = 0.0f;
+    icetBgColor[2] = 0.0f;
+    icetBgColor[3] = 0.0f;
+    icetScreen[0] = W;
+    icetScreen[1] = H;
+    // Create
+    icetDiagnostics(ICET_DIAG_FULL);    
+    // Setup IceT for alpha-blending compositing
+    icetCompositeMode(ICET_COMPOSITE_MODE_BLEND);
+    icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_FLOAT);
+    icetSetDepthFormat(ICET_IMAGE_DEPTH_NONE);
+    icetDiagnostics(ICET_DIAG_ERRORS | ICET_DIAG_WARNINGS);
+    icetEnable(ICET_ORDERED_COMPOSITE);
+    icetDiagnostics(ICET_DIAG_ERRORS | ICET_DIAG_WARNINGS);
+    icetDisable(ICET_INTERLACE_IMAGES);
+    // Safety
+    MPI_Barrier(MPI_COMM_WORLD);
+    //
+    icetResetTiles();
+    icetAddTile(0, 0, W, H, 0);
+    icetPhysicalRenderSize(W, H);
+    //
+    icetStrategy(ICET_STRATEGY_SEQUENTIAL);
+    //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_TREE);
+    //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_RADIXK);
+    icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_BSWAP);
+#endif
+}
 
 // ****************************************************************************
 //  Method: avtSLIVRImgCommunicator::GatherDepthAtRoot
@@ -517,8 +532,8 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
     totalPatches = 0;
     int *patchesOffset = NULL;
 
-    if (myRank == 0) // root!
-    { patchCountPerRank = new int[numRanks](); }
+    if (mpiRank == 0) // root!
+    { patchCountPerRank = new int[mpiSize](); }
 
     // reference
     // https://www.mpich.org/static/docs/v3.1/www3/MPI_Gather.html
@@ -532,12 +547,12 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
 	       MPI_COMM_WORLD); /* communicator (handle)*/
 
     // gather number of patch group
-    if (myRank == 0)
+    if (mpiRank == 0)
     {
-        patchesOffset = new int[numRanks]();
+        patchesOffset = new int[mpiSize]();
         patchesOffset[0] = 0; // a bit redundant
 
-        for (int i=0; i<numRanks; i++)
+        for (int i=0; i<mpiSize; i++)
         {
             totalPatches += patchCountPerRank[i];
             if (i == 0)
@@ -557,12 +572,11 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
 		0, MPI_COMM_WORLD);
 
     // Cleanup
-    if (myRank == 0 && patchesOffset != NULL)
+    if (mpiRank == 0 && patchesOffset != NULL)
     { delete [] patchesOffset; }
     patchesOffset = NULL;
 #endif
 }
-
 
 // ****************************************************************************
 //  Method: avtSLIVRImgCommunicator::SerialDirectSend
@@ -606,7 +620,7 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
     //
     //
     //
-    if (myRank == 0)
+    if (mpiRank == 0)
     {
         // Root
         int srcSize[2] = {width, height};
@@ -617,7 +631,7 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
         std::multimap<float,int> sortedPatches;
 
         int patchId = 0;
-        for (int i=0; i<numRanks; i++) {
+        for (int i=0; i<mpiSize; i++) {
             for (int j=0; j<totalPatchCountsPerRank[i]; j++) {
                 sortedPatches.insert
 		    (std::make_pair(totalPatchDepths[patchId++],i));
@@ -629,7 +643,7 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
         int imgExtents[4] = {0,width,0,height};
 
         recvImage = new float[width*height*4]();
-        imgBuffer = new float[width*height*4]();
+        finalImage = new float[width*height*4]();
 	
         int localIndex = 0;
 
@@ -638,7 +652,7 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
 	     it != sortedPatches.end(); ++it)
         {
             int rank = (*it).second;
-            if (rank != myRank)
+            if (rank != mpiRank)
             {
 		// recv image info
                 MPI_Recv(recvParams, 4, MPI_INT, rank, 
@@ -661,9 +675,9 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
                 recvImage = &imgData[ localIndex*(width*height*4) ];
                 localIndex++;
             }
-            BlendFrontToBack(recvImage, recvParams, imgBuffer, imgExtents);
+            BlendFrontToBack(recvImage, recvParams, finalImage, imgExtents);
         }
-        BlendWithBackground(imgBuffer, imgExtents, bgColor);
+        BlendWithBackground(finalImage, imgExtents, bgColor);
     }
     else
     {
@@ -699,6 +713,26 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
 #endif
 }
 
+// ****************************************************************************
+//  Method: avtSLIVRImgCommunicator::regionAllocation
+//
+//  Purpose:
+//      Arbitrarily allocates regions to MPI ranks
+//
+//  Programmer: Pascal Grosset
+//  Creation:   August 19, 2016
+//
+//  Modifications:
+//
+// ***************************************************************************
+
+void
+avtSLIVRImgCommunicator::RegionAllocation(int *& regions)
+{
+    regions = new int[mpiSize];
+    // Initial allocation: partition for section rank
+    for (int i=0; i<mpiSize; i++) { regions[i] = i; }
+}
 
 
 // ****************************************************************************
@@ -737,12 +771,12 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData,
     std::vector<int> regionVector(region, region+numRegions);
     std::vector<int>::iterator it = std::find(regionVector.begin(),
 					      regionVector.end(),
-					      myRank);
+					      mpiRank);
 
     if (it == regionVector.end())
     {
         inRegion = false;
-        //debug5 << myRank << " ~ SHOULD NOT HAPPEN: Not found " << myRank <<  " !!!" << std::endl;
+        //debug5 << mpiRank << " ~ SHOULD NOT HAPPEN: Not found " << mpiRank <<  " !!!" << std::endl;
     }
     else
         myPositionInRegion = it - regionVector.begin();
@@ -811,7 +845,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData,
         int recvCount=0;
         for (int i=0; i<numRegions; i++)
         {
-            if ( regionVector[i] == myRank )
+            if ( regionVector[i] == mpiRank )
                 continue;
 
             int src = regionVector[i];
@@ -832,7 +866,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData,
         int regionStart, regionEnd, imgSize, dest;
         dest = regionVector[i];
 
-        if ( dest == myRank )
+        if ( dest == mpiRank )
             continue;
 
         regionStart = i*regionHeight;
@@ -871,7 +905,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData,
             sendExtents[i*5 + 4] = 0;
         }
 
-        //std::cout << myRank << " ~ i: " << i << "   regionVector[index]: " << regionVector[index] << "  extents: " <<  sendExtents[index*5 + 0] << ", " << sendExtents[index*5 + 1]  << ", " << sendExtents[index*5 + 2] << ", " << sendExtents[index*5 + 3] << "  sending ... " << std::endl;
+        //std::cout << mpiRank << " ~ i: " << i << "   regionVector[index]: " << regionVector[index] << "  extents: " <<  sendExtents[index*5 + 0] << ", " << sendExtents[index*5 + 1]  << ", " << sendExtents[index*5 + 2] << ", " << sendExtents[index*5 + 3] << "  sending ... " << std::endl;
         MPI_Isend(&sendExtents[i*5],             5,   MPI_INT, dest, tags[0], MPI_COMM_WORLD, &sendMetaRq[sendCount]);
         MPI_Isend(&imgData[sendingOffset], imgSize, MPI_FLOAT, dest, tags[1], MPI_COMM_WORLD, &sendImageRq[sendCount]);
 
@@ -908,7 +942,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData,
 
             //debug5 << "regionVector[" << i << "] " << regionVector[index] << std::endl;
 
-            if (regionVector[index] == myRank)
+            if (regionVector[index] == mpiRank)
             {
                 int startingYExtents = myStartingHeight;
                 int endingYExtents = myEndingHeight;
@@ -1157,12 +1191,12 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     std::vector<int> regionVector(region, region+numRegions);
     const std::vector<int>::const_iterator it = std::find(regionVector.begin(),
 							  regionVector.end(), 
-							  myRank);
+							  mpiRank);
     if (it == regionVector.end())
     {
 	inRegion = false;
-	debug5 << myRank << " ~ SHOULD NOT HAPPEN!!!!: Not found " 
-	       << myRank <<  " !!!" << std::endl;
+	debug5 << mpiRank << " ~ SHOULD NOT HAPPEN!!!!: Not found " 
+	       << mpiRank <<  " !!!" << std::endl;
     }
     else 
     {
@@ -1174,8 +1208,8 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
 			    "ParallelDirectSendManyPatches", timingDetail,
 			    "Find My position in Regions");
-    debug5 << myRank << " ~ myPositionInRegion: " 
-	   << myPositionInRegion << ", numRanks: " << numRanks << std::endl;
+    debug5 << mpiRank << " ~ myPositionInRegion: " 
+	   << myPositionInRegion << ", numRanks: " << mpiSize << std::endl;
     debug5 << "width: " << width << ", height : " << height 
 	   << " | fullImageExtents: "
 	   << fullImageExtents[0] << ", " 
@@ -1193,7 +1227,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 			     "ParallelDirectSendManyPatches", timingDetail,
 			     "Compute Region Boundaries");
     //---------------------------------------------------------------------//
-    computeRegionExtents(numRanks, height); // ?
+    computeRegionExtents(mpiSize, height); // ?
     int myStartingHeight = getScreenRegionStart
 	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
     int myEndingHeight   = getScreenRegionEnd
@@ -1339,7 +1373,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 	    if (regionWithDataCount != numRegionsWithData)
 		sendDataBufferOffsets[regionWithDataCount] = sendDataBufferOffsets[regionWithDataCount-1] + sendDataBufferSize[regionWithDataCount-1];
 
-	    if (regionVector[i] != myRank)
+	    if (regionVector[i] != mpiRank)
 		numRegionsToSend++;
 	}
 
@@ -1391,7 +1425,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 	infoBufferSize += recvInfoATABuffer[i*2 + 0];   // number of patches per region
 	dataBufferSize += recvInfoATABuffer[i*2 + 1];   // area per region
 	debug5 << "From: " << i << ", #patches: " << recvInfoATABuffer[i*2 + 0] << ", " << recvInfoATABuffer[i*2 + 1] << std::endl;
-	if (i == myRank) continue;
+	if (i == mpiRank) continue;
 	if (recvInfoATABuffer[i*2 + 0] != 0)
 	    numRegionsToRecvFrom++;
     }
@@ -1448,7 +1482,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
             if (recvInfoATABuffer[i*2 + 0] == 0)
                 continue;
 
-            if ( regionVector[i] == myRank )
+            if ( regionVector[i] == mpiRank )
                 continue;
 
             int src = regionVector[i];
@@ -1483,7 +1517,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     {
         if ( extentsPerPartiton[i].size() != 0 )
 	{
-            if ( regionVector[i] == myRank )
+            if ( regionVector[i] == mpiRank )
             {
                 memcpy( &recvInfoBuffer[offsetMeta], &extentsPerPartiton[i][0], extentsPerPartiton[i].size()*sizeof(float) );
                 memcpy( &recvDataBuffer[offsetData], &sendDataBuffer[offset],   sendDataBufferSize[ sendCount ]*sizeof(float) );
@@ -1670,7 +1704,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
     for (int i=0; i<4; i++)
 	finalImageExtents[i] = finalBB[i] = 0;
 
-    if (myRank == 0)
+    if (mpiRank == 0)
     {
 	int width =  fullImageExtents[1]-fullImageExtents[0];
 	int height = fullImageExtents[3]-fullImageExtents[2];
@@ -1679,7 +1713,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 
 	//
 	// Receive at root/display node!
-	imgBuffer = new float[width*height*4];
+	finalImage = new float[width*height*4];
 	finalImageExtents[0] = fullImageExtents[0];
 	finalImageExtents[1] = fullImageExtents[1];
 	finalImageExtents[2] = fullImageExtents[2];
@@ -1695,7 +1729,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 	numToRecv = numRegionsWithData;
 
 	// remove itself from the recv
-	if (getRegionSize(myRank) != 0) 
+	if (getRegionSize(mpiRank) != 0) 
 	    numToRecv--;
 
 
@@ -1716,18 +1750,18 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 	{
 	    int src = regionGather[i];
 
-	    if (src == myRank)
+	    if (src == mpiRank)
 		continue;
 
 	    if (i == totalNumRanks-1)
 	    {
 		if (lastBufferSize != 0)
 		{
-		    MPI_Irecv(&imgBuffer[i*regularBufferSize], lastBufferSize,     MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
+		    MPI_Irecv(&finalImage[i*regularBufferSize], lastBufferSize,     MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
 		}
 	    }
 	    else
-		MPI_Irecv(&imgBuffer[i*regularBufferSize], regularBufferSize,  MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
+		MPI_Irecv(&finalImage[i*regularBufferSize], regularBufferSize,  MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
 			
 
 	    debug5 << i << " ~ recvCount: " << recvCount << std::endl;
@@ -1735,7 +1769,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 	}
 
 	if (compositingDone == false)   // If root has data for the final image
-	    PlaceImage(inputImg, imgExtents, imgBuffer, finalImageExtents);
+	    PlaceImage(inputImg, imgExtents, finalImage, finalImageExtents);
 
 	MPI_Waitall(numToRecv, recvImageRq, recvImageSt);
 	compositingDone = true;
@@ -1780,12 +1814,12 @@ void avtSLIVRImgCommunicator::getcompositedImage
         for (int j=0; j<imgBufferWidth; j++) {
             int bufferIndex = (imgBufferWidth*4*i) + (j*4);
             int wholeImgIndex = (imgBufferWidth*3*i) + (j*3);
-            wholeImage[wholeImgIndex+0] = (imgBuffer[bufferIndex+0] ) * 255;
-            wholeImage[wholeImgIndex+1] = (imgBuffer[bufferIndex+1] ) * 255;
-            wholeImage[wholeImgIndex+2] = (imgBuffer[bufferIndex+2] ) * 255;
+            wholeImage[wholeImgIndex+0] = (finalImage[bufferIndex+0] ) * 255;
+            wholeImage[wholeImgIndex+1] = (finalImage[bufferIndex+1] ) * 255;
+            wholeImage[wholeImgIndex+2] = (finalImage[bufferIndex+2] ) * 255;
         }
     }
-    if (imgBuffer != NULL)
-    { delete []imgBuffer; }
-    imgBuffer = NULL;
+    if (finalImage != NULL)
+    { delete []finalImage; }
+    finalImage = NULL;
 }
