@@ -44,6 +44,13 @@
 #include <avtParallel.h>
 #include <avtSLIVROSPRayFilter.h>
 
+#ifdef PARALLEL
+#  ifdef VISIT_ICET
+#    include <IceT.h>
+#    include <IceTMPI.h>
+#  endif
+#endif
+
 #include <cmath>
 #include <time.h>       /* time */
 #include <stdio.h>
@@ -61,6 +68,221 @@ inline double round(double x) {return (x-floor(x)) > 0.5 ? ceil(x) : floor(x);}
 enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 
 // ****************************************************************************
+//  Class: avtSLIVRImgComm_IceT
+// ****************************************************************************
+
+class avtSLIVRImgComm_IceT : public avtSLIVRImgComm
+{
+public:
+    avtSLIVRImgComm_IceT(int mpiSize, int mpiRank);
+    ~avtSLIVRImgComm_IceT();
+    void Init(int, int);
+    void SetTile(const float*, const int*, const float&);
+    void Composite(float*&);
+    bool Valid() const { return true; }
+
+private:
+    static int icetMPISize;
+    static int icetMPIRank;
+#if defined(PARALLEL) && defined(VISIT_ICET)
+    //---------------------------------------
+    IceTContext          icetContext;
+    IceTCommunicator     icetComm;
+    IceTInt              icetScreen[2];
+    //---------------------------------------
+    IceTDouble  icetMatProj[16];
+    IceTDouble  icetMatMV  [16];
+    IceTFloat   icetBgColor[4];
+    IceTImage   result;
+    //---------------------------------------
+    static const float* icetImgData;
+    static int          icetImgDimX;
+    static int          icetImgDimY;
+    static int          icetImgExts[4];
+    //---------------------------------------
+    static void DrawCallback(const IceTDouble*, 
+			     const IceTDouble*, 
+			     const IceTFloat*, 
+			     const IceTInt*, 
+			     IceTImage img);
+#endif
+};
+
+int avtSLIVRImgComm_IceT::icetMPISize;
+int avtSLIVRImgComm_IceT::icetMPIRank;
+#if defined(PARALLEL) && defined(VISIT_ICET)
+const float* avtSLIVRImgComm_IceT::icetImgData;
+int          avtSLIVRImgComm_IceT::icetImgDimX;
+int          avtSLIVRImgComm_IceT::icetImgDimY;
+int          avtSLIVRImgComm_IceT::icetImgExts[4] = {0,0,0,0};
+#endif
+
+avtSLIVRImgComm_IceT::avtSLIVRImgComm_IceT(int mpiSize, int mpiRank)
+    : avtSLIVRImgComm(mpiSize, mpiRank)
+{	
+    icetMPISize = mpiSize;
+    icetMPIRank = mpiRank;
+#if defined(PARALLEL) && defined(VISIT_ICET)
+    icetComm = icetCreateMPICommunicator(VISIT_MPI_COMM);
+    icetContext = icetCreateContext(icetComm);
+    icetDestroyMPICommunicator(icetComm);
+#endif
+}
+
+avtSLIVRImgComm_IceT::~avtSLIVRImgComm_IceT()
+{
+#if defined(PARALLEL) && defined(VISIT_ICET)
+    icetDestroyContext(icetContext);
+#endif
+}
+
+void avtSLIVRImgComm_IceT::Init(int W, int H)
+{
+#if defined(PARALLEL) && defined(VISIT_ICET)
+    // Initialization
+    std::cout << "avtSLIVRImgComm_IceT::Init Initialization" << std::endl;
+    for (int i = 0; i < 16; ++i) 
+    {       
+    	icetMatProj[i] = (i % 5) == 0 ? 1.0 : 0.0;
+    	icetMatMV  [i] = (i % 5) == 0 ? 1.0 : 0.0;
+    }
+    icetBgColor[0] = 0.0f;
+    icetBgColor[1] = 0.0f;
+    icetBgColor[2] = 0.0f;
+    icetBgColor[3] = 0.0f;
+    icetScreen[0] = W;
+    icetScreen[1] = H;
+
+    // Setup IceT parameters
+    std::cout << "avtSLIVRImgComm_IceT::Init Setup" << std::endl;
+    icetDiagnostics(ICET_DIAG_FULL);
+    icetCompositeMode(ICET_COMPOSITE_MODE_BLEND);
+    icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_FLOAT);
+    icetSetDepthFormat(ICET_IMAGE_DEPTH_NONE);
+    icetEnable(ICET_ORDERED_COMPOSITE);
+    icetDisable(ICET_INTERLACE_IMAGES);
+
+    // Safety
+    MPI_Barrier(MPI_COMM_WORLD);
+    std::cout << "avtSLIVRImgComm_IceT::Init Done" << std::endl;
+#endif
+}
+
+void avtSLIVRImgComm_IceT::SetTile(const float* d, 
+				   const int* e, 
+				   const float& z)
+{
+#if defined(PARALLEL) && defined(VISIT_ICET)
+    // Gather depths
+    std::cout << "avtSLIVRImgComm_IceT::SetTile Gather Depth" << std::endl;
+    std::vector<float>   all_depths(icetMPISize);
+    std::vector<IceTInt> all_orders(icetMPISize);
+    MPI_Allgather(&z, 1, MPI_FLOAT, all_depths.data(), 1, MPI_FLOAT, 
+	          MPI_COMM_WORLD);
+    
+    // Debug depths
+    std::cout << "avtSLIVRImgComm_IceT::SetTile Debug Depth ";
+    for (int i = 0; i < all_depths.size(); ++i) {
+        std::cout << all_depths[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // Sort depths in compositing order
+    std::multimap<float,int> ordered_depths;
+    for (int i = 0; i < icetMPISize; i++)
+    {
+      ordered_depths.insert(std::pair<float, int>(all_depths[i], i)); 
+    }
+    int i = 0;
+    for (std::multimap<float,int>::iterator it = ordered_depths.begin(); 
+	 it != ordered_depths.end(); ++it)
+    {
+      all_orders[i] = (*it).second;
+      i++;
+    }
+
+    // Debug order
+    std::cout << "avtSLIVRImgComm_IceT::SetTile Composite Order ";
+    for (int i = 0; i < all_orders.size(); ++i) {
+        std::cout << all_orders[i] << " ";
+    }
+    std::cout << std::endl;
+
+    // 
+    icetCompositeOrder(all_orders.data());  // front to back
+
+    //
+    icetResetTiles();
+    icetAddTile(0, 0, icetScreen[0], icetScreen[1], 0);
+    icetPhysicalRenderSize(icetScreen[0], icetScreen[1]);
+
+    //
+    icetStrategy(ICET_STRATEGY_SEQUENTIAL);
+    //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_TREE);
+    //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_RADIXK);
+    icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_BSWAP);
+
+    //
+    icetBoundingBoxf(((float)e[0]/(float)icetScreen[0] - 0.5f) * 2.f,
+    	             ((float)e[1]/(float)icetScreen[0] - 0.5f) * 2.f,
+    	             ((float)e[2]/(float)icetScreen[1] - 0.5f) * 2.f,
+    	             ((float)e[3]/(float)icetScreen[1] - 0.5f) * 2.f,
+    		     0.0, 0.0);
+    
+    // Compose
+    const int tile_x = e[1] - e[0];
+    const int tile_y = e[3] - e[2];
+    avtSLIVRImgComm_IceT::icetImgData = d;
+    avtSLIVRImgComm_IceT::icetImgDimX = tile_x;
+    avtSLIVRImgComm_IceT::icetImgDimY = tile_y;
+    avtSLIVRImgComm_IceT::icetImgExts[0] = e[0];
+    avtSLIVRImgComm_IceT::icetImgExts[1] = e[1];
+    avtSLIVRImgComm_IceT::icetImgExts[2] = e[2];
+    avtSLIVRImgComm_IceT::icetImgExts[3] = e[3];
+    icetDrawCallback(DrawCallback);
+#endif
+}
+
+void avtSLIVRImgComm_IceT::Composite(float*& output)
+{
+#if defined(PARALLEL) && defined(VISIT_ICET)
+    result = icetDrawFrame(icetMatProj, icetMatMV, icetBgColor);
+    if (icetMPIRank == 0) {
+	icetImageCopyColorf(result, output, ICET_IMAGE_COLOR_RGBA_FLOAT);
+    }
+#endif
+}
+
+#if defined(PARALLEL) && defined(VISIT_ICET)
+void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
+					const IceTDouble*, 
+					const IceTFloat*, 
+					const IceTInt*,
+					IceTImage img) 
+{
+    float *o = icetImageGetColorf(img);
+    const int outputDimX = icetImageGetWidth (img);
+    const int outputDimY = icetImageGetHeight(img);
+    std::cout << "avtSLIVRImgComm_IceT::DrawCallback rank "
+	      << icetMPIRank 
+	      << "image size " 
+	      << outputDimX << " " << outputDimY
+	      << std::endl;
+    for (int i = 0; i < icetImgDimX; ++i) {
+	for (int j = 0; j < icetImgDimY; ++j) {	
+	    const int gIdx = i + icetImgExts[0] + (j + icetImgExts[2]) * outputDimX;
+	    const int lIdx = i + j * icetImgDimX;
+	    o[4 * gIdx + 0] = icetImgData[4 * lIdx + 0];
+	    o[4 * gIdx + 1] = icetImgData[4 * lIdx + 1];
+	    o[4 * gIdx + 2] = icetImgData[4 * lIdx + 2];
+	    o[4 * gIdx + 3] = icetImgData[4 * lIdx + 3];
+	}
+    }
+    std::cout << "avtSLIVRImgComm_IceT::DrawCallback Done" << std::endl;
+}
+#endif
+
+// ****************************************************************************
 //  Method: avtSLIVRImgCommunicator::avtSLIVRImgCommunicator
 //
 //  Purpose: Constructor
@@ -74,11 +296,6 @@ enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 
 avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 {
-    intermediateImageExtents[0] = intermediateImageExtents[1] = 0.0;
-    intermediateImageExtents[2] = intermediateImageExtents[3] = 0.0;
-    intermediateImageBBox[0] = intermediateImageBBox[1] = 0.0;
-    intermediateImageBBox[2] = intermediateImageBBox[3] = 0.0;
-
 #ifdef PARALLEL
     MPI_Comm_size(VISIT_MPI_COMM, &mpiSize);
     MPI_Comm_rank(VISIT_MPI_COMM, &mpiRank);
@@ -86,15 +303,14 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
     mpiSize = 1;
     mpiRank = 0;
 #endif
-
-#ifdef VISIT_ICET
-    icetComm = icetCreateMPICommunicator(MPI_COMM_WORLD);
-    icetContext = icetCreateContext(icetComm);
-#endif
-
     finalImage = NULL;
+    compositor = NULL;
 
-
+    /////////////////////////////////////////////////////////////
+    intermediateImageExtents[0] = intermediateImageExtents[1] = 0.0;
+    intermediateImageExtents[2] = intermediateImageExtents[3] = 0.0;
+    intermediateImageBBox[0] = intermediateImageBBox[1] = 0.0;
+    intermediateImageBBox[2] = intermediateImageBBox[3] = 0.0;
 
     totalPatches = 0;
     intermediateImage = NULL;
@@ -114,11 +330,9 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 
 avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 {
-    if (mpiRank == 0) { if (finalImage != NULL) { delete []finalImage; } }
-#ifdef VISIT_ICET
-    icetDestroyContext(icetContext);
-    icetDestroyMPICommunicator(icetComm);
-#endif
+    std::cout << "avtSLIVRImgCommunicator start delete" << std::endl;
+    if (mpiRank == 0) { if (finalImage != NULL) { delete [] finalImage; } }
+    std::cout << "avtSLIVRImgCommunicator done delete" << std::endl;
 }
 
 // ****************************************************************************
@@ -468,43 +682,38 @@ avtSLIVRImgCommunicator::UpdateBoundingBox(int currentBoundingBox[4],
     { currentBoundingBox[3] = imageExtents[3]; }
 }
 
+// ****************************************************************************
+//  Method: avtSLIVRImgCommunicator::IceT
+//
+//  Purpose:
+//
+//  Programmer: Qi WU
+//  Creation:   
+//
+//  Modifications:
+//
+// **************************************************************************
+
 void 
 avtSLIVRImgCommunicator::IceTInit(int W, int H)
 {
-#ifdef VISIT_ICET
-    for (int i = 0; i < 16; ++i) 
-    {       
-    	icetMatProj[i] = (i % 5) == 0 ? 1.0 : 0.0;
-    	icetMatMV  [i] = (i % 5) == 0 ? 1.0 : 0.0;
+    compositor = new avtSLIVRImgComm_IceT(mpiSize, mpiRank);
+    if (!compositor->Valid()) {
+	std::cerr << "IceT compositor is not valid" << std::endl;
     }
-    icetBgColor[0] = 0.0f;
-    icetBgColor[1] = 0.0f;
-    icetBgColor[2] = 0.0f;
-    icetBgColor[3] = 0.0f;
-    icetScreen[0] = W;
-    icetScreen[1] = H;
-    // Create
-    icetDiagnostics(ICET_DIAG_FULL);    
-    // Setup IceT for alpha-blending compositing
-    icetCompositeMode(ICET_COMPOSITE_MODE_BLEND);
-    icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_FLOAT);
-    icetSetDepthFormat(ICET_IMAGE_DEPTH_NONE);
-    icetDiagnostics(ICET_DIAG_ERRORS | ICET_DIAG_WARNINGS);
-    icetEnable(ICET_ORDERED_COMPOSITE);
-    icetDiagnostics(ICET_DIAG_ERRORS | ICET_DIAG_WARNINGS);
-    icetDisable(ICET_INTERLACE_IMAGES);
-    // Safety
-    MPI_Barrier(MPI_COMM_WORLD);
-    //
-    icetResetTiles();
-    icetAddTile(0, 0, W, H, 0);
-    icetPhysicalRenderSize(W, H);
-    //
-    icetStrategy(ICET_STRATEGY_SEQUENTIAL);
-    //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_TREE);
-    //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_RADIXK);
-    icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_BSWAP);
-#endif
+    compositor->Init(W, H);
+}
+
+void avtSLIVRImgCommunicator::IceTSetTile(const float* d, 
+					  const int*   e,
+	                                  const float& z, 
+					  float*& output)
+{
+    compositor->SetTile(d, e, z);
+    compositor->Composite(output);
+    if (compositor != NULL) { delete compositor; }
+    compositor = NULL;
+    std::cout << "IceT compositor is deleted" << std::endl;
 }
 
 // ****************************************************************************

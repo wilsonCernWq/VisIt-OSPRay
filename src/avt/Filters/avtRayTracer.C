@@ -837,7 +837,7 @@ avtRayTracer::Execute(void)
 	//-------------------------------------------------------------------//
 	// If each rank has only one patch, we use IceT to compose
 	//-------------------------------------------------------------------//
-	if (extractor.GetImgPatchSize() == 1 && false) 	
+	if (extractor.GetImgPatchSize() == 1) 	
 	{
 	    // Setup Local Tile
 	    slivr::ImgMetaData currMeta = extractor.GetImgMetaPatch(0);
@@ -870,28 +870,34 @@ avtRayTracer::Execute(void)
 	    int composedExtents[4];
 	    if (PAR_Size() > 1)
 	    { 
-		// composedW = fullImageExtents[1] - fullImageExtents[0];
-		// composedH = fullImageExtents[3] - fullImageExtents[2];
-		// composedExtents[0] = fullImageExtents[0];
-		// composedExtents[1] = fullImageExtents[1];
-		// composedExtents[2] = fullImageExtents[2];
-		// composedExtents[3] = fullImageExtents[3];
-		// int currExtents[4] = 
-		//     {std::max(currMeta.screen_ll[0]-fullImageExtents[0], 0), 
-		//      std::min(currMeta.screen_ur[0]-fullImageExtents[0], composedW), 
-		//      std::max(currMeta.screen_ll[1]-fullImageExtents[2], 0),
-		//      std::min(currMeta.screen_ur[1]-fullImageExtents[2], composedH)};
-		// // visit::CompositeInit(composedW, composedH);
-		// // visit::CompositeSetTile(currData.imagePatch, currExtents,
-		// // 			currMeta.eye_z, composedData);
+		composedW = fullImageExtents[1] - fullImageExtents[0];
+		composedH = fullImageExtents[3] - fullImageExtents[2];
+		composedExtents[0] = fullImageExtents[0];
+		composedExtents[1] = fullImageExtents[1];
+		composedExtents[2] = fullImageExtents[2];
+		composedExtents[3] = fullImageExtents[3];
+		int currExtents[4] = 
+		    {std::max(currMeta.screen_ll[0]-fullImageExtents[0], 0), 
+		     std::min(currMeta.screen_ur[0]-fullImageExtents[0], 
+			      composedW), 
+		     std::max(currMeta.screen_ll[1]-fullImageExtents[2], 0),
+		     std::min(currMeta.screen_ur[1]-fullImageExtents[2],
+			      composedH)};
+		if (PAR_Rank() == 0) {
+		    composedData = new float[4 * composedW * composedH]();
+		}
+		imgComm.IceTInit(composedW, composedH);
+		imgComm.IceTSetTile(currData.imagePatch, currExtents,
+				    currMeta.eye_z, composedData);
 		// // Bug 
 		// char ppmName[10]; sprintf(ppmName, "%d", PAR_Rank());
 		// WriteArrayToPPM("patch"+ std::string(ppmName),
-		// 		currData.imagePatch, currMeta.dims[0], currMeta.dims[1]);
-		// if (currData.imagePatch != NULL) {
-		//     delete[] currData.imagePatch; 
-		//     currData.imagePatch = NULL;
-		// }
+		// 		currData.imagePatch, 
+		// 		currMeta.dims[0], currMeta.dims[1]);
+		if (currData.imagePatch != NULL) {
+		    delete[] currData.imagePatch;
+		    currData.imagePatch = NULL;
+		}
 	    } else {
 		composedW = currMeta.dims[0];
 		composedH = currMeta.dims[1];
@@ -908,25 +914,27 @@ avtRayTracer::Execute(void)
 	    // Final Composition for Displaying
 	    //
 	    ///////////////////////////////////////////////////////////////////
-	    avtImage_p whole_image;
-	    whole_image = new avtImage(this);
-	    vtkImageData *img = 
-		avtImageRepresentation::NewImage(screen[0], screen[1]);
-	    whole_image->GetImage() = img;
-	    unsigned char *imgFinal = NULL;
-	    imgFinal = whole_image->GetImage().GetRGBBuffer();
-	    slivr::ComposeBackground(screen,
-	    			     composedExtents,
-				     composedW,
-				     composedH,
-	    			     composedData,
-	    			     opaqueImageData,
-	    			     opaqueImageZB,
-	    			     imgFinal);
-	    // Cleanup
-	    img->Delete();
-	    SetOutput(whole_image);
-	    if (composedData != NULL) { delete [] composedData; composedData = NULL; }
+	    if (PAR_Rank() == 0) {
+		avtImage_p whole_image;
+		whole_image = new avtImage(this);
+		vtkImageData *img = 
+		    avtImageRepresentation::NewImage(screen[0], screen[1]);
+		whole_image->GetImage() = img;
+		unsigned char *imgFinal = NULL;
+		imgFinal = whole_image->GetImage().GetRGBBuffer();
+		slivr::ComposeBackground(screen,
+					 composedExtents,
+					 composedW,
+					 composedH,
+					 composedData,
+					 opaqueImageData,
+					 opaqueImageZB,
+					 imgFinal);
+		// Cleanup
+		img->Delete();
+		SetOutput(whole_image);
+		if (composedData != NULL) { delete [] composedData; composedData = NULL; }
+	    }
 	}
 	//
 	// SERIAL: Image Composition
@@ -1304,9 +1312,9 @@ avtRayTracer::Execute(void)
 	    // Cleanup
 	    //
 	    if (composedData != NULL)
-		delete []composedData;
+		delete [] composedData;
 	    if (localPatchesDepth != NULL)
-		delete []localPatchesDepth;
+		delete [] localPatchesDepth;
 	    //
 	    // Memory	   
 	    //

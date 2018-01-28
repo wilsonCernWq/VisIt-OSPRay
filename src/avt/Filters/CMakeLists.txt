@@ -164,17 +164,21 @@ IF (VISIT_OSPRAY)
 ENDIF ()
 
 IF(VISIT_PARALLEL)
-    IF(ICET_FOUND)		
-        # If we have Ice-T then add -DHAVE_ICET to the compilation flags.		
-        # We need to link with OpenGL on Mac when we have IceT.		
-        IF(APPLE)		
-            SET(ICET_OPENGL ${OPENGL_gl_LIBRARY})		
-        ENDIF(APPLE)		
-        # Add libraries 		
-        SET(ICET_LIBS ${ICET_LIB} ${ICET_OPENGL})  		
-        # Add include path		
-        INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})		
-    ENDIF(ICET_FOUND)		
+    IF(ICET_FOUND)
+        # If we have Ice-T then add -DHAVE_ICET to the compilation flags.
+        # We need to link with OpenGL on Mac when we have IceT.
+        IF(APPLE)
+            SET(ICET_OPENGL ${OPENGL_gl_LIBRARY})
+        ENDIF(APPLE)
+        # Add libraries
+	SET(ICET_FULL_LIB "")
+	FOREACH(X ${ICET_LIB})
+	    LIST(APPEND ICET_FULL_LIB "${ICET_LIBRARY_DIR}/${X}")
+	ENDFOREACH()
+	SET(ICET_LIBS ${ICET_FULL_LIB} ${ICET_OPENGL})
+        # Add include path
+        INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})
+    ENDIF(ICET_FOUND)
 ENDIF(VISIT_PARALLEL)
 
 # Add link directories
@@ -195,8 +199,8 @@ IF(VISIT_PARALLEL)
     IF (VISIT_OSPRAY) 
         TARGET_LINK_LIBRARIES(avtfilters_par ${OSPRAY_LIBRARIES})
     ENDIF (VISIT_OSPRAY)
-    IF(ICET_FOUND)		
-        ADD_TARGET_DEFINITIONS(avtfilters_par "VISIT_ICET")		
+    IF (ICET_FOUND)
+        ADD_TARGET_DEFINITIONS(avtfilters_par "VISIT_ICET")
         TARGET_LINK_LIBRARIES(avtfilters_par ${ICET_LIBS})
     ENDIF(ICET_FOUND)
     VISIT_INSTALL_TARGETS(avtfilters_par)

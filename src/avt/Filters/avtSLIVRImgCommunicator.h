@@ -54,13 +54,6 @@
 #include <utility>
 
 #ifdef PARALLEL
-#  ifdef VISIT_ICET 
-#    include <IceT.h>
-#    include <IceTMPI.h>
-#  endif
-#endif
-
-#ifdef PARALLEL
 #  include <mpi.h>
 #endif
 
@@ -76,7 +69,7 @@ struct imageBuffer{
 };
 
 // ****************************************************************************
-//  Class: avtRayTracer
+//  Class: avtSLIVRImgCommunicator
 //
 //  Purpose:
 //      Does the composition for Ray casting: SLIVR
@@ -85,6 +78,19 @@ struct imageBuffer{
 //  Creation:   Spetember 20, 2013
 //
 // ****************************************************************************
+
+class avtSLIVRImgComm
+{
+public:
+    avtSLIVRImgComm(int mpiSize, int mpiRank) {};
+    virtual ~avtSLIVRImgComm() {};
+    virtual void Init (int W, int H) = 0;
+    virtual void SetTile (const float* data, 
+			  const int* extents, 
+			  const float& depth) = 0;
+    virtual void Composite (float*& output) = 0;
+    virtual bool Valid () const { return false; }
+};
 
 class avtSLIVRImgCommunicator
 { 
@@ -121,8 +127,8 @@ public:
     //-----------------------------------------------------------------------//
     // IceT
     //-----------------------------------------------------------------------//
-public:
     void IceTInit(int W, int H);
+    void IceTSetTile(const float*, const int*, const float&, float*&);
 
     //-----------------------------------------------------------------------//
     // Both currently unused but good for simple testing
@@ -144,45 +150,16 @@ public:
 	 int, int*, int, int tags[2], int fullImageExtents[4]);
 
 private:
-    // basic MPI information
+
+    // Basic MPI information
     int mpiSize; // total number of processes (# of ranks)
     int mpiRank; // my rank id
 
     // Final image is here
     float *finalImage;
 
-#ifdef VISIT_ICET
-    IceTContext icetContext;
-    IceTCommunicator icetComm;
-    IceTDouble  icetMatProj[16];
-    IceTDouble  icetMatMV  [16];
-    IceTFloat   icetBgColor[4];
-    IceTInt     icetScreen[2];
-    struct Image
-    {
-    	const float* data;
-    	int extents[4];
-    	float depth;
-    	void SetTile(const float* d, const int e[4], const float& z)
-    	{
-    	    data = d;
-    	    extents[0] = e[0];
-    	    extents[1] = e[1];
-    	    extents[2] = e[2];
-    	    extents[3] = e[3];
-    	    depth = z;
-    	}
-    } icetImageLocal;
-#endif
-
-    // flags for patch
-    int totalPatches;
-    bool compositingDone;
-
-    // image sizing for compositing
-    int maxRegionHeight;
-    int regularRegionSize;
-    std::vector<int> regionRankExtents;
+    // Image Compisition Implementation
+    avtSLIVRImgComm* compositor;
 
 private:
     //-----------------------------------------------------------------------//
@@ -199,6 +176,16 @@ private:
 
 // CLEAN UP BELOW
 private:
+    ///--------------------------------------
+    // flags for patch
+    int totalPatches;
+    bool compositingDone;
+
+    // image sizing for compositing
+    int maxRegionHeight;
+    int regularRegionSize;
+    std::vector<int> regionRankExtents;
+
     //-----------------------------------------------------------------------//
       
     void computeRegionExtents(int numRanks, int height);

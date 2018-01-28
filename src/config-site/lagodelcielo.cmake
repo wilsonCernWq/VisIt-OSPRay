@@ -1,7 +1,7 @@
 #/home/sci/qwu/software/Lagodelcielo/VisIt/visit/cmake/3.8.1/linux-x86_64_gcc-7.2/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Wed Jan 24 11:51:49 MST 2018
+## created: Sat Jan 27 17:17:37 MST 2018
 ## system: Linux lagodelcielo 4.4.104-39-default #1 SMP Thu Jan 4 08:11:03 UTC 2018 (7db1912) x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -89,7 +89,7 @@ VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz
 ##
 ## Ice-T
 ##
-VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/1.0.0/${VISITARCH})
+VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/devel/${VISITARCH})
 ##
 
 ##
@@ -121,11 +121,6 @@ SET(embree_DIR /home/sci/qwu/software/embree-2.17.0.x86_64.linux)
 SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
 SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-
-##
-## IceT 2.1.0
-##
-SET(IceT_DIR /home/sci/qwu/software/Lagodelcielo/icet/install/lib)
 
 ##
 ## PIDX
