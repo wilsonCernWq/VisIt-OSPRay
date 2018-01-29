@@ -591,7 +591,7 @@ private:
     void SetDataBounds(double dbounds[6]) {
 	for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
     }
-    void SetBgBuffer(unsigned char* color, float* depth, int extents[4]) {
+    void SetBgBuffer(float* depth, int extents[4]) {
 	renderer.maxDepthBuffer = depth;
 	renderer.maxDepthSize.x = extents[1] - extents[0];
 	renderer.maxDepthSize.y = extents[3] - extents[2];

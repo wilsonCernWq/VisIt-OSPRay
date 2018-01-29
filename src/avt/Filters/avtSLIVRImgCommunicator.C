@@ -41,8 +41,9 @@
 // ************************************************************************* //
 
 #include <avtSLIVRImgCommunicator.h>
-#include <avtParallel.h>
 #include <avtSLIVROSPRayFilter.h>
+#include <avtParallel.h>
+#include <ImproperUseException.h>
 
 #ifdef PARALLEL
 #  ifdef VISIT_ICET
@@ -696,7 +697,12 @@ avtSLIVRImgCommunicator::IceTInit(int W, int H)
 {
     compositor = new avtSLIVRImgComm_IceT(mpiSize, mpiRank);
     if (!compositor->Valid()) {
-	std::cerr << "IceT compositor is not valid" << std::endl;
+	debug1 << "ERROR: IceT compositor is not valid. "
+	       << "Probably IceT is not compiled with VisIt"
+	       << std::endl;
+	EXCEPTION1(VisItException, 
+		   "ERROR: IceT compositor is not valid. "
+		   "Probably IceT is not compiled with VisIt");
     }
     compositor->Init(W, H);
 }

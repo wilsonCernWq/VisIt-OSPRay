@@ -780,8 +780,12 @@ avtRayTracer::Execute(void)
 		    opaqueImageDepth[index] = -worldCoord[2];
 	    	}
 	    }
-	    ospray->SetBgBuffer(opaqueImageData, 
-	    			opaqueImageDepth.data(), 
+	    // // Bug 
+	    // char ppmName[30]; sprintf(ppmName, "background-%d", PAR_Rank());
+	    // WriteArrayToPPM("patch"+ std::string(ppmName),
+	    // 		    opaqueImageData, 
+	    // 		    screen[0], screen[1]);
+	    ospray->SetBgBuffer(opaqueImageDepth.data(), 
 	    			bufferScreenExtents);
 	}
 	// TODO We cannot delete camera here, why ?

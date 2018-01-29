@@ -65,7 +65,9 @@ double slivr::rad2deg (double radins) {
 // other function
 void 
 OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z, 
-		    int nX, int nY, int nZ, double volumePBox[6], double volumeBBox[6], 
+		    int nX, int nY, int nZ,
+		    double volumePBox[6], 
+		    double volumeBBox[6], 
 		    double mtl[4], float sr, bool shading)
 {
     /* OSPRay Volume */
@@ -136,7 +138,8 @@ void OSPVisItVolume::InitVolume(unsigned char type) {
     }
 }
 void 
-OSPVisItVolume::SetVolume(int type, void *ptr, double *X, double *Y, double *Z, 
+OSPVisItVolume::SetVolume(int type, void *ptr, 
+			  double *X, double *Y, double *Z, 
 			  int nX, int nY, int nZ,
 			  double volumePBox[6], double volumeBBox[6]) 
 {
@@ -261,10 +264,10 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     // create max depth texture
     std::vector<float> maxDepth(width * height);
     //
-    // The reason I use round(r * (N-1)) instead of floor(r * N) is that during the
-    // composition phase, there will be a wired offset between rendered image and the
-    // background, which is about one pixel in size. Using round(r * (N - 1)) can remove
-    // the problem
+    // The reason I use round(r * (N-1)) instead of floor(r * N) is that 
+    // during the composition phase, there will be a wired offset between
+    // rendered image and the background, which is about one pixel in size.
+    // Using round(r * (N - 1)) can remove the problem
     //
     // const int Xs = 
     // 	floor(parent->camera.imgS.x * parent->camera.size[0]);
@@ -277,11 +280,15 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     //
     // It seems this is the correct way of doing it
     //
+    // It seems we need to also fix pan and zoom also
+    //
     const int Xs = 
-    	std::min((int)round(parent->camera.r_xl * parent->camera.size[0]),
+    	std::min((int)round((parent->camera.r_xl + parent->camera.panx) * 
+			    parent->camera.size[0]),
 		 parent->camera.size[0]-1);
     const int Ys =
-	std::min((int)round(parent->camera.r_yl * parent->camera.size[1]),
+	std::min((int)round((parent->camera.r_yl + parent->camera.pany) * 
+			    parent->camera.size[1]),
 		 parent->camera.size[1]-1);
     for (int i = 0; i < width; ++i) {
     	for (int j = 0; j < height; ++j) {
@@ -290,7 +297,8 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
 		[Xs + i + (Ys + j) * parent->renderer.maxDepthSize.x];
     	}
     }
-    framebufferBg = ospNewTexture2D(imageSize, OSP_TEXTURE_R32F, maxDepth.data(),
+    framebufferBg = ospNewTexture2D(imageSize, OSP_TEXTURE_R32F, 
+				    maxDepth.data(),
 				    OSP_TEXTURE_FILTER_NEAREST);
     ospCommit(framebufferBg);
     ospSetObject(parent->renderer.renderer, "maxDepthTexture", framebufferBg);
@@ -452,7 +460,9 @@ void OSPVisItCamera::Set(const double camp[3],
     ospSetVec3f(camera, "up",  camU);
     ospSet1f(camera, "aspect", aspect);
     if      (cameraType == PERSPECTIVE)  { ospSet1f(camera, "fovy", fovy); }
-    else if (cameraType == ORTHOGRAPHIC) { ospSet1f(camera, "height", sceneSize[1]); }
+    else if (cameraType == ORTHOGRAPHIC) { 
+	ospSet1f(camera, "height", sceneSize[1]); 
+    }
     ospCommit(camera);
     this->SetScreen(bufferExtents[0], bufferExtents[1],
 		    bufferExtents[2], bufferExtents[3]);
@@ -574,24 +584,30 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
 {
     int timing_SetSubCamera = visitTimer->StartTimer();
     camera.SetScreen(xMin, xMax, yMin, yMax);
-    visitTimer->StopTimer(timing_SetSubCamera, "[OSPRay] Calling OSPContext::SetSubCamera");
+    visitTimer->StopTimer(timing_SetSubCamera,
+			  "[OSPRay] Calling OSPContext::SetSubCamera");
 
     int timing_SetModel = visitTimer->StartTimer();
     renderer.SetModel(volume->GetWorld());
     renderer.SetCamera(camera.camera);
-    visitTimer->StopTimer(timing_SetModel, "[OSPRay] Calling OSPContext::SetModel");
+    visitTimer->StopTimer(timing_SetModel,
+			  "[OSPRay] Calling OSPContext::SetModel");
 
     int timing_InitFB = visitTimer->StartTimer();
     volume->InitFB(imgWidth, imgHeight);
-    visitTimer->StopTimer(timing_InitFB, "[OSPRay] Calling OSPContext::InitFB");
+    visitTimer->StopTimer(timing_InitFB,
+			  "[OSPRay] Calling OSPContext::InitFB");
 
     int timing_RenderFB = visitTimer->StartTimer();
     volume->RenderFB();
-    visitTimer->StopTimer(timing_RenderFB, "[OSPRay] Calling OSPContext::RenderFB");
+    visitTimer->StopTimer(timing_RenderFB,
+			  "[OSPRay] Calling OSPContext::RenderFB");
 
     int timing_stdcopy = visitTimer->StartTimer();
-    std::copy(volume->GetFBData(), volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
-    visitTimer->StopTimer(timing_stdcopy, "[OSPRay] Calling OSPContext::std::copy");
+    std::copy(volume->GetFBData(), 
+	      volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
+    visitTimer->StopTimer(timing_stdcopy, 
+			  "[OSPRay] Calling OSPContext::std::copy");
 }
 
 void OSPVisItContext::InitPatch(int id) 

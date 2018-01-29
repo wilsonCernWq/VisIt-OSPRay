@@ -293,42 +293,54 @@ slivr::ComposeBackground(int screen[2],
 		(x - compositedImageExtents[0]);
 
 	    bool insideComposited = 
-		((x >= compositedImageExtents[0] && x < compositedImageExtents[1]) &&
-		 (y >= compositedImageExtents[2] && y < compositedImageExtents[3]));
+		((x >= compositedImageExtents[0] && 
+		  x < compositedImageExtents[1]) &&
+		 (y >= compositedImageExtents[2] && 
+		  y < compositedImageExtents[3]));
 
 	    if (insideComposited)
 	    {
 		if (compositedImageBuffer[indexComposited*4 + 3] == 0)
 		{
 		    // No data from rendering here! - Good
-		    imgFinal[indexScreen * 3 + 0] = opaqueImageColor[indexScreen * 3 + 0];
-		    imgFinal[indexScreen * 3 + 1] = opaqueImageColor[indexScreen * 3 + 1];
-		    imgFinal[indexScreen * 3 + 2] = opaqueImageColor[indexScreen * 3 + 2];
+		    imgFinal[indexScreen * 3 + 0] = 
+			opaqueImageColor[indexScreen * 3 + 0];
+		    imgFinal[indexScreen * 3 + 1] = 
+			opaqueImageColor[indexScreen * 3 + 1];
+		    imgFinal[indexScreen * 3 + 2] = 
+			opaqueImageColor[indexScreen * 3 + 2];
 		}
 		else
 		{
 		    // Volume in front
-		    float alpha = (1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
+		    float alpha = 
+			(1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
 		    imgFinal[indexScreen * 3 + 0] = 
 			CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 0] * 255.f,
+			      compositedImageBuffer[indexComposited * 4 + 0] *
+			      255.f,
 			      0.f, 255.f);
 		    imgFinal[indexScreen * 3 + 1] = 
 			CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 1] * 255.f,
+			      compositedImageBuffer[indexComposited * 4 + 1] *
+			      255.f,
 			      0.f, 255.f);
 		    imgFinal[indexScreen * 3 + 2] =
 			CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 2] * 255.f,
+			      compositedImageBuffer[indexComposited * 4 + 2] *
+			      255.f,
 			      0.f, 255.f);
 		}
 	    }
 	    else
 	    {
 		// Outside bounding box: Use the background : Good
-		imgFinal[indexScreen * 3 + 0] = opaqueImageColor[indexScreen * 3 + 0];
-		imgFinal[indexScreen * 3 + 1] = opaqueImageColor[indexScreen * 3 + 1];
-		imgFinal[indexScreen * 3 + 2] = opaqueImageColor[indexScreen * 3 + 2];
+		imgFinal[indexScreen * 3 + 0] = 
+		    opaqueImageColor[indexScreen * 3 + 0];
+		imgFinal[indexScreen * 3 + 1] =
+		    opaqueImageColor[indexScreen * 3 + 1];
+		imgFinal[indexScreen * 3 + 2] =
+		    opaqueImageColor[indexScreen * 3 + 2];
 	    }
 	}
     }
@@ -347,7 +359,7 @@ slivr::ComposeBackground(int screen[2],
 //
 // ****************************************************************************
 
-void WriteArrayToPPM(std::string filename , float * image, int dimX, int dimY)
+void WriteArrayToPPM(std::string filename, float * image, int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
 			     std::ios::out | std::ios::binary);
@@ -368,7 +380,8 @@ void WriteArrayToPPM(std::string filename , float * image, int dimX, int dimY)
     outputFile.close();
 }
 
-void WriteArrayToPPM(std::string filename , unsigned char * image, 
+void WriteArrayToPPM(std::string filename, 
+		     unsigned char *image, 
 		     int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
@@ -376,12 +389,14 @@ void WriteArrayToPPM(std::string filename , unsigned char * image,
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
-	outputFile.write(reinterpret_cast<char*>(&image[y * dimX * 3]), dimX * 3);
+	outputFile.write(reinterpret_cast<char*>(&image[y * dimX * 3]), 
+			 dimX * 3);
     } 
     outputFile.close();
 }
 
-void WriteArrayGrayToPPM(std::string filename , float * image, 
+void WriteArrayGrayToPPM(std::string filename, 
+			 float* image, 
 			 int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
