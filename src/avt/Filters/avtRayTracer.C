@@ -831,6 +831,7 @@ avtRayTracer::Execute(void)
 	//
 	// Timing
 	int timingCompositinig = visitTimer->StartTimer();
+	int timingOnlyCompositinig = visitTimer->StartTimer();
 	int timingDetail;
 	// Initialization
 	float *compositedData = NULL;
@@ -859,8 +860,12 @@ avtRayTracer::Execute(void)
 	//-------------------------------------------------------------------//
 	// IceT: If each rank has only one patch, we use IceT to composite
 	//-------------------------------------------------------------------//
-	if (extractor.GetImgPatchSize() == 1) 	
+	bool use_icet = false;
+	const char* env_use_icet = std::getenv("SLIVR_USE_ICET");
+	if (env_use_icet) { use_icet = atoi(env_use_icet) > 0; }
+	if (use_icet && extractor.GetImgPatchSize() == 1) 	
 	{
+	    std::cout << "[avtRayTracer] Use IceT for Image Compositing" << std::endl;
 	    //---------------------------------------------------------------//
 	    // Setup Local Tile
 	    slivr::ImgMetaData currMeta = extractor.GetImgMetaPatch(0);
@@ -1062,7 +1067,8 @@ avtRayTracer::Execute(void)
 				   "Parallel Compositing Done", 
 				   "ospout");
 	    //---------------------------------------------------------------//
-	}
+	}	
+	visitTimer->StopTimer(timingOnlyCompositinig, "Pure Compositing");
 
 	///////////////////////////////////////////////////////////////////
 	//

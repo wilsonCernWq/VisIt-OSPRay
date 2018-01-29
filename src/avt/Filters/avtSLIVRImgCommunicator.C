@@ -90,14 +90,16 @@ private:
     IceTCommunicator     icetComm;
     IceTInt              icetMPISize;
     IceTInt              icetMPIRank;
-    IceTImage            result;
+    IceTImage            result;    
     //---------------------------------------
     static const IceTDouble  icetIdentity[16];
     static const IceTFloat   icetBgColor[4];
+    static const IceTEnum    icetCompositeStrategy;
     //---------------------------------------
     static const float* icetImgData;
     static int          icetImgMeta[4];
     //---------------------------------------
+    static IceTEnum GetStrategy();
     static void DrawCallback(const IceTDouble*, 
 			     const IceTDouble*, 
 			     const IceTFloat*, 
@@ -118,6 +120,38 @@ const IceTFloat avtSLIVRImgComm_IceT::icetBgColor[4] = {
 };
 const float* avtSLIVRImgComm_IceT::icetImgData = NULL;
 int          avtSLIVRImgComm_IceT::icetImgMeta[4] = {0,0,0,0};
+IceTEnum     avtSLIVRImgComm_IceT::GetStrategy() 
+{
+    IceTEnum ret;
+    int strategy = 3;
+    const char* env_icet_strategy = std::getenv("SLIVR_ICET_STRATEGY");
+    if (env_icet_strategy) { strategy = atoi(env_icet_strategy); }
+    switch (strategy) {
+    case 0:
+	ret = ICET_STRATEGY_REDUCE;
+	std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
+		  << std::endl;
+	break;
+    case 1:
+	ret = ICET_SINGLE_IMAGE_STRATEGY_TREE;
+	std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
+		  << std::endl;
+	break;
+    case 2:
+	ret = ICET_SINGLE_IMAGE_STRATEGY_RADIXK;
+	std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
+		  << std::endl;
+	break;
+    default:
+	ret = ICET_SINGLE_IMAGE_STRATEGY_BSWAP;
+	std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
+		  << std::endl;
+	break;
+    }
+    return ret;
+}
+const IceTEnum avtSLIVRImgComm_IceT::icetCompositeStrategy = 
+		     avtSLIVRImgComm_IceT::GetStrategy();
 #endif
 
 avtSLIVRImgComm_IceT::avtSLIVRImgComm_IceT(int mpiSize, int mpiRank)
@@ -209,33 +243,25 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     //
     // Composite Stratagy
     //
-    int strategy = -1;
-    const char* env_icet_strategy = std::getenv("ICET_STRATEGY");
-    if (env_icet_strategy) { strategy = atoi(env_icet_strategy); }	
-    switch (strategy) {     
-    case 0:
+    if (icetCompositeStrategy == ICET_STRATEGY_REDUCE) {
 	icetStrategy(ICET_STRATEGY_REDUCE);
-	ospout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
-	       << std::endl;
-	break;
-    case 1:
+	// std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
+	// 	  << std::endl;
+    } else {	
 	icetStrategy(ICET_STRATEGY_SEQUENTIAL);
-	icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_TREE);
-	ospout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
-	       << std::endl;
-	break;
-    case 2:
-	icetStrategy(ICET_STRATEGY_SEQUENTIAL);
-	icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_RADIXK);
-	ospout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
-	       << std::endl;
-	break;
-    default:
-	icetStrategy(ICET_STRATEGY_SEQUENTIAL);
-	icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_BSWAP);
-	ospout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
-	       << std::endl;
-	break;
+	icetSingleImageStrategy(icetCompositeStrategy);
+	// if (icetCompositeStrategy == ICET_SINGLE_IMAGE_STRATEGY_TREE) {
+	//     std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
+	// 	      << std::endl;
+	// }
+	// if (icetCompositeStrategy == ICET_SINGLE_IMAGE_STRATEGY_RADIXK) {
+	//     std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
+	// 	      << std::endl;
+	// }
+	// if (icetCompositeStrategy == ICET_SINGLE_IMAGE_STRATEGY_BSWAP) {
+	//     std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
+	// 	      << std::endl;
+	// }
     }
     //
     // Bounding Box
@@ -327,6 +353,7 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 
     totalPatches = 0;
     intermediateImage = NULL;
+    /////////////////////////////////////////////////////////////
 }
 
 // ****************************************************************************
@@ -789,11 +816,11 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
     MPI_Gather(&numlocalPatches, /* send buffer */
 	       1, /* send count */
 	       MPI_INT, 
-	       patchCountPerRank, /* address of receive buffer (root)*/
-	       1, /* number of elements for any single receive (root)*/
+	       patchCountPerRank, /* address of receive buffer (root) */
+	       1, /* number of elements for any single receive (root) */
 	       MPI_INT, 
 	       0, /* rank of receiving process (integer) */
-	       MPI_COMM_WORLD); /* communicator (handle)*/
+	       MPI_COMM_WORLD); /* communicator (handle) */
 
     // gather number of patch group
     if (mpiRank == 0)
