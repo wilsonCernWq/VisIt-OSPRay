@@ -108,16 +108,16 @@ public:
     int GetParRank ()             { return mpiRank;   }
 
     // Those functions can be static
-    void BlendFrontToBack(const float *, const int srcExtents[4],
-			  const int blendExtents[4], 
-			  float *&, const int dstExtents[4]);
-    void BlendBackToFront(const float *, const int srcExtents[4], 
-			  const int blendExtents[4], 
-			  float *&, const int dstExtents[4]);
-    void BlendFrontToBack(const float *, const int srcExtents[4], 
-			  float *&, const int dstExtents[4]);
-    void BlendBackToFront(const float *, const int srcExtents[4], 
-			  float *&, const int dstExtents[4]);
+    static void BlendFrontToBack(const float *, const int srcExtents[4],
+				 const int blendExtents[4], 
+				 float *&, const int dstExtents[4]);
+    static void BlendBackToFront(const float *, const int srcExtents[4], 
+				 const int blendExtents[4], 
+				 float *&, const int dstExtents[4]);
+    static void BlendFrontToBack(const float *, const int srcExtents[4], 
+				 float *&, const int dstExtents[4]);
+    static void BlendBackToFront(const float *, const int srcExtents[4], 
+				 float *&, const int dstExtents[4]);
 
     void Barrier();
 
@@ -152,6 +152,19 @@ public:
 	 int, int*, int, int tags[2], int fullImageExtents[4]);
 
 private:
+    //-----------------------------------------------------------------------//
+    static void ColorImage(float *&, const int, const int, 
+			   const float color[4]);
+    static void PlaceImage(const float *, const int srcExtents[4], 
+			   float *&, const int dstExtents[4]);
+    static void BlendWithBackground(float *&, const int extents[4],
+				    const float bgColor[4]);
+    //-----------------------------------------------------------------------//
+    void UpdateBoundingBox
+	(int currentBoundingBox[4], const int imageExtents[4]);
+    //-----------------------------------------------------------------------//
+
+private:
 
     // Basic MPI information
     int mpiSize; // total number of processes (# of ranks)
@@ -163,19 +176,6 @@ private:
 
     // Image Compisition Implementation
     avtSLIVRImgComm* compositor;
-
-private:
-    //-----------------------------------------------------------------------//
-    void ColorImage(float *&, const int, const int, const float color[4]);
-    void PlaceImage
-	(const float *, const int srcExtents[4], 
-	 float *&, const int dstExtents[4]);
-    void BlendWithBackground
-	(float *&, const int extents[4], const float bgColor[4]);
-    //-----------------------------------------------------------------------//
-    void UpdateBoundingBox
-	(int currentBoundingBox[4], const int imageExtents[4]);
-    //-----------------------------------------------------------------------//
 
 // CLEAN UP BELOW
 private:

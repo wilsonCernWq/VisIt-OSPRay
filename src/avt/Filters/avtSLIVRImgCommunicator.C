@@ -88,18 +88,15 @@ private:
     IceTInt              icetScreen[2];
     IceTContext          icetContext, icetPrevContext;
     IceTCommunicator     icetComm;
+    IceTInt              icetMPISize;
+    IceTInt              icetMPIRank;
+    IceTImage            result;
     //---------------------------------------
-    IceTDouble  icetMatProj[16];
-    IceTDouble  icetMatMV  [16];
-    IceTFloat   icetBgColor[4];
-    IceTImage   result;
+    static const IceTDouble  icetIdentity[16];
+    static const IceTFloat   icetBgColor[4];
     //---------------------------------------
     static const float* icetImgData;
-    static int          icetImgDimX;
-    static int          icetImgDimY;
-    static int          icetImgExts[4];
-    static int icetMPISize;
-    static int icetMPIRank;
+    static int          icetImgMeta[4];
     //---------------------------------------
     static void DrawCallback(const IceTDouble*, 
 			     const IceTDouble*, 
@@ -110,20 +107,25 @@ private:
 };
 
 #if defined(PARALLEL) && defined(VISIT_ICET)
-const float* avtSLIVRImgComm_IceT::icetImgData;
-int          avtSLIVRImgComm_IceT::icetImgDimX;
-int          avtSLIVRImgComm_IceT::icetImgDimY;
-int          avtSLIVRImgComm_IceT::icetImgExts[4] = {0,0,0,0};
-int avtSLIVRImgComm_IceT::icetMPISize;
-int avtSLIVRImgComm_IceT::icetMPIRank;
+const IceTDouble avtSLIVRImgComm_IceT::icetIdentity[16] = {
+    IceTDouble(1.0), IceTDouble(0.0), IceTDouble(0.0), IceTDouble(0.0),
+    IceTDouble(0.0), IceTDouble(1.0), IceTDouble(0.0), IceTDouble(0.0),
+    IceTDouble(0.0), IceTDouble(0.0), IceTDouble(1.0), IceTDouble(0.0),
+    IceTDouble(0.0), IceTDouble(0.0), IceTDouble(0.0), IceTDouble(1.0)
+};
+const IceTFloat avtSLIVRImgComm_IceT::icetBgColor[4] = {
+    IceTFloat(0.0f), IceTFloat(0.0f), IceTFloat(0.0f), IceTFloat(0.0f)
+};
+const float* avtSLIVRImgComm_IceT::icetImgData = NULL;
+int          avtSLIVRImgComm_IceT::icetImgMeta[4] = {0,0,0,0};
 #endif
 
 avtSLIVRImgComm_IceT::avtSLIVRImgComm_IceT(int mpiSize, int mpiRank)
     : avtSLIVRImgComm(mpiSize, mpiRank)
 {	
 #if defined(PARALLEL) && defined(VISIT_ICET)
-    icetMPISize = mpiSize;
-    icetMPIRank = mpiRank;
+    icetMPISize = IceTInt(mpiSize);
+    icetMPIRank = IceTInt(mpiRank);
     icetPrevContext = icetGetContext();
     icetComm = icetCreateMPICommunicator(VISIT_MPI_COMM);
     icetContext = icetCreateContext(icetComm);
@@ -146,21 +148,13 @@ void avtSLIVRImgComm_IceT::Init(int W, int H)
     //
     // Initialization
     //
-    for (int i = 0; i < 16; ++i) 
-    {       
-    	icetMatProj[i] = (i % 5) == 0 ? 1.0 : 0.0;
-    	icetMatMV  [i] = (i % 5) == 0 ? 1.0 : 0.0;
-    }
-    icetBgColor[0] = 0.0f;
-    icetBgColor[1] = 0.0f;
-    icetBgColor[2] = 0.0f;
-    icetBgColor[3] = 0.0f;
     icetScreen[0] = W;
     icetScreen[1] = H;
     //
     // Setup IceT parameters
     //
-    if (slivr::CheckVerbose() || DebugStream::Level5()) {
+    if (slivr::CheckVerbose() || DebugStream::Level5()) 
+    {
 	icetDiagnostics(ICET_DIAG_FULL);
     }
     icetCompositeMode(ICET_COMPOSITE_MODE_BLEND);
@@ -177,7 +171,7 @@ void avtSLIVRImgComm_IceT::Init(int W, int H)
 }
 
 void avtSLIVRImgComm_IceT::SetTile(const float* d, 
-				   const int* e, 
+				   const int*   e, 
 				   const float& z)
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
@@ -187,7 +181,8 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     ospout << "avtSLIVRImgComm_IceT::SetTile Gather Depth" << std::endl;
     std::vector<float>   all_depths(icetMPISize);
     std::vector<IceTInt> all_orders(icetMPISize);
-    MPI_Allgather(&z, 1, MPI_FLOAT, all_depths.data(), 1, MPI_FLOAT, 
+    MPI_Allgather(&z, 1, MPI_FLOAT,
+		  all_depths.data(), 1, MPI_FLOAT, 
 	          MPI_COMM_WORLD);
     //
     // Sort depths in compositing order
@@ -245,23 +240,19 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     //
     // Bounding Box
     //
-    icetBoundingBoxf(((float)e[0]/(float)(icetScreen[0]-1) - 0.5f) * 2.f,
-    	             ((float)(e[1]-1)/(float)(icetScreen[0]-1) - 0.5f) * 2.f,
-		     ((float)e[2]/(float)(icetScreen[1]-1) - 0.5f) * 2.f,
-		     ((float)(e[3]-1)/(float)(icetScreen[1]-1) - 0.5f) * 2.f,
+    icetBoundingBoxf(((float) e[0]   /icetScreen[0] - 0.5f) * 2.f,
+    	             ((float)(e[1]-1)/icetScreen[0] - 0.5f) * 2.f,
+		     ((float) e[2]   /icetScreen[1] - 0.5f) * 2.f,
+		     ((float)(e[3]-1)/icetScreen[1] - 0.5f) * 2.f,
     		     0.0, 0.0);
     //
     // Compose
     //
-    const int tile_x = e[1] - e[0];
-    const int tile_y = e[3] - e[2];
     avtSLIVRImgComm_IceT::icetImgData = d;
-    avtSLIVRImgComm_IceT::icetImgDimX = tile_x;
-    avtSLIVRImgComm_IceT::icetImgDimY = tile_y;
-    avtSLIVRImgComm_IceT::icetImgExts[0] = e[0];
-    avtSLIVRImgComm_IceT::icetImgExts[1] = e[1];
-    avtSLIVRImgComm_IceT::icetImgExts[2] = e[2];
-    avtSLIVRImgComm_IceT::icetImgExts[3] = e[3];
+    avtSLIVRImgComm_IceT::icetImgMeta[0] = e[0];
+    avtSLIVRImgComm_IceT::icetImgMeta[1] = e[2];
+    avtSLIVRImgComm_IceT::icetImgMeta[2] = e[1] - e[0];
+    avtSLIVRImgComm_IceT::icetImgMeta[3] = e[3] - e[2];
     icetDrawCallback(DrawCallback);
 #endif
 }
@@ -269,7 +260,7 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
 void avtSLIVRImgComm_IceT::Composite(float*& output)
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
-    result = icetDrawFrame(icetMatProj, icetMatMV, icetBgColor);
+    result = icetDrawFrame(icetIdentity, icetIdentity, icetBgColor);
     if (icetMPIRank == 0) {
 	icetImageCopyColorf(result, output, ICET_IMAGE_COLOR_RGBA_FLOAT);
     }
@@ -284,18 +275,12 @@ void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
 					IceTImage img) 
 {
     float *o = icetImageGetColorf(img);
-    const int outputDimX = icetImageGetWidth (img);
-    const int outputDimY = icetImageGetHeight(img);
-    ospout << "avtSLIVRImgComm_IceT::DrawCallback rank "
-	   << icetMPIRank << " "
-	   << "image size " 
-	   << outputDimX << " " << outputDimY
-	   << std::endl;
-    for (int i = 0; i < icetImgDimX; ++i) {
-	for (int j = 0; j < icetImgDimY; ++j) {	
+    const int outputStride = icetImageGetWidth (img);
+    for (int j = 0; j < icetImgMeta[3]; ++j) {	
+	for (int i = 0; i < icetImgMeta[2]; ++i) {
 	    const int gIdx = 
-		i + icetImgExts[0] + (j + icetImgExts[2]) * outputDimX;
-	    const int lIdx = i + j * icetImgDimX;
+		i + icetImgMeta[0] + (j + icetImgMeta[1]) * outputStride;
+	    const int lIdx = i + j * icetImgMeta[2];
 	    o[4 * gIdx + 0] = icetImgData[4 * lIdx + 0];
 	    o[4 * gIdx + 1] = icetImgData[4 * lIdx + 1];
 	    o[4 * gIdx + 2] = icetImgData[4 * lIdx + 2];
@@ -358,7 +343,7 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 
 avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 {
-    if (mpiRank == 0) { if (finalImage != NULL) { delete [] finalImage; } }
+    //if (mpiRank == 0) { if (finalImage != NULL) { delete [] finalImage; } }
 }
 
 // ****************************************************************************

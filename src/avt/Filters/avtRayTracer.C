@@ -440,21 +440,17 @@ avtRayTracer::CheckInBounds(double volBounds[6], double coord[3])
 void
 avtRayTracer::Execute(void)
 {
-#ifdef VISIT_OSPRAY    
-    //ospray::visit::Experiment();
-#endif
     //=======================================================================//
     // Initialization and Debug
     //=======================================================================//
     // check memory in the beginning
     ospout << "[avrRayTracer] entering execute" << std::endl;
-    slivr::CheckMemoryHere("[avtRayTracer] Execute", "ospout");
-
+    slivr::CheckMemoryHere("[avtRayTracer] Execute", "ospout");    
     // initialize current time
     int timingIndex = visitTimer->StartTimer();
 
     //=======================================================================//
-    // start of original pipeline
+    // Start of original pipeline
     //=======================================================================//
     bool parallelOn = (imgComm.GetParSize() == 1) ? false : true;
     if (rayfoo == NULL)
@@ -730,10 +726,6 @@ avtRayTracer::Execute(void)
 	// 
 	// Continuation of previous pipeline
 	//
-	// >>> this is not used ?
-	// if (parallelOn == false) {
-	//     extractor.SetRayCastingSLIVRParallel(true);
-	// }
 	extractor.SetJittering(false);
 	extractor.SetLighting(lighting);
 	extractor.SetLightDirection(lightDirection);
@@ -780,11 +772,6 @@ avtRayTracer::Execute(void)
 		    opaqueImageDepth[index] = -worldCoord[2];
 	    	}
 	    }
-	    // // Bug 
-	    // char ppmName[30]; sprintf(ppmName, "background-%d", PAR_Rank());
-	    // WriteArrayToPPM("patch"+ std::string(ppmName),
-	    // 		    opaqueImageData, 
-	    // 		    screen[0], screen[1]);
 	    ospray->SetBgBuffer(opaqueImageDepth.data(), 
 	    			bufferScreenExtents);
 	}
@@ -816,307 +803,191 @@ avtRayTracer::Execute(void)
     //
     if (rayCastingSLIVR == true)
     {
-	// only required to force an update 
+	// Only required to force an update 
 	// Need to find a way to get rid of that!!!!
 	avtRayCompositer rc(rayfoo);
 	rc.SetInput(samples);
 	avtImage_p image  = rc.GetTypedOutput();
 
-	// start timing
+	// Start timing
 	int timingVolToImg = visitTimer->StartTimer(); 
 	
-	// execute rendering
-        // this will call the execute function
+	// Execute rendering
+        // This will call the execute function
 	image->Update(GetGeneralContract()); 
 
-	// time rendering
+	// Time rendering
 	visitTimer->StopTimer(timingVolToImg, "AllPatchRendering");
 
 	//
 	// Image Compositing
 	//
+	// Timing
 	int timingCompositinig = visitTimer->StartTimer();
 	int timingDetail;
-
+	// Initialization
+	float *compositedData = NULL;
+	int compositedW, compositedH;
+	int compositedExtents[4];
+	// Debug
+	int numPatches = extractor.GetImgPatchSize();
+	ospout << "[avtRayTracer] Total num of patches " 
+	       << numPatches << std::endl;
+	for (int i=0; i<numPatches; i++)
+	{
+	    slivr::ImgMetaData currImgMeta = extractor.GetImgMetaPatch(i);
+	    ospout << "[avtRayTracer] Rank " << PAR_Rank() << " "
+		   << "Idx " << i << " (" << currImgMeta.patchNumber << ") " 
+		   << " depth " << currImgMeta.eye_z << std::endl
+		   << "current patch size = " 
+		   << currImgMeta.dims[0] << ", " 
+		   << currImgMeta.dims[1] << std::endl
+		   << "current patch starting" 
+		   << " X = " << currImgMeta.screen_ll[0] 
+		   << " Y = " << currImgMeta.screen_ll[1] << std::endl
+		   << "current patch ending" 
+		   << " X = " << currImgMeta.screen_ur[0] 
+		   << " Y = " << currImgMeta.screen_ur[1] << std::endl;
+	}
 	//-------------------------------------------------------------------//
-	// If each rank has only one patch, we use IceT to compose
+	// IceT: If each rank has only one patch, we use IceT to composite
 	//-------------------------------------------------------------------//
 	if (extractor.GetImgPatchSize() == 1) 	
 	{
+	    //---------------------------------------------------------------//
 	    // Setup Local Tile
 	    slivr::ImgMetaData currMeta = extractor.GetImgMetaPatch(0);
 	    slivr::ImgData     currData;
 	    currData.imagePatch = NULL;
 	    extractor.GetAndDelImgData /* do shallow copy inside */
 		(currMeta.patchNumber, currData);
-	    ospout << "[avtRayTracer] Using IceT for composition "
-		   << "Rank " << PAR_Rank() << std::endl
-		   << "current patch depth = " << currMeta.eye_z 
-		   << std::endl
-		   << "current patch size = " 
-		   << currMeta.dims[0] << ", " 
-		   << currMeta.dims[1] << std::endl
-		   << "current patch starting" 
-		   << " X = " << currMeta.screen_ll[0] 
-		   << " Y = " << currMeta.screen_ll[1] << std::endl
-		   << "current patch ending" 
-		   << " X = " << currMeta.screen_ur[0] 
-		   << " Y = " << currMeta.screen_ur[1] << std::endl;
-	    
-	    ///////////////////////////////////////////////////////////////////
-	    //
+	    //---------------------------------------------------------------//
+	    //---------------------------------------------------------------//
 	    // First Composition
-	    //
-	    ///////////////////////////////////////////////////////////////////
-	    // Initialization
-	    float *composedData = NULL;
-	    int composedW, composedH;
-	    int composedExtents[4];
 	    if (PAR_Size() > 1)
 	    { 
-		composedW = fullImageExtents[1] - fullImageExtents[0];
-		composedH = fullImageExtents[3] - fullImageExtents[2];
-		composedExtents[0] = fullImageExtents[0];
-		composedExtents[1] = fullImageExtents[1];
-		composedExtents[2] = fullImageExtents[2];
-		composedExtents[3] = fullImageExtents[3];
+		compositedW = fullImageExtents[1] - fullImageExtents[0];
+		compositedH = fullImageExtents[3] - fullImageExtents[2];
+		compositedExtents[0] = fullImageExtents[0];
+		compositedExtents[1] = fullImageExtents[1];
+		compositedExtents[2] = fullImageExtents[2];
+		compositedExtents[3] = fullImageExtents[3];
 		if (PAR_Rank() == 0) {
-		    composedData = new float[4 * composedW * composedH]();
+		    compositedData = 
+			new float[4 * compositedW * compositedH]();
 		}
 		int currExtents[4] = 
 		    {std::max(currMeta.screen_ll[0]-fullImageExtents[0], 0), 
 		     std::min(currMeta.screen_ur[0]-fullImageExtents[0], 
-			      composedW), 
+			      compositedW), 
 		     std::max(currMeta.screen_ll[1]-fullImageExtents[2], 0),
 		     std::min(currMeta.screen_ur[1]-fullImageExtents[2],
-			      composedH)};
-		imgComm.IceTInit(composedW, composedH);
+			      compositedH)};
+		imgComm.IceTInit(compositedW, compositedH);
 		imgComm.IceTSetTile(currData.imagePatch, 
 				    currExtents,
 				    currMeta.eye_z);
-		imgComm.IceTComposite(composedData);
-		// // Bug 
-		// char ppmName[10]; sprintf(ppmName, "%d", PAR_Rank());
-		// WriteArrayToPPM("patch"+ std::string(ppmName),
-		// 		currData.imagePatch, 
-		// 		currMeta.dims[0], currMeta.dims[1]);
+		imgComm.IceTComposite(compositedData);
 		if (currData.imagePatch != NULL) {
 		    delete[] currData.imagePatch;
 		    currData.imagePatch = NULL;
 		}
 	    } else {
-		composedW = currMeta.dims[0];
-		composedH = currMeta.dims[1];
-		composedExtents[0] = fullImageExtents[0];
-		composedExtents[1] = fullImageExtents[0] + composedW;
-		composedExtents[2] = fullImageExtents[2];
-		composedExtents[3] = fullImageExtents[2] + composedH;
-		composedData = currData.imagePatch;
+		compositedW = currMeta.dims[0];
+		compositedH = currMeta.dims[1];
+		compositedExtents[0] = fullImageExtents[0];
+		compositedExtents[1] = fullImageExtents[0] + compositedW;
+		compositedExtents[2] = fullImageExtents[2];
+		compositedExtents[3] = fullImageExtents[2] + compositedH;
+		compositedData = currData.imagePatch;
 		currData.imagePatch = NULL;
 	    }
-	    
-	    ///////////////////////////////////////////////////////////////////
-	    //
-	    // Final Composition for Displaying
-	    //
-	    ///////////////////////////////////////////////////////////////////
-	    if (PAR_Rank() == 0) {
-		avtImage_p finalImage = new avtImage(this);
-		vtkImageData *finalVTKImage = 
-		    avtImageRepresentation::NewImage(screen[0], screen[1]);
-		finalImage->GetImage() = finalVTKImage;
-		unsigned char *finalImageBuffer = 
-		    finalImage->GetImage().GetRGBBuffer();
-		slivr::ComposeBackground(screen,
-					 composedExtents,
-					 composedW,
-					 composedH,
-					 composedData,
-					 opaqueImageData,
-					 opaqueImageZB,
-					 finalImageBuffer);
-		// Cleanup
-		finalVTKImage->Delete();
-		SetOutput(finalImage);
-	    }
-	    if (composedData != NULL) { 
-		delete [] composedData; composedData = NULL; 
-	    }
+	    //---------------------------------------------------------------//
+	    //---------------------------------------------------------------//
+	    // Memory
+	    slivr::CheckMemoryHere("[avtRayTracer] Execute "
+				   "IceT Compositing Done", 
+				   "ospout");
+	    //---------------------------------------------------------------//
 	}
-	//
+	//-------------------------------------------------------------------//
 	// SERIAL: Image Composition
-	//
+	//-------------------------------------------------------------------//
 	else if (parallelOn == false)
 	{
-	    ///////////////////////////////////////////////////////////////////
-	    // SERIAL : Single Processor
-	    ///////////////////////////////////////////////////////////////////
-	    debug5 << "avtRayTracer::Execute SERIAL : Single Processor" 
-		   << std::endl;
-
-	    ///////////////////////////////////////////////////////////////////
-	    //
+	    //---------------------------------------------------------------//
 	    // Get the Metadata for All Patches
-	    //
-	    ///////////////////////////////////////////////////////////////////
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
-				     "Serial-Compose: Get the Metadata for "
+				     "Serial-Composite: Get the Metadata for "
 				     "All Patches");
-	    //---------------------------------------------------------------//
             // contains the metadata to composite the image
 	    std::vector<slivr::ImgMetaData> allPatchMeta;
 	    std::vector<slivr::ImgData>     allPatchData;
 	    // get the number of patches
-	    int numPatches = extractor.GetImgPatchSize();	    
+	    int numPatches = extractor.GetImgPatchSize();
 	    for (int i=0; i<numPatches; i++)
 	    {
 	    	allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
 	    }
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
-				    "Serial-Compose: Get the Metadata for "
+				    "Serial-Composite: Get the Metadata for "
 				    "All Patches");
 	    //---------------------------------------------------------------//
-
-	    
-	    ///////////////////////////////////////////////////////////////////
-	    //
+	    //---------------------------------------------------------------//
 	    // Sort with the Largest z First
-	    //
-	    ///////////////////////////////////////////////////////////////////
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
-				     "Serial-Compose: Sort with the Largest "
+				     "Serial-Composite: Sort with the Largest "
 				     "z First");
-	    //---------------------------------------------------------------//
 	    std::sort(allPatchMeta.begin(), allPatchMeta.end(), 
 	    	      &sortImgMetaDataByEyeSpaceDepth);
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
-				    "Serial-Compose: Sort with the Largest "
+				    "Serial-Composite: Sort with the Largest "
 				    "z First");
 	    //---------------------------------------------------------------//
-	    
-
-	    ///////////////////////////////////////////////////////////////////
-	    //
+	    //---------------------------------------------------------------//
 	    // Blend Images
-	    //
-	    ///////////////////////////////////////////////////////////////////
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
-				     "Serial-Compose: Blend Images");
-	    //---------------------------------------------------------------//
-	    int renderedWidth  = fullImageExtents[1] - fullImageExtents[0];
-	    int renderedHeight = fullImageExtents[3] - fullImageExtents[2];
-	    float *composedData = NULL;
-	    composedData = new float[renderedWidth * renderedHeight * 4]();
-	    debug5 << "total num of patches " << numPatches << std::endl;
-	    debug5 << "composedData size " 
-		   << renderedWidth << ", " 
-		   << renderedHeight << std::endl;
-	    debug5 << "fullImageExtents " 
-		   << fullImageExtents[0] << " "
-		   << fullImageExtents[1] << " "
-		   << fullImageExtents[2] << " "
-		   << fullImageExtents[3] << std::endl;	   	    
+				     "Serial-Composite: Blend Images");
+	    compositedW = fullImageExtents[1] - fullImageExtents[0];
+	    compositedH = fullImageExtents[3] - fullImageExtents[2];
+	    compositedExtents[0] = fullImageExtents[0];
+	    compositedExtents[1] = fullImageExtents[0] + compositedW;
+	    compositedExtents[2] = fullImageExtents[2];
+	    compositedExtents[3] = fullImageExtents[2] + compositedH;	    
+	    if (PAR_Rank() == 0) {
+		compositedData = new float[compositedW * compositedH * 4]();
+	    }
 	    for (int i=0; i<numPatches; i++)
 	    {
-	    	slivr::ImgMetaData currMeta = allPatchMeta[i];
-	    	slivr::ImgData     currData;
-	    	currData.imagePatch = NULL;
+	    	slivr::ImgMetaData currImgMeta = allPatchMeta[i];
+	    	slivr::ImgData     currImgData;
+	    	currImgData.imagePatch = NULL;
 	    	extractor.GetAndDelImgData /* do shallow copy inside */
-	    	    (currMeta.patchNumber, currData);
-		ospout << "[avtRayTracer] "
-		       << i << "(" << currMeta.patchNumber << ") " 
-		       << " depth " << currMeta.eye_z << std::endl
-		       << "current patch size = " 
-		       << currMeta.dims[0] << ", " 
-		       << currMeta.dims[1] << std::endl
-		       << "current patch starting" 
-		       << " X = " << currMeta.screen_ll[0] 
-		       << " Y = " << currMeta.screen_ll[1] << std::endl
-		       << "current patch ending" 
-		       << " X = " << currMeta.screen_ur[0] 
-		       << " Y = " << currMeta.screen_ur[1] << std::endl;
-		int currExtents[4] = 
-		    {currMeta.screen_ll[0], currMeta.screen_ur[0], 
-		     currMeta.screen_ll[1], currMeta.screen_ur[1]};
-		imgComm.BlendBackToFront
-		    (currData.imagePatch, currExtents,
-		     composedData, fullImageExtents);		
+	    	    (currImgMeta.patchNumber, currImgData);
+		const float* currData = currImgData.imagePatch;
+		const int currExtents[4] = 
+		    {currImgMeta.screen_ll[0], currImgMeta.screen_ur[0], 
+		     currImgMeta.screen_ll[1], currImgMeta.screen_ur[1]};
+		avtSLIVRImgCommunicator::BlendBackToFront(currData,
+							  currExtents,
+							  compositedData, 
+							  compositedExtents);
 		// Clean up data
-		if (currData.imagePatch != NULL) {
-		    debug5 << "Free patch data!" << std::endl;
-		    delete[] currData.imagePatch;
-		    debug5 << "Free patch data done!" << std::endl;
+		if (currImgData.imagePatch != NULL) {
+		    delete[] currImgData.imagePatch;
 		}
-		currData.imagePatch = NULL;
+		currImgData.imagePatch = NULL;
 	    }
-	    debug5 << "Clear allImageMetaData" << std::endl;
 	    allPatchMeta.clear();
 	    allPatchData.clear();
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
-				    "Serial-Compose: Blend Images");
+				    "Serial-Composite: Blend Images");
 	    //---------------------------------------------------------------//
-
-
-	    ///////////////////////////////////////////////////////////////////
-	    //
-	    // Final Composition for Displaying
-	    //
-	    ///////////////////////////////////////////////////////////////////
 	    //---------------------------------------------------------------//
-	    slivr::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
-				     "Serial-Compose: Final Composition for "
-				     "Displaying");
-	    //---------------------------------------------------------------//
-	    avtImage_p whole_image;
-	    whole_image = new avtImage(this);
-	    vtkImageData *img = 
-		avtImageRepresentation::NewImage(screen[0], screen[1]);
-	    whole_image->GetImage() = img;
-	    unsigned char *imgFinal = NULL;
-	    // >> Why ?? 
-            // imgFinal = new unsigned char[screen[0] * screen[1] * 3];
-	    imgFinal = whole_image->GetImage().GetRGBBuffer();
-	    // Blend in with bounding box and other visit plots
-	    int compositedImageWidth  = 
-		fullImageExtents[1] - fullImageExtents[0];
-	    int compositedImageHeight = 
-		fullImageExtents[3] - fullImageExtents[2];
-	    // Having to adjust the dataset bounds by a arbitrary magic 
-	    // number here. 
-	    // Needs to be sorted out at some point!
-	    // dbounds[5] = dbounds[5]-0.025;
-	    debug5 << "Place in image ~ screen "  
-		   <<  screen[0] << ", " << screen[1] 
-		   << "  compositedImageWidth:  " << compositedImageWidth 
-		   << "  compositedImageHeight: " << compositedImageHeight
-		   << "  fullImageExtents: " 
-		   << fullImageExtents[0] << ", " 
-		   << fullImageExtents[1] << ", " 
-		   << fullImageExtents[2] << ", " 
-		   << fullImageExtents[3] << std::endl;
-	    // Blend
-	    slivr::ComposeBackground(screen,
-	    			     fullImageExtents,
-	    			     compositedImageWidth,
-	    			     compositedImageHeight,
-	    			     composedData,
-	    			     opaqueImageData,
-	    			     opaqueImageZB,
-	    			     imgFinal);
-	    // Cleanup
-	    img->Delete();
-	    SetOutput(whole_image);
-	    if (composedData != NULL) {	delete [] composedData; }
-	    //---------------------------------------------------------------//
-	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
-				    "Serial-Compose: Final Composition for "
-				    "Displaying");
+	    // Memory
+	    slivr::CheckMemoryHere("[avtRayTracer] Execute "
+				   "Sequential Compositing Done", 
+				   "ospout");
 	    //---------------------------------------------------------------//
 	} 
 	//
@@ -1124,85 +995,15 @@ avtRayTracer::Execute(void)
 	//
 	else
 	{ 
-	    ///////////////////////////////////////////////////////////////////
-	    // PARALLEL: Multiple Processors
-	    ///////////////////////////////////////////////////////////////////
-	    debug5 << "avtRayTracer::Execute PARALLEL: Multiple Processors" 
-		   << std::endl;
-
-	    ///////////////////////////////////////////////////////////////////
-	    //
-	    // Get the Metadata for All Patches
-	    //
-	    ///////////////////////////////////////////////////////////////////
 	    //---------------------------------------------------------------//
-	    slivr::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
-				     "Parallel-Compose: Get the Metadata for "
-				     "All Patches");
-	    //---------------------------------------------------------------//
-	    // contains the metadata to composite the image
-	    std::vector<slivr::ImgMetaData> allImgMetaData; 
-	    // get the number of patches for current rank
-	    int numPatches = extractor.GetImgPatchSize(); 
-	    int imgExtents[4] = {0,0,0,0}; // minX, maxX, minY, maxY
-	    int imgSize[2];                // x, y
-	    float *composedData = NULL;
-	    float *localPatchesDepth = NULL;
-	    // Qi debug
-	    debug5 << "Number of patches: " << numPatches << std::endl;
-	    debug5 << "VAR: fullImageExtents: "
-		   << fullImageExtents[0] << ", " 
-		   << fullImageExtents[1] << ", " 
-		   << fullImageExtents[2] << ", " 
-		   << fullImageExtents[3] << std::endl
-		   << "VAR: fullImageWidth  " 
-		   << fullImageExtents[1] - fullImageExtents[0] << std::endl
-		   << "VAR: fullImageHeight " 
-		   << fullImageExtents[3] - fullImageExtents[2] << std::endl;
-	    if (DebugStream::Level5())
-	    {
-		for (int i=0; i<numPatches; i++)
-		{
-		    slivr::ImgMetaData temp;
-		    temp = extractor.GetImgMetaPatch(i);
-		    imgExtents[0]=temp.screen_ll[0];   // minX
-		    imgExtents[1]=temp.screen_ur[0];   // maxX
-		    imgExtents[2]=temp.screen_ll[1];   // minY
-		    imgExtents[3]=temp.screen_ur[1];   // maxY
-		    imgSize[0] = imgExtents[1]-imgExtents[0];
-		    imgSize[1] = imgExtents[3]-imgExtents[2];
-		    debug5 << "i: " << i 
-			   << " image (minX, maxX | minY , maxY): "
-			   << imgExtents[0] << ", " << imgExtents[1] << " | "
-			   << imgExtents[2] << ", " << imgExtents[3] 
-			   << "  size: " << imgSize[0] << " x " << imgSize[1] 
-			   << std::endl;
-		}
-	    }
-	    //---------------------------------------------------------------//
-	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
-				    "Parallel-Compose: Get the Metadata for "
-				    "All Patches");
-	    //---------------------------------------------------------------//
-
-
-	    ///////////////////////////////////////////////////////////////////
-	    //
 	    // Parallel Direct Send
-	    //
-	    ///////////////////////////////////////////////////////////////////
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
-				     "Parallel-Compose: Parallel Direct Send");
-	    //---------------------------------------------------------------//
-	    //
-	    // 
-	    //
+				     "Parallel-Composite: "
+				     "Parallel Direct Send");
 	    int tags[2] = {1081, 1681};
 	    int tagGather = 2681;
 	    int *regions = NULL;
 	    imgComm.RegionAllocation(regions);
-	    debug5 << "region allocation done!" << std::endl;
 	    int myRegionHeight =
 		imgComm.ParallelDirectSendManyPatches
 		(extractor.imgDataHashMap, extractor.imageMetaPatchVector,
@@ -1213,22 +1014,15 @@ avtRayTracer::Execute(void)
 				 imgComm.intermediateImageExtents, 
 				 imgComm.intermediateImageExtents, 
 				 tagGather, fullImageExtents, myRegionHeight);
-	    debug5 << PAR_Rank() << " gather done! " << std::endl;
-	    //---------------------------------------------------------------//
+
 	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
-				    "Parallel-Compose: Parallel Direct Send");
+				    "Parallel-Composite: "
+				    "Parallel Direct Send");
 	    //---------------------------------------------------------------//
-
-
-	    ///////////////////////////////////////////////////////////////////
-	    //
+	    //---------------------------------------------------------------//
 	    // Some Cleanup
-	    //
-	    ///////////////////////////////////////////////////////////////////
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
-				     "Parallel-Compose: Some Cleanup");
-	    //---------------------------------------------------------------//
+				     "Parallel-Composite: Some Cleanup");
 	    if (regions != NULL)
 		delete [] regions;
 	    regions = NULL;
@@ -1236,98 +1030,63 @@ avtRayTracer::Execute(void)
 		delete [] imgComm.intermediateImage;
 	    imgComm.intermediateImage = NULL;		
 	    imgComm.Barrier();
-	    //---------------------------------------------------------------//
 	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
-				    "Parallel-Compose: Some Cleanup");
+				    "Parallel-Composite: Some Cleanup");
 	    //---------------------------------------------------------------//
-
-
-	    ///////////////////////////////////////////////////////////////////
-	    //
-	    // Blend with VisIt Background at Root!
-	    //
-	    ///////////////////////////////////////////////////////////////////
 	    //---------------------------------------------------------------//
-	    slivr::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
-				     "Parallel-Compose: Blend with VisIt "
-				     "Background at Root");
-	    //---------------------------------------------------------------//
-	    if (PAR_Rank() == 0)
-	    {
-		//
-		// Create image for visit to display
-		//
-		avtImage_p whole_image;
-		whole_image = new avtImage(this);
-		vtkImageData *img = 
-		    avtImageRepresentation::NewImage(screen[0], screen[1]);
-		whole_image->GetImage() = img;
-		unsigned char *imgFinal = NULL;
-		// >> Why ??
-		//imgFinal = new unsigned char[screen[0] * screen[1] * 3]();
-		imgFinal = whole_image->GetImage().GetRGBBuffer();
-
-		//
-		// Blend in with bounding box and other visit plots
-		//
-		int compositedImageWidth  =
-		    imgComm.finalImageExtents[1] -
-		    imgComm.finalImageExtents[0];
-		int compositedImageHeight =
-		    imgComm.finalImageExtents[3] -
-		    imgComm.finalImageExtents[2];
-		debug5 << "Place in image ~ screen " 
-		       <<  screen[0] << ", " << screen[1] 
-		       << "  compositedImageWidth: "  << compositedImageWidth 
-		       << "  compositedImageHeight: " << compositedImageHeight
-		       << "  fullImageExtents: "
-		       << fullImageExtents[0] << ", " 
-		       << fullImageExtents[1] << ", " 
-		       << fullImageExtents[2] << ", " 
-		       << fullImageExtents[3] << std::endl;
-
-		debug5 << "dbounds: "   
-		       << dbounds[0] << ", " 
-		       << dbounds[1] << "    " 
-		       << dbounds[2] << ", " 
-		       << dbounds[3] << "  " 
-		       << dbounds[4] << ", "
-		       << dbounds[5]  << std::endl;
-		// dbounds[0] = dbounds[0]+0.00;
-		// dbounds[1] = dbounds[1]-0.00;
-		// dbounds[2] = dbounds[2]+0.00;
-		// dbounds[3] = dbounds[3]-0.00;
-		// dbounds[4] = dbounds[4]+0.00;
-		// dbounds[5] = dbounds[5]-0.00;
-		slivr::ComposeBackground(screen,
-					 imgComm.finalImageExtents,
-					 compositedImageWidth,
-					 compositedImageHeight,
-					 imgComm.GetFinalImageBuffer(),
-					 opaqueImageData,
-					 opaqueImageZB,
-					 imgFinal);
-		img->Delete();
-		SetOutput(whole_image);
+	    // Setup for Final Composition
+	    compositedW = 
+		imgComm.finalImageExtents[1] -
+		imgComm.finalImageExtents[0];
+	    compositedH = 
+		imgComm.finalImageExtents[3] -
+		imgComm.finalImageExtents[2];
+	    compositedExtents[0] = imgComm.finalImageExtents[0];
+	    compositedExtents[1] = imgComm.finalImageExtents[1];
+	    compositedExtents[2] = imgComm.finalImageExtents[2];
+	    compositedExtents[3] = imgComm.finalImageExtents[3];
+	    if (PAR_Rank() == 0) {
+		compositedData = imgComm.GetFinalImageBuffer();
 	    }
 	    //---------------------------------------------------------------//
-	    slivr::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
-				    "Parallel-Compose: Blend with VisIt "
-				    "Background at Root");
 	    //---------------------------------------------------------------//
-	    //
-	    // Cleanup
-	    //
-	    if (composedData != NULL)
-		delete [] composedData;
-	    if (localPatchesDepth != NULL)
-		delete [] localPatchesDepth;
-	    //
-	    // Memory	   
-	    //
-	    slivr::CheckMemoryHere
-		("[avtRayTracer] Execute parallel compositing done", "ospout");
+	    // Memory
+	    slivr::CheckMemoryHere("[avtRayTracer] Execute "
+				   "Parallel Compositing Done", 
+				   "ospout");
+	    //---------------------------------------------------------------//
 	}
+
+	///////////////////////////////////////////////////////////////////
+	//
+	// Final Composition for Displaying
+	//
+	///////////////////////////////////////////////////////////////////
+	if (PAR_Rank() == 0) 
+	{
+	    // Blend
+	    avtImage_p finalImage = new avtImage(this);
+	    vtkImageData *finalVTKImage = 
+		avtImageRepresentation::NewImage(screen[0], screen[1]);
+	    finalImage->GetImage() = finalVTKImage;
+	    unsigned char *finalImageBuffer = 
+		finalImage->GetImage().GetRGBBuffer();
+	    slivr::CompositeBackground(screen,
+				       compositedExtents,
+				       compositedW,
+				       compositedH,
+				       compositedData,
+				       opaqueImageData,
+				       opaqueImageZB,
+				       finalImageBuffer);
+	    // Cleanup
+	    finalVTKImage->Delete();
+	    SetOutput(finalImage);
+	}
+	if (compositedData != NULL) { 
+	    delete [] compositedData;
+	}
+	compositedData = NULL; 
 	ospout << "[avtRayTracer] Raycasting SLIVR is Done !" << std::endl;
 	
 	//

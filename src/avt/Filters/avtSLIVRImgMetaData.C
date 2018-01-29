@@ -264,7 +264,7 @@ slivr::ProjectWorldToScreenCube
 
 
 void
-slivr::ComposeBackground(int screen[2],
+slivr::CompositeBackground(int screen[2],
 			 int compositedImageExtents[4],
 			 int compositedImageWidth,
 			 int compositedImageHeight,
@@ -274,14 +274,14 @@ slivr::ComposeBackground(int screen[2],
 			 unsigned char *&imgFinal)
 {
 #ifdef VISIT_OSPRAY    
-    visit::ComposeBackground(screen,
-			     compositedImageExtents,
-			     compositedImageWidth,
-			     compositedImageHeight,
-			     compositedImageBuffer,
-			     opaqueImageColor,
-			     opaqueImageDepth,
-			     imgFinal);
+    visit::CompositeBackground(screen,
+			       compositedImageExtents,
+			       compositedImageWidth,
+			       compositedImageHeight,
+			       compositedImageBuffer,
+			       opaqueImageColor,
+			       opaqueImageDepth,
+			       imgFinal);
 #else
     for (int y = 0; y < screen[1]; y++)
     {

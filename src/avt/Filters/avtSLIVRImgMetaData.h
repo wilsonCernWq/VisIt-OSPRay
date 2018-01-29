@@ -91,14 +91,14 @@ namespace slivr
 	 const double panPercentage[2], const double imageZoom, 
 	 vtkMatrix4x4 *mvp,int screenExtents[4], double depthExtents[2]);
 
-    void ComposeBackground(int screen[2],
-			   int compositedImageExtents[4],
-			   int compositedImageWidth,
-			   int compositedImageHeight,
-			   float *compositedImageBuffer,
-			   unsigned char *opaqueImageColor,
-			   float         *opaqueImageDepth,
-			   unsigned char *&imgFinal);
+    void CompositeBackground(int screen[2],
+			     int compositedImageExtents[4],
+			     int compositedImageWidth,
+			     int compositedImageHeight,
+			     float *compositedImageBuffer,
+			     unsigned char *opaqueImageColor,
+			     float         *opaqueImageDepth,
+			     unsigned char *&imgFinal);
 };
 
 // ****************************************************************************
