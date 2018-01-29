@@ -99,14 +99,15 @@ public:
     ~avtSLIVRImgCommunicator();
 
     virtual const char *GetType(void)
-    { return "avtSLIVRImgCommunicator"; };
+    { return "avtSLIVRImgCommunicator"; }
     virtual const char *GetDescription(void) 
-    { return "Doing compositing for ray casting SLIVR"; };	
+    { return "Doing compositing for ray casting SLIVR"; }
 
     float* GetFinalImageBuffer () { return finalImage; }
     int GetParSize ()             { return mpiSize;   }
     int GetParRank ()             { return mpiRank;   }
-    
+
+    // Those functions can be static
     void BlendFrontToBack(const float *, const int srcExtents[4],
 			  const int blendExtents[4], 
 			  float *&, const int dstExtents[4]);

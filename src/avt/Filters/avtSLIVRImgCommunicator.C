@@ -214,10 +214,34 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     //
     // Composite Stratagy
     //
-    icetStrategy(ICET_STRATEGY_SEQUENTIAL);
-    //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_TREE);
-    //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_RADIXK);
-    icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_BSWAP);
+    int strategy = -1;
+    const char* env_icet_strategy = std::getenv("ICET_STRATEGY");
+    if (env_icet_strategy) { strategy = atoi(env_icet_strategy); }	
+    switch (strategy) {     
+    case 0:
+	icetStrategy(ICET_STRATEGY_REDUCE);
+	ospout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
+	       << std::endl;
+	break;
+    case 1:
+	icetStrategy(ICET_STRATEGY_SEQUENTIAL);
+	icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_TREE);
+	ospout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
+	       << std::endl;
+	break;
+    case 2:
+	icetStrategy(ICET_STRATEGY_SEQUENTIAL);
+	icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_RADIXK);
+	ospout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
+	       << std::endl;
+	break;
+    default:
+	icetStrategy(ICET_STRATEGY_SEQUENTIAL);
+	icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_BSWAP);
+	ospout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
+	       << std::endl;
+	break;
+    }
     //
     // Bounding Box
     //
@@ -281,6 +305,10 @@ void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
     ospout << "avtSLIVRImgComm_IceT::DrawCallback Done" << std::endl;
 }
 #endif
+
+// ****************************************************************************
+//  End Class: avtSLIVRImgComm_IceT
+// ****************************************************************************
 
 // ****************************************************************************
 //  Method: avtSLIVRImgCommunicator::avtSLIVRImgCommunicator
@@ -711,14 +739,36 @@ void avtSLIVRImgCommunicator::IceTSetTile(const float* d,
 					  const int*   e,
 	                                  const float& z)
 {
+    int timingDetail;
+    //---------------------------------------------------------------------//
+    slivr::CheckSectionStart("avtSLIVRImgCommunicator", 
+			     "IceTSetTile", timingDetail,
+			     "IceT Setup Image Tile");
+    //---------------------------------------------------------------------//
     compositor->SetTile(d, e, z);
+    //---------------------------------------------------------------------//
+    slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
+			    "IceTSetTile", timingDetail,
+			    "IceT Setup Image Tile");
+    //---------------------------------------------------------------------//
 }
 
 void avtSLIVRImgCommunicator::IceTComposite(float*& output)
 {
+    int timingDetail;
+    //---------------------------------------------------------------------//
+    slivr::CheckSectionStart("avtSLIVRImgCommunicator", 
+			     "IceTComposite", timingDetail,
+			     "IceT Image Composition");
+    //---------------------------------------------------------------------//
     compositor->Composite(output);
     if (compositor != NULL) { delete compositor; }
     compositor = NULL;
+    //---------------------------------------------------------------------//
+    slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
+			    "IceTComposite", timingDetail,
+			    "IceT Image Composition");
+    //---------------------------------------------------------------------//
 }
 
 // ****************************************************************************

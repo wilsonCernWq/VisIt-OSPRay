@@ -849,19 +849,19 @@ avtRayTracer::Execute(void)
 	    currData.imagePatch = NULL;
 	    extractor.GetAndDelImgData /* do shallow copy inside */
 		(currMeta.patchNumber, currData);
-	    std::cout << "[avtRayTracer] Using IceT for composition "
-		      << "Rank " << PAR_Rank() << std::endl
-		      << "current patch depth = " << currMeta.eye_z 
-		      << std::endl
-		      << "current patch size = " 
-		      << currMeta.dims[0] << ", " 
-		      << currMeta.dims[1] << std::endl
-		      << "current patch starting" 
-		      << " X = " << currMeta.screen_ll[0] 
-		      << " Y = " << currMeta.screen_ll[1] << std::endl
-		      << "current patch ending" 
-		      << " X = " << currMeta.screen_ur[0] 
-		      << " Y = " << currMeta.screen_ur[1] << std::endl;
+	    ospout << "[avtRayTracer] Using IceT for composition "
+		   << "Rank " << PAR_Rank() << std::endl
+		   << "current patch depth = " << currMeta.eye_z 
+		   << std::endl
+		   << "current patch size = " 
+		   << currMeta.dims[0] << ", " 
+		   << currMeta.dims[1] << std::endl
+		   << "current patch starting" 
+		   << " X = " << currMeta.screen_ll[0] 
+		   << " Y = " << currMeta.screen_ll[1] << std::endl
+		   << "current patch ending" 
+		   << " X = " << currMeta.screen_ur[0] 
+		   << " Y = " << currMeta.screen_ur[1] << std::endl;
 	    
 	    ///////////////////////////////////////////////////////////////////
 	    //
@@ -1328,7 +1328,7 @@ avtRayTracer::Execute(void)
 	    slivr::CheckMemoryHere
 		("[avtRayTracer] Execute parallel compositing done", "ospout");
 	}
-	std::cout << "Raycasting SLIVR is Done !" << std::endl;
+	ospout << "[avtRayTracer] Raycasting SLIVR is Done !" << std::endl;
 	
 	//
 	// time compositing
