@@ -240,10 +240,10 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     //
     // Bounding Box
     //
-    icetBoundingBoxf(((float) e[0]   /icetScreen[0] - 0.5f) * 2.f,
-    	             ((float)(e[1]-1)/icetScreen[0] - 0.5f) * 2.f,
-		     ((float) e[2]   /icetScreen[1] - 0.5f) * 2.f,
-		     ((float)(e[3]-1)/icetScreen[1] - 0.5f) * 2.f,
+    icetBoundingBoxf(((float) e[0]   /(icetScreen[0]-1) - 0.5f) * 2.f,
+    	             ((float)(e[1]-1)/(icetScreen[0]-1) - 0.5f) * 2.f,
+		     ((float) e[2]   /(icetScreen[1]-1) - 0.5f) * 2.f,
+		     ((float)(e[3]-1)/(icetScreen[1]-1) - 0.5f) * 2.f,
     		     0.0, 0.0);
     //
     // Compose
