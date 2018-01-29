@@ -107,7 +107,7 @@ class   vtkMatrix4x4;
 
 class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
 {
-public:
+  public:
                           avtRayTracer();
     virtual              ~avtRayTracer();
 
@@ -115,9 +115,12 @@ public:
     virtual const char   *GetDescription(void) { return "Ray tracing"; };
     virtual void          ReleaseData(void);
 
-    static int            GetNumberOfStages(int, int, int);
     void                  SetView(const avtViewInfo &);
+
+    static int            GetNumberOfStages(int, int, int);
+
     void                  InsertOpaqueImage(avtImage_p);
+
     void                  SetRayFunction(avtRayFunction *);
     void                  SetScreen(int, int);
     void                  SetSamplesPerRay(int);

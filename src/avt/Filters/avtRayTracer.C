@@ -40,17 +40,15 @@
 //                             avtRayTracer.C                                //
 // ************************************************************************* //
 
-#ifdef _WIN32
-#  define _USE_MATH_DEFINES
-#  include <math.h> // M_PI
-#endif
-#include <time.h>
+#include <avtRayTracer.h>
+
 #include <vector>
 
-#include <avtRayTracer.h>
 #include <visit-config.h>
+
 #include <vtkImageData.h>
 #include <vtkMatrix4x4.h>
+
 #include <avtCommonDataFunctions.h>
 #include <avtDataset.h>
 #include <avtDatasetExaminer.h>
@@ -71,8 +69,8 @@
 #include <avtSLIVRImgMetaData.h>
 #include <avtSLIVRImgCommunicator.h>
 #ifdef PARALLEL
-#  include <avtImageCommunicator.h>
-#  include <avtSamplePointCommunicator.h>
+#include <avtImageCommunicator.h>
+#include <avtSamplePointCommunicator.h>
 #endif
 
 #include <DebugStream.h>
@@ -126,11 +124,15 @@ avtRayTracer::avtRayTracer()
     view.nearPlane = 5.;
     view.farPlane  = 30.;
     view.parallelScale = 10;
-    view.orthographic = true;   
+    view.orthographic = true;
+
     panPercentage[0] = 0;
     panPercentage[1] = 0;
+
     rayfoo         = NULL;
+
     opaqueImage    = NULL;
+
     background[0]  = 255;
     background[1]  = 255;
     background[2]  = 255;
@@ -140,7 +142,8 @@ avtRayTracer::avtRayTracer()
     gradBG1[2] = 1.;
     gradBG2[0] = 0.;
     gradBG2[1] = 0.;
-    gradBG2[2] = 0.;    
+    gradBG2[2] = 0.;
+
     screen[0] = screen[1] = 400;
     samplesPerRay  = 40;
     // flags
@@ -341,10 +344,10 @@ bool
 avtRayTracer::CheckInBounds(double volBounds[6], double coord[3])
 {
     if (coord[0] > volBounds[0] && coord[0] < volBounds[1])
-	if (coord[1] > volBounds[2] && coord[1] < volBounds[3])
-	    if (coord[2] > volBounds[4] && coord[2] < volBounds[5])
-		return true;
-    
+        if (coord[1] > volBounds[2] && coord[1] < volBounds[3])
+            if (coord[2] > volBounds[4] && coord[2] < volBounds[5])
+                return true;
+
     return false;
 }
 
@@ -434,6 +437,10 @@ avtRayTracer::CheckInBounds(double volBounds[6], double coord[3])
 //
 //    Pascal Grosset & Manasa Prasad, Fri Aug 20 2016
 //    Add the ray casting SLIVR code
+//
+//    Qi WU, Tue Aug 8 2017
+//    Fix camera matrices multiplication order for ray casting SLIVR
+//    Also fixed panning for ray casting SLIVR
 //
 // ****************************************************************************
 
