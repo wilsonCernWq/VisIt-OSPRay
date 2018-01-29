@@ -40,17 +40,16 @@ it or run `./premake.sh --help` to learn its usage.
 ### Building VisIt
 
 ```
-Working Copy Root Path: /home/sci/qwu/VisIt/visitOSPRayCPU/visit-trunk/src
+Working Copy Root Path: /home/sci/qwu/software/Kepler/VisIt/visit-trunk/src
 URL: http://visit.ilight.com/svn/visit/trunk/src
-Relative URL: ^/trunk/src
 Repository Root: http://visit.ilight.com/svn/visit
 Repository UUID: 18c085ea-50e0-402c-830e-de6fd14e8384
-Revision: 31961
+Revision: 32167
 Node Kind: directory
 Schedule: normal
-Last Changed Author: brugger
-Last Changed Rev: 31961
-Last Changed Date: 2017-11-09 04:20:20 -0700 (Thu, 09 Nov 2017)
+Last Changed Author: bonnell
+Last Changed Rev: 32166
+Last Changed Date: 2018-01-05 18:12:50 -0700 (Fri, 05 Jan 2018)
 ```
 
 ## System Information
@@ -59,37 +58,6 @@ Getting information about the platform
   * Which shell: `ps -p $$   or echo $SHELL`
   * How many cores: `cat /proc/cpuinfo` or `lscpu`
   * where is a library: e.g `which mpic++`
-
-Platform Information: Location of MPI
-* valhalla.sci.utah.edu _8_ _cores_ _bash_
-```
-export PAR_COMPILER=`which mpic++`
-export PAR_INCLUDE="-I/usr/lib/openmpi/include"
-export PAR_LIBS="-L/usr/lib/openmpi/lib"
-```
-* manasa.sci.utah.edu _8_ _cores_ _bash_
-```
-export PAR_COMPILER=`which mpic++`
-export PAR_INCLUDE="-I/usr/lib/openmpi/include"
-export PAR_LIBS="-L/usr/lib/openmpi/lib"
-```
-* maverick.tacc.utexas.edu _20_ _cores_ _bash_:
-```
-export PAR_COMPILER="/opt/apps/intel14/mvapich2/2.0b/bin/mpic++"
-export PAR_INCLUDE="-I/opt/apps/intel14/mvapich2/2.0b/include"
-export PAR_LIBS="-L/opt/apps/intel14/mvapich2/2.0b/lib"
-```
-* ash.chpc.utah.edu _16_ _cores_ _bash_
-```
-export PAR_COMPILER="/uufs/ash.peaks/sys/pkg/mvapich2/1.9i/bin/mpic++"
-export PAR_INCLUDE="-I/uufs/ash.peaks/sys/pkg/mvapich2/1.9i/include"
-export PAR_LIBS="-L/uufs/ash.peaks/sys/pkg/mvapich2/1.9i/lib"
-```
-* kingspeak.chpc.utah.edu
-```
-export PAR_COMPILER="/uufs/kingspeak.peaks/sys/pkg/mvapich2/1.9/bin/mpic++"
-export PAR_INCLUDE="-I/uufs/kingspeak.peaks/sys/pkg/mvapich2/1.9/include"
-```
 
 ## How to create patch
 Add the files going to be removed into `removelist.txt`
