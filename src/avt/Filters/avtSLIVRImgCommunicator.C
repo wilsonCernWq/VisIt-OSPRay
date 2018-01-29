@@ -52,10 +52,10 @@
 #endif
 
 #include <cmath>
-#include <time.h>       /* time */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>     /* srand, rand */
+#include <ctime>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <limits>
 #include <fstream>
 #include <algorithm>
@@ -82,13 +82,11 @@ public:
     bool Valid() const { return true; }
 
 private:
-    static int icetMPISize;
-    static int icetMPIRank;
 #if defined(PARALLEL) && defined(VISIT_ICET)
     //---------------------------------------
-    IceTContext          icetContext;
-    IceTCommunicator     icetComm;
     IceTInt              icetScreen[2];
+    IceTContext          icetContext, icetPrevContext;
+    IceTCommunicator     icetComm;
     //---------------------------------------
     IceTDouble  icetMatProj[16];
     IceTDouble  icetMatMV  [16];
@@ -99,6 +97,8 @@ private:
     static int          icetImgDimX;
     static int          icetImgDimY;
     static int          icetImgExts[4];
+    static int icetMPISize;
+    static int icetMPIRank;
     //---------------------------------------
     static void DrawCallback(const IceTDouble*, 
 			     const IceTDouble*, 
@@ -108,21 +108,22 @@ private:
 #endif
 };
 
-int avtSLIVRImgComm_IceT::icetMPISize;
-int avtSLIVRImgComm_IceT::icetMPIRank;
 #if defined(PARALLEL) && defined(VISIT_ICET)
 const float* avtSLIVRImgComm_IceT::icetImgData;
 int          avtSLIVRImgComm_IceT::icetImgDimX;
 int          avtSLIVRImgComm_IceT::icetImgDimY;
 int          avtSLIVRImgComm_IceT::icetImgExts[4] = {0,0,0,0};
+int avtSLIVRImgComm_IceT::icetMPISize;
+int avtSLIVRImgComm_IceT::icetMPIRank;
 #endif
 
 avtSLIVRImgComm_IceT::avtSLIVRImgComm_IceT(int mpiSize, int mpiRank)
     : avtSLIVRImgComm(mpiSize, mpiRank)
 {	
+#if defined(PARALLEL) && defined(VISIT_ICET)
     icetMPISize = mpiSize;
     icetMPIRank = mpiRank;
-#if defined(PARALLEL) && defined(VISIT_ICET)
+    icetPrevContext = icetGetContext();
     icetComm = icetCreateMPICommunicator(VISIT_MPI_COMM);
     icetContext = icetCreateContext(icetComm);
     icetDestroyMPICommunicator(icetComm);
@@ -133,14 +134,17 @@ avtSLIVRImgComm_IceT::~avtSLIVRImgComm_IceT()
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
     icetDestroyContext(icetContext);
+    icetSetContext(icetPrevContext);
 #endif
 }
 
 void avtSLIVRImgComm_IceT::Init(int W, int H)
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
+    ospout << "avtSLIVRImgComm_IceT::Init Start" << std::endl;
+    //
     // Initialization
-    std::cout << "avtSLIVRImgComm_IceT::Init Initialization" << std::endl;
+    //
     for (int i = 0; i < 16; ++i) 
     {       
     	icetMatProj[i] = (i % 5) == 0 ? 1.0 : 0.0;
@@ -152,19 +156,22 @@ void avtSLIVRImgComm_IceT::Init(int W, int H)
     icetBgColor[3] = 0.0f;
     icetScreen[0] = W;
     icetScreen[1] = H;
-
+    //
     // Setup IceT parameters
-    std::cout << "avtSLIVRImgComm_IceT::Init Setup" << std::endl;
-    icetDiagnostics(ICET_DIAG_FULL);
+    //
+    if (slivr::CheckVerbose() || DebugStream::Level5()) {
+	icetDiagnostics(ICET_DIAG_FULL);
+    }
     icetCompositeMode(ICET_COMPOSITE_MODE_BLEND);
     icetSetColorFormat(ICET_IMAGE_COLOR_RGBA_FLOAT);
     icetSetDepthFormat(ICET_IMAGE_DEPTH_NONE);
     icetEnable(ICET_ORDERED_COMPOSITE);
     icetDisable(ICET_INTERLACE_IMAGES);
-
+    //
     // Safety
+    //
     MPI_Barrier(MPI_COMM_WORLD);
-    std::cout << "avtSLIVRImgComm_IceT::Init Done" << std::endl;
+    ospout << "avtSLIVRImgComm_IceT::Init Done" << std::endl;
 #endif
 }
 
@@ -173,21 +180,17 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
 				   const float& z)
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
+    //
     // Gather depths
-    std::cout << "avtSLIVRImgComm_IceT::SetTile Gather Depth" << std::endl;
+    //
+    ospout << "avtSLIVRImgComm_IceT::SetTile Gather Depth" << std::endl;
     std::vector<float>   all_depths(icetMPISize);
     std::vector<IceTInt> all_orders(icetMPISize);
     MPI_Allgather(&z, 1, MPI_FLOAT, all_depths.data(), 1, MPI_FLOAT, 
 	          MPI_COMM_WORLD);
-    
-    // Debug depths
-    std::cout << "avtSLIVRImgComm_IceT::SetTile Debug Depth ";
-    for (int i = 0; i < all_depths.size(); ++i) {
-        std::cout << all_depths[i] << " ";
-    }
-    std::cout << std::endl;
-
+    //
     // Sort depths in compositing order
+    //
     std::multimap<float,int> ordered_depths;
     for (int i = 0; i < icetMPISize; i++)
     {
@@ -200,36 +203,31 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
       all_orders[i] = (*it).second;
       i++;
     }
-
-    // Debug order
-    std::cout << "avtSLIVRImgComm_IceT::SetTile Composite Order ";
-    for (int i = 0; i < all_orders.size(); ++i) {
-        std::cout << all_orders[i] << " ";
-    }
-    std::cout << std::endl;
-
-    // 
-    icetCompositeOrder(all_orders.data());  // front to back
-
+    icetCompositeOrder(all_orders.data());
+    //
+    // Set IceT Tile Information
     //
     icetResetTiles();
     icetAddTile(0, 0, icetScreen[0], icetScreen[1], 0);
     icetPhysicalRenderSize(icetScreen[0], icetScreen[1]);
-
+    //
+    // Composite Stratagy
     //
     icetStrategy(ICET_STRATEGY_SEQUENTIAL);
     //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_TREE);
     //icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_RADIXK);
     icetSingleImageStrategy(ICET_SINGLE_IMAGE_STRATEGY_BSWAP);
-
     //
-    icetBoundingBoxf(((float)e[0]/(float)icetScreen[0] - 0.5f) * 2.f,
-    	             ((float)e[1]/(float)icetScreen[0] - 0.5f) * 2.f,
-    	             ((float)e[2]/(float)icetScreen[1] - 0.5f) * 2.f,
-    	             ((float)e[3]/(float)icetScreen[1] - 0.5f) * 2.f,
+    // Bounding Box
+    //
+    icetBoundingBoxf(((float)e[0]/(float)(icetScreen[0]-1) - 0.5f) * 2.f,
+    	             ((float)(e[1]-1)/(float)(icetScreen[0]-1) - 0.5f) * 2.f,
+		     ((float)e[2]/(float)(icetScreen[1]-1) - 0.5f) * 2.f,
+		     ((float)(e[3]-1)/(float)(icetScreen[1]-1) - 0.5f) * 2.f,
     		     0.0, 0.0);
-    
+    //
     // Compose
+    //
     const int tile_x = e[1] - e[0];
     const int tile_y = e[3] - e[2];
     avtSLIVRImgComm_IceT::icetImgData = d;
@@ -263,14 +261,15 @@ void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
     float *o = icetImageGetColorf(img);
     const int outputDimX = icetImageGetWidth (img);
     const int outputDimY = icetImageGetHeight(img);
-    std::cout << "avtSLIVRImgComm_IceT::DrawCallback rank "
-	      << icetMPIRank 
-	      << "image size " 
-	      << outputDimX << " " << outputDimY
-	      << std::endl;
+    ospout << "avtSLIVRImgComm_IceT::DrawCallback rank "
+	   << icetMPIRank << " "
+	   << "image size " 
+	   << outputDimX << " " << outputDimY
+	   << std::endl;
     for (int i = 0; i < icetImgDimX; ++i) {
 	for (int j = 0; j < icetImgDimY; ++j) {	
-	    const int gIdx = i + icetImgExts[0] + (j + icetImgExts[2]) * outputDimX;
+	    const int gIdx = 
+		i + icetImgExts[0] + (j + icetImgExts[2]) * outputDimX;
 	    const int lIdx = i + j * icetImgDimX;
 	    o[4 * gIdx + 0] = icetImgData[4 * lIdx + 0];
 	    o[4 * gIdx + 1] = icetImgData[4 * lIdx + 1];
@@ -278,7 +277,7 @@ void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
 	    o[4 * gIdx + 3] = icetImgData[4 * lIdx + 3];
 	}
     }
-    std::cout << "avtSLIVRImgComm_IceT::DrawCallback Done" << std::endl;
+    ospout << "avtSLIVRImgComm_IceT::DrawCallback Done" << std::endl;
 }
 #endif
 
@@ -330,9 +329,7 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 
 avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 {
-    std::cout << "avtSLIVRImgCommunicator start delete" << std::endl;
     if (mpiRank == 0) { if (finalImage != NULL) { delete [] finalImage; } }
-    std::cout << "avtSLIVRImgCommunicator done delete" << std::endl;
 }
 
 // ****************************************************************************
@@ -713,7 +710,6 @@ void avtSLIVRImgCommunicator::IceTSetTile(const float* d,
     compositor->Composite(output);
     if (compositor != NULL) { delete compositor; }
     compositor = NULL;
-    std::cout << "IceT compositor is deleted" << std::endl;
 }
 
 // ****************************************************************************

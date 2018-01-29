@@ -845,7 +845,7 @@ avtRayTracer::Execute(void)
 	    currData.imagePatch = NULL;
 	    extractor.GetAndDelImgData /* do shallow copy inside */
 		(currMeta.patchNumber, currData);
-	    std::cout << "[avtRayTracer] "
+	    std::cout << "[avtRayTracer] Using IceT for composition "
 		      << "Rank " << PAR_Rank() << std::endl
 		      << "current patch depth = " << currMeta.eye_z 
 		      << std::endl
@@ -876,6 +876,9 @@ avtRayTracer::Execute(void)
 		composedExtents[1] = fullImageExtents[1];
 		composedExtents[2] = fullImageExtents[2];
 		composedExtents[3] = fullImageExtents[3];
+		if (PAR_Rank() == 0) {
+		    composedData = new float[4 * composedW * composedH]();
+		}
 		int currExtents[4] = 
 		    {std::max(currMeta.screen_ll[0]-fullImageExtents[0], 0), 
 		     std::min(currMeta.screen_ur[0]-fullImageExtents[0], 
@@ -883,9 +886,6 @@ avtRayTracer::Execute(void)
 		     std::max(currMeta.screen_ll[1]-fullImageExtents[2], 0),
 		     std::min(currMeta.screen_ur[1]-fullImageExtents[2],
 			      composedH)};
-		if (PAR_Rank() == 0) {
-		    composedData = new float[4 * composedW * composedH]();
-		}
 		imgComm.IceTInit(composedW, composedH);
 		imgComm.IceTSetTile(currData.imagePatch, currExtents,
 				    currMeta.eye_z, composedData);
@@ -915,13 +915,12 @@ avtRayTracer::Execute(void)
 	    //
 	    ///////////////////////////////////////////////////////////////////
 	    if (PAR_Rank() == 0) {
-		avtImage_p whole_image;
-		whole_image = new avtImage(this);
-		vtkImageData *img = 
+		avtImage_p finalImage = new avtImage(this);
+		vtkImageData *finalVTKImage = 
 		    avtImageRepresentation::NewImage(screen[0], screen[1]);
-		whole_image->GetImage() = img;
-		unsigned char *imgFinal = NULL;
-		imgFinal = whole_image->GetImage().GetRGBBuffer();
+		finalImage->GetImage() = finalVTKImage;
+		unsigned char *finalImageBuffer = 
+		    finalImage->GetImage().GetRGBBuffer();
 		slivr::ComposeBackground(screen,
 					 composedExtents,
 					 composedW,
@@ -929,11 +928,13 @@ avtRayTracer::Execute(void)
 					 composedData,
 					 opaqueImageData,
 					 opaqueImageZB,
-					 imgFinal);
+					 finalImageBuffer);
 		// Cleanup
-		img->Delete();
-		SetOutput(whole_image);
-		if (composedData != NULL) { delete [] composedData; composedData = NULL; }
+		finalVTKImage->Delete();
+		SetOutput(finalImage);
+	    }
+	    if (composedData != NULL) { 
+		delete [] composedData; composedData = NULL; 
 	    }
 	}
 	//

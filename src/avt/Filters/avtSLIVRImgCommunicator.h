@@ -155,6 +155,7 @@ private:
     int mpiSize; // total number of processes (# of ranks)
     int mpiRank; // my rank id
 
+    // TODO this communicator shouldnt be in charge of this variable
     // Final image is here
     float *finalImage;
 
