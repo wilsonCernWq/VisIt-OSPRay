@@ -128,7 +128,8 @@ public:
     // IceT
     //-----------------------------------------------------------------------//
     void IceTInit(int W, int H);
-    void IceTSetTile(const float*, const int*, const float&, float*&);
+    void IceTSetTile(const float*, const int*, const float&);
+    void IceTComposite(float*&);
 
     //-----------------------------------------------------------------------//
     // Both currently unused but good for simple testing

@@ -703,10 +703,13 @@ avtSLIVRImgCommunicator::IceTInit(int W, int H)
 
 void avtSLIVRImgCommunicator::IceTSetTile(const float* d, 
 					  const int*   e,
-	                                  const float& z, 
-					  float*& output)
+	                                  const float& z)
 {
     compositor->SetTile(d, e, z);
+}
+
+void avtSLIVRImgCommunicator::IceTComposite(float*& output)
+{
     compositor->Composite(output);
     if (compositor != NULL) { delete compositor; }
     compositor = NULL;

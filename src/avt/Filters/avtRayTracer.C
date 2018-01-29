@@ -887,8 +887,10 @@ avtRayTracer::Execute(void)
 		     std::min(currMeta.screen_ur[1]-fullImageExtents[2],
 			      composedH)};
 		imgComm.IceTInit(composedW, composedH);
-		imgComm.IceTSetTile(currData.imagePatch, currExtents,
-				    currMeta.eye_z, composedData);
+		imgComm.IceTSetTile(currData.imagePatch, 
+				    currExtents,
+				    currMeta.eye_z);
+		imgComm.IceTComposite(composedData);
 		// // Bug 
 		// char ppmName[10]; sprintf(ppmName, "%d", PAR_Rank());
 		// WriteArrayToPPM("patch"+ std::string(ppmName),
