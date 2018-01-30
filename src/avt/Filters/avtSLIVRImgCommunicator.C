@@ -80,26 +80,27 @@ public:
     void Init(int, int);
     void SetTile(const float*, const int*, const float&);
     void Composite(float*&);
-    bool Valid() const { return true; }
-
+    static bool Valid();
 private:
+    static const bool usage;
+    static bool       CheckUsage();
 #if defined(PARALLEL) && defined(VISIT_ICET)
     //---------------------------------------
-    IceTInt              icetScreen[2];
-    IceTContext          icetContext, icetPrevContext;
-    IceTCommunicator     icetComm;
-    IceTInt              icetMPISize;
-    IceTInt              icetMPIRank;
+    IceTInt              screen[2];
+    IceTContext          context, prevContext;
+    IceTCommunicator     comm;
+    IceTInt              MPISize;
+    IceTInt              MPIRank;
     IceTImage            result;    
     //---------------------------------------
-    static const IceTDouble  icetIdentity[16];
-    static const IceTFloat   icetBgColor[4];
-    static const IceTEnum    icetCompositeStrategy;
+    static const IceTDouble  identity[16];
+    static const IceTFloat   bgColor[4];
+    static const IceTEnum    strategy;
     //---------------------------------------
-    static const float* icetImgData;
-    static int          icetImgMeta[4];
+    static const float* imgData;
+    static int          imgMeta[4];
     //---------------------------------------
-    static IceTEnum GetStrategy();
+    static IceTEnum CheckStrategy();
     static void DrawCallback(const IceTDouble*, 
 			     const IceTDouble*, 
 			     const IceTFloat*, 
@@ -108,70 +109,98 @@ private:
 #endif
 };
 
+const bool avtSLIVRImgComm_IceT::usage = 
+    avtSLIVRImgComm_IceT::CheckUsage();
+bool       avtSLIVRImgComm_IceT::Valid() { return usage; }
+bool       avtSLIVRImgComm_IceT::CheckUsage()
+{
+    bool use_icet = false;
 #if defined(PARALLEL) && defined(VISIT_ICET)
-const IceTDouble avtSLIVRImgComm_IceT::icetIdentity[16] = {
+    const char* env_use_icet = std::getenv("SLIVR_USE_ICET");
+    if (env_use_icet) { 
+	use_icet = atoi(env_use_icet) > 0; 
+    }
+#endif;
+    if (!use_icet) {
+	std::cout << "[avtRayTracer] Not Using IceT for Image Compositing"
+		  << std::endl;
+    }
+    return use_icet;
+}
+
+#if defined(PARALLEL) && defined(VISIT_ICET)
+const IceTDouble avtSLIVRImgComm_IceT::identity[16] = 
+{
     IceTDouble(1.0), IceTDouble(0.0), IceTDouble(0.0), IceTDouble(0.0),
     IceTDouble(0.0), IceTDouble(1.0), IceTDouble(0.0), IceTDouble(0.0),
     IceTDouble(0.0), IceTDouble(0.0), IceTDouble(1.0), IceTDouble(0.0),
     IceTDouble(0.0), IceTDouble(0.0), IceTDouble(0.0), IceTDouble(1.0)
 };
-const IceTFloat avtSLIVRImgComm_IceT::icetBgColor[4] = {
+const IceTFloat avtSLIVRImgComm_IceT::bgColor[4] = 
+{
     IceTFloat(0.0f), IceTFloat(0.0f), IceTFloat(0.0f), IceTFloat(0.0f)
 };
-const float* avtSLIVRImgComm_IceT::icetImgData = NULL;
-int          avtSLIVRImgComm_IceT::icetImgMeta[4] = {0,0,0,0};
-IceTEnum     avtSLIVRImgComm_IceT::GetStrategy() 
+const float*   avtSLIVRImgComm_IceT::imgData = NULL;
+int            avtSLIVRImgComm_IceT::imgMeta[4] = {0,0,0,0};
+const IceTEnum avtSLIVRImgComm_IceT::strategy =
+    avtSLIVRImgComm_IceT::CheckStrategy();
+IceTEnum       avtSLIVRImgComm_IceT::CheckStrategy() 
 {
-    IceTEnum ret;
-    int strategy = 3;
-    const char* env_icet_strategy = std::getenv("SLIVR_ICET_STRATEGY");
-    if (env_icet_strategy) { strategy = atoi(env_icet_strategy); }
-    switch (strategy) {
-    case 0:
-	ret = ICET_STRATEGY_REDUCE;
-	std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
-		  << std::endl;
-	break;
-    case 1:
-	ret = ICET_SINGLE_IMAGE_STRATEGY_TREE;
-	std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
-		  << std::endl;
-	break;
-    case 2:
-	ret = ICET_SINGLE_IMAGE_STRATEGY_RADIXK;
-	std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
-		  << std::endl;
-	break;
-    default:
-	ret = ICET_SINGLE_IMAGE_STRATEGY_BSWAP;
-	std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
-		  << std::endl;
-	break;
+    if (avtSLIVRImgComm_IceT::Valid()) 
+    {
+	IceTEnum ret;
+	int strategy = 3;
+	const char* env_icet_strategy = std::getenv("SLIVR_ICET_STRATEGY");
+	if (env_icet_strategy) { strategy = atoi(env_icet_strategy); }
+	switch (strategy) {
+	case 0:
+	    ret = ICET_STRATEGY_REDUCE;
+	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
+		      << std::endl;
+	    break;
+	case 1:
+	    ret = ICET_SINGLE_IMAGE_STRATEGY_TREE;
+	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
+		      << std::endl;
+	    break;
+	case 2:
+	    ret = ICET_SINGLE_IMAGE_STRATEGY_RADIXK;
+	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
+		      << std::endl;
+	    break;
+	default:
+	    ret = ICET_SINGLE_IMAGE_STRATEGY_BSWAP;
+	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
+		      << std::endl;
+	    break;
+	}
+	return ret;
     }
-    return ret;
+    else 
+    {
+	return false;
+    }
 }
-const IceTEnum avtSLIVRImgComm_IceT::icetCompositeStrategy = 
-		     avtSLIVRImgComm_IceT::GetStrategy();
 #endif
 
 avtSLIVRImgComm_IceT::avtSLIVRImgComm_IceT(int mpiSize, int mpiRank)
     : avtSLIVRImgComm(mpiSize, mpiRank)
 {	
 #if defined(PARALLEL) && defined(VISIT_ICET)
-    icetMPISize = IceTInt(mpiSize);
-    icetMPIRank = IceTInt(mpiRank);
-    icetPrevContext = icetGetContext();
-    icetComm = icetCreateMPICommunicator(VISIT_MPI_COMM);
-    icetContext = icetCreateContext(icetComm);
-    icetDestroyMPICommunicator(icetComm);
+    MPISize = IceTInt(mpiSize);
+    MPIRank = IceTInt(mpiRank);
+    prevContext = icetGetContext();
+    comm = icetCreateMPICommunicator(VISIT_MPI_COMM);
+    context = icetCreateContext(comm);
+    icetDestroyMPICommunicator(comm);
 #endif
 }
 
 avtSLIVRImgComm_IceT::~avtSLIVRImgComm_IceT()
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
-    icetDestroyContext(icetContext);
-    icetSetContext(icetPrevContext);
+    icetDestroyContext(context);
+    icetSetContext(prevContext);
 #endif
 }
 
@@ -182,8 +211,8 @@ void avtSLIVRImgComm_IceT::Init(int W, int H)
     //
     // Initialization
     //
-    icetScreen[0] = W;
-    icetScreen[1] = H;
+    screen[0] = W;
+    screen[1] = H;
     //
     // Setup IceT parameters
     //
@@ -213,8 +242,8 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     // Gather depths
     //
     ospout << "avtSLIVRImgComm_IceT::SetTile Gather Depth" << std::endl;
-    std::vector<float>   all_depths(icetMPISize);
-    std::vector<IceTInt> all_orders(icetMPISize);
+    std::vector<float>   all_depths(MPISize);
+    std::vector<IceTInt> all_orders(MPISize);
     MPI_Allgather(&z, 1, MPI_FLOAT,
 		  all_depths.data(), 1, MPI_FLOAT, 
 	          MPI_COMM_WORLD);
@@ -222,7 +251,7 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     // Sort depths in compositing order
     //
     std::multimap<float,int> ordered_depths;
-    for (int i = 0; i < icetMPISize; i++)
+    for (int i = 0; i < MPISize; i++)
     {
       ordered_depths.insert(std::pair<float, int>(all_depths[i], i)); 
     }
@@ -238,47 +267,33 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     // Set IceT Tile Information
     //
     icetResetTiles();
-    icetAddTile(0, 0, icetScreen[0], icetScreen[1], 0);
-    icetPhysicalRenderSize(icetScreen[0], icetScreen[1]);
+    icetAddTile(0, 0, screen[0], screen[1], 0);
+    icetPhysicalRenderSize(screen[0], screen[1]);
     //
     // Composite Stratagy
     //
-    if (icetCompositeStrategy == ICET_STRATEGY_REDUCE) {
+    if (strategy == ICET_STRATEGY_REDUCE) {
 	icetStrategy(ICET_STRATEGY_REDUCE);
-	// std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
-	// 	  << std::endl;
     } else {	
 	icetStrategy(ICET_STRATEGY_SEQUENTIAL);
-	icetSingleImageStrategy(icetCompositeStrategy);
-	// if (icetCompositeStrategy == ICET_SINGLE_IMAGE_STRATEGY_TREE) {
-	//     std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
-	// 	      << std::endl;
-	// }
-	// if (icetCompositeStrategy == ICET_SINGLE_IMAGE_STRATEGY_RADIXK) {
-	//     std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
-	// 	      << std::endl;
-	// }
-	// if (icetCompositeStrategy == ICET_SINGLE_IMAGE_STRATEGY_BSWAP) {
-	//     std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
-	// 	      << std::endl;
-	// }
+	icetSingleImageStrategy(strategy);
     }
     //
     // Bounding Box
     //
-    icetBoundingBoxf(((float) e[0]   /(icetScreen[0]-1) - 0.5f) * 2.f,
-    	             ((float)(e[1]-1)/(icetScreen[0]-1) - 0.5f) * 2.f,
-		     ((float) e[2]   /(icetScreen[1]-1) - 0.5f) * 2.f,
-		     ((float)(e[3]-1)/(icetScreen[1]-1) - 0.5f) * 2.f,
+    icetBoundingBoxf(((float) e[0]   /(screen[0]-1) - 0.5f) * 2.f,
+    	             ((float)(e[1]-1)/(screen[0]-1) - 0.5f) * 2.f,
+		     ((float) e[2]   /(screen[1]-1) - 0.5f) * 2.f,
+		     ((float)(e[3]-1)/(screen[1]-1) - 0.5f) * 2.f,
     		     0.0, 0.0);
     //
     // Compose
     //
-    avtSLIVRImgComm_IceT::icetImgData = d;
-    avtSLIVRImgComm_IceT::icetImgMeta[0] = e[0];
-    avtSLIVRImgComm_IceT::icetImgMeta[1] = e[2];
-    avtSLIVRImgComm_IceT::icetImgMeta[2] = e[1] - e[0];
-    avtSLIVRImgComm_IceT::icetImgMeta[3] = e[3] - e[2];
+    avtSLIVRImgComm_IceT::imgData = d;
+    avtSLIVRImgComm_IceT::imgMeta[0] = e[0];
+    avtSLIVRImgComm_IceT::imgMeta[1] = e[2];
+    avtSLIVRImgComm_IceT::imgMeta[2] = e[1] - e[0];
+    avtSLIVRImgComm_IceT::imgMeta[3] = e[3] - e[2];
     icetDrawCallback(DrawCallback);
 #endif
 }
@@ -286,8 +301,8 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
 void avtSLIVRImgComm_IceT::Composite(float*& output)
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
-    result = icetDrawFrame(icetIdentity, icetIdentity, icetBgColor);
-    if (icetMPIRank == 0) {
+    result = icetDrawFrame(identity, identity, bgColor);
+    if (MPIRank == 0) {
 	icetImageCopyColorf(result, output, ICET_IMAGE_COLOR_RGBA_FLOAT);
     }
 #endif
@@ -301,16 +316,16 @@ void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
 					IceTImage img) 
 {
     float *o = icetImageGetColorf(img);
-    const int outputStride = icetImageGetWidth (img);
-    for (int j = 0; j < icetImgMeta[3]; ++j) {	
-	for (int i = 0; i < icetImgMeta[2]; ++i) {
+    const int outputStride = icetImageGetWidth(img);
+    for (int j = 0; j < imgMeta[3]; ++j) {	
+	for (int i = 0; i < imgMeta[2]; ++i) {
 	    const int gIdx = 
-		i + icetImgMeta[0] + (j + icetImgMeta[1]) * outputStride;
-	    const int lIdx = i + j * icetImgMeta[2];
-	    o[4 * gIdx + 0] = icetImgData[4 * lIdx + 0];
-	    o[4 * gIdx + 1] = icetImgData[4 * lIdx + 1];
-	    o[4 * gIdx + 2] = icetImgData[4 * lIdx + 2];
-	    o[4 * gIdx + 3] = icetImgData[4 * lIdx + 3];
+		i + imgMeta[0] + (j + imgMeta[1]) * outputStride;
+	    const int lIdx = i + j * imgMeta[2];
+	    o[4 * gIdx + 0] = imgData[4 * lIdx + 0];
+	    o[4 * gIdx + 1] = imgData[4 * lIdx + 1];
+	    o[4 * gIdx + 2] = imgData[4 * lIdx + 2];
+	    o[4 * gIdx + 3] = imgData[4 * lIdx + 3];
 	}
     }
     ospout << "avtSLIVRImgComm_IceT::DrawCallback Done" << std::endl;
@@ -732,18 +747,24 @@ avtSLIVRImgCommunicator::UpdateBoundingBox(int currentBoundingBox[4],
 //
 // **************************************************************************
 
+bool 
+avtSLIVRImgCommunicator::IceTValid() { 
+    return avtSLIVRImgComm_IceT::Valid(); 
+}
+
 void 
 avtSLIVRImgCommunicator::IceTInit(int W, int H)
 {
-    compositor = new avtSLIVRImgComm_IceT(mpiSize, mpiRank);
-    if (!compositor->Valid()) {
+    if (!avtSLIVRImgComm_IceT::Valid()) {
 	debug1 << "ERROR: IceT compositor is not valid. "
 	       << "Probably IceT is not compiled with VisIt"
 	       << std::endl;
 	EXCEPTION1(VisItException, 
 		   "ERROR: IceT compositor is not valid. "
 		   "Probably IceT is not compiled with VisIt");
+	return;
     }
+    compositor = new avtSLIVRImgComm_IceT(mpiSize, mpiRank);
     compositor->Init(W, H);
 }
 

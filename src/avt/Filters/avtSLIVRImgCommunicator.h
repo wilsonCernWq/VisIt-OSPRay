@@ -89,7 +89,6 @@ public:
 			  const int* extents, 
 			  const float& depth) = 0;
     virtual void Composite (float*& output) = 0;
-    virtual bool Valid () const { return false; }
 };
 
 class avtSLIVRImgCommunicator
@@ -128,6 +127,7 @@ public:
     //-----------------------------------------------------------------------//
     // IceT
     //-----------------------------------------------------------------------//
+    bool IceTValid();
     void IceTInit(int W, int H);
     void IceTSetTile(const float*, const int*, const float&);
     void IceTComposite(float*&);

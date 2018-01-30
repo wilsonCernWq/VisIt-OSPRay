@@ -612,10 +612,10 @@ avtRayTracer::Execute(void)
 	// Get the full image extents of the volume
 	double depthExtents[2];
 	GetSpatialExtents(dbounds);
-	slivr::ProjectWorldToScreenCube
-	    (dbounds, screen[0], screen[1], 
-	     panPercentage, view.imageZoom, model_to_screen_transform,
-	     fullImageExtents, depthExtents);
+	slivr::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
+					panPercentage, view.imageZoom,
+					model_to_screen_transform,
+					fullImageExtents, depthExtents);
 	fullImageExtents[0] = std::max(fullImageExtents[0], 0);
 	fullImageExtents[2] = std::max(fullImageExtents[2], 0);
 	fullImageExtents[1] = std::min(1+fullImageExtents[1], screen[0]);
@@ -860,12 +860,8 @@ avtRayTracer::Execute(void)
 	//-------------------------------------------------------------------//
 	// IceT: If each rank has only one patch, we use IceT to composite
 	//-------------------------------------------------------------------//
-	bool use_icet = false;
-	const char* env_use_icet = std::getenv("SLIVR_USE_ICET");
-	if (env_use_icet) { use_icet = atoi(env_use_icet) > 0; }
-	if (use_icet && extractor.GetImgPatchSize() == 1) 	
+	if (imgComm.IceTValid() && extractor.GetImgPatchSize() == 1) 	
 	{
-	    std::cout << "[avtRayTracer] Use IceT for Image Compositing" << std::endl;
 	    //---------------------------------------------------------------//
 	    // Setup Local Tile
 	    slivr::ImgMetaData currMeta = extractor.GetImgMetaPatch(0);
