@@ -724,9 +724,7 @@ avtVolumePlot::ApplyRenderingTransformation(avtDataObject_p input)
             dob = gradientFilter->GetOutput();
         }
 #endif
-	// Qi exam if this is run in parallel
-	debug5 << "Running: avtVolumePlot::ApplyRenderingTransformation"
-	       << " (Instantiating a new avtVolumeFilter) " << std::endl;
+
         volumeImageFilter = new avtVolumeFilter();
         volumeImageFilter->SetAttributes(atts);
         volumeImageFilter->SetInput(dob);

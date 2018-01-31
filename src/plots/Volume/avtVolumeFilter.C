@@ -375,8 +375,6 @@ avtImage_p
 avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
                              const WindowAttributes &window)
 {
-    debug5 << "Running: avtVolumeFilter::RendererImageRaycastingSLIVR"
-	   << " (Instantiating a new avtRayTracer) " << std::endl;
     //
     // We need to create a dummy pipeline with the volume renderer that we
     // can force to execute within our "Execute".  Start with the source.
@@ -421,8 +419,8 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     bool artificialMax = atts.GetUseColorVarMax();
     if (!artificialMin || !artificialMax)
     {
-	GetDataExtents(actualRange, primaryVariable);
-	UnifyMinMax(actualRange, 2);
+        GetDataExtents(actualRange, primaryVariable);
+        UnifyMinMax(actualRange, 2);
     }
 
     double range[2];

@@ -93,7 +93,7 @@ struct RGBAF
 
 class PIPELINE_API avtOpacityMap
 {
-public:
+  public:
                                  avtOpacityMap(int = 1024);
     virtual                     ~avtOpacityMap();
 
@@ -125,8 +125,7 @@ public:
     float                        QuantizeValF(const double &val);
     int                          QueryTF(double scalarValue, double color[4]);
 
-protected:
-
+  protected:
     RGBA                        *table;
     RGBAF                       *transferFn1D;
     int                          tableEntries;
@@ -138,7 +137,7 @@ protected:
 
     void                         SetIntermediateVars(void);
 
-private:
+  private:
     // These methods are defined to prevent accidental use of bitwise copy
     // implementations.  If you want to re-define them to do something
     // meaningful, that's fine.
