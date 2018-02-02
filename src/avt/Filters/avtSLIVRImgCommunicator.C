@@ -87,8 +87,8 @@ private:
     IceTInt              screen[2];
     IceTContext          context, prevContext;
     IceTCommunicator     comm;
-    IceTInt              MPISize;
-    IceTInt              MPIRank;
+    static IceTInt              MPISize;
+    static IceTInt              MPIRank;
     IceTImage            result;    
     //---------------------------------------
     static const bool        usage;
@@ -118,6 +118,8 @@ bool avtSLIVRImgComm_IceT::Valid() {
 }
 
 #if defined(PARALLEL) && defined(VISIT_ICET)
+IceTInt avtSLIVRImgComm_IceT::MPISize = PAR_Size();
+IceTInt avtSLIVRImgComm_IceT::MPIRank = PAR_Rank();
 const bool avtSLIVRImgComm_IceT::usage =
     avtSLIVRImgComm_IceT::CheckUsage(); 
 bool avtSLIVRImgComm_IceT::CheckUsage()
@@ -127,6 +129,7 @@ bool avtSLIVRImgComm_IceT::CheckUsage()
     if (env_use_icet) { 
 	use_icet = atoi(env_use_icet) > 0; 
     }
+    if (MPIRank == 0) {
     if (!use_icet) {
 	std::cout << "[avtSLIVRImgCommunicator] "
 		  << "Not Using IceT for Image Compositing"
@@ -135,6 +138,7 @@ bool avtSLIVRImgComm_IceT::CheckUsage()
 	std::cout << "[avtSLIVRImgCommunicator] "
 		  << "Using IceT for Image Compositing"
 		  << std::endl;
+    }
     }
     return use_icet;
 }
@@ -164,23 +168,31 @@ IceTEnum       avtSLIVRImgComm_IceT::CheckStrategy()
 	switch (strategy) {
 	case 0:
 	    ret = ICET_STRATEGY_REDUCE;
+	    if (MPIRank == 0) {
 	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
 		      << std::endl;
+	    }
 	    break;
 	case 1:
 	    ret = ICET_SINGLE_IMAGE_STRATEGY_TREE;
+	    if (MPIRank == 0) {
 	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
 		      << std::endl;
+	    }
 	    break;
 	case 2:
 	    ret = ICET_SINGLE_IMAGE_STRATEGY_RADIXK;
+	    if (MPIRank == 0) {
 	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
 		      << std::endl;
+	    }
 	    break;
 	default:
 	    ret = ICET_SINGLE_IMAGE_STRATEGY_BSWAP;
+	    if (MPIRank == 0) {
 	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
 		      << std::endl;
+	    }
 	    break;
 	}
 	return ret;
