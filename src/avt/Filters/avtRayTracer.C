@@ -862,6 +862,7 @@ avtRayTracer::Execute(void)
 	//-------------------------------------------------------------------//
 	if (imgComm.IceTValid() && extractor.GetImgPatchSize() == 1) 	
 	{
+	    std::cout << "[avtRayTracer] Really use IceT" << std::endl;
 	    //---------------------------------------------------------------//
 	    // Setup Local Tile
 	    slivr::ImgMetaData currMeta = extractor.GetImgMetaPatch(0);
