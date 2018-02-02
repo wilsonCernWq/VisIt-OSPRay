@@ -82,8 +82,6 @@ public:
     void Composite(float*&);
     static bool Valid();
 private:
-    static const bool usage;
-    static bool       CheckUsage();
 #if defined(PARALLEL) && defined(VISIT_ICET)
     //---------------------------------------
     IceTInt              screen[2];
@@ -93,6 +91,7 @@ private:
     IceTInt              MPIRank;
     IceTImage            result;    
     //---------------------------------------
+    static const bool        usage;
     static const IceTDouble  identity[16];
     static const IceTFloat   bgColor[4];
     static const IceTEnum    strategy;
@@ -100,6 +99,7 @@ private:
     static const float* imgData;
     static int          imgMeta[4];
     //---------------------------------------
+    static bool     CheckUsage();
     static IceTEnum CheckStrategy();
     static void DrawCallback(const IceTDouble*, 
 			     const IceTDouble*, 
@@ -109,26 +109,35 @@ private:
 #endif
 };
 
-const bool avtSLIVRImgComm_IceT::usage = 
-    avtSLIVRImgComm_IceT::CheckUsage();
-bool       avtSLIVRImgComm_IceT::Valid() { return usage; }
-bool       avtSLIVRImgComm_IceT::CheckUsage()
+bool avtSLIVRImgComm_IceT::Valid() { 
+#if defined(PARALLEL) && defined(VISIT_ICET)
+    return usage;
+#else
+    return false;
+#endif
+}
+
+#if defined(PARALLEL) && defined(VISIT_ICET)
+const bool avtSLIVRImgComm_IceT::usage =
+    avtSLIVRImgComm_IceT::CheckUsage(); 
+bool avtSLIVRImgComm_IceT::CheckUsage()
 {
     bool use_icet = false;
-#if defined(PARALLEL) && defined(VISIT_ICET)
     const char* env_use_icet = std::getenv("SLIVR_USE_ICET");
     if (env_use_icet) { 
 	use_icet = atoi(env_use_icet) > 0; 
     }
-#endif;
     if (!use_icet) {
-	std::cout << "[avtRayTracer] Not Using IceT for Image Compositing"
+	std::cout << "[avtSLIVRImgCommunicator] "
+		  << "Not Using IceT for Image Compositing"
+		  << std::endl;
+    } else {
+	std::cout << "[avtSLIVRImgCommunicator] "
+		  << "Using IceT for Image Compositing"
 		  << std::endl;
     }
     return use_icet;
 }
-
-#if defined(PARALLEL) && defined(VISIT_ICET)
 const IceTDouble avtSLIVRImgComm_IceT::identity[16] = 
 {
     IceTDouble(1.0), IceTDouble(0.0), IceTDouble(0.0), IceTDouble(0.0),
