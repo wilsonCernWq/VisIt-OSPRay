@@ -864,7 +864,10 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
             if (i == 0)
 	    { patchesOffset[i] = 0; }
             else
-	    { patchesOffset[i] = patchesOffset[i-1] + patchCountPerRank[i-1]; }
+	    {
+		patchesOffset[i] = 
+		    patchesOffset[i-1] + patchCountPerRank[i-1]; 
+	    }
         }
 	
 	// allocate only at root
@@ -921,8 +924,11 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
     int    totalPatches; // total number of patches
     int   *totalPatchCountsPerRank = NULL;
     float *totalPatchDepths = NULL;
-    GatherDepthAtRoot(localNumPatches, localPatchesDepth,
-		      totalPatches, totalPatchCountsPerRank, totalPatchDepths);
+    GatherDepthAtRoot(localNumPatches,
+		      localPatchesDepth,
+		      totalPatches, 
+		      totalPatchCountsPerRank,
+		      totalPatchDepths);
     //
     //
     //
@@ -1495,9 +1501,10 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     int myPositionInRegion = -1;
     bool inRegion = true;
     std::vector<int> regionVector(region, region+numRegions);
-    const std::vector<int>::const_iterator it = std::find(regionVector.begin(),
-							  regionVector.end(), 
-							  mpiRank);
+    const std::vector<int>::const_iterator it = 
+	std::find(regionVector.begin(),
+		  regionVector.end(), 
+		  mpiRank);
     if (it == regionVector.end())
     {
 	inRegion = false;
@@ -1508,6 +1515,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     {
 	myPositionInRegion = it - regionVector.begin();
     }
+    std::cout << "DEBUG: "
     int width =  fullImageExtents[1]-fullImageExtents[0];
     int height = fullImageExtents[3]-fullImageExtents[2];
     //---------------------------------------------------------------------//

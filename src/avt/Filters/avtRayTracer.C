@@ -1272,8 +1272,9 @@ avtRayTracer::Execute(void)
 
     //
     // Write timing to file
+    // Postpone this
     //
-    visitTimer->DumpTimings();
+    // visitTimer->DumpTimings();
 }
 
 
