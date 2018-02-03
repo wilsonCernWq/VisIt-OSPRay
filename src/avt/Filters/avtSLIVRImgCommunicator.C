@@ -1515,7 +1515,6 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     {
 	myPositionInRegion = it - regionVector.begin();
     }
-    std::cout << "DEBUG: "
     int width =  fullImageExtents[1]-fullImageExtents[0];
     int height = fullImageExtents[3]-fullImageExtents[2];
     //---------------------------------------------------------------------//
