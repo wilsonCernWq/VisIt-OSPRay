@@ -7,8 +7,8 @@ server_path = "./"
 client_path = "./"
 datainfo = {
     'HOSTNAME': "localhost",
-    'FULLPATH': "/home/qiwu/data/timestamps/t230278/l0/CCVars.idx",
-    'TIMESTEP': 230278,
+    'FULLPATH': "/home/qiwu/data/cooley_coalboiler/predIncite.pidx.012/t247733/l0/CCVars.idx",
+    'TIMESTEP': 247733,
     'VARIABLE': "O2"
 }
 
