@@ -1191,21 +1191,11 @@ ENDIF(VISIT_THREAD)
 # modified by Qi
 IF(VISIT_OSPRAY)
     FIND_PACKAGE(ospray REQUIRED)
-#    FIND_PACKAGE(IceT REQUIRED)
     # additional module library
-    IF (WIN32)
-      SET(OSPRAY_VISIT_LIB
-	${CMAKE_IMPORT_LIBRARY_PREFIX}visit_image_composite${CMAKE_IMPORT_LIBRARY_SUFFIX})
-    ELSE (WIN32)
-      SET(OSPRAY_VISIT_LIB
-	${CMAKE_SHARED_LIBRARY_PREFIX}visit_image_composite${CMAKE_SHARED_LIBRARY_SUFFIX})
-    ENDIF (WIN32)
     SET(OSPRAY_LIBRARIES 
       ${OSPRAY_LIBRARIES} 
-      ${OSPRAY_CMAKE_ROOT}/../../${OSPRAY_VISIT_LIB}
-#      ${ICET_CORE_LIBS}
-#      ${ICET_GL_LIBS}
-#      ${ICET_MPI_LIBS}
+      ${LIBRARY_PATH_PREFIX}ospray_module_visit${LIBRARY_SUFFIX}
+      ${LIBRARY_PATH_PREFIX}visit_image_composite${LIBRARY_SUFFIX}
       )
     # include ospray
     ADD_DEFINITIONS(-DVISIT_OSPRAY)

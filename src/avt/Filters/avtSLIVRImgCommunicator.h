@@ -68,7 +68,7 @@ struct imageBuffer{
     float  depth;
 };
 
-// ****************************************************************************
+// ***************************************************************************
 //  Class: avtSLIVRImgCommunicator
 //
 //  Purpose:
@@ -77,7 +77,7 @@ struct imageBuffer{
 //  Programmer: Pascal Grosset
 //  Creation:   Spetember 20, 2013
 //
-// ****************************************************************************
+// ***************************************************************************
 
 class avtSLIVRImgComm
 {
@@ -120,30 +120,30 @@ public:
 
     void Barrier();
 
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
     // Different Algorithms
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
 
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
     // IceT
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
     bool IceTValid();
     void IceTInit(int W, int H);
     void IceTSetTile(const float*, const int*, const float&);
     void IceTComposite(float*&);
 
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
     // Both currently unused but good for simple testing
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
 private:
     void GatherDepthAtRoot(const int, const float *, int &, int *&, float *&);
 public:
     void SerialDirectSend
 	(int, float*, int*, float*, float bgColor[4], int, int);
 
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
     // Parallel Direct Send
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
 public:
     void RegionAllocation(int *&);
     int  ParallelDirectSendManyPatches
@@ -152,17 +152,17 @@ public:
 	 int, int*, int, int tags[2], int fullImageExtents[4]);
 
 private:
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
     static void ColorImage(float *&, const int, const int, 
 			   const float color[4]);
     static void PlaceImage(const float *, const int srcExtents[4], 
 			   float *&, const int dstExtents[4]);
     static void BlendWithBackground(float *&, const int extents[4],
 				    const float bgColor[4]);
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
     void UpdateBoundingBox
 	(int currentBoundingBox[4], const int imageExtents[4]);
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
 
 private:
 
@@ -189,7 +189,7 @@ private:
     int regularRegionSize;
     std::vector<int> regionRankExtents;
 
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
       
     void computeRegionExtents(int numRanks, int height);
 	
@@ -199,17 +199,19 @@ private:
     int getRegionSize(int region){ return regionRankExtents[region*3+2]; }
     int getMaxRegionHeight(){ return maxRegionHeight; }
 	
-    int getScreenRegionStart(int region, int screenImgMinY, int screenImgMaxY){
+    int getScreenRegionStart(int region, int screenImgMinY, int screenImgMaxY)
+    {
 	return CLAMP(getRegionStart(region)+screenImgMinY, 
 		     screenImgMinY, screenImgMaxY); 
     }
-    int getScreenRegionEnd(int region, int screenImgMinY, int screenImgMaxY){
+    int getScreenRegionEnd(int region, int screenImgMinY, int screenImgMaxY)
+    {
 	return CLAMP(getRegionEnd(region)+screenImgMinY, 
 		     screenImgMinY, screenImgMaxY); 
     }
 
 public:
-    //-----------------------------------------------------------------------//
+    //----------------------------------------------------------------------//
 
     void getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage);  // get the final composited image
 

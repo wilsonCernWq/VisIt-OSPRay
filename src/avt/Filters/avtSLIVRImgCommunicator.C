@@ -36,9 +36,9 @@
 *
 *****************************************************************************/
 
-// ************************************************************************* //
-//                         avtSLIVRImgCommunicator.C                         //
-// ************************************************************************* //
+// ************************************************************************ //
+//                        avtSLIVRImgCommunicator.C                         //
+// ************************************************************************ //
 
 #include <avtSLIVRImgCommunicator.h>
 #include <avtSLIVROSPRayFilter.h>
@@ -63,14 +63,14 @@
 #include <set>
 
 #if defined (_MSC_VER) && (_MSC_VER < 1800) && !defined(round)
-inline double round(double x) {return (x-floor(x)) > 0.5 ? ceil(x) : floor(x);}
+inline double round(double x) {return (x-floor(x))>0.5?ceil(x):floor(x);}
 #endif
 
 enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 
-// ****************************************************************************
+// ***************************************************************************
 //  Class: avtSLIVRImgComm_IceT
-// ****************************************************************************
+// ***************************************************************************
 
 class avtSLIVRImgComm_IceT : public avtSLIVRImgComm
 {
@@ -341,11 +341,11 @@ void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
 }
 #endif
 
-// ****************************************************************************
+// ***************************************************************************
 //  End Class: avtSLIVRImgComm_IceT
-// ****************************************************************************
+// ***************************************************************************
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::avtSLIVRImgCommunicator
 //
 //  Purpose: Constructor
@@ -355,7 +355,7 @@ void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
 //
 //  Modifications:
 //
-// ****************************************************************************
+// ***************************************************************************
 
 avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 {
@@ -380,7 +380,7 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
     /////////////////////////////////////////////////////////////
 }
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator
 //
 //  Purpose:
@@ -390,14 +390,14 @@ avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
 //
 //  Modifications:
 //
-// ****************************************************************************
+// ***************************************************************************
 
 avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 {
     //if (mpiRank == 0) { if (finalImage != NULL) { delete [] finalImage; } }
 }
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::Barrier
 //
 //  Purpose:
@@ -408,7 +408,7 @@ avtSLIVRImgCommunicator::~avtSLIVRImgCommunicator()
 //
 //  Modifications:
 //
-// ****************************************************************************
+// ***************************************************************************
 
 void avtSLIVRImgCommunicator::Barrier() {
 #ifdef PARALLEL
@@ -417,7 +417,7 @@ void avtSLIVRImgCommunicator::Barrier() {
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::ColorImage
 //
 //  Purpose:
@@ -428,7 +428,7 @@ void avtSLIVRImgCommunicator::Barrier() {
 //
 //  Modifications:
 //
-// ****************************************************************************
+// ***************************************************************************
 
 void
 avtSLIVRImgCommunicator::ColorImage(float *&srcImage,
@@ -446,7 +446,7 @@ avtSLIVRImgCommunicator::ColorImage(float *&srcImage,
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::PlaceImage
 //
 //  Purpose:
@@ -457,7 +457,7 @@ avtSLIVRImgCommunicator::ColorImage(float *&srcImage,
 //
 //  Modifications:
 //
-// ****************************************************************************
+// ***************************************************************************
 
 void
 avtSLIVRImgCommunicator::PlaceImage(const float *srcImage,
@@ -491,7 +491,7 @@ avtSLIVRImgCommunicator::PlaceImage(const float *srcImage,
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::BlendWithBackground
 //
 //  Purpose:
@@ -522,7 +522,7 @@ avtSLIVRImgCommunicator::BlendWithBackground(float *&image,
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::BlendFrontToBack
 //
 //  Purpose:
@@ -593,7 +593,7 @@ avtSLIVRImgCommunicator::BlendFrontToBack(const float *srcImage,
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::BlendBackToFront
 //
 //  Purpose:
@@ -661,7 +661,7 @@ avtSLIVRImgCommunicator::BlendBackToFront(const float *srcImage,
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::BlendFrontToBack
 //
 //  Purpose:
@@ -683,7 +683,7 @@ avtSLIVRImgCommunicator::BlendFrontToBack(const float * srcImage,
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::BlendBackToFront
 //
 //  Purpose:
@@ -705,7 +705,7 @@ avtSLIVRImgCommunicator::BlendBackToFront
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::UpdateBoundingBox
 //
 //  Purpose:
@@ -744,7 +744,7 @@ avtSLIVRImgCommunicator::UpdateBoundingBox(int currentBoundingBox[4],
     { currentBoundingBox[3] = imageExtents[3]; }
 }
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::IceT
 //
 //  Purpose:
@@ -813,7 +813,7 @@ void avtSLIVRImgCommunicator::IceTComposite(float*& output)
     //---------------------------------------------------------------------//
 }
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::GatherDepthAtRoot
 //
 //  Purpose:
@@ -864,7 +864,10 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
             if (i == 0)
 	    { patchesOffset[i] = 0; }
             else
-	    { patchesOffset[i] = patchesOffset[i-1] + patchCountPerRank[i-1]; }
+	    {
+		patchesOffset[i] = 
+		    patchesOffset[i-1] + patchCountPerRank[i-1]; 
+	    }
         }
 	
 	// allocate only at root
@@ -884,7 +887,7 @@ avtSLIVRImgCommunicator::GatherDepthAtRoot(const int numlocalPatches,
 #endif
 }
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::SerialDirectSend
 //
 //  Purpose:
@@ -921,8 +924,11 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
     int    totalPatches; // total number of patches
     int   *totalPatchCountsPerRank = NULL;
     float *totalPatchDepths = NULL;
-    GatherDepthAtRoot(localNumPatches, localPatchesDepth,
-		      totalPatches, totalPatchCountsPerRank, totalPatchDepths);
+    GatherDepthAtRoot(localNumPatches,
+		      localPatchesDepth,
+		      totalPatches, 
+		      totalPatchCountsPerRank,
+		      totalPatchDepths);
     //
     //
     //
@@ -1019,7 +1025,7 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
 #endif
 }
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::regionAllocation
 //
 //  Purpose:
@@ -1041,7 +1047,7 @@ avtSLIVRImgCommunicator::RegionAllocation(int *& regions)
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::parallelDirectSend
 //
 //  Purpose:
@@ -1348,7 +1354,7 @@ avtSLIVRImgCommunicator::parallelDirectSend(float *imgData,
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::findRegionsForPatch
 //
 //  Purpose:
@@ -1401,7 +1407,7 @@ avtSLIVRImgCommunicator::findRegionsForPatch(int patchExtents[4], int screenProj
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::computeRegionExtents
 //
 //  Purpose:
@@ -1445,7 +1451,7 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 }
 
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 //
 //  Purpose:
@@ -1495,9 +1501,10 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     int myPositionInRegion = -1;
     bool inRegion = true;
     std::vector<int> regionVector(region, region+numRegions);
-    const std::vector<int>::const_iterator it = std::find(regionVector.begin(),
-							  regionVector.end(), 
-							  mpiRank);
+    const std::vector<int>::const_iterator it = 
+	std::find(regionVector.begin(),
+		  regionVector.end(), 
+		  mpiRank);
     if (it == regionVector.end())
     {
 	inRegion = false;
@@ -1988,7 +1995,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     return myRegionHeight;
 }
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::gatherImages
 //
 //  Purpose:
@@ -2100,7 +2107,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 #endif
 }
 
-// ****************************************************************************
+// ***************************************************************************
 //  Method: avtSLIVRImgCommunicator::getcompositedImage
 //
 //  Purpose:
@@ -2111,7 +2118,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 //
 //  Modifications:
 //
-// ****************************************************************************
+// ***************************************************************************
 
 void avtSLIVRImgCommunicator::getcompositedImage
 (int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage)
