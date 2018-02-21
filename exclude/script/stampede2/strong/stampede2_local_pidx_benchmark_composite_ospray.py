@@ -43,7 +43,7 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
         # camera positions
         c = GetView3D()
         # front/back views
-        N = 25
+        N = 5
         for i in range(N):
             angle = float(i) / float(N) * 2 * math.pi
             cc = c

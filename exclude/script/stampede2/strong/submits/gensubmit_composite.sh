@@ -14,7 +14,7 @@ cat >> sample-$NAME.sh <<EOF
 #!/bin/bash
 #SBATCH -n ${NT}
 #SBATCH -N ${NN}
-#SBATCH --time=00:30:00 # walltime, abbreviated by -t
+#SBATCH --time=00:15:00 # walltime, abbreviated by -t
 #
 # load modules
 module load intel
