@@ -17,3 +17,8 @@ p.freeformOpacity = (100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
 p.opacityAttenuation = 0.2156863
 SetPlotOptions(p)
 DrawPlots()
+sw = SaveWindowAttributes()
+sw.height = 4096
+sw.width  = 4096
+SetSaveWindowAttributes(sw)
+SaveWindow()
