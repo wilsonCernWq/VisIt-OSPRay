@@ -43,7 +43,7 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
         # camera positions
         c = GetView3D()
         # front/back views
-        N = 100
+        N = 1
         for i in range(N):
             angle = float(i) / float(N) * 2 * math.pi
             cc = c
@@ -141,5 +141,5 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
 #-----------------------------------------------------------------------------
 # open remote
-makePlot(VolumeAtts, True, False, False)
+makePlot(VolumeAtts, False, False, True)
 exit()

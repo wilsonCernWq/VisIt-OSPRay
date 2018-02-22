@@ -69,6 +69,34 @@ inline double round(double x) {return (x-floor(x))>0.5?ceil(x):floor(x);}
 enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 
 // ***************************************************************************
+// Threaded Blending
+// ***************************************************************************
+
+bool CheckThreadedBlend_Communicator()
+{
+    bool use = true;
+    const char* env_use = std::getenv("SLIVR_NOT_USE_THREADED_BLEND");
+    if (env_use) { 
+	use = atoi(env_use) <= 0; 
+    }
+    if (!use) {
+	std::cout << "[avtSLIVRImgCommunicator] "
+		  << "Not Using Multi-Threading for Blending"
+		  << std::endl;
+    } else {
+	std::cout << "[avtSLIVRImgCommunicator] "
+		  << "Using Multi-Threading for Blending"
+		  << std::endl;
+    }
+    return use;
+}
+#ifdef VISIT_OSPRAY
+bool UseThreadedBlend_Communicator = CheckThreadedBlend_Communicator();
+#else
+bool UseThreadedBlend_Communicator = false;
+#endif
+
+// ***************************************************************************
 //  Class: avtSLIVRImgComm_IceT
 // ***************************************************************************
 
@@ -543,13 +571,14 @@ avtSLIVRImgCommunicator::BlendFrontToBack(const float *srcImage,
 					  const int dstExtents[4])
 {
 #ifdef VISIT_OSPRAY
-    visit::BlendFrontToBack(blendExtents,
-			    srcExtents,
-			    srcImage,
-			    dstExtents,
-			    dstImage);
-#else    
-    debug5 << ">>> avtSLIVRImgCommunicator::BlendFrontToBack" << std::endl;
+    if (UseThreadedBlend_Communicator) {
+	visit::BlendFrontToBack(blendExtents,
+				srcExtents,
+				srcImage,
+				dstExtents,
+				dstImage);
+    } else {
+#endif
     // image sizes
     const int srcX = srcExtents[1] - srcExtents[0];
     const int srcY = srcExtents[3] - srcExtents[2];
@@ -589,6 +618,8 @@ avtSLIVRImgCommunicator::BlendFrontToBack(const float *srcImage,
 	    }
 	}
     }
+#ifdef VISIT_OSPRAY
+    }
 #endif
 }
 
@@ -614,13 +645,14 @@ avtSLIVRImgCommunicator::BlendBackToFront(const float *srcImage,
 					  const int dstExtents[4])
 {
 #ifdef VISIT_OSPRAY
-    visit::BlendBackToFront(blendExtents,
-			    srcExtents,
-			    srcImage,
-			    dstExtents,
-			    dstImage);
-#else    
-    debug5 << ">>> avtSLIVRImgCommunicator::BlendBackToFront" << std::endl;
+    if (UseThreadedBlend_Communicator) {
+	visit::BlendBackToFront(blendExtents,
+	                        srcExtents,
+	                        srcImage,
+	                        dstExtents,
+	                        dstImage);
+    } else {
+#endif
     // image sizes
     const int srcX = srcExtents[1] - srcExtents[0];
     const int srcY = srcExtents[3] - srcExtents[2];
@@ -656,6 +688,8 @@ avtSLIVRImgCommunicator::BlendBackToFront(const float *srcImage,
 		CLAMP(dstImage[dstIndex+3] * trans + srcImage[srcIndex+3],
 		      0.0f, 1.0f);
 	}
+    }
+#ifdef VISIT_OSPRAY
     }
 #endif
 }

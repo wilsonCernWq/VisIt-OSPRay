@@ -44,6 +44,34 @@
 #include <DebugStream.h>
 #include <TimingsManager.h>
 
+// ***************************************************************************
+// Threaded Blending
+// ***************************************************************************
+
+inline bool CheckThreadedBlend_MetaData()
+{
+    bool use = true;
+    const char* env_use = std::getenv("SLIVR_NOT_USE_THREADED_BLEND");
+    if (env_use) { 
+	use = atoi(env_use) <= 0; 
+    }
+    if (!use) {
+	std::cout << "[avtSLIVRImgMetaData] "
+		  << "Not Using Multi-Threading for Blending"
+		  << std::endl;
+    } else {
+	std::cout << "[avtSLIVRImgMetaData] "
+		  << "Using Multi-Threading for Blending"
+		  << std::endl;
+    }
+    return use;
+}
+#ifdef VISIT_OSPRAY
+bool UseThreadedBlend_MetaData = CheckThreadedBlend_MetaData();
+#else
+bool UseThreadedBlend_MetaData = false;
+#endif
+
 // ****************************************************************************
 //  Namespace:  slivr
 //
@@ -273,7 +301,8 @@ slivr::CompositeBackground(int screen[2],
 			 float         *opaqueImageDepth,
 			 unsigned char *&imgFinal)
 {
-#ifdef VISIT_OSPRAY    
+#ifdef VISIT_OSPRAY
+    if (UseThreadedBlend_MetaData) {
     visit::CompositeBackground(screen,
 			       compositedImageExtents,
 			       compositedImageWidth,
@@ -282,7 +311,8 @@ slivr::CompositeBackground(int screen[2],
 			       opaqueImageColor,
 			       opaqueImageDepth,
 			       imgFinal);
-#else
+    } else {
+#endif
     for (int y = 0; y < screen[1]; y++)
     {
 	for (int x = 0; x < screen[0]; x++)
@@ -343,6 +373,8 @@ slivr::CompositeBackground(int screen[2],
 		    opaqueImageColor[indexScreen * 3 + 2];
 	    }
 	}
+    }
+#ifdef VISIT_OSPRAY
     }
 #endif
 }
