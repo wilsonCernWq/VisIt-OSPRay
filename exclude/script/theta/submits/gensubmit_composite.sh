@@ -40,49 +40,59 @@ export CRAY_OMP_CHECK_AFFINITY=TRUE
 # run job
 echo "job: <\$SLURM_JOBID> node = $NN processes-per-node = $((NT / NN))"
 
-mkdir -p no-icet
-cd no-icet
+mkdir -p no-thread
+cd no-thread
 export SLIVR_USE_ICET=0
+export SLIVR_NOT_USE_THREADED_BLEND=1
 $EXE -np $NT -nn $NN -l aprun \
     -withhold-timing-output -timing \
     -nowin -cli -s $SCP 
 cd ..
+export SLIVR_NOT_USE_THREADED_BLEND=0
 
-mkdir -p icet-reduce
-cd icet-reduce
-export SLIVR_USE_ICET=1
-export SLIVR_ICET_STRATEGY=0
-$EXE -np $NT -nn $NN -l aprun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd ..
+# mkdir -p no-icet
+# cd no-icet
+# export SLIVR_USE_ICET=0
+# $EXE -np $NT -nn $NN -l aprun \
+#     -withhold-timing-output -timing \
+#     -nowin -cli -s $SCP 
+# cd ..
 
-mkdir -p icet-tree
-cd icet-tree
-export SLIVR_USE_ICET=1
-export SLIVR_ICET_STRATEGY=1
-$EXE -np $NT -nn $NN -l aprun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd ..
+# mkdir -p icet-reduce
+# cd icet-reduce
+# export SLIVR_USE_ICET=1
+# export SLIVR_ICET_STRATEGY=0
+# $EXE -np $NT -nn $NN -l aprun \
+#     -withhold-timing-output -timing \
+#     -nowin -cli -s $SCP 
+# cd ..
 
-mkdir -p icet-radixk
-cd icet-radixk
-export SLIVR_USE_ICET=1
-export SLIVR_ICET_STRATEGY=2
-$EXE -np $NT -nn $NN -l aprun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd ..
+# mkdir -p icet-tree
+# cd icet-tree
+# export SLIVR_USE_ICET=1
+# export SLIVR_ICET_STRATEGY=1
+# $EXE -np $NT -nn $NN -l aprun \
+#     -withhold-timing-output -timing \
+#     -nowin -cli -s $SCP 
+# cd ..
 
-mkdir -p icet-bswap
-cd icet-bswap
-export SLIVR_USE_ICET=1
-export SLIVR_ICET_STRATEGY=3
-$EXE -np $NT -nn $NN -l aprun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd ..
+# mkdir -p icet-radixk
+# cd icet-radixk
+# export SLIVR_USE_ICET=1
+# export SLIVR_ICET_STRATEGY=2
+# $EXE -np $NT -nn $NN -l aprun \
+#     -withhold-timing-output -timing \
+#     -nowin -cli -s $SCP 
+# cd ..
+
+# mkdir -p icet-bswap
+# cd icet-bswap
+# export SLIVR_USE_ICET=1
+# export SLIVR_ICET_STRATEGY=3
+# $EXE -np $NT -nn $NN -l aprun \
+#     -withhold-timing-output -timing \
+#     -nowin -cli -s $SCP 
+# cd ..
 
 EOF
 chmod +x sample-$NAME.sh
