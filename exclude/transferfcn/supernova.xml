@@ -42,34 +42,20 @@
             <Field name="category" type="string"></Field>
         </Object>
     </Object>
-    <Field name="opacityAttenuation" type="float">0.2117647</Field>
+    <Field name="opacityAttenuation" type="float">0.1843137</Field>
     <Field name="opacityMode" type="string">GaussianMode</Field>
     <Object name="opacityControlPoints">
         <Object name="GaussianControlPointList">
             <Object name="GaussianControlPoint">
-                <Field name="x" type="float">0.025</Field>
-                <Field name="height" type="float">0</Field>
-                <Field name="width" type="float">0.025</Field>
-                <Field name="xBias" type="float">0</Field>
-                <Field name="yBias" type="float">0</Field>
-            </Object>
-            <Object name="GaussianControlPoint">
-                <Field name="x" type="float">0.075</Field>
-                <Field name="height" type="float">0.2666667</Field>
-                <Field name="width" type="float">0.025</Field>
-                <Field name="xBias" type="float">0</Field>
-                <Field name="yBias" type="float">0</Field>
-            </Object>
-            <Object name="GaussianControlPoint">
-                <Field name="x" type="float">0.125</Field>
-                <Field name="height" type="float">0.4</Field>
-                <Field name="width" type="float">0.025</Field>
-                <Field name="xBias" type="float">0</Field>
-                <Field name="yBias" type="float">0</Field>
+                <Field name="x" type="float">0.07339449</Field>
+                <Field name="height" type="float">0.08536583</Field>
+                <Field name="width" type="float">0.0560616</Field>
+                <Field name="xBias" type="float">-0.01179554</Field>
+                <Field name="yBias" type="float">0.6000004</Field>
             </Object>
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.175</Field>
-                <Field name="height" type="float">0.5333333</Field>
+                <Field name="height" type="float">0.3658537</Field>
                 <Field name="width" type="float">0.025</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
@@ -77,14 +63,14 @@
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.225</Field>
                 <Field name="height" type="float">0.6166667</Field>
-                <Field name="width" type="float">0.025</Field>
+                <Field name="width" type="float">0.01484273</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.275</Field>
-                <Field name="height" type="float">0.55</Field>
-                <Field name="width" type="float">0.025</Field>
+                <Field name="height" type="float">0.9390244</Field>
+                <Field name="width" type="float">0.01</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
@@ -98,77 +84,84 @@
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.375</Field>
                 <Field name="height" type="float">0.4</Field>
-                <Field name="width" type="float">0.025</Field>
+                <Field name="width" type="float">0.01</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.425</Field>
-                <Field name="height" type="float">0.3833333</Field>
-                <Field name="width" type="float">0.025</Field>
+                <Field name="height" type="float">0.8414634</Field>
+                <Field name="width" type="float">0.01</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.475</Field>
-                <Field name="height" type="float">0.3166667</Field>
-                <Field name="width" type="float">0.025</Field>
+                <Field name="height" type="float">0.1341463</Field>
+                <Field name="width" type="float">0.03745088</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
-                <Field name="x" type="float">0.525</Field>
-                <Field name="height" type="float">0.3666667</Field>
-                <Field name="width" type="float">0.025</Field>
+                <Field name="x" type="float">0.542595</Field>
+                <Field name="height" type="float">0.1219512</Field>
+                <Field name="width" type="float">0.06215596</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
-                <Field name="x" type="float">0.575</Field>
-                <Field name="height" type="float">0.5333333</Field>
-                <Field name="width" type="float">0.025</Field>
+                <Field name="x" type="float">0.5845347</Field>
+                <Field name="height" type="float">0.7073171</Field>
+                <Field name="width" type="float">0.01</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
-                <Field name="x" type="float">0.625</Field>
-                <Field name="height" type="float">0.3833333</Field>
-                <Field name="width" type="float">0.025</Field>
-                <Field name="xBias" type="float">0</Field>
-                <Field name="yBias" type="float">0</Field>
-            </Object>
-            <Object name="GaussianControlPoint">
-                <Field name="x" type="float">0.675</Field>
-                <Field name="height" type="float">0.2166666</Field>
-                <Field name="width" type="float">0.025</Field>
+                <Field name="x" type="float">0.6841416</Field>
+                <Field name="height" type="float">0.6219512</Field>
+                <Field name="width" type="float">0.01</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.725</Field>
-                <Field name="height" type="float">0.3</Field>
+                <Field name="height" type="float">0.3048781</Field>
                 <Field name="width" type="float">0.025</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.775</Field>
-                <Field name="height" type="float">0.4</Field>
+                <Field name="height" type="float">0.2073171</Field>
                 <Field name="width" type="float">0.0415138</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
                 <Field name="x" type="float">0.8387942</Field>
-                <Field name="height" type="float">0.5</Field>
-                <Field name="width" type="float">0.05311275</Field>
+                <Field name="height" type="float">0.9512195</Field>
+                <Field name="width" type="float">0.01965928</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
             <Object name="GaussianControlPoint">
-                <Field name="x" type="float">0.9397117</Field>
-                <Field name="height" type="float">0.4666666</Field>
-                <Field name="width" type="float">0.1061599</Field>
+                <Field name="x" type="float">0.9279161</Field>
+                <Field name="height" type="float">0.3414634</Field>
+                <Field name="width" type="float">0.09305376</Field>
+                <Field name="xBias" type="float">-0.0235911</Field>
+                <Field name="yBias" type="float">0</Field>
+            </Object>
+            <Object name="GaussianControlPoint">
+                <Field name="x" type="float">0.129751</Field>
+                <Field name="height" type="float">0.7439024</Field>
+                <Field name="width" type="float">0.02359109</Field>
+                <Field name="xBias" type="float">0</Field>
+                <Field name="yBias" type="float">0</Field>
+            </Object>
+            <Object name="GaussianControlPoint">
+                <Field name="x" type="float">0.6304063</Field>
+                <Field name="height" type="float">0.3902439</Field>
+                <Field name="width" type="float">0.0157274</Field>
                 <Field name="xBias" type="float">0</Field>
                 <Field name="yBias" type="float">0</Field>
             </Object>
@@ -180,9 +173,9 @@
     <Field name="compactVariable" type="string">default</Field>
     <Field name="freeformOpacity" type="unsignedCharArray" length="256">0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 2 2 3 4 5 6 7 8 9 10 12 13 14 15 15 16 16 16 16 16 16 15 14 13 12 11 9 8 7 7 9 11 13 16 19 21 24 26 29 31 32 33 33 33 33 31 29 27 25 22 19 17 14 12 11 14 18 22 27 32 38 45 51 59 66 73 80 87 92 97 101 104 106 106 104 102 98 93 88 81 74 67 60 53 46 39 33 28 23 19 15 12 9 11 14 17 21 25 30 36 42 48 56 63 71 79 88 96 103 111 117 123 128 132 134 135 135 134 131 127 122 116 109 101 94 85 77 69 61 54 47 40 34 29 24 20 16 13 10 8 10 12 15 18 21 24 28 33 38 43 49 56 63 70 78 86 95 103 112 121 130 138 147 154 162 169 175 180 184 187 189 191 191 190 187 184 180 175 169 162 155 147 138 130 121 112 104 95 86 78 70 63 56 56 63 69 76 83 90 98 105 113 120 128 135 142 148 154 160 165 169 172 175 177 178 178 177 176 173 170 166 161 156 150 143 137 130 122 115 107 </Field>
     <Field name="useColorVarMin" type="bool">true</Field>
-    <Field name="colorVarMin" type="float">0.001</Field>
+    <Field name="colorVarMin" type="float">0.0015</Field>
     <Field name="useColorVarMax" type="bool">true</Field>
-    <Field name="colorVarMax" type="float">0.098</Field>
+    <Field name="colorVarMax" type="float">0.09</Field>
     <Field name="useOpacityVarMin" type="bool">false</Field>
     <Field name="opacityVarMin" type="float">0</Field>
     <Field name="useOpacityVarMax" type="bool">false</Field>
