@@ -85,5 +85,5 @@ $EXE -np $NT -nn $NN -l ibrun \
 cd -
 
 EOF
-sbatch -p normal -A TG-ASC170049 sample-$NAME.sh
+sbatch -p skx-normal -A TG-ASC170049 sample-$NAME.sh
 cd -
