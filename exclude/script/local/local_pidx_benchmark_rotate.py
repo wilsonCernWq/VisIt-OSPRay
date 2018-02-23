@@ -141,5 +141,5 @@ VolumeAtts.materialProperties = (0.4, 0.75, 0, 15)
 
 #-----------------------------------------------------------------------------
 # open remote
-makePlot(VolumeAtts, False, False, True)
+makePlot(VolumeAtts, True, False, False)
 exit()
