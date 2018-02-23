@@ -30,6 +30,16 @@ export OSPRAY_THREADS=$NC
 # run job
 echo "job: <\$SLURM_JOBID> node = $NN processes-per-node = $((NT / NN))"
 
+mkdir -p no-thread
+cd no-thread
+export SLIVR_USE_ICET=0
+export SLIVR_NOT_USE_THREADED_BLEND=1
+$EXE -np $NT -nn $NN -l aprun \
+    -withhold-timing-output -timing \
+    -nowin -cli -s $SCP 
+export SLIVR_NOT_USE_THREADED_BLEND=0
+cd ..
+
 mkdir -p no-icet
 cd no-icet
 export SLIVR_USE_ICET=0
