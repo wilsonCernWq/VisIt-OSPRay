@@ -4,7 +4,7 @@ import socket
 import stat
 import time
 
-_time_exe_ = '/usr/bin/time'
+_time_exe_ = '/home1/04915/qiwu/work/software/VisIt/stampede2/changes/exclude/tools/time'
 
 ###############################################################################
 # Class: JobSubmitter

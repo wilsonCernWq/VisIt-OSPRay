@@ -14,7 +14,7 @@ cat >> sample-$NAME.sh <<EOF
 #!/bin/bash
 #SBATCH -n ${NT}
 #SBATCH -N ${NN}
-#SBATCH --time=00:15:00 # walltime, abbreviated by -t
+#SBATCH --time=01:00:00 # walltime, abbreviated by -t
 #
 # load modules
 module load intel
@@ -34,55 +34,11 @@ mkdir -p no-thread
 cd no-thread
 export SLIVR_USE_ICET=0
 export SLIVR_NOT_USE_THREADED_BLEND=1
-$EXE -np $NT -nn $NN -l aprun \
+$EXE -np $NT -nn $NN -l ibrun \
     -withhold-timing-output -timing \
     -nowin -cli -s $SCP 
 export SLIVR_NOT_USE_THREADED_BLEND=0
 cd ..
-
-mkdir -p no-icet
-cd no-icet
-export SLIVR_USE_ICET=0
-$EXE -np $NT -nn $NN -l ibrun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd -
-
-mkdir -p icet-reduce
-cd icet-reduce
-export SLIVR_USE_ICET=1
-export SLIVR_ICET_STRATEGY=0
-$EXE -np $NT -nn $NN -l ibrun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd -
-
-mkdir -p icet-tree
-cd icet-tree
-export SLIVR_USE_ICET=1
-export SLIVR_ICET_STRATEGY=1
-$EXE -np $NT -nn $NN -l ibrun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd -
-
-mkdir -p icet-radixk
-cd icet-radixk
-export SLIVR_USE_ICET=1
-export SLIVR_ICET_STRATEGY=2
-$EXE -np $NT -nn $NN -l ibrun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd -
-
-mkdir -p icet-bswap
-cd icet-bswap
-export SLIVR_USE_ICET=1
-export SLIVR_ICET_STRATEGY=3
-$EXE -np $NT -nn $NN -l ibrun \
-    -withhold-timing-output -timing \
-    -nowin -cli -s $SCP 
-cd -
 
 EOF
 sbatch -p normal -A TG-ASC170049 sample-$NAME.sh

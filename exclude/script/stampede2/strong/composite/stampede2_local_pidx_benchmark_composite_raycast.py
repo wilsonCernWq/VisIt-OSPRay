@@ -32,24 +32,37 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
     OpenDatabase(datainfo['HOSTNAME'] + ":" + datainfo['FULLPATH'])
     SetTimeSliderState(datainfo['TIMESTEP'])
     AddPlot("Volume", datainfo['VARIABLE'])
+    c = GetView3D()
+    c.imageZoom = 2
+    SetView3D(c)
     def drawPlots(VolumeAtts, VolumeType):
         # Splatting, Texture3D, RayCasting, RayCastingIntegration
         # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
+        sw = SaveWindowAttributes()
+        sw.height = 1024
+        sw.width  = 2048
+        sw.resConstraint = 0
+        SetSaveWindowAttributes(sw)
         DrawPlots()
         SaveWindow()
         # camera positions
         c = GetView3D()
         # front/back views
-        N = 10
+        N = 5
         for i in range(N):
             angle = float(i) / float(N) * 2 * math.pi
             cc = c
             cc.viewNormal = (0, math.sin(angle),  math.cos(angle))
             cc.viewUp     = (0, math.cos(angle), -math.sin(angle))
             SetView3D(cc)
+            sw = SaveWindowAttributes()
+            sw.height = 1024
+            sw.width  = 2048
+            sw.resConstraint = 0
+            SetSaveWindowAttributes(sw)
             DrawPlots()
             SaveWindow()
         for i in range(N):
@@ -58,6 +71,11 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
             cc.viewNormal = (math.cos(angle), 0, math.sin(angle))
             cc.viewUp     = (0, 1, 0)
             SetView3D(cc)
+            sw = SaveWindowAttributes()
+            sw.height = 2048
+            sw.width  = 2048
+            sw.resConstraint = 0
+            SetSaveWindowAttributes(sw)
             DrawPlots()
             SaveWindow()
     if (useOSPRay):
