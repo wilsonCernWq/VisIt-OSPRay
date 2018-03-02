@@ -792,7 +792,7 @@ avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
 	// extractor for each cell to get the sample points.
 	//-----------------------------------------------
 	if (kernelBasedSampling) {
-	    ospout << "[avtSamplePointExtractor] KernalBasedSampling" 
+	    ospout << "[avtSamplePointExtractor] KernelBasedSampling" 
 		   << patchCount << std::endl;
 	    int timings_KernelBasedSample = visitTimer->StartTimer();
 	    KernelBasedSample(ds);
@@ -969,10 +969,10 @@ avtSamplePointExtractor::initMetaPatch(int id){
 void
 avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
 {
-    int numCells = ds->GetNumberOfCells();
-    int lastMilestone = 0;
+    size_t numCells = ds->GetNumberOfCells();
+    size_t lastMilestone = 0;
     vtkUnsignedCharArray *ghosts = (vtkUnsignedCharArray *)
-                                  ds->GetCellData()->GetArray("avtGhostZones");
+	ds->GetCellData()->GetArray("avtGhostZones");
 
     bool is2D = GetInput()->GetInfo().GetAttributes().GetSpatialDimension()==2;
     LoadingInfo li;
@@ -981,7 +981,7 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
     if (li.nVars <= 0)
         return;
 
-    for (int j = 0 ; j < numCells ; j++)
+    for (size_t j = 0 ; j < numCells ; j++)
     {
         //
         // Make sure this is a cell we should be processing.
@@ -989,7 +989,7 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
         if (ghosts != NULL && ghosts->GetValue(j) > 0)
             continue;
         vtkCell *cell = ds->GetCell(j);
-        int npts = cell->GetNumberOfPoints();
+        size_t npts = cell->GetNumberOfPoints();
 
         avtPoint pt;
         pt.nVars = li.nVars;
@@ -1001,7 +1001,7 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
         {
             if (li.cellDataIndex[v] < 0)
                 continue;
-            for (int k = 0 ; k < li.cellDataSize[v] ; k++)
+            for (size_t k = 0 ; k < li.cellDataSize[v] ; k++)
                 pt.val[li.cellDataIndex[v]+k] = 
                                          li.cellArrays[v]->GetComponent(j, k);
         }
@@ -1014,10 +1014,10 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
         {
             if (li.pointDataIndex[v] < 0)
                 continue;
-            for (int k = 0 ; k < li.pointDataSize[v] ; k++)
+            for (size_t k = 0 ; k < li.pointDataSize[v] ; k++)
             {
                 double accum = 0;
-                for (int i = 0 ; i < npts ; i++)
+                for (size_t i = 0 ; i < npts ; i++)
                     accum += li.pointArrays[v]->GetComponent(ids->GetId(i),k);
                 accum /= npts;
                 pt.val[li.pointDataIndex[v]+k] = accum;
@@ -1053,7 +1053,7 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
 
         pointExtractor->Extract(pt);
 
-        int currentMilestone = (int)(((double) j) / numCells * 10);
+        size_t currentMilestone = (size_t)(((double) j) / numCells * 10);
         if (currentMilestone > lastMilestone)
         {
             UpdateProgress(10*currentNode+currentMilestone, 10*totalNodes);
