@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -334,8 +334,8 @@ avtRayTracer::GetNumberOfDivisions(int screenX, int screenY, int screenZ)
 //  Purpose:
 //    Checks whether a coordinate value (coord) falls into a volume (volBounds)
 //
-//  Programmer:
-//  Creation:
+//  Programmer: August 14, 2016
+//  Creation:   Pascal Grosset
 //
 //  Modifications:
 //
@@ -1605,12 +1605,12 @@ avtRayTracer::TightenClippingPlanes(const avtViewInfo &view,
 
 
 // ****************************************************************************
-//  Method: avtRayTracer::computeRay
+//  Method: avtRayTracer::ComputeRay
 //
-//  Purpose:
+//  Purpose: TODO
 //
-//  Programmer:
-//  Creation:
+//  Programmer: August 14, 2016
+//  Creation:   Pascal Grosset
 //
 //  Modifications:
 //
@@ -1618,23 +1618,23 @@ avtRayTracer::TightenClippingPlanes(const avtViewInfo &view,
 void
 avtRayTracer::ComputeRay(double camera[3], double position[3], double ray[3])
 {
-	for (int i=0; i<3; i++)
-		ray[i] = position[i] - camera[i];
+    for (int i=0; i<3; i++)
+        ray[i] = position[i] - camera[i];
 
-	double mag = sqrt( ray[0]*ray[0] + ray[1]*ray[1] + ray[2]*ray[2] );
+    double mag = sqrt( ray[0]*ray[0] + ray[1]*ray[1] + ray[2]*ray[2] );
 
-	for (int i=0; i<3; i++)
-		ray[i] = ray[i]/mag;
+    for (int i=0; i<3; i++)
+        ray[i] = ray[i]/mag;
 }
 
 
 // ****************************************************************************
-//  Method: avtRayTracer::intersect
+//  Method: avtRayTracer::Intersect
 //
-//  Purpose:
+//  Purpose: TODO
 //
-//  Programmer:
-//  Creation:
+//  Programmer: August 14, 2016
+//  Creation:   Pascal Grosset
 //
 //  Modifications:
 //
@@ -1643,49 +1643,49 @@ bool
 avtRayTracer::Intersect(double bounds[6], double ray[3], double cameraPos[3],
 			double &tMin, double &tMax)
 {
-	double t1, t2, tXMin, tXMax, tYMin, tYMax, tZMin, tZMax;
-	double invRay[3];
+    double t1, t2, tXMin, tXMax, tYMin, tYMax, tZMin, tZMax;
+    double invRay[3];
 
-	for (int i=0; i<3; i++)
-		invRay[i] = 1.0 / ray[i];
+    for (int i=0; i<3; i++)
+        invRay[i] = 1.0 / ray[i];
 
-	// X
-	t1 = (bounds[0] - cameraPos[0]) * invRay[0];
-	t2 = (bounds[1] - cameraPos[0]) * invRay[0];
+    // X
+    t1 = (bounds[0] - cameraPos[0]) * invRay[0];
+    t2 = (bounds[1] - cameraPos[0]) * invRay[0];
 
-	tXMin = std::min(t1, t2);
-	tXMax = std::max(t1, t2);
-
-
-	// Y
-	t1 = (bounds[2] - cameraPos[1]) * invRay[1];
-	t2 = (bounds[3] - cameraPos[1]) * invRay[1];
-
-	tYMin = std::min(t1, t2);
-	tYMax = std::max(t1, t2);
+    tXMin = std::min(t1, t2);
+    tXMax = std::max(t1, t2);
 
 
-	// Z
-	t1 = (bounds[4] - cameraPos[2]) * invRay[2];
-	t2 = (bounds[5] - cameraPos[2]) * invRay[2];
+    // Y
+    t1 = (bounds[2] - cameraPos[1]) * invRay[1];
+    t2 = (bounds[3] - cameraPos[1]) * invRay[1];
 
-	tZMin = std::min(t1, t2);
-	tZMax = std::max(t1, t2);
-
-
-	// Comparing
-	if ((tXMin > tYMax) || (tYMin > tXMax))
-		return false;
-
-	tMin = t1 = std::max(tXMin, tYMin);
-	tMax = t2 = std::min(tXMax, tYMax);
+    tYMin = std::min(t1, t2);
+    tYMax = std::max(t1, t2);
 
 
-	if ((t1 > tZMax) || (tZMin > t2))
-		return false;
+    // Z
+    t1 = (bounds[4] - cameraPos[2]) * invRay[2];
+    t2 = (bounds[5] - cameraPos[2]) * invRay[2];
 
-	tMin = std::max(t1, tZMin);
-	tMax = std::min(t2, tYMax);
+    tZMin = std::min(t1, t2);
+    tZMax = std::max(t1, t2);
 
-	return true;
+
+    // Comparing
+    if ((tXMin > tYMax) || (tYMin > tXMax))
+        return false;
+
+    tMin = t1 = std::max(tXMin, tYMin);
+    tMax = t2 = std::min(tXMax, tYMax);
+
+
+    if ((t1 > tZMax) || (tZMin > t2))
+        return false;
+
+    tMin = std::max(t1, tZMin);
+    tMax = std::min(t2, tYMax);
+
+    return true;
 }
