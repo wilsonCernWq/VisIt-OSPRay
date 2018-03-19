@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -44,7 +44,7 @@
 #define AVT_OPACITY_MAP_H
 
 #include <pipeline_exports.h>
-#include <iostream>
+#include <visitstream.h>
 
 struct RGBA
 {
@@ -95,15 +95,16 @@ class PIPELINE_API avtOpacityMap
 {
   public:
                                  avtOpacityMap(int = 1024);
+                                 avtOpacityMap(const avtOpacityMap &obj);
     virtual                     ~avtOpacityMap();
+
+    void operator = (const avtOpacityMap &obj);
 
     const RGBA                  *GetTable(void) { return table; };
     const RGBAF                 *GetTableFloat(void) { return transferFn1D; };
     void                         SetTable(unsigned char *, int, double = 1.);
-    void                         SetTable(unsigned char *arr, int te,
-					  double attenuation, float over);
-    void                         SetTableFloat(unsigned char *arr, int te, 
-					       double attenuation, float over);
+    void                         SetTable(unsigned char *arr, int te, double attenuation, float over);
+    void                         SetTableFloat(unsigned char *arr, int te, double attenuation, float over);
     void                         SetTableFloatNOC(unsigned char *arr, int te, double attenuation);
     void                         SetTable(RGBA *, int, double = 1.);
     const RGBA                  &GetOpacity(double);
@@ -120,11 +121,14 @@ class PIPELINE_API avtOpacityMap
     void                         computeVisibleRange();
 
     inline int                   Quantize(const double &);
-    int                          GetNumberOfTableEntries(void) { return tableEntries; };
+    int                          GetNumberOfTableEntries(void)
+                                                      { return tableEntries; };
 
     float                        QuantizeValF(const double &val);
-    int                          QueryTF(double scalarValue, double color[4]);
+    int                          QueryTF(double scalarValue, double color[4]) const;
+    float                        QueryAlpha(double scalarValue) const;
 
+    friend PIPELINE_API ostream &operator << (ostream &, const avtOpacityMap &);
   protected:
     RGBA                        *table;
     RGBAF                       *transferFn1D;
@@ -136,13 +140,6 @@ class PIPELINE_API avtOpacityMap
     double                       minVisibleScalar, maxVisibleScalar;    
 
     void                         SetIntermediateVars(void);
-
-  private:
-    // These methods are defined to prevent accidental use of bitwise copy
-    // implementations.  If you want to re-define them to do something
-    // meaningful, that's fine.
-                                 avtOpacityMap(const avtOpacityMap &) {};
-    avtOpacityMap               &operator=(const avtOpacityMap &) { return *this; };
 };
 
 
@@ -239,7 +236,7 @@ avtOpacityMap::QuantizeValF(const double &val){
 //
 // ****************************************************************************
 inline int
-avtOpacityMap::QueryTF(double scalarValue, double color[4])
+avtOpacityMap::QueryTF(double scalarValue, double color[4]) const
 {
     if (scalarValue <= min){
         int index = 0;
@@ -295,6 +292,31 @@ avtOpacityMap::QueryTF(double scalarValue, double color[4])
     return 1;
 }
 
+inline float
+avtOpacityMap::QueryAlpha(double scalarValue) const
+{
+    if (scalarValue <= min)
+    {
+        return transferFn1D[0].A;
+    }
+
+    if (scalarValue >= max)
+    {
+        int index = tableEntries-1;
+        return transferFn1D[index].A;
+    }
+
+    float indexPos  = static_cast<float>((scalarValue-min) * multiplier);
+    int   indexLow  = static_cast<int>(indexPos);
+    int   indexHigh = static_cast<int>(indexPos+1.0);
+    float indexDiff = indexPos - indexLow;
+    
+    float a0 = transferFn1D[indexLow].A;
+    float a1 = transferFn1D[indexHigh].A;
+
+    float alpha = a0 + indexDiff * (a1 - a0);
+
+    return alpha;
+}
+
 #endif
-
-
