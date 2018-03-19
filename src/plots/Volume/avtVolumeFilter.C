@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -384,7 +384,7 @@ avtVolumeFilter::RenderImageRaycastingSLIVR(avtImage_p opaque_image,
     //
     // Set up the volume renderer.
     //
-    if (atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
+    if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
 	avtCallback::SetOSPRayMode(true);
 	debug1 << "running with OSPRay backend" << std::endl;
     } else {
@@ -653,7 +653,7 @@ avtVolumeFilter::RenderImage(avtImage_p opaque_image,
                              const WindowAttributes &window)
 {
     if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
-	atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR){
+	atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
 	return RenderImageRaycastingSLIVR(opaque_image,window);
     }
 
@@ -1232,7 +1232,7 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
     {
 #ifdef HAVE_LIBSLIVR
         if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
-	    atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
+	    atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
             ds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
 	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
 		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {	    
@@ -1261,7 +1261,7 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
         nds->AddSecondaryVariable(var);
 #ifdef HAVE_LIBSLIVR
         if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
-	    atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
+	    atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
             nds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
 	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
 		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {	    
@@ -1283,7 +1283,7 @@ avtVolumeFilter::ModifyContract(avtContract_p contract)
         nds->AddSecondaryVariable(var);
 #ifdef HAVE_LIBSLIVR
         if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
-	    atts.GetRendererType() == VolumeAttributes::OSPRaySLIVR) {
+	    atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
 	    nds->SetDesiredGhostDataType(GHOST_ZONE_DATA);
 	} else if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
 		   (atts.GetSampling() == VolumeAttributes::Trilinear)) {
