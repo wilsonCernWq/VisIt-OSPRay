@@ -31,7 +31,7 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
     AddPlot("Volume", datainfo['VARIABLE'])
     def drawPlots(VolumeAtts, VolumeType):
         # Splatting, Texture3D, RayCasting, RayCastingIntegration
-        # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        # SLIVR, RayCastingSLIVR, RayCastingOSPRay, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
@@ -58,7 +58,7 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
             DrawPlots()
             SaveWindow()
     if (useOSPRay):
-        drawPlots(atts, atts.OSPRaySLIVR)
+        drawPlots(atts, atts.RayCastingOSPRay)
     if (usePascal):
         drawPlots(atts, atts.RayCastingSLIVR)
     if (useDefault):
@@ -80,7 +80,7 @@ SetDefaultFileOpenOptions("IDX", opt)
 # set TF
 VolumeAtts = VolumeAttributes()
 VolumeAtts.lightingFlag = 0
-VolumeAtts.rendererType = VolumeAtts.OSPRaySLIVR  
+VolumeAtts.rendererType = VolumeAtts.RayCastingOSPRay  
 VolumeAtts.sampling = VolumeAtts.Trilinear  # KernelBased, Rasterization, Trilinear
 VolumeAtts.samplesPerRay = 2
 VolumeAtts.rendererSamples = 3

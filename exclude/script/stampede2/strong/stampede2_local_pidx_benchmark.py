@@ -33,7 +33,7 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
     AddPlot("Volume", datainfo['VARIABLE'])
     def drawPlots(VolumeAtts, VolumeType):
         # Splatting, Texture3D, RayCasting, RayCastingIntegration
-        # SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        # SLIVR, RayCastingSLIVR, RayCastingOSPRay, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
@@ -67,7 +67,7 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
         #     DrawPlots()
         #     SaveWindow()
     if (useOSPRay):
-        drawPlots(atts, atts.OSPRaySLIVR)
+        drawPlots(atts, atts.RayCastingOSPRay)
     if (usePascal):
         drawPlots(atts, atts.RayCastingSLIVR)
     if (useDefault):
@@ -129,8 +129,8 @@ VolumeAtts.useOpacityVarMax = 0
 VolumeAtts.opacityVarMax = 0
 VolumeAtts.smoothData = 0
 VolumeAtts.samplesPerRay = 2
-# Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR, RayCastingSLIVR, OSPRaySLIVR, Tuvok
-VolumeAtts.rendererType = VolumeAtts.OSPRaySLIVR  
+# Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR, RayCastingSLIVR, RayCastingOSPRay, Tuvok
+VolumeAtts.rendererType = VolumeAtts.RayCastingOSPRay  
 VolumeAtts.gradientType = VolumeAtts.CenteredDifferences  # CenteredDifferences, SobelOperator
 VolumeAtts.num3DSlices = 200
 VolumeAtts.scaling = VolumeAtts.Linear  # Linear, Log, Skew

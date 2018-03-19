@@ -18,7 +18,7 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
     AddPlot("Volume", datainfo['VARIABLE'])
     def drawPlots(VolumeAtts, VolumeType):
         # Splatting, Texture3D, RayCasting, RayCastingIntegration, SLIVR
-        # RayCastingSLIVR, OSPRaySLIVR, Tuvok
+        # RayCastingSLIVR, RayCastingOSPRay, Tuvok
         print "drawing volume type: " + str(VolumeType)
         VolumeAtts.rendererType = VolumeType
         SetPlotOptions(VolumeAtts)
@@ -50,7 +50,7 @@ def makePlot(atts, useOSPRay = True, usePascal = True, useDefault = True):
             DrawPlots()
     # do plots
     if (useOSPRay):
-        drawPlots(atts, atts.OSPRaySLIVR)
+        drawPlots(atts, atts.RayCastingOSPRay)
     if (usePascal):
         drawPlots(atts, atts.RayCastingSLIVR)
     if (useDefault):
