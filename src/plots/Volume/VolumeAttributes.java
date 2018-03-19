@@ -1,6 +1,6 @@
 // ***************************************************************************
 //
-// Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+// Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
 // Produced at the Lawrence Livermore National Laboratory
 // LLNL-CODE-442911
 // All rights reserved.
@@ -72,7 +72,7 @@ public class VolumeAttributes extends AttributeSubject implements Plugin
     public final static int RENDERER_RAYCASTINGINTEGRATION = 3;
     public final static int RENDERER_SLIVR = 4;
     public final static int RENDERER_RAYCASTINGSLIVR = 5;
-    public final static int RENDERER_OSPRAYSLIVR = 6;
+    public final static int RENDERER_RAYCASTINGOSPRAY = 6;
     public final static int RENDERER_TUVOK = 7;
 
     public final static int GRADIENTTYPE_CENTEREDDIFFERENCES = 0;
@@ -199,7 +199,7 @@ public class VolumeAttributes extends AttributeSubject implements Plugin
 
     public VolumeAttributes(VolumeAttributes obj)
     {
-        super(VolumeAttributes_numAdditionalAtts);
+        super(obj);
 
         int i;
 

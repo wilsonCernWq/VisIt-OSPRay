@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -48,8 +48,9 @@
 
 static const char *Renderer_strings[] = {
 "Splatting", "Texture3D", "RayCasting", 
-"RayCastingIntegration", "SLIVR", "RayCastingSLIVR", 
-"OSPRaySLIVR", 
+"RayCastingIntegration", "SLIVR", 
+"RayCastingSLIVR", 
+"RayCastingOSPRay", 
 "Tuvok"};
 
 std::string
@@ -2547,7 +2548,7 @@ VolumeAttributes::ChangesRequireRecalculation(const VolumeAttributes &obj) const
 
     if (rendererType == VolumeAttributes::RayCasting ||
         rendererType == VolumeAttributes::RayCastingSLIVR || 
-        rendererType == VolumeAttributes::OSPRaySLIVR || 
+        rendererType == VolumeAttributes::RayCastingOSPRay || 
         rendererType == VolumeAttributes::RayCastingIntegration)
     {
         // Trilinear requires ghost zone while Rasterization and KernelBased do not
@@ -2576,7 +2577,7 @@ VolumeAttributes::ChangesRequireRecalculation(const VolumeAttributes &obj) const
         // modes does not require a reexecute.
         if(obj.rendererType == VolumeAttributes::RayCasting ||
            obj.rendererType == VolumeAttributes::RayCastingSLIVR || 
-           obj.rendererType == VolumeAttributes::OSPRaySLIVR || 
+           obj.rendererType == VolumeAttributes::RayCastingOSPRay || 
            obj.rendererType == VolumeAttributes::RayCastingIntegration)
         {
             return true;
