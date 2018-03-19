@@ -89,7 +89,7 @@
         RayCastingIntegration
         SLIVR
 	RayCastingSLIVR
-	RayCastingOSPRay
+	OSPRaySLIVR
         Tuvok
       </Enum>
       <Enum name="GradientType">

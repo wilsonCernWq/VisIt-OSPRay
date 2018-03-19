@@ -1,6 +1,6 @@
 #*****************************************************************************
 #
-# Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
+# Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 # Produced at the Lawrence Livermore National Laboratory
 # LLNL-CODE-442911
 # All rights reserved.
@@ -418,11 +418,6 @@
 #    Eric Brugger, Wed May 17 16:53:48 PDT 2017
 #    I added support for the LLVM and OpenSWR packages.
 #
-#    Eric Brugger, Tue Mar 13 13:24:56 PDT 2018
-#    I modified the header install command to exclude any directories named
-#    icons. Previously, this resulted in a couple of invalid symbolic links
-#    ending up in the distribution file.
-#
 #****************************************************************************/
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.0 FATAL_ERROR)
@@ -529,19 +524,15 @@ SET(VTK_MINIMUM_VERSION "6.0.0" CACHE INTERNAL "minimum version of vtk that VisI
 
 SET(NEKTAR++_MINIMUM_VERSION "4.0.0" CACHE INTERNAL "minimum version of Nektar++ that VisIt can use")
 
-FUNCTION(SETUP_APP_VERSION name ver_ascii )
-  IF(${ver_ascii} VERSION_LESS ${${name}_MINIMUM_VERSION}})
+FUNCTION(SETUP_APP_VERSION name ver )
+  IF(${ver} VERSION_LESS ${${name}_MINIMUM_VERSION}})
       MESSAGE(FATAL_ERROR "${name} version must be at least ${${name}_MINIMUM_VERSION}}")
   ENDIF()
-  STRING( REGEX REPLACE "([0-9]+).[0-9]+.[0-9]+" "\\1" ver_major ${ver_ascii} )
-  STRING( REGEX REPLACE "[0-9]+.([0-9]+).[0-9]+" "\\1" ver_minor ${ver_ascii} )
-  STRING( REGEX REPLACE "[0-9]+.[0-9]+.([0-9]+)" "\\1" ver_patch ${ver_ascii} )
-  SET(${name}_VERSION "${ver_ascii}"  CACHE INTERNAL "")
-  SET(${name}_MAJOR_VERSION "${ver_major}" CACHE INTERNAL "")
-  SET(${name}_MINOR_VERSION "${ver_minor}" CACHE INTERNAL "")
-  SET(${name}_PATCH_VERSION "${ver_patch}" CACHE INTERNAL "")
-  math( EXPR ver_hex "(${ver_major}<<16)|(${ver_minor}<<8)|(${ver_patch})")
-  SET(${name}_VERSION_HEX "${ver_hex}" CACHE INTERNAL "")
+  STRING( REGEX REPLACE "([0-9]+).[0-9]+.[0-9]+" "\\1" vmaj ${ver} )
+  STRING( REGEX REPLACE "[0-9]+.([0-9]+).[0-9]+" "\\1" vmin ${ver} )
+  SET(${name}_VERSION "${ver}"  CACHE INTERNAL "")
+  SET(${name}_MAJOR_VERSION   "${vmaj}" CACHE INTERNAL "")
+  SET(${name}_MINOR_VERSION   "${vmin}" CACHE INTERNAL "")
 ENDFUNCTION()
 
 #-----------------------------------------------------------------------------
@@ -1061,7 +1052,6 @@ ELSE(VISIT_HEADERS_SKIP_INSTALL)
         PATTERN "*.hpp"
         PATTERN ".svn" EXCLUDE
         PATTERN "CMakeFiles" EXCLUDE
-        PATTERN "icons" EXCLUDE
     )
 ENDIF(VISIT_HEADERS_SKIP_INSTALL)
 
@@ -1751,11 +1741,6 @@ SET(VISIT_COMMON_INCLUDES
 if(HAVE_ZLIB_H)
     list(APPEND VISIT_COMMON_INCLUDES ${ZLIB_INCLUDE_DIR})
 endif()
-
-# macros/defines needed by CMake/VisItMacros.cmake
-if (NOT DEFINED VISIT_REPLACE_DEBUG_FLAGS)
-  set(VISIT_REPLACE_DEBUG_FLAGS TRUE)
-endif ()
 
 # macros/defines also needed by PluginVsInstall.cmake.in
 INCLUDE(${VISIT_SOURCE_DIR}/CMake/VisItMacros.cmake)

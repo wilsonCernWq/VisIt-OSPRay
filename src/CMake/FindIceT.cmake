@@ -1,6 +1,6 @@
 #*****************************************************************************
 #
-# Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
+# Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 # Produced at the Lawrence Livermore National Laboratory
 # LLNL-CODE-442911
 # All rights reserved.
@@ -43,14 +43,23 @@
 # Ice-T provides an ICETConfig.cmake file that we could include but it appears 
 # to have errors in the computed library and include paths. If those problems
 # get resolved, we can uncomment these lines and remove our own detection code.
-#IF(VISIT_ICET_DIR)
-#    INCLUDE(${VISIT_ICET_DIR}/lib/ICETConfig.cmake)
-#ENDIF(VISIT_ICET_DIR)
+#IF(ICET_DIR)
+#INCLUDE(${ICET_DIR}/lib/ICETConfig.cmake)
+#ENDIF(ICET_DIR)
 
 # Use the ICET_DIR hint from the config-site .cmake file 
 # Except on windows, where it is part of the repo.
 
-INCLUDE(${VISIT_SOURCE_DIR}/CMake/SetUpThirdParty.cmake)
-
-SET_UP_THIRD_PARTY(ICET lib include IceTCore IceTGL IceTMPI)
+IF(EXISTS "${ICET_DIR}/lib/ICETConfig.cmake")
+    INCLUDE(${VISIT_SOURCE_DIR}/CMake/SetUpThirdParty.cmake)
+    SET_UP_THIRD_PARTY(ICET lib include icet icet_strategies icet_mpi)
+    SET(ICET_VERSION "1.0.0")
+ELSE(EXISTS "${ICET_DIR}/lib/ICETConfig.cmake")
+    INCLUDE(${VISIT_SOURCE_DIR}/CMake/SetUpThirdParty.cmake)
+    SET_UP_THIRD_PARTY(ICET lib include IceTCore IceTMPI IceTGL)
+    SET(ICET_INCLUDE_DIR ${ICET_INCLUDE_DIR} ${ICET_INCLUDE_DIRS})
+    SET(ICET_LIB ${ICET_CORE_LIBS} ${ICET_MPI_LIBS})
+    SET(ICET_OPENGL ${ICET_GL_LIBS})
+    SET(ICET_VERSION "2.0.0")
+ENDIF(EXISTS "${ICET_DIR}/lib/ICETConfig.cmake")
 

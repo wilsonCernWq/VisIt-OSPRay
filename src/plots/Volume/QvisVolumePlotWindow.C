@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -1314,15 +1314,15 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
         sobelButton->setEnabled(false);
         break;
 
-    case VolumeAttributes::RayCastingOSPRay:
+    case VolumeAttributes::OSPRaySLIVR:
         EnableSLIVRGroup();
         resampleGroup->setEnabled(false);
         raycastingGroup->setVisible(false);
         UpdateLowGradientGroup(false);
-        materialProperties->setEnabled(volumeAtts->GetRendererType()==VolumeAttributes::RayCastingOSPRay);
+        materialProperties->setEnabled(volumeAtts->GetRendererType()==VolumeAttributes::OSPRaySLIVR);
         EnableSamplingMethods(true);
-        samplesPerRayWidget->setEnabled(volumeAtts->GetRendererType()!=VolumeAttributes::RayCastingOSPRay);
-        rendererSamplesWidget->setEnabled(volumeAtts->GetRendererType()==VolumeAttributes::RayCastingOSPRay);
+        samplesPerRayWidget->setEnabled(volumeAtts->GetRendererType()!=VolumeAttributes::OSPRaySLIVR);
+        rendererSamplesWidget->setEnabled(volumeAtts->GetRendererType()==VolumeAttributes::OSPRaySLIVR);
         rendererSamplesSLIVRLabel->setEnabled(true);
         rendererSamplesSLIVR->setEnabled(true);
         centeredDiffButton->setEnabled(true);
@@ -1373,7 +1373,7 @@ QvisVolumePlotWindow::CreateRendererOptionsGroup(int maxWidth)
 #ifdef HAVE_LIBSLIVR
     rendererTypesComboBox->addItem(tr("SLIVR"));
     rendererTypesComboBox->addItem(tr("Ray casting: SLIVR"));
-    rendererTypesComboBox->addItem(tr("Ray casting: OSPRay"));
+    rendererTypesComboBox->addItem(tr("Ray casting: OSPRay SLIVR"));
 #endif
     connect(rendererTypesComboBox, SIGNAL(activated(int)),
             this, SLOT(rendererTypeChanged(int)));
@@ -1938,9 +1938,9 @@ QvisVolumePlotWindow::UpdateWindow(bool doAll)
                 int idx=std::max(1,rendererTypesComboBox->findText("Ray casting: SLIVR"));
                 rendererTypesComboBox->setCurrentIndex(idx);
             }
-            else if (volumeAtts->GetRendererType() == VolumeAttributes::RayCastingOSPRay)
+            else if (volumeAtts->GetRendererType() == VolumeAttributes::OSPRaySLIVR)
             {
-                int idx=std::max(1,rendererTypesComboBox->findText("Ray casting: OSPRay"));
+                int idx=std::max(1,rendererTypesComboBox->findText("Ray casting: OSPRay SLIVR"));
                 rendererTypesComboBox->setCurrentIndex(idx);
             }
 
@@ -3821,8 +3821,8 @@ QvisVolumePlotWindow::rendererTypeChanged(int val)
               volumeAtts->SetRendererType(VolumeAttributes::SLIVR);
           else if (rendererTypesComboBox->findText("Ray casting: SLIVR") == val)
               volumeAtts->SetRendererType(VolumeAttributes::RayCastingSLIVR);
-          else if (rendererTypesComboBox->findText("Ray casting: OSPRay") == val)
-              volumeAtts->SetRendererType(VolumeAttributes::RayCastingOSPRay);
+          else if (rendererTypesComboBox->findText("Ray casting: OSPRay SLIVR") == val)
+              volumeAtts->SetRendererType(VolumeAttributes::OSPRaySLIVR);
 
           break;
       }
