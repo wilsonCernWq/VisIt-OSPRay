@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -81,11 +81,11 @@ class  avtMassVoxelExtractor;
 class  avtPointExtractor;
 class  avtPyramidExtractor;
 class  avtSamplePointArbitrator;
+class  avtSLIVRVoxelExtractor;
 class  avtTetrahedronExtractor;
 class  avtWedgeExtractor;
 
 class  avtRayFunction;
-
 
 // ****************************************************************************
 //  Class: avtSamplePointExtractor
@@ -146,216 +146,195 @@ class  avtRayFunction;
 //    Kevin Griffin, Fri Apr 22 16:31:57 PDT 2016
 //    Added support for polygons.
 //
-//    Qi Wu, to be determined
-//
 // ****************************************************************************
 
 class AVTFILTERS_API avtSamplePointExtractor 
     : public avtDatasetToSamplePointsFilter
 {
-public:
-    typedef std::multimap<int, slivr::ImgData>::iterator iter_t;
-
-public:
-    // Output data for RC SLIVR
-    std::vector<slivr::ImgMetaData>    imageMetaPatchVector;
-    std::multimap<int, slivr::ImgData> imgDataHashMap;
-
-public:
+  public:
                               avtSamplePointExtractor(int, int, int);
     virtual                  ~avtSamplePointExtractor();
+
     virtual const char       *GetType(void)
-    { return "avtSamplePointExtractor"; };
+                                         { return "avtSamplePointExtractor"; };
     virtual const char       *GetDescription(void)
-    { return "Extracting sample points"; };
-    void                      RegisterRayFunction(avtRayFunction *_rf) { rayfoo = _rf; };
-    void                      RestrictToTile(int, int, int, int);
-    void                      StartTiling(void) { shouldDoTiling = true; }; // added by Qi 
-    void                      StopTiling(void) { shouldDoTiling = false; };
+                                         { return "Extracting sample points";};
+
+    void                      RegisterRayFunction(avtRayFunction *rf)
+                                         { rayfoo = rf; };
     void                      SendCellsMode(bool);
     void                      SetRectilinearGridsAreInWorldSpace(bool, 
-								 const avtViewInfo &,double);
-    void                      Set3DMode(bool _m) { modeIs3D = _m; };
+                                                   const avtViewInfo &,double);
+    void                      RestrictToTile(int, int, int, int);
+    void                      StopTiling(void) { shouldDoTiling = false; };
+
+    void                      Set3DMode(bool m) { modeIs3D = m; };
     void                      SetKernelBasedSampling(bool);
     void                      SetJittering(bool);
-    void                      SetUpArbitrator(std::string &, bool);
-    void                      SetTrilinear(bool _t) { trilinearInterpolation = _t; };
-    void                      SetRayCastingSLIVR(bool _s) { rayCastingSLIVR = _s; };
-    void                      SetRayCastingSLIVRParallel(bool _p)
-    {
-	rayCastingSLIVRParallel = _p;
-    };
-    void                      SetLighting(bool _l) { lighting = _l; };
-    void                      SetLightPosition(double _lp[4])
-    {
-	for (int i=0;i<4;i++) { lightPosition[i] = _lp[i]; }
-    }
-    void                      SetLightDirection(double _ld[3])
-    {
-	for (int i=0;i<3;i++) { lightDirection[i] = _ld[i]; }
-    }
-    void                      SetMatProperties(double _matProp[4])
-    {
-	for (int i=0;i<4;i++) { materialProperties[i] = _matProp[i]; }
-    }
-    void                      SetTransferFn(avtOpacityMap *_transferFn1D)
-    {
-	transferFn1D = _transferFn1D;
-    };
-    void                      SetViewDirection(double *_vD) 
-    {
-	std::copy(_vD, _vD + 3, viewDirection);
-    }
-    void                      SetClipPlanes(double _camClip[2])
-    {
-	clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1];
-    }
-    void                      SetPanPercentages(double _pan[2])
-    {
-	panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1];
-    }
-    void                      SetImageZoom(double _zoom) { imageZoom = _zoom; }
-    void                      SetDepthExtents(double _depthExtents[2])
-    {
-	depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1];
-    }
-    void                      SetMVPMatrix(vtkMatrix4x4 *_mvp)
-    {
-	modelViewProj->DeepCopy(_mvp);
-    }
 
-    void                      GetSpatialExtents(double _spatialExtents[6])
-    {
-	for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i];
-    }
-    void                      GetAvgPatchExtents(double _avgPatchExtents[6])
-    {
-	for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i];
-    }
-    void                      GetCellDimension(double _cellDimension[6])
-    {
-	for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i];
-    }
-    void                      GetProjectedExents(int _projectedExtents[4])
-    {
-	for (int i=0; i<4; i++) _projectedExtents[i]=projectedImageExtents[i];
-    }
-    //
-    // Getting image information
-    //
-    // gets the max number of patches it could have
+    void                      SetUpArbitrator(std::string &name, bool min);
+
+    void                      SetTrilinear(bool t) 
+                                               { trilinearInterpolation = t; };
+
+    // Pass Rendering States into Lower Extractors
+    void                      SetLighting(bool l) {lighting = l; };
+    void                      SetLightPosition(double lp[4])
+                     { for (int i = 0; i < 4; ++i) lightPosition[i] = lp[i]; };
+    void                      SetLightDirection(double ld[3]) 
+                    { for (int i = 0; i < 3; ++i) lightDirection[i] = ld[i]; };
+    void                      SetMatProperties(double _matProp[4]) 
+                  { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; };
+    void                      SetTransferFn(avtOpacityMap *tfn1D) 
+                                                     { transferFn1D = tfn1D; };
+    void                      SetViewDirection(double *vD)
+                         { for (int i=0; i<3; i++) viewDirection[i] = vD[i]; };
+    void                      SetClipPlanes(double cp[2])
+                             { clipPlanes[0] = cp[0]; clipPlanes[1] = cp[1]; };
+    void                      SetPanPercentages(double p[2])
+                         { panPercentage[0] = p[0]; panPercentage[1] = p[1]; };
+    void                      SetDepthExtents(double de[2])
+                         { depthExtents[0] = de[0]; depthExtents[1] = de[1]; };
+    void                      SetMVPMatrix(vtkMatrix4x4 *mvp)
+                                             { modelViewProj->DeepCopy(mvp); };
+
+    // Used by RayCasting:SLIVR
+    void                      SetRayCastingSLIVR(bool s) 
+                                                     { rayCastingSLIVR = s;  };
+    void                      SetRayCastingSLIVRParallel(bool p) 
+                                             { rayCastingSLIVRParallel = p;  };
+
+    // Used by RayCasting:SLIVR
+    void                      GetSpatialExtents(double se[6])
+                   { for (int i=0; i<6; i++) se[i] = minMaxSpatialBounds[i]; };
+    void                      GetAvgPatchExtents(double ae[6])
+                       { for (int i=0; i<3; i++) ae[i] = avgPatchExtents[i]; };
+    void                      GetCellDimension(double cd[6])
+                         { for (int i=0; i<3; i++) cd[i] = cellDimension[i]; };
+    void                      GetProjectedExents(int pe[4])
+                   { for (int i=0; i<4; i++) pe[i]=projectedImageExtents[i]; };
+
+    // Getting RayCasting:SLIVR Image Information
+    // Gets the max number of patches it could have
     int                       GetTotalAssignedPatches() 
-    {
-	return totalAssignedPatches;
-    }    
-    // gets the number of patches
-    int                       GetImgPatchSize(){ return patchCount;};
-
-    // gets the metadata
-    slivr::ImgMetaData&       GetImgMetaPatch(int patchId)
-    { return imageMetaPatchVector.at(patchId); }
-    // gets the image & erase its existence
-    void                      GetAndDelImgData
-	(int patchId, slivr::ImgData &tempImgData);
-
-    // deletes patches
+                                              { return totalAssignedPatches; };
+    // Gets the number of patches
+    int                       GetImgPatchSize() { return patchCount; };
+    // Gets the metadata
+    slivr::ImgMetaData        GetImgMetaPatch(int patchId)
+                                  { return imageMetaPatchVector.at(patchId); };
+    // Gets the image & erase its existence
+    void                      GetAndDelImgData(int patchId,
+					       slivr::ImgData &tempImgData);
+    // Deletes patches
     void                      DelImgPatches();
-    // Set background buffer
-    void                      SetDepthBuffer(float *_zBuffer, int _size)
-    {
-	depthBuffer = _zBuffer;
-    }
-    void                      SetRGBBuffer(unsigned char *_colorBuffer, 
-					   int _width, int _height)
-    {
-	rgbColorBuffer = _colorBuffer;
-    }
-    void                      SetBufferExtents(int _extents[4])
-    {
-	for (int i=0;i<4; i++) bufferExtents[i] = _extents[i];
-    }
 
-    // Qi add for ospray  
+    // Set background buffer
+    void                      SetImageZoom(double z) { imageZoom = z; }
+    void                      SetDepthBuffer(float *zBuffer, int size)
+                                                     { depthBuffer= zBuffer; };
+    void                      SetRGBBuffer(unsigned char *cb, int w, int h)
+                                                      { rgbColorBuffer = cb; };
+    void                      SetBufferExtents(int e[4])
+                          { for (int i=0; i<4; i++) bufferExtents[i] = e[i]; };
+
+    // Added by Qi (March 2018) for RayCasting:OSPRay  
     void SetOSPRay(OSPVisItContext* o) { ospray = o; }
     void SetRendererSampleRate(double r) { rendererSampleRate = r; }
     void SetFullImageExtents(int extents[4]) 
     {
 	fullImageExtents[0] = extents[0];
 	fullImageExtents[1] = extents[1];
-	fullImageExtents[2] = extents[2];	
+	fullImageExtents[2] = extents[2];
 	fullImageExtents[3] = extents[3];
     }
 
-protected:
-    int                       fullImageExtents[4];
-    int                       width,       height,       depth;
+    // Output data for RC SLIVR
+    std::vector<slivr::ImgMetaData>    imageMetaPatchVector;
+    std::multimap<int, slivr::ImgData> imgDataHashMap;
+    typedef std::multimap<int, slivr::ImgData>::iterator iter_t;
+
+  protected:
+    int                       width, height, depth;
     int                       currentNode, totalNodes;
-    int                       widthMin,    widthMax;
-    int                       heightMin,   heightMax;
+
     bool                      shouldDoTiling;
+    int                       width_min, width_max;
+    int                       height_min, height_max;
     bool                      modeIs3D;
     bool                      kernelBasedSampling;
-    double                    pointRadius;
+    double                    point_radius;
     double                    minMaxSpatialBounds[6];
     double                    avgPatchExtents[3];
     double                    cellDimension[3];
-    // background + other plots
-    float                     *depthBuffer;       // depth buffer for the background and other plots
-    unsigned char             *rgbColorBuffer;    // bounding box + pseudo color + ...
-    int                       bufferExtents[4];   // extents of the buffer( minX, maxX, minY, maxY)
-    // attributor
+
+    // Background + other plots
+    // depth buffer for the background and other plots
+    float                     *depthBuffer; 
+    // bounding box + pseudo color + ...
+    unsigned char             *rgbColorBuffer; 
+    // extents of the buffer( minX, maxX, minY, maxY)
+    int                       bufferExtents[4]; 
+
     bool                      shouldSetUpArbitrator;
     std::string               arbitratorVarName;
     bool                      arbitratorPrefersMinimum;
     avtSamplePointArbitrator *arbitrator;
-    // different extractors
+
     avtHexahedronExtractor   *hexExtractor;
     avtHexahedron20Extractor *hex20Extractor;
     avtMassVoxelExtractor    *massVoxelExtractor;
+    avtSLIVRVoxelExtractor   *slivrVoxelExtractor;
     avtPointExtractor        *pointExtractor;
     avtPyramidExtractor      *pyramidExtractor;
     avtTetrahedronExtractor  *tetExtractor;
     avtWedgeExtractor        *wedgeExtractor;
-    // miscellaneous
+
     bool                      sendCells;
     bool                      jitter;
     avtRayFunction           *rayfoo;
+
     bool                      rectilinearGridsAreInWorldSpace;
     avtViewInfo               viewInfo;
     double                    aspect;
     int                       projectedImageExtents[4];
+
     int                       patchCount;
     int                       totalAssignedPatches;
-    // triliniear / raycastin SLIVR
-    bool                      trilinearInterpolation;
-    bool                      rayCastingSLIVR;
-    bool                      rayCastingSLIVRParallel;
+
     // Camera stuff
-    double                    viewDirection[3];  // this is camera direction also
+    double                    viewDirection[3];
     double                    depthExtents[2];
     double                    clipPlanes[2];
     double                    panPercentage[2];
     double                    imageZoom;
     vtkMatrix4x4             *modelViewProj;
-    // lighting & material
+
+    // Lighting & Material
     bool                      lighting;
     double                    lightPosition[4];
     double                    lightDirection[3];
     double                    materialProperties[4];
-    avtOpacityMap             *transferFn1D;
+    avtOpacityMap            *transferFn1D;
+
+    // Triliniear / RayCastin SLIVR
+    bool                      trilinearInterpolation;
+    bool                      rayCastingSLIVR;
+    bool                      rayCastingSLIVRParallel;
+    
+    // RayCasting:OSPRay
+    int                       fullImageExtents[4];
+    OSPVisItContext           *ospray;
+    double                    rendererSampleRate;
+
+    // Used by RayCasting:OSPRay && RayCasting:SLIVR
     virtual void              Execute(void);
     virtual void              PreExecute(void);
     virtual void              PostExecute(void);
     virtual void              ExecuteTree(avtDataTree_p);
     void                      SetUpExtractors(void);
-    slivr::ImgMetaData        initMetaPatch(int id);    // initialize a patch
-    //
-    // OSPRay stuffs
-    //
-    OSPVisItContext               *ospray;
-    double                    rendererSampleRate;
-    
-protected:
+    slivr::ImgMetaData        InitMetaPatch(int id);  // initialize a patch
+
     typedef struct 
     {
       std::vector<int>                  cellDataIndex;
@@ -367,21 +346,37 @@ protected:
       int                               nVars;
     } LoadingInfo;
 
-    inline void               ExtractHex(vtkHexahedron*,vtkDataSet*, int, LoadingInfo &);
-    inline void               ExtractHex20(vtkQuadraticHexahedron*,vtkDataSet*, int, LoadingInfo &);
-    inline void               ExtractVoxel(vtkVoxel *, vtkDataSet *, int, LoadingInfo &);
-    inline void               ExtractTet(vtkTetra *, vtkDataSet *, int, LoadingInfo &);
-    inline void               ExtractPyramid(vtkPyramid *, vtkDataSet *, int, LoadingInfo &);
-    inline void               ExtractWedge(vtkWedge *, vtkDataSet *, int, LoadingInfo &);
-    inline void               ExtractTriangle(vtkTriangle *, vtkDataSet *, int, LoadingInfo &);
-    inline void               ExtractQuad(vtkQuad *, vtkDataSet *, int, LoadingInfo &);
-    inline void               ExtractPixel(vtkPixel *, vtkDataSet *, int, LoadingInfo &);
-    inline void               ExtractPolygon(vtkPolygon *, vtkDataSet *, int, LoadingInfo &);
+    inline void               ExtractHex(vtkHexahedron*,vtkDataSet*, int,
+					 LoadingInfo &);
+    inline void               ExtractHex20(vtkQuadraticHexahedron*,
+					   vtkDataSet*, int,
+                                           LoadingInfo &);
+    inline void               ExtractVoxel(vtkVoxel *, vtkDataSet *, int,
+                                           LoadingInfo &);
+    inline void               ExtractTet(vtkTetra *, vtkDataSet *, int,
+                                           LoadingInfo &);
+    inline void               ExtractPyramid(vtkPyramid *, vtkDataSet *, int,
+                                           LoadingInfo &);
+    inline void               ExtractWedge(vtkWedge *, vtkDataSet *, int,
+                                           LoadingInfo &);
+    inline void               ExtractTriangle(vtkTriangle *, vtkDataSet *, int,
+                                           LoadingInfo &);
+    inline void               ExtractQuad(vtkQuad *, vtkDataSet *, int,
+                                           LoadingInfo &);
+    inline void               ExtractPixel(vtkPixel *, vtkDataSet *, int, 
+                                           LoadingInfo &);
+    inline void               ExtractPolygon(vtkPolygon *, vtkDataSet *, int,
+                                             LoadingInfo &);
+
     void                      KernelBasedSample(vtkDataSet *);
     void                      RasterBasedSample(vtkDataSet *, int num = 0);
+
     virtual bool              FilterUnderstandsTransformedRectMesh();
-    void                      GetLoadingInfoForArrays(vtkDataSet *, LoadingInfo &);
+
+    void                      GetLoadingInfoForArrays(vtkDataSet *, 
+						      LoadingInfo &);
 };
+
 
 #endif
 
