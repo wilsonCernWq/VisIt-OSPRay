@@ -115,7 +115,7 @@ VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP
 ##
 ## Uintah
 ##
-SETUP_APP_VERSION(UINTAH 2.1.0)
+SETUP_APP_VERSION(UINTAH 2.5.0)
 VISIT_OPTION_DEFAULT(VISIT_UINTAH_DIR ${VISITHOME}/uintah/${UINTAH_VERSION}/${VISITARCH})
 
 ##
@@ -129,11 +129,6 @@ SET(embree_DIR /home/sci/qwu/software/embree-2.17.0.x86_64.linux)
 SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
 SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-
-# ##
-# ## IceT 2.1.0
-# ##
-# SET(IceT_DIR /home/sci/qwu/software/Hastur/icet/install/lib)
 
 ##
 ## PIDX
