@@ -232,7 +232,7 @@ avtOpacityMap::SetTable(unsigned char *arr, int te, double attenuation)
 
     tableEntries = te;
     table = new RGBA[tableEntries];
-    transferFn1D = new RGBA[tableEntries];
+    transferFn1D = new RGBAF[tableEntries];
     for (int i = 0 ; i < tableEntries ; i++)
     {
         table[i].R = arr[i*4];
