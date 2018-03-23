@@ -104,22 +104,18 @@ protected:
     int              pt_index[AVT_VARIABLE_LIMIT];
     int              pt_vartypes[AVT_VARIABLE_LIMIT];
 protected:
-    static void AssignEight(int vartype, double *vals, const int *index, 
-			    int s, int m, void *array);
+    static void AssignEight(int vartype, double *vals, const int *index, int s, int m, void *array);
     double ConvertToDouble(int vartype, int index, int s, int m, void *array) const;
 
     int    FindMatch(const double *A, const double &a, const int &nA) const;
     int    FindIndex(vtkDataArray *coordArray,const double &pt, const int &last_hit,
                      const int &n) const;
-    void   FindRange(vtkDataArray *coordArray, int ind, double c, 
-		     double &min, double &max) const;
+    void   FindRange(vtkDataArray *coordArray, int ind, double c, double &min, double &max) const;
 
-    // Trilinear Interpolation
-    void   ComputeIndices(int dims[3], int indices[6], int returnIndices[8]) const;
-    void   ComputeIndicesVert(int dims[3], int indices[6], int returnIndices[8]) const;
-    double TrilinearInterpolate(double vals[8], float distRight, 
-				float distTop, float distBack) const;
-    void   GetIndexandDistFromCenter(float dist, 
+    void   computeIndices(int dims[3], int indices[6], int returnIndices[8]) const;
+    void   computeIndicesVert(int dims[3], int indices[6], int returnIndices[8]) const;
+    double trilinearInterpolate(double vals[8], float distRight, float distTop, float distBack) const;
+    void   getIndexandDistFromCenter(float dist, 
                                      int index, int &index_before, int &index_after,
                                      float &dist_before, float &dist_after) const;
 

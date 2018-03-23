@@ -104,8 +104,8 @@ avtOpacityMap::avtOpacityMap(const avtOpacityMap &obj)
     tableEntries = obj.tableEntries;
     table = new RGBA[tableEntries];
     memcpy(table, obj.table, tableEntries * sizeof(RGBA));
-    transferFn1D = new RGBAF[tableEntries];
-    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(RGBAF));
+    transferFn1D = new _RGBA[tableEntries];
+    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(_RGBA));
     min = obj.min;
     max = obj.max;
     range = obj.range;
@@ -122,8 +122,8 @@ void avtOpacityMap::operator = (const avtOpacityMap &obj)
     tableEntries = obj.tableEntries;
     table = new RGBA[tableEntries];
     memcpy(table, obj.table, tableEntries * sizeof(RGBA));
-    transferFn1D = new RGBAF[tableEntries];
-    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(RGBAF));
+    transferFn1D = new _RGBA[tableEntries];
+    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(_RGBA));
     min = obj.min;
     max = obj.max;
     range = obj.range;
@@ -270,7 +270,7 @@ avtOpacityMap::SetTable(unsigned char *arr, int te, double attenuation)
 
     tableEntries = te;
     table = new RGBA[tableEntries];
-    transferFn1D = new RGBAF[tableEntries];
+    transferFn1D = new RGBA[tableEntries];
     for (int i = 0 ; i < tableEntries ; i++)
     {
         table[i].R = arr[i*4];
