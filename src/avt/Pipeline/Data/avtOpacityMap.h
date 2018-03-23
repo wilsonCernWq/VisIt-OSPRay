@@ -44,7 +44,7 @@
 #define AVT_OPACITY_MAP_H
 
 #include <pipeline_exports.h>
-#include <visitstream.h>
+#include <iostream>
 
 struct RGBA
 {
@@ -61,8 +61,6 @@ struct RGBAF
     float B;
     float A;
 };
-
-// added by Qi, for using RGBAF nicely outside the function
 
 // ****************************************************************************
 //  Class: avtOpacityMap
@@ -95,10 +93,7 @@ class PIPELINE_API avtOpacityMap
 {
   public:
                                  avtOpacityMap(int = 1024);
-                                 avtOpacityMap(const avtOpacityMap &obj);
     virtual                     ~avtOpacityMap();
-
-    void operator = (const avtOpacityMap &obj);
 
     const RGBA                  *GetTable(void) { return table; };
     const RGBAF                 *GetTableFloat(void) { return transferFn1D; };
@@ -125,10 +120,8 @@ class PIPELINE_API avtOpacityMap
                                                       { return tableEntries; };
 
     float                        QuantizeValF(const double &val);
-    int                          QueryTF(double scalarValue, double color[4]) const;
-    float                        QueryAlpha(double scalarValue) const;
+    int                          QueryTF(double scalarValue, double color[4]);
 
-    friend PIPELINE_API ostream &operator << (ostream &, const avtOpacityMap &);
   protected:
     RGBA                        *table;
     RGBAF                       *transferFn1D;
@@ -140,6 +133,13 @@ class PIPELINE_API avtOpacityMap
     double                       minVisibleScalar, maxVisibleScalar;    
 
     void                         SetIntermediateVars(void);
+
+  private:
+    // These methods are defined to prevent accidental use of bitwise copy
+    // implementations.  If you want to re-define them to do something
+    // meaningful, that's fine.
+                         avtOpacityMap(const avtOpacityMap &) {;};
+    avtOpacityMap       &operator=(const avtOpacityMap &) { return *this; };
 };
 
 
@@ -236,7 +236,7 @@ avtOpacityMap::QuantizeValF(const double &val){
 //
 // ****************************************************************************
 inline int
-avtOpacityMap::QueryTF(double scalarValue, double color[4]) const
+avtOpacityMap::QueryTF(double scalarValue, double color[4])
 {
     if (scalarValue <= min){
         int index = 0;
@@ -290,33 +290,6 @@ avtOpacityMap::QueryTF(double scalarValue, double color[4]) const
     color[3] = (1.0-indexDiff)*colorLow[3] + indexDiff*colorHigh[3];
 
     return 1;
-}
-
-inline float
-avtOpacityMap::QueryAlpha(double scalarValue) const
-{
-    if (scalarValue <= min)
-    {
-        return transferFn1D[0].A;
-    }
-
-    if (scalarValue >= max)
-    {
-        int index = tableEntries-1;
-        return transferFn1D[index].A;
-    }
-
-    float indexPos  = static_cast<float>((scalarValue-min) * multiplier);
-    int   indexLow  = static_cast<int>(indexPos);
-    int   indexHigh = static_cast<int>(indexPos+1.0);
-    float indexDiff = indexPos - indexLow;
-    
-    float a0 = transferFn1D[indexLow].A;
-    float a1 = transferFn1D[indexHigh].A;
-
-    float alpha = a0 + indexDiff * (a1 - a0);
-
-    return alpha;
 }
 
 #endif

@@ -99,41 +99,6 @@ avtOpacityMap::avtOpacityMap(int te)
     SetIntermediateVars();
 }
 
-avtOpacityMap::avtOpacityMap(const avtOpacityMap &obj)
-{
-    tableEntries = obj.tableEntries;
-    table = new RGBA[tableEntries];
-    memcpy(table, obj.table, tableEntries * sizeof(RGBA));
-    transferFn1D = new _RGBA[tableEntries];
-    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(_RGBA));
-    min = obj.min;
-    max = obj.max;
-    range = obj.range;
-    inverseRange = obj.range;
-    multiplier = obj.multiplier;
-    minVisibleScalarIndex = obj.minVisibleScalarIndex;
-    maxVisibleScalarIndex = obj.maxVisibleScalarIndex;
-    minVisibleScalar = obj.minVisibleScalar;
-    maxVisibleScalar = obj.maxVisibleScalar;
-}
-
-void avtOpacityMap::operator = (const avtOpacityMap &obj)
-{
-    tableEntries = obj.tableEntries;
-    table = new RGBA[tableEntries];
-    memcpy(table, obj.table, tableEntries * sizeof(RGBA));
-    transferFn1D = new _RGBA[tableEntries];
-    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(_RGBA));
-    min = obj.min;
-    max = obj.max;
-    range = obj.range;
-    inverseRange = obj.range;
-    multiplier = obj.multiplier;
-    minVisibleScalarIndex = obj.minVisibleScalarIndex;
-    maxVisibleScalarIndex = obj.maxVisibleScalarIndex;
-    minVisibleScalar = obj.minVisibleScalar;
-    maxVisibleScalar = obj.maxVisibleScalar;
-}
 
 // ****************************************************************************
 //  Method: avtOpacityMap destructor
@@ -248,9 +213,6 @@ avtOpacityMap::SetIntermediateVars(void)
 //
 //    Hank Childs, Tue Dec 21 16:39:22 PST 2004
 //    Add support for attenuation.
-//
-//    Brad Whitlock, Thu Feb 16 10:42:43 PST 2017
-//    fix alpha calculation. Set transferFn1D too.
 //
 // ****************************************************************************
 
@@ -631,37 +593,3 @@ avtOpacityMap::AddRange(double lo, double hi, RGBA &rgba)
 }
 
 
-ostream &
-operator << (ostream &os, const avtOpacityMap &obj)
-{
-    os << "tableEntries = " << obj.tableEntries << endl;
-    os << "table = {";
-    for(int i = 0; i < obj.tableEntries; ++i)
-    {
-        os << "[" << i << "] = {"
-           << static_cast<int>(obj.table[i].R) << ", "
-           << static_cast<int>(obj.table[i].G) << ", "
-           << static_cast<int>(obj.table[i].B) << ", "
-           << static_cast<int>(obj.table[i].A) << "}" 
-           << endl;
-    }
-    os << "}";
-    os << "transferFn1D = {";
-    for(int i = 0; i < obj.tableEntries; ++i)
-    {
-        os << "[" << i << "] = {"
-           << obj.transferFn1D[i].R << ", "
-           << obj.transferFn1D[i].G << ", "
-           << obj.transferFn1D[i].B << ", "
-           << obj.transferFn1D[i].A << "}"
-           << endl;
-    }
-    os << "}";
-    os << "min =" << obj.min << endl;
-    os << "max =" << obj.max << endl;
-    os << "range =" << obj.range << endl;
-    os << "inverseRange =" << obj.inverseRange << endl;
-    os << "multiplier = " << obj.multiplier << endl;
-
-    return os;
-}

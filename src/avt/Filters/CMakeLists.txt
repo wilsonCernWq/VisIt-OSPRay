@@ -112,7 +112,6 @@ avtSamplePointExtractor.C
 avtSamplePointToSurfaceFilter.C
 avtShiftCenteringFilter.C
 avtSimilarityTransformFilter.C
-avtSLIVRVoxelExtractor.C
 avtSmoothPolyDataFilter.C
 avtStaggeringFilter.C
 avtSubsetBlockMergeFilter.C
@@ -123,9 +122,7 @@ avtTiledImageCompositor.C
 avtTimeLoopCollectorFilter.C
 avtTimeLoopFilter.C
 avtTransform.C
-avtValueImageCompositer.C
 avtVertexNormalsFilter.C
-avtVoxelExtractor.C
 avtWarpFilter.C
 avtWholeImageCompositerNoZ.C
 avtWholeImageCompositerWithZ.C
@@ -185,10 +182,6 @@ ENDIF(VISIT_PARALLEL)
 
 # Add link directories
 LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_DIRS} ${MESA_LIBRARY_DIR} ${GLEW_LIBRARY_DIR})
-
-IF(VTKM_FOUND)
-    SET(VISIT_VTKM_LIB visit_vtkm)
-ENDIF()
 
 #********************************* SERIAL ************************************
 ADD_LIBRARY(avtfilters_ser ${AVTFILTERS_SOURCES})
