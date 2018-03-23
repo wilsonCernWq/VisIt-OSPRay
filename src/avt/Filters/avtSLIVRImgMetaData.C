@@ -56,13 +56,13 @@ inline bool CheckThreadedBlend_MetaData()
 	use = atoi(env_use) <= 0; 
     }
     if (!use) {
-	std::cout << "[avtSLIVRImgMetaData] "
-		  << "Not Using Multi-Threading for Blending"
-		  << std::endl;
+	ospout << "[avtSLIVRImgMetaData] "
+	       << "Not Using Multi-Threading for Blending"
+	       << std::endl;
     } else {
-	std::cout << "[avtSLIVRImgMetaData] "
-		  << "Using Multi-Threading for Blending"
-		  << std::endl;
+	ospout << "[avtSLIVRImgMetaData] "
+	       << "Using Multi-Threading for Blending"
+	       << std::endl;
     }
     return use;
 }
