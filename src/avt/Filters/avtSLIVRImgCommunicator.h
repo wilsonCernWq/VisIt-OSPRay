@@ -43,8 +43,8 @@
 #ifndef AVT_SLIVR_IMG_COMMUNICATOR_H
 #define AVT_SLIVR_IMG_COMMUNICATOR_H
 
-#include <filters_exports.h>
-#include <pipeline_exports.h>
+//#include <filters_exports.h>
+//#include <pipeline_exports.h>
 
 #include <avtSLIVRImgMetaData.h>
 #include <string>

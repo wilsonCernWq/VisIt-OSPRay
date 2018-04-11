@@ -39,6 +39,10 @@
 #ifndef IMG_METADATA_H
 #define IMG_METADATA_H
 
+#include <avtSLIVROSPRayFilter.h>
+#include <avtParallel.h>
+#include <ImproperUseException.h>
+
 #include <vtkMatrix4x4.h>
 #include <stdio.h>
 #include <string>
@@ -58,6 +62,9 @@
 // ****************************************************************************
 namespace slivr
 {
+    inline void Exception(const std::string str) { 
+	EXCEPTION1(VisItException, str.c_str()); 
+    }
     double ProjectWorldToScreen
 	(const double worldCoord[3], 
 	 const int screenWidth, const int screenHeight,	 
@@ -82,8 +89,10 @@ namespace slivr
 	 vtkMatrix4x4 *imvp, double worldCoord[3]) 
     {
 	int screen_coord[2] = {x, y};
-	slivr::ProjectScreenToWorld(screen_coord, z, screenWidth, screenHeight, 
-				    panPercentage, imageZoom, imvp, worldCoord);
+	slivr::ProjectScreenToWorld(screen_coord, z, screenWidth, 
+				    screenHeight, 
+				    panPercentage, imageZoom,
+				    imvp, worldCoord);
     }
 
     void ProjectWorldToScreenCube

@@ -41,9 +41,6 @@
 // ************************************************************************ //
 
 #include <avtSLIVRImgCommunicator.h>
-#include <avtSLIVROSPRayFilter.h>
-#include <avtParallel.h>
-#include <ImproperUseException.h>
 
 #ifdef PARALLEL
 #  ifdef VISIT_ICET
@@ -253,7 +250,7 @@ void avtSLIVRImgComm_IceT::Init(int W, int H)
     //
     // Setup IceT parameters
     //
-    if (slivr::CheckVerbose() || DebugStream::Level5()) 
+    if (slivr::CheckVerbose() /*|| DebugStream::Level5()*/) 
     {
 	icetDiagnostics(ICET_DIAG_FULL);
     }
@@ -799,12 +796,11 @@ void
 avtSLIVRImgCommunicator::IceTInit(int W, int H)
 {
     if (!avtSLIVRImgComm_IceT::Valid()) {
-	debug1 << "ERROR: IceT compositor is not valid. "
-	       << "Probably IceT is not compiled with VisIt"
-	       << std::endl;
-	EXCEPTION1(VisItException, 
-		   "ERROR: IceT compositor is not valid. "
-		   "Probably IceT is not compiled with VisIt");
+        std::cerr << "ERROR: IceT compositor is not valid. "
+		  << "Probably IceT is not compiled with VisIt"
+		  << std::endl;
+	slivr::Exception("ERROR: IceT compositor is not valid. "
+			 "Probably IceT is not compiled with VisIt");
 	return;
     }
     compositor = new avtSLIVRImgComm_IceT(mpiSize, mpiRank);
@@ -815,7 +811,7 @@ void avtSLIVRImgCommunicator::IceTSetTile(const float* d,
 					  const int*   e,
 	                                  const float& z)
 {
-    int timingDetail;
+    slivr::timestamp timingDetail;
     //---------------------------------------------------------------------//
     slivr::CheckSectionStart("avtSLIVRImgCommunicator", 
 			     "IceTSetTile", timingDetail,
@@ -831,7 +827,7 @@ void avtSLIVRImgCommunicator::IceTSetTile(const float* d,
 
 void avtSLIVRImgCommunicator::IceTComposite(float*& output)
 {
-    int timingDetail;
+    slivr::timestamp timingDetail;
     //---------------------------------------------------------------------//
     slivr::CheckSectionStart("avtSLIVRImgCommunicator", 
 			     "IceTComposite", timingDetail,
@@ -948,7 +944,7 @@ avtSLIVRImgCommunicator::SerialDirectSend(int localNumPatches,
     //
     // Message
     //
-    debug5 << "-- Serial Direct Send --" << std::endl;
+    //debug5 << "-- Serial Direct Send --" << std::endl;
 
     float *recvImage = NULL;
     int tags[2] = {5781, 5782};
@@ -1480,7 +1476,7 @@ avtSLIVRImgCommunicator::computeRegionExtents(int numRanks, int height)
 	regionRankExtents[i*3+1] = endRegionExtents;
 	regionRankExtents[i*3+2] = _currentRegionHeight;
 
-	debug5 << i << " : (start, end, region): " << startRegionExtents << ", " << endRegionExtents << ", " << _currentRegionHeight << std::endl;
+	//debug5 << i << " : (start, end, region): " << startRegionExtents << ", " << endRegionExtents << ", " << _currentRegionHeight << std::endl;
     }
 }
 
@@ -1514,8 +1510,8 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     //
     // Some Initializations
     //
-    debug5 << "Parallel Direct Send" << endl;
-    int timingDetail;
+    //debug5 << "Parallel Direct Send" << endl;
+    slivr::timestamp timingDetail;
     for (int i=0; i<4; i++)
     {
 	intermediateImageExtents[i] = 0;
@@ -1542,7 +1538,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     if (it == regionVector.end())
     {
 	inRegion = false;
-	debug5 << mpiRank << " ~ SHOULD NOT HAPPEN!!!!: Not found " 
+	ospout << mpiRank << " ~ SHOULD NOT HAPPEN!!!!: Not found " 
 	       << mpiRank <<  " !!!" << std::endl;
     }
     else 
@@ -1555,14 +1551,14 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
 			    "ParallelDirectSendManyPatches", timingDetail,
 			    "Find My position in Regions");
-    debug5 << mpiRank << " ~ myPositionInRegion: " 
-	   << myPositionInRegion << ", numRanks: " << mpiSize << std::endl;
-    debug5 << "width: " << width << ", height : " << height 
-	   << " | fullImageExtents: "
-	   << fullImageExtents[0] << ", " 
-	   << fullImageExtents[1] << ", " 
-	   << fullImageExtents[2] << ", "
-	   << fullImageExtents[3] << std::endl;
+    //ospout << mpiRank << " ~ myPositionInRegion: " 
+    //       << myPositionInRegion << ", numRanks: " << mpiSize << std::endl;
+    //ospout << "width: " << width << ", height : " << height 
+    //       << " | fullImageExtents: "
+    //       << fullImageExtents[0] << ", " 
+    //       << fullImageExtents[1] << ", " 
+    //       << fullImageExtents[2] << ", "
+    //       << fullImageExtents[3] << std::endl;
     //---------------------------------------------------------------------//
 
 
@@ -1584,9 +1580,9 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
 			    "ParallelDirectSendManyPatches", timingDetail,
 			    "Compute Region Boundaries");
-    debug5 << "myStartingHeight: " << myStartingHeight << ", "
-	   << "myEndingHeight: "   << myEndingHeight   << ", "
-	   << "myRegionHeight: "   << myRegionHeight   << std::endl;
+    // ospout << "myStartingHeight: " << myStartingHeight << ", "
+    //        << "myEndingHeight: "   << myEndingHeight   << ", "
+    //	      << "myRegionHeight: "   << myRegionHeight   << std::endl;
     //---------------------------------------------------------------------//
 
 
@@ -1616,7 +1612,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     for (int i=0; i<numRegions; i++) { 
 	extentsPerPartiton.push_back(std::vector<float>()); 
     }
-    debug5 << "Parallel Direct Send ~ numPatches " << numPatches << endl;
+    // ospout << "Parallel Direct Send ~ numPatches " << numPatches << endl;
     int totalSendBufferSize = 0;
     for (int i=0; i<numPatches; i++)
     {
@@ -1635,17 +1631,17 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 							numRegions, 
 							from, to);
 	if (numRegionIntescection <= 0) continue;
-	debug5 << "\nParallel Direct Send ~ patch " << i 
-	       << "  from:" << from << "  to:" << to 
-	       << "  numPatches: " << numPatches 
-	       << "   _patchExtents: " 
-	       << _patchExtents[0] << ", " 
-	       << _patchExtents[1] << ", " 
-	       << _patchExtents[2] << ", " 
-	       << _patchExtents[3] 
-	       << ", fullImageExtents[2]: " << fullImageExtents[2] 
-	       << ", numRegions: " <<  numRegions 
-	       << ", totalSendBufferSize: " << totalSendBufferSize << endl;
+	// ospout << "\nParallel Direct Send ~ patch " << i 
+	//        << "  from:" << from << "  to:" << to 
+	//        << "  numPatches: " << numPatches 
+	//        << "   _patchExtents: " 
+	//        << _patchExtents[0] << ", " 
+	//        << _patchExtents[1] << ", " 
+	//        << _patchExtents[2] << ", " 
+	//        << _patchExtents[3] 
+	//        << ", fullImageExtents[2]: " << fullImageExtents[2] 
+	//        << ", numRegions: " <<  numRegions 
+	//        << ", totalSendBufferSize: " << totalSendBufferSize << endl;
 	for (int j=from; j<=to; j++) numPatchesPerRegion[j]++;
 	for (int partition=from; partition<=to; partition++)
 	{
@@ -1654,9 +1650,9 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 	    int _area = (_extentsYEnd-_extentsYStart)*(_patchExtents[1]-_patchExtents[0]);
 	    areaPerRegion[partition] += _area;
 	    totalSendBufferSize += _area;
-	    debug5 << "_patchExtents[2]: " << _patchExtents[2] << ", region start: " << getScreenRegionStart(partition, fullImageExtents[2], fullImageExtents[3]) <<  ", _extentsYStart: " << _extentsYStart<< endl;
-	    debug5 << "_patchExtents[3]: " << _patchExtents[3] << ", region end: " << getScreenRegionEnd(partition, fullImageExtents[2], fullImageExtents[3]) << ", _extentsYEnd: " << _extentsYEnd << endl;
-	    debug5 << "_area " << _area << endl;
+	    //debug5 << "_patchExtents[2]: " << _patchExtents[2] << ", region start: " << getScreenRegionStart(partition, fullImageExtents[2], fullImageExtents[3]) <<  ", _extentsYStart: " << _extentsYStart<< endl;
+	    //debug5 << "_patchExtents[3]: " << _patchExtents[3] << ", region end: " << getScreenRegionEnd(partition, fullImageExtents[2], fullImageExtents[3]) << ", _extentsYEnd: " << _extentsYEnd << endl;
+	    //debug5 << "_area " << _area << endl;
 	    extentsPerPartiton[partition].push_back(i);
 	    extentsPerPartiton[partition].push_back(_patchExtents[0]);
 	    extentsPerPartiton[partition].push_back(_patchExtents[1]);
@@ -1668,7 +1664,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     }
     totalSendBufferSize *= 4;                           // to account for RGBA
     int numRegionsWithData = numOfRegions.size();
-    debug5 << "\nParallel Direct Send ~ creating buffers" << endl;
+    //debug5 << "\nParallel Direct Send ~ creating buffers" << endl;
     //---------------------------------------------------------------------//
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
 			    "ParallelDirectSendManyPatches", timingDetail,
@@ -1697,7 +1693,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     for (int i=0; i<numRegions; i++)
     {
 	int _dataSize = 0;
-	debug5 << "Region: " << i << "  size: " << extentsPerPartiton[i].size() << std::endl;
+	//ospout << "Region: " << i << "  size: " << extentsPerPartiton[i].size() << std::endl;
 	for (int j=0; j<extentsPerPartiton[i].size(); j+=6)
 	{
 	    int _patchID = extentsPerPartiton[i][j + 0];
@@ -1727,7 +1723,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 	sendBuffer[i*2+0] = numPatchesPerRegion[i];
 	sendBuffer[i*2+1] = areaPerRegion[i];
 
-	debug5 << "Region: " << i << "  numPatchesPerRegion: " << sendBuffer[i*2+0] << ", sendBuffer[i*2+1]: " << sendBuffer[i*2+1] << std::endl;
+	//ospout << "Region: " << i << "  numPatchesPerRegion: " << sendBuffer[i*2+0] << ", sendBuffer[i*2+1]: " << sendBuffer[i*2+1] << std::endl;
     }
     //---------------------------------------------------------------------//
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
@@ -1752,7 +1748,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
 			    "ParallelDirectSendManyPatches", timingDetail,
 			    "Exchange Information about Size to Recv");
-    debug5 << "Parallel Direct Send ~ Exchange information about size to recv" << endl;
+    //ospout << "Parallel Direct Send ~ Exchange information about size to recv" << endl;
     //---------------------------------------------------------------------//
 
 
@@ -1771,7 +1767,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     {
 	infoBufferSize += recvInfoATABuffer[i*2 + 0];   // number of patches per region
 	dataBufferSize += recvInfoATABuffer[i*2 + 1];   // area per region
-	debug5 << "From: " << i << ", #patches: " << recvInfoATABuffer[i*2 + 0] << ", " << recvInfoATABuffer[i*2 + 1] << std::endl;
+	//ospout << "From: " << i << ", #patches: " << recvInfoATABuffer[i*2 + 0] << ", " << recvInfoATABuffer[i*2 + 1] << std::endl;
 	if (i == mpiRank) continue;
 	if (recvInfoATABuffer[i*2 + 0] != 0)
 	    numRegionsToRecvFrom++;
@@ -1813,7 +1809,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     float *recvInfoBuffer = new float[infoBufferSize*6];  // 6 - passing 6 parameters for each patch
     float *recvDataBuffer =  new float[dataBufferSize*4]; // 4 - to account for RGBA
 
-    debug5 << "infoBufferSize: " << infoBufferSize << ", dataBufferSize: " << dataBufferSize << std::endl;
+    //debug5 << "infoBufferSize: " << infoBufferSize << ", dataBufferSize: " << dataBufferSize << std::endl;
     if (myRegionHeight != 0)
     {
         // Recv
@@ -1840,7 +1836,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
             offsetData += recvInfoATABuffer[i*2 + 1]*4;
             recvInfoCount++;
         }
-        debug5 << "Async recv setup - numRegionsToRecvFrom: " << numRegionsToRecvFrom << "   recvInfoCount: " << recvInfoCount << endl;
+        //ospout << "Async recv setup - numRegionsToRecvFrom: " << numRegionsToRecvFrom << "   recvInfoCount: " << recvInfoCount << endl;
     }
     //---------------------------------------------------------------------//
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
@@ -1884,20 +1880,20 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
         }
     }
 
-    debug5 << "Asyn send setup done ~ numRegionsToSend: " << numRegionsToSend << "  mpiSendCount: " << mpiSendCount << endl;
+    //ospout << "Asyn send setup done ~ numRegionsToSend: " << numRegionsToSend << "  mpiSendCount: " << mpiSendCount << endl;
 
     if (myRegionHeight != 0)
     {
-        debug5 << "MPI_Waitall ..." << std::endl;
+        //debug5 << "MPI_Waitall ..." << std::endl;
         MPI_Waitall(recvInfoCount, recvImageRq, recvImageSt);   // Means that we have reveived everything!
 
-        debug5 << "MAPI_WAITALL done!" << std::endl;
+        //debug5 << "MAPI_WAITALL done!" << std::endl;
 
         if (recvInfoATABuffer != NULL)
             delete []recvInfoATABuffer;
         recvInfoATABuffer = NULL;
 
-	debug5 << "Sorting..." << std::endl;
+	//debug5 << "Sorting..." << std::endl;
 
 	//
 	// Sort the data
@@ -1921,7 +1917,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
 	intermediateImageBBox[2] = intermediateImageExtents[2] = myStartingHeight;
 	intermediateImageBBox[3] = intermediateImageExtents[3] = myEndingHeight;
 	intermediateImage = new float[width * (myEndingHeight - myStartingHeight) * 4]();
-	debug5 << "intermediate image size " << width << ", " << (myEndingHeight - myStartingHeight) << std::endl;
+	//debug5 << "intermediate image size " << width << ", " << (myEndingHeight - myStartingHeight) << std::endl;
 
 	//
 	// Blend
@@ -2023,7 +2019,7 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     slivr::CheckSectionStop("avtSLIVRImgCommunicator", 
 			    "ParallelDirectSendManyPatches", timingDetail,
 			    "Cleanup");
-    debug5 << "All Parallel Direct Send is Done" << std::endl;
+    //ospout << "All Parallel Direct Send is Done" << std::endl;
     //---------------------------------------------------------------------//
 #endif
     return myRegionHeight;
@@ -2045,8 +2041,8 @@ void
 avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight)
 {
 #ifdef PARALLEL
-    debug5 << "gatherImages starting... totalNumRanks: " << totalNumRanks << ", compositingDone: " << compositingDone
-	   << ", imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
+    //debug5 << "gatherImages starting... totalNumRanks: " << totalNumRanks << ", compositingDone: " << compositingDone
+    //	   << ", imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
 
     for (int i=0; i<4; i++)
 	finalImageExtents[i] = finalBB[i] = 0;
@@ -2056,7 +2052,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 	int width =  fullImageExtents[1]-fullImageExtents[0];
 	int height = fullImageExtents[3]-fullImageExtents[2];
 
-	debug5 << "Gather Images at 0, final size: " << fullImageExtents[1]-fullImageExtents[0] << " x " << fullImageExtents[3]-fullImageExtents[2] << std::endl;
+	//debug5 << "Gather Images at 0, final size: " << fullImageExtents[1]-fullImageExtents[0] << " x " << fullImageExtents[3]-fullImageExtents[2] << std::endl;
 
 	//
 	// Receive at root/display node!
@@ -2088,8 +2084,8 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 	int lastBufferSize    = getRegionSize(totalNumRanks-1) * width * 4;
 	int regularBufferSize = regularRegionSize * width * 4;
 
-	debug5 << "numToRecv: " << numToRecv << ", numRegionsWithData: " << numRegionsWithData << std::endl;
-	debug5 << "regularBufferSize: " << regularBufferSize << ", lastBufferSize: " << lastBufferSize << std::endl;
+	//debug5 << "numToRecv: " << numToRecv << ", numRegionsWithData: " << numRegionsWithData << std::endl;
+	//debug5 << "regularBufferSize: " << regularBufferSize << ", lastBufferSize: " << lastBufferSize << std::endl;
 
 	// Async Recv
 	int recvCount=0;
@@ -2111,7 +2107,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 		MPI_Irecv(&finalImage[i*regularBufferSize], regularBufferSize,  MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
 			
 
-	    debug5 << i << " ~ recvCount: " << recvCount << std::endl;
+	    //debug5 << i << " ~ recvCount: " << recvCount << std::endl;
 	    recvCount++;
 	}
 
@@ -2131,7 +2127,7 @@ avtSLIVRImgCommunicator::gatherImages(int regionGather[], int totalNumRanks, flo
 	if (compositingDone == false)   
 	{
 	    int imgSize = (imgExtents[1]-imgExtents[0]) * (imgExtents[3]-imgExtents[2]) * 4;
-	    debug5 << "imgSize: " << imgSize << std::endl;
+	    //debug5 << "imgSize: " << imgSize << std::endl;
 
 	    MPI_Send(inputImg, imgSize, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
 	    compositingDone = true;

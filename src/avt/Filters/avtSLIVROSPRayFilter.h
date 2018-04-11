@@ -627,14 +627,26 @@ namespace slivr
 			 std::string debugN = "debug5");
     void CheckMemoryHere(const std::string& message, 
 			 std::ostream& out);
-    inline void CheckSectionStart(const std::string& c, const std::string& f, int& timingDetail, const std::string& str) {
+
+    typedef int timestamp;
+    inline void CheckSectionStart(const std::string& c,
+				  const std::string& f,
+				  timestamp& timingDetail,
+				  const std::string& str) 
+    {
 	debug5 << c << "::" << f << " " << str << " Start" << std::endl;
 	timingDetail = visitTimer->StartTimer();	    
     }
     
-    inline void CheckSectionStop(const std::string& c, const std::string& f, int& timingDetail, const std::string& str) {
-	visitTimer->StopTimer(timingDetail, (c + "::" + f + " " + str).c_str());
-	slivr::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(), "ospout");
+    inline void CheckSectionStop(const std::string& c,
+				 const std::string& f, 
+				 timestamp& timingDetail,
+				 const std::string& str) 
+    {
+	visitTimer->StopTimer(timingDetail, 
+			      (c + "::" + f + " " + str).c_str());
+	slivr::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(),
+			       "ospout");
 	debug5 << c << "::" << f << " " << str << " Done" << std::endl;
     }
 };
