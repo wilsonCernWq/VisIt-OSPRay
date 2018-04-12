@@ -77,13 +77,13 @@ bool CheckThreadedBlend_Communicator()
 	use = atoi(env_use) <= 0; 
     }
     if (!use) {
-	std::cout << "[avtSLIVRImgCommunicator] "
-		  << "Not Using Multi-Threading for Blending"
-		  << std::endl;
+	ospout << "[avtSLIVRImgCommunicator] "
+	       << "Not Using Multi-Threading for Blending"
+	       << std::endl;
     } else {
-	std::cout << "[avtSLIVRImgCommunicator] "
-		  << "Using Multi-Threading for Blending"
-		  << std::endl;
+	ospout << "[avtSLIVRImgCommunicator] "
+	       << "Using Multi-Threading for Blending"
+	       << std::endl;
     }
     return use;
 }
@@ -153,13 +153,13 @@ bool avtSLIVRImgComm_IceT::CheckUsage()
 	use_icet = atoi(env_use_icet) > 0; 
     }
     if (!use_icet) {
-	std::cout << "[avtSLIVRImgCommunicator] "
-		  << "Not Using IceT for Image Compositing"
-		  << std::endl;
+        ospout << "[avtSLIVRImgCommunicator] "
+	       << "Not Using IceT for Image Compositing"
+	       << std::endl;
     } else {
-	std::cout << "[avtSLIVRImgCommunicator] "
-		  << "Using IceT for Image Compositing"
-		  << std::endl;
+        ospout << "[avtSLIVRImgCommunicator] "
+	       << "Using IceT for Image Compositing"
+	       << std::endl;
     }
     return use_icet;
 }
@@ -189,23 +189,23 @@ IceTEnum       avtSLIVRImgComm_IceT::CheckStrategy()
 	switch (strategy) {
 	case 0:
 	    ret = ICET_STRATEGY_REDUCE;
-	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Reduce" 
-		      << std::endl;
+	    ospout << "[avtSLIVRImgComm_IceT] Strategy Reduce" 
+		   << std::endl;
 	    break;
 	case 1:
 	    ret = ICET_SINGLE_IMAGE_STRATEGY_TREE;
-	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Tree" 
-		      << std::endl;
+	    ospout << "[avtSLIVRImgComm_IceT] Strategy Tree" 
+		   << std::endl;
 	    break;
 	case 2:
 	    ret = ICET_SINGLE_IMAGE_STRATEGY_RADIXK;
-	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy Radix-k" 
-		      << std::endl;
+	    ospout << "[avtSLIVRImgComm_IceT] Strategy Radix-k" 
+		   << std::endl;
 	    break;
 	default:
 	    ret = ICET_SINGLE_IMAGE_STRATEGY_BSWAP;
-	    std::cout << "[avtSLIVRImgComm_IceT] SetTile: Strategy BSwap" 
-		      << std::endl;
+	    ospout << "[avtSLIVRImgComm_IceT] Strategy BSwap" 
+		   << std::endl;
 	    break;
 	}
 	return ret;
@@ -241,7 +241,10 @@ avtSLIVRImgComm_IceT::~avtSLIVRImgComm_IceT()
 void avtSLIVRImgComm_IceT::Init(int W, int H)
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
-    ospout << "avtSLIVRImgComm_IceT::Init Start" << std::endl;
+    
+    if (MPIRank == 0) {
+      ospout << "avtSLIVRImgComm_IceT::Init Start";
+    }
     //
     // Initialization
     //
@@ -250,7 +253,7 @@ void avtSLIVRImgComm_IceT::Init(int W, int H)
     //
     // Setup IceT parameters
     //
-    if (slivr::CheckVerbose() /*|| DebugStream::Level5()*/) 
+    if (/*slivr::CheckVerbose()*/ false /*|| DebugStream::Level5()*/) 
     {
 	icetDiagnostics(ICET_DIAG_FULL);
     }
@@ -263,7 +266,9 @@ void avtSLIVRImgComm_IceT::Init(int W, int H)
     // Safety
     //
     MPI_Barrier(MPI_COMM_WORLD);
-    ospout << "avtSLIVRImgComm_IceT::Init Done" << std::endl;
+    if (MPIRank == 0) {
+      ospout << " ... Done" << std::endl;
+    }
 #endif
 }
 
@@ -275,19 +280,25 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
     //
     // Gather depths
     //
-    ospout << "avtSLIVRImgComm_IceT::SetTile Gather Depth" << std::endl;
+    if (MPIRank == 0) {
+      ospout << "avtSLIVRImgComm_IceT::SetTile Gather Depth";
+    }
     std::vector<float>   all_depths(MPISize);
     std::vector<IceTInt> all_orders(MPISize);
     MPI_Allgather(&z, 1, MPI_FLOAT,
 		  all_depths.data(), 1, MPI_FLOAT, 
 	          MPI_COMM_WORLD);
+    if (MPIRank == 0) { ospout << " ... Done" << std::endl; }
     //
     // Sort depths in compositing order
     //
+    if (MPIRank == 0) {
+      ospout << "avtSLIVRImgComm_IceT::SetTile Sort Depths";
+    }
     std::multimap<float,int> ordered_depths;
     for (int i = 0; i < MPISize; i++)
     {
-      ordered_depths.insert(std::pair<float, int>(all_depths[i], i)); 
+      ordered_depths.insert(std::pair<float, int>(all_depths[i], i));      
     }
     int i = 0;
     for (std::multimap<float,int>::iterator it = ordered_depths.begin(); 
@@ -297,6 +308,7 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
       i++;
     }
     icetCompositeOrder(all_orders.data());
+    if (MPIRank == 0) { ospout << " ... Done" << std::endl; }
     //
     // Set IceT Tile Information
     //
@@ -335,7 +347,9 @@ void avtSLIVRImgComm_IceT::SetTile(const float* d,
 void avtSLIVRImgComm_IceT::Composite(float*& output)
 {
 #if defined(PARALLEL) && defined(VISIT_ICET)
+    if (MPIRank == 0) { ospout << "avtSLIVRImgComm_IceT::Composite"; }
     result = icetDrawFrame(identity, identity, bgColor);
+    if (MPIRank == 0) { ospout << " ... Done" << std::endl; }
     if (MPIRank == 0) {
 	icetImageCopyColorf(result, output, ICET_IMAGE_COLOR_RGBA_FLOAT);
     }
@@ -362,7 +376,7 @@ void avtSLIVRImgComm_IceT::DrawCallback(const IceTDouble*,
 	    o[4 * gIdx + 3] = imgData[4 * lIdx + 3];
 	}
     }
-    ospout << "avtSLIVRImgComm_IceT::DrawCallback Done" << std::endl;
+    //ospout << "avtSLIVRImgComm_IceT::DrawCallback Done" << std::endl;
 }
 #endif
 
@@ -1538,8 +1552,8 @@ avtSLIVRImgCommunicator::ParallelDirectSendManyPatches
     if (it == regionVector.end())
     {
 	inRegion = false;
-	ospout << mpiRank << " ~ SHOULD NOT HAPPEN!!!!: Not found " 
-	       << mpiRank <<  " !!!" << std::endl;
+	//ospout << mpiRank << " ~ SHOULD NOT HAPPEN!!!!: Not found " 
+	//       << mpiRank <<  " !!!" << std::endl;
     }
     else 
     {
