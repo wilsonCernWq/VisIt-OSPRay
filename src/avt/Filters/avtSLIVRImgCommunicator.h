@@ -1,40 +1,40 @@
 /*****************************************************************************
-*
-* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
-* Produced at the Lawrence Livermore National Laboratory
-* LLNL-CODE-442911
-* All rights reserved.
-*
-* This file is  part of VisIt. For  details, see https://visit.llnl.gov/.  The
-* full copyright notice is contained in the file COPYRIGHT located at the root
-* of the VisIt distribution or at http://www.llnl.gov/visit/copyright.html.
-*
-* Redistribution  and  use  in  source  and  binary  forms,  with  or  without
-* modification, are permitted provided that the following conditions are met:
-*
-*  - Redistributions of  source code must  retain the above  copyright notice,
-*    this list of conditions and the disclaimer below.
-*  - Redistributions in binary form must reproduce the above copyright notice,
-*    this  list of  conditions  and  the  disclaimer (as noted below)  in  the
-*    documentation and/or other materials provided with the distribution.
-*  - Neither the name of  the LLNS/LLNL nor the names of  its contributors may
-*    be used to endorse or promote products derived from this software without
-*    specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT  HOLDERS AND CONTRIBUTORS "AS IS"
-* AND ANY EXPRESS OR  IMPLIED WARRANTIES, INCLUDING,  BUT NOT  LIMITED TO, THE
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND  FITNESS FOR A PARTICULAR  PURPOSE
-* ARE  DISCLAIMED. IN  NO EVENT  SHALL LAWRENCE  LIVERMORE NATIONAL  SECURITY,
-* LLC, THE  U.S.  DEPARTMENT OF  ENERGY  OR  CONTRIBUTORS BE  LIABLE  FOR  ANY
-* DIRECT,  INDIRECT,   INCIDENTAL,   SPECIAL,   EXEMPLARY,  OR   CONSEQUENTIAL
-* DAMAGES (INCLUDING, BUT NOT  LIMITED TO, PROCUREMENT OF  SUBSTITUTE GOODS OR
-* SERVICES; LOSS OF  USE, DATA, OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER
-* CAUSED  AND  ON  ANY  THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT
-* LIABILITY, OR TORT  (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN ANY  WAY
-* OUT OF THE  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
-* DAMAGE.
-*
-*****************************************************************************/
+ *
+ * Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+ * Produced at the Lawrence Livermore National Laboratory
+ * LLNL-CODE-442911
+ * All rights reserved.
+ *
+ * This file is  part of VisIt. For  details, see https://visit.llnl.gov/.  The
+ * full copyright notice is contained in the file COPYRIGHT located at the root
+ * of the VisIt distribution or at http://www.llnl.gov/visit/copyright.html.
+ *
+ * Redistribution  and  use  in  source  and  binary  forms,  with  or  without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *  - Redistributions of  source code must  retain the above  copyright notice,
+ *    this list of conditions and the disclaimer below.
+ *  - Redistributions in binary form must reproduce the above copyright notice,
+ *    this  list of  conditions  and  the  disclaimer (as noted below)  in  the
+ *    documentation and/or other materials provided with the distribution.
+ *  - Neither the name of  the LLNS/LLNL nor the names of  its contributors may
+ *    be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT  HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR  IMPLIED WARRANTIES, INCLUDING,  BUT NOT  LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND  FITNESS FOR A PARTICULAR  PURPOSE
+ * ARE  DISCLAIMED. IN  NO EVENT  SHALL LAWRENCE  LIVERMORE NATIONAL  SECURITY,
+ * LLC, THE  U.S.  DEPARTMENT OF  ENERGY  OR  CONTRIBUTORS BE  LIABLE  FOR  ANY
+ * DIRECT,  INDIRECT,   INCIDENTAL,   SPECIAL,   EXEMPLARY,  OR   CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT  LIMITED TO, PROCUREMENT OF  SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF  USE, DATA, OR PROFITS; OR  BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED  AND  ON  ANY  THEORY  OF  LIABILITY,  WHETHER  IN  CONTRACT,  STRICT
+ * LIABILITY, OR TORT  (INCLUDING NEGLIGENCE OR OTHERWISE)  ARISING IN ANY  WAY
+ * OUT OF THE  USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+ * DAMAGE.
+ *
+ *****************************************************************************/
 
 // *************************************************************************//
 //                          avtSLIVRImgCommunicator.h                       //
@@ -81,7 +81,7 @@ struct imageBuffer{
 
 class avtSLIVRImgComm
 {
-public:
+ public:
     avtSLIVRImgComm(int mpiSize, int mpiRank) {};
     virtual ~avtSLIVRImgComm() {};
     virtual void Init (int W, int H) = 0;
@@ -93,7 +93,7 @@ public:
 
 class avtSLIVRImgCommunicator
 { 
-public:    
+ public:    
     avtSLIVRImgCommunicator();
     ~avtSLIVRImgCommunicator();
 
@@ -120,38 +120,7 @@ public:
 
     void Barrier();
 
-    //----------------------------------------------------------------------//
-    // Different Algorithms
-    //----------------------------------------------------------------------//
-
-    //----------------------------------------------------------------------//
-    // IceT
-    //----------------------------------------------------------------------//
-    bool IceTValid();
-    void IceTInit(int W, int H);
-    void IceTSetTile(const float*, const int*, const float&);
-    void IceTComposite(float*&);
-
-    //----------------------------------------------------------------------//
-    // Both currently unused but good for simple testing
-    //----------------------------------------------------------------------//
-private:
-    void GatherDepthAtRoot(const int, const float *, int &, int *&, float *&);
-public:
-    void SerialDirectSend
-	(int, float*, int*, float*, float bgColor[4], int, int);
-
-    //----------------------------------------------------------------------//
-    // Parallel Direct Send
-    //----------------------------------------------------------------------//
-public:
-    void RegionAllocation(int *&);
-    int  ParallelDirectSendManyPatches
-	(const std::multimap<int, slivr::ImgData>&,
-	 const std::vector<slivr::ImgMetaData>&,
-	 int, int*, int, int tags[2], int fullImageExtents[4]);
-
-private:
+ private:
     //----------------------------------------------------------------------//
     static void ColorImage(float *&, const int, const int, 
 			   const float color[4]);
@@ -159,26 +128,92 @@ private:
 			   float *&, const int dstExtents[4]);
     static void BlendWithBackground(float *&, const int extents[4],
 				    const float bgColor[4]);
+ public:
     //----------------------------------------------------------------------//
-    void UpdateBoundingBox
-	(int currentBoundingBox[4], const int imageExtents[4]);
+    // Different Algorithms
     //----------------------------------------------------------------------//
 
-private:
+    //----------------------------------------------------------------------//
+    // IceT: (export SLIVR_USE_ICET=1)
+    //   Use IceT for compositing. This method only supports the case where 
+    //   each rank produces only one tile.
+    // Algorithms:
+    //   Reduce
+    //   Binary Swap
+    //    
+    //----------------------------------------------------------------------//
+    bool IceTValid();
+    void IceTInit(int W, int H);
+    void IceTSetTile(const float*, const int*, const float&);
+    void IceTComposite(float*&);
 
+    //----------------------------------------------------------------------//
+    // OneNode
+    //   There is only one VisIt process
+    //----------------------------------------------------------------------//
+    bool OneNodeValid();
+    void OneNodeInit(int W, int H);
+    void OneNodeSetTile(const float*, const int*, const float&);
+    void OneNodeComposite(float*&);
+
+    //----------------------------------------------------------------------//
+    // Serial
+    //----------------------------------------------------------------------//
+    //bool SerialValid();
+    //void SerialInit(int W, int H);
+    //void SerialSetTile(const float*, const int*, const float&);
+    //void SerialComposite(float*&);
+
+
+ private:
     // Basic MPI information
     int mpiSize; // total number of processes (# of ranks)
     int mpiRank; // my rank id
-
     // TODO this communicator shouldnt be in charge of this variable
     // Final image is here
     float *finalImage;
-
     // Image Compisition Implementation
     avtSLIVRImgComm* compositor;
 
-// CLEAN UP BELOW
-private:
+
+
+
+
+
+
+
+
+
+
+
+
+    // CLEAN UP BELOW
+ private:
+    //----------------------------------------------------------------------//
+    void UpdateBoundingBox(int currentBoundingBox[4], 
+                           const int imageExtents[4]);
+    //----------------------------------------------------------------------//
+
+    //----------------------------------------------------------------------//
+    // Both currently unused but good for simple testing
+    //----------------------------------------------------------------------//
+ private:
+    void GatherDepthAtRoot(const int, const float *, int &, int *&, float *&);
+ public:
+    void SerialDirectSend
+	(int, float*, int*, float*, float bgColor[4], int, int);
+
+    //----------------------------------------------------------------------//
+    // Parallel Direct Send
+    //----------------------------------------------------------------------//
+ public:
+    void RegionAllocation(int *&);
+    int  ParallelDirectSendManyPatches
+	(const std::multimap<int, slivr::ImgData>&,
+	 const std::vector<slivr::ImgMetaData>&,
+	 int, int*, int, int tags[2], int fullImageExtents[4]);
+
+ private:
     ///--------------------------------------
     // flags for patch
     int totalPatches;
@@ -210,7 +245,7 @@ private:
 		     screenImgMinY, screenImgMaxY); 
     }
 
-public:
+ public:
     //----------------------------------------------------------------------//
 
     void getcompositedImage(int imgBufferWidth, int imgBufferHeight, unsigned char *wholeImage);  // get the final composited image
@@ -222,7 +257,7 @@ public:
     void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);	
     void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight);
 
-public:
+ public:
     // TODO: Remove all public fields
     int finalImageExtents[4];
     int finalBB[4];
