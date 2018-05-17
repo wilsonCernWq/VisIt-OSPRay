@@ -121,7 +121,7 @@ VISIT_OPTION_DEFAULT(VISIT_UINTAH_DIR ${VISITHOME}/uintah/${UINTAH_VERSION}/${VI
 ## -- recommend to remove tbb libraries inside embree and ospray binary folder
 ##                                                                             
 SET(OSPRAY_USE_EXTERNAL_EMBREE ON)
-SET(ospray_DIR /ssd/users/qwu/ospray/install-visit/lib64/cmake/ospray-1.5.0)
+SET(ospray_DIR /ssd/users/qwu/ospray/install-visit/lib64/cmake/ospray-1.4.3)
 SET(embree_DIR /home/sci/qwu/software/embree-2.17.0.x86_64.linux)
 SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
 SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
