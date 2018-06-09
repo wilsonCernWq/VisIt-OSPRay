@@ -64,3 +64,7 @@ cd /path/to/visit/src/
 patch -p1 -R  < ../working/patch.txt
 ```
 Remember to revert the previous patch before applying a new one
+
+## PIDX compatibility
+RAW data: 7c73ef8d05bd817f93c53bad85f576984c88e95e
+CoalBoiler datasets: ??
