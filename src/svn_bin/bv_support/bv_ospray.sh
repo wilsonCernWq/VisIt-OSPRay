@@ -51,8 +51,7 @@ function bv_ospray_disable
 
 function bv_ospray_depends_on
 {
-    depends_on=""
-
+    depends_on="cmake tbb ispc embree"
     echo ${depends_on}
 }
 
@@ -190,6 +189,7 @@ function build_ospray_in_source
 
     # set release and RPM settings
     info "Configure OSPRay . . . "
+    info "TBB_ROOT=$VISITDIR/tbb/$VISITARCH/$TBB_VERSION"
     CMAKE_INSTALL=${CMAKE_INSTALL:-"$VISITDIR/cmake/${CMAKE_VERSION}/$VISITARCH/bin"}
     ${CMAKE_INSTALL}/cmake -D CMAKE_INSTALL_PREFIX=$OSPRAY_INSTALL_DIR \
         -D embree_DIR=$VISITDIR/embree/$VISITARCH/$EMBREE_INSTALL_DIR_NAME \
