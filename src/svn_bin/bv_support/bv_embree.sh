@@ -57,7 +57,7 @@ function bv_embree_host_profile
 function bv_embree_print_usage
 {
     #embree does not have an option, it is only dependent on embree.
-    printf "%-15s %s [%s]\n" "--embree" "Build EMBREE" "$DO_EMBREE"
+    printf "%-15s %s [%s]\n" "--embree" "Build embree" "$DO_EMBREE"
 }
 
 function bv_embree_ensure
@@ -67,7 +67,7 @@ function bv_embree_ensure
         if [[ $? != 0 ]] ; then
             ANY_ERRORS="yes"
             DO_EMBREE="no"
-            error "Unable to build EMBREE.  ${EMBREE_FILE} not found."
+            error "Unable to build embree.  ${EMBREE_FILE} not found."
         fi
     fi
 }
@@ -75,7 +75,7 @@ function bv_embree_ensure
 function bv_embree_dry_run
 {
     if [[ "$DO_EMBREE" == "yes" ]] ; then
-        echo "Dry run option not set for EMBREE."
+        echo "Dry run option not set for embree."
     fi
 }
 
@@ -89,7 +89,7 @@ function bv_embree_dry_run
 function build_embree
 {
     # Unzip the EMBREE tarball and copy it to the VisIt installation.
-    info "Installing prebuilt EMBREE"    
+    info "Installing prebuilt embree"    
     tar zxvf $EMBREE_FILE
     rm $EMBREE_INSTALL_DIR_NAME/lib/libtbbmalloc.so.2
     rm $EMBREE_INSTALL_DIR_NAME/lib/libtbb.so.2
@@ -102,7 +102,7 @@ function build_embree
         chgrp -R ${GROUP} "$VISITDIR/embree/$VISITARCH"
     fi
     cd "$START_DIR"
-    info "Done with EMBREE"
+    info "Done with embree"
     return 0
 }
 
@@ -128,13 +128,13 @@ function bv_embree_build
     if [[ "$DO_EMBREE" == "yes" ]] ; then
         check_if_installed "embree"
         if [[ $? == 0 ]] ; then
-            info "Skipping build of EMBREE"
+            info "Skipping build of embree"
         else
             build_embree
             if [[ $? != 0 ]] ; then
-                error "Unable to build or install EMBREE.  Bailing out."
+                error "Unable to build or install embree.  Bailing out."
             fi
-            info "Done building EMBREE"
+            info "Done building embree"
         fi
     fi
 }
