@@ -1,15 +1,15 @@
-#/ssd/users/qwu/VisIt/cmake/3.8.1/linux-x86_64_gcc-7.2/bin/cmake
+#/ssd/users/qwu/VisIt/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Thu Feb  1 19:12:30 MST 2018
-## system: Linux lagodelcielo 4.4.104-39-default #1 SMP Thu Jan 4 08:11:03 UTC 2018 (7db1912) x86_64 x86_64 x86_64 GNU/Linux
+## created: Fri Jun  8 22:21:27 MDT 2018
+## system: Linux lagodelcielo 4.4.120-45-default #1 SMP Wed Mar 14 20:51:49 UTC 2018 (623211f) x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
 ##
 ## Setup VISITHOME & VISITARCH variables.
 ##
 SET(VISITHOME /ssd/users/qwu/VisIt)
-SET(VISITARCH linux-x86_64_gcc-7.2)
+SET(VISITARCH linux-x86_64_gcc-7.3)
 
 ## Compiler flags.
 ##
@@ -75,12 +75,6 @@ SETUP_APP_VERSION(VTK 6.1.0)
 VISIT_OPTION_DEFAULT(VISIT_VTK_DIR ${VISITHOME}/vtk/${VTK_VERSION}/${VISITARCH})
 
 ##
-## BOOST
-##
-SETUP_APP_VERSION(BOOST 1_60_0)
-VISIT_OPTION_DEFAULT(VISIT_BOOST_DIR /usr)
-
-##
 ## SZIP
 ##
 VISIT_OPTION_DEFAULT(VISIT_SZIP_DIR ${VISITHOME}/szip/2.1/${VISITARCH})
@@ -92,9 +86,25 @@ VISIT_OPTION_DEFAULT(VISIT_HDF5_DIR ${VISITHOME}/hdf5/1.8.14/${VISITARCH})
 VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz /usr/lib z TYPE STRING)
 
 ##
+## BOOST
+##
+SETUP_APP_VERSION(BOOST 1_60_0)
+VISIT_OPTION_DEFAULT(VISIT_BOOST_DIR /usr)
+
+##
+## EMBREE
+##
+VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT ${VISITHOME}/embree/${VISITARCH}/embree-2.16.5.x86_64.linux)
+
+##
 ## Ice-T
 ##
 VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/1.0.0/${VISITARCH})
+
+##
+## ISPC
+##
+VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT ${VISITHOME}/ispc/${VISITARCH}/ispc-v1.9.2-linux)
 ##
 
 ##
@@ -104,10 +114,21 @@ VISIT_OPTION_DEFAULT(VISIT_NETCDF_DIR ${VISITHOME}/netcdf/4.1.1/${VISITARCH})
 VISIT_OPTION_DEFAULT(VISIT_NETCDF_LIBDEP HDF5_LIBRARY_DIR hdf5_hl HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP} TYPE STRING)
 
 ##
+## OSPRay
+##
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${VISITHOME}/ospray/1.4.3/${VISITARCH}/lib64/cmake/ospray-1.4.3)
+
+##
 ## Silo
 ##
 VISIT_OPTION_DEFAULT(VISIT_SILO_DIR ${VISITHOME}/silo/4.10.1/${VISITARCH})
 VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP} /usr/lib z TYPE STRING)
+
+##
+## TBB
+##
+VISIT_OPTION_DEFAULT(TBB_ROOT ${VISITHOME}/tbb/${VISITARCH}/tbb2018_20171205oss)
 
 ##
 ## Uintah
@@ -115,19 +136,3 @@ VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP
 SETUP_APP_VERSION(UINTAH 2.5.0)
 VISIT_OPTION_DEFAULT(VISIT_UINTAH_DIR ${VISITHOME}/uintah/${UINTAH_VERSION}/${VISITARCH})
 
-##
-## OSPRay
-## -- VTK 6.1.0 forces to use python 2.7.6, need to manually change it
-## -- recommend to remove tbb libraries inside embree and ospray binary folder
-##                                                                             
-SET(OSPRAY_USE_EXTERNAL_EMBREE ON)
-SET(ospray_DIR /ssd/users/qwu/ospray/install-visit/lib64/cmake/ospray-1.4.3)
-SET(embree_DIR /home/sci/qwu/software/embree-2.17.0.x86_64.linux)
-SET(TBB_ROOT /home/sci/qwu/software/tbb2017_20160916oss)
-SET(ISPC_EXECUTABLE /home/sci/qwu/software/ispc-v1.9.1-linux)
-VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-
-##
-## PIDX
-##
-SET(PIDX_DIR /ssd/users/qwu/PIDX/install)

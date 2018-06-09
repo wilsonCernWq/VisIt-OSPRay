@@ -1199,6 +1199,11 @@ ENDIF(VISIT_THREAD)
 
 # modified by Qi
 IF(VISIT_OSPRAY)
+    # setup variables 
+    SET(OSPRAY_USE_EXTERNAL_EMBREE ON)
+    SET(ospray_DIR ${VISIT_OSPRAY_DIR})
+    SET(embree_DIR ${VISIT_EMBREE_ROOT})
+    SET(ISPC_EXECUTABLE ${VISIT_ISPC_ROOT})
     FIND_PACKAGE(ospray REQUIRED)
     # additional module library
     SET(OSPRAY_LIBRARIES 
