@@ -1,6 +1,9 @@
 function bv_ispc_initialize
 {
     export DO_ISPC="no"
+    export USE_SYSTEM_ISPC="no"
+    export ISPC_INSTALL_DIR=""
+    add_extra_commandline_args "ispc" "alt-ispc-dir" 1 "Use alternative directory for ispc"
 }
 
 function bv_ispc_enable
@@ -13,9 +16,27 @@ function bv_ispc_disable
     DO_ISPC="no"
 }
 
+function bv_ispc_alt_ispc_dir
+{
+    echo "Using alternate ispc directory"
+    bv_ispc_enable
+    USE_SYSTEM_ISPC="yes"
+    ISPC_INSTALL_DIR="$1"
+}
+
 function bv_ispc_depends_on
 {
     echo ""
+}
+
+function bv_ispc_initialize_vars
+{
+    info "initializing ispc vars"
+    if [[ "$DO_ISPC" == "yes" ]] ; then
+        if [[ "$USE_SYSTEM_ISPC" == "no" ]]; then
+            ISPC_INSTALL_DIR=$VISITDIR/ispc/$VISITARCH/$ISPC_INSTALL_DIR_NAME
+        fi
+    fi
 }
 
 function bv_ispc_info
@@ -45,13 +66,16 @@ function bv_ispc_print
 
 function bv_ispc_host_profile
 {
-    if [[ "$DO_ISPC" == "yes" ]] ; then
+    if [[ "$DO_ISPC" == "yes" ]]; then
         echo >> $HOSTCONF
         echo "##" >> $HOSTCONF
         echo "## ISPC" >> $HOSTCONF
         echo "##" >> $HOSTCONF
-        echo "VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT \${VISITHOME}/ispc/\${VISITARCH}/$ISPC_INSTALL_DIR_NAME)" \
-            >> $HOSTCONF
+        if [[ "$USE_SYSTEM_ISPC" == "no" ]]; then
+            echo "VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT \${VISITHOME}/ispc/\${VISITARCH}/$ISPC_INSTALL_DIR_NAME)" >> $HOSTCONF
+        else
+            echo "VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT ${ISPC_INSTALL_DIR})" >> $HOSTCONF
+        fi
     fi
 }
 
@@ -63,7 +87,7 @@ function bv_ispc_print_usage
 
 function bv_ispc_ensure
 {
-    if [[ "$DO_ISPC" == "yes" ]] ; then
+    if [[ "$DO_ISPC" == "yes" && "$USE_SYSTEM_ISPC" == "no" ]] ; then
         ensure_built_or_ready "ispc" $ISPC_VERSION $ISPC_BUILD_DIR $ISPC_FILE $ISPC_URL
         if [[ $? != 0 ]] ; then
             ANY_ERRORS="yes"
@@ -115,6 +139,10 @@ function bv_ispc_is_enabled
 
 function bv_ispc_is_installed
 {
+    if [[ "$USE_SYSTEM_ISPC"="yes" ]]; then   
+        return 1
+    fi
+
     check_if_installed "ispc"
     if [[ $? == 0 ]] ; then
         return 1
@@ -124,7 +152,7 @@ function bv_ispc_is_installed
 
 function bv_ispc_build
 {
-    if [[ "$DO_ISPC" == "yes" ]] ; then
+    if [[ "$DO_ISPC" == "yes" && "$USE_SYSTEM_ISPC"="no" ]] ; then
         check_if_installed "ispc"
         if [[ $? == 0 ]] ; then
             info "Skipping build of ISPC"

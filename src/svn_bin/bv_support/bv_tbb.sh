@@ -1,6 +1,9 @@
 function bv_tbb_initialize
 {
     export DO_TBB="no"
+    export USE_SYSTEM_TBB="no"
+    export TBB_INSTALL_DIR=""
+    add_extra_commandline_args "tbb" "alt-tbb-dir" 1 "Use alternative directory for tbb"
 }
 
 function bv_tbb_enable
@@ -13,9 +16,31 @@ function bv_tbb_disable
     DO_TBB="no"
 }
 
+function bv_tbb_alt_tbb_dir
+{
+    echo "Using alternate TBB directory"
+    bv_tbb_enable
+    USE_SYSTEM_TBB="yes"
+    TBB_INSTALL_DIR="$1"
+}
+
 function bv_tbb_depends_on
 {
-    echo ""
+    if [[ "$USE_SYSTEM_TBB" == "yes" ]]; then
+        echo ""
+    else
+        echo ""
+    fi
+}
+
+function bv_tbb_initialize_vars
+{
+    info "initializing TBB vars"
+    if [[ "$DO_TBB" == "yes" ]] ; then
+        if [[ "$USE_SYSTEM_TBB" == "no" ]]; then
+            TBB_INSTALL_DIR=$VISITDIR/tbb/$VISITARCH/$TBB_VERSION
+        fi
+    fi
 }
 
 function bv_tbb_info
@@ -47,8 +72,11 @@ function bv_tbb_host_profile
         echo "##" >> $HOSTCONF
         echo "## TBB" >> $HOSTCONF
         echo "##" >> $HOSTCONF
-        echo "VISIT_OPTION_DEFAULT(TBB_ROOT \${VISITHOME}/tbb/\${VISITARCH}/$TBB_VERSION)" \
-            >> $HOSTCONF
+        if [[ "$USE_SYSTEM_TBB"="no" ]]; then
+            echo "VISIT_OPTION_DEFAULT(TBB_ROOT \${VISITHOME}/tbb/\${VISITARCH}/$TBB_VERSION)" >> $HOSTCONF
+        else
+            echo "VISIT_OPTION_DEFAULT(TBB_ROOT ${TBB_INSTALL_DIR})" >> $HOSTCONF
+        fi
     fi
 }
 
@@ -60,7 +88,7 @@ function bv_tbb_print_usage
 
 function bv_tbb_ensure
 {
-    if [[ "$DO_TBB" == "yes" ]] ; then
+    if [[ "$DO_TBB" == "yes" && "$USE_SYSTEM_TBB" == "no" ]] ; then
         ensure_built_or_ready "tbb" $TBB_VERSION $TBB_BUILD_DIR $TBB_FILE
         if [[ $? != 0 ]] ; then
             ANY_ERRORS="yes"
@@ -94,6 +122,7 @@ function build_tbb
     cp -R $TBB_VERSION "$VISITDIR/tbb/$VISITARCH"
     rm -rf $TBB_VERSION
 
+    # others
     if [[ "$DO_GROUP" == "yes" ]] ; then
         chmod -R ug+w,a+rX "$VISITDIR/tbb/$VISITARCH"
         chgrp -R ${GROUP} "$VISITDIR/tbb/$VISITARCH"
@@ -113,6 +142,10 @@ function bv_tbb_is_enabled
 
 function bv_tbb_is_installed
 {
+    if [[ "$USE_SYSTEM_TBB"="yes" ]]; then   
+        return 1
+    fi
+
     check_if_installed "tbb"
     if [[ $? == 0 ]] ; then
         return 1
@@ -122,7 +155,7 @@ function bv_tbb_is_installed
 
 function bv_tbb_build
 {
-    if [[ "$DO_TBB" == "yes" ]] ; then
+    if [[ "$DO_TBB" == "yes" && "$USE_SYSTEM_TBB"="no" ]] ; then
         check_if_installed "tbb"
         if [[ $? == 0 ]] ; then
             info "Skipping build of TBB"
