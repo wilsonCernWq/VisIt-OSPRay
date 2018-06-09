@@ -1,6 +1,9 @@
 function bv_embree_initialize
 {
     export DO_EMBREE="no"
+    export USE_SYSTEM_EMBREE="no"
+    export EMBREE_INSTALL_DIR=""
+    add_extra_commandline_args "embree" "alt-embree-dir" 1 "Use alternative directory for embree"
 }
 
 function bv_embree_enable
@@ -13,9 +16,27 @@ function bv_embree_disable
     DO_EMBREE="no"
 }
 
+function bv_embree_alt_embree_dir
+{
+    echo "Using alternate embree directory"
+    bv_embree_enable
+    USE_SYSTEM_EMBREE="yes"
+    EMBREE_INSTALL_DIR="$1"
+}
+
 function bv_embree_depends_on
 {
     echo ""
+}
+
+function bv_embree_initialize_vars
+{
+    info "initializing embree vars"
+    if [[ "$DO_EMBREE" == "yes" ]] ; then
+        if [[ "$USE_SYSTEM_EMBREE" == "no" ]]; then
+            EMBREE_INSTALL_DIR=$VISITDIR/embree/$VISITARCH/$EMBREE_INSTALL_DIR_NAME
+        fi
+    fi
 }
 
 function bv_embree_info
@@ -49,8 +70,11 @@ function bv_embree_host_profile
         echo "##" >> $HOSTCONF
         echo "## EMBREE" >> $HOSTCONF
         echo "##" >> $HOSTCONF
-        echo "VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT \${VISITHOME}/embree/\${VISITARCH}/$EMBREE_INSTALL_DIR_NAME)" \
-            >> $HOSTCONF
+        if [[ "$USE_SYSTEM_EMBREE" == "no" ]]; then
+            echo "VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT \${VISITHOME}/embree/\${VISITARCH}/$EMBREE_INSTALL_DIR_NAME)" >> $HOSTCONF
+        else
+            echo "VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT ${EMBREE_INSTALL_DIR})" >> $HOSTCONF
+        fi
     fi
 }
 
@@ -62,12 +86,16 @@ function bv_embree_print_usage
 
 function bv_embree_ensure
 {
-    if [[ "$DO_EMBREE" == "yes" ]] ; then
+    if [[ "$DO_EMBREE" == "yes" && "$USE_SYSTEM_EMBREE" == "no" ]] ; then
         ensure_built_or_ready "embree" $EMBREE_VERSION $EMBREE_BUILD_DIR $EMBREE_FILE $EMBREE_URL
         if [[ $? != 0 ]] ; then
             ANY_ERRORS="yes"
             DO_EMBREE="no"
             error "Unable to build embree.  ${EMBREE_FILE} not found."
+        fi
+    elif [[ "$USE_SYSTEM_EMBREE" == "yes" ]] ; then
+        if [[ ! -d $EMBREE_INSTALL_DIR/include/embree2 ]]; then
+            error "Unable to find embree2 in the alternative path, perhaps a wrong embree version is provided."
         fi
     fi
 }
@@ -116,6 +144,10 @@ function bv_embree_is_enabled
 
 function bv_embree_is_installed
 {
+    if [[ "$USE_SYSTEM_EMBREE"="yes" ]]; then   
+        return 1
+    fi
+
     check_if_installed "embree"
     if [[ $? == 0 ]] ; then
         return 1
@@ -125,7 +157,7 @@ function bv_embree_is_installed
 
 function bv_embree_build
 {
-    if [[ "$DO_EMBREE" == "yes" ]] ; then
+    if [[ "$DO_EMBREE" == "yes" && "$USE_SYSTEM_EMBREE"="no" ]] ; then
         check_if_installed "embree"
         if [[ $? == 0 ]] ; then
             info "Skipping build of embree"
