@@ -89,6 +89,11 @@ struct RGBAF
 //    Define private copy constructor and assignment operator to prevent
 //    accidental use of default, bitwise copy implementations.
 //
+//    Qi WU, Sat Jun 10 22:21:27 MST 2018
+//    Add function 'SetTableFloatNOC' to generate a transfer function without
+//    the opacity correction term. This function will be used for OSPRay 
+//    volume rendering
+//
 // ****************************************************************************
 
 class PIPELINE_API avtOpacityMap
@@ -103,9 +108,12 @@ class PIPELINE_API avtOpacityMap
     const RGBA                  *GetTable(void) { return table; };
     const RGBAF                 *GetTableFloat(void) { return transferFn1D; };
     void                         SetTable(unsigned char *, int, double = 1.);
-    void                         SetTable(unsigned char *arr, int te, double attenuation, float over);
-    void                         SetTableFloat(unsigned char *arr, int te, double attenuation, float over);
-    void                         SetTableFloatNOC(unsigned char *arr, int te, double attenuation);
+    void                         SetTable(unsigned char *arr, int te, 
+                                               double attenuation, float over);
+    void                         SetTableFloat(unsigned char *arr, int te,
+                                               double attenuation, float over);
+    void                         SetTableFloatNOC(unsigned char *arr, int te,
+                                                           double attenuation);
     void                         SetTable(RGBA *, int, double = 1.);
     const RGBA                  &GetOpacity(double);
 
@@ -118,17 +126,18 @@ class PIPELINE_API avtOpacityMap
     double                       GetMinVisibleScalar();
     double                       GetMaxVisibleScalar();
     
-    void                         computeVisibleRange();
+    void                         ComputeVisibleRange();
 
     inline int                   Quantize(const double &);
     int                          GetNumberOfTableEntries(void)
                                                       { return tableEntries; };
 
     float                        QuantizeValF(const double &val);
-    int                          QueryTF(double scalarValue, double color[4]) const;
+    int                          QueryTF(double scalarValue, 
+                                         double color[4]) const;
     float                        QueryAlpha(double scalarValue) const;
 
-    friend PIPELINE_API ostream &operator << (ostream &, const avtOpacityMap &);
+    friend PIPELINE_API ostream &operator <<(ostream &, const avtOpacityMap &);
   protected:
     RGBA                        *table;
     RGBAF                       *transferFn1D;
@@ -218,11 +227,13 @@ avtOpacityMap::QuantizeValF(const double &val){
 //  Method: avtOpacityMap::QueryTF
 //
 //  Purpose:
-//      Queries a Transfer function for the color based on the scalr value passed in 
+//      Queries a Transfer function for the color based on the scalr value
+//      passed in 
 //
 //  Arguments:
 //      scalarValue     scalar value
-//      color           the color queried from the transfer function based on the scalar value
+//      color           the color queried from the transfer function based on
+//                      the scalar value
 //
 //  Returns: 
 //
@@ -233,6 +244,9 @@ avtOpacityMap::QuantizeValF(const double &val){
 //
 //    Qi Wu, Tue Aug 8 12:47:52 MT 2017
 //    Fixed index overflow problem when the scalar value reaches its maximum
+//
+//    Qi WU, Sat Jun 10 22:21:27 MST 2018
+//    Fix bad coding formats
 //
 // ****************************************************************************
 inline int
@@ -266,7 +280,8 @@ avtOpacityMap::QueryTF(double scalarValue, double color[4]) const
     double colorLow[4], colorHigh[4];
     float indexPos, indexDiff;
 
-    indexPos  = (scalarValue-min)/(max-min) * (tableEntries-1);    // multiplier = 1.0/(max-min) * tableEntries
+    indexPos  = (scalarValue-min)/(max-min) * (tableEntries-1); 
+    // ^^^^ multiplier = 1.0/(max-min) * tableEntries
     indexLow  = (int)indexPos;
     indexHigh = (int)(indexPos+1.0);
 

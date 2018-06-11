@@ -363,50 +363,6 @@ avtOpacityMap::SetTable(unsigned char *arr, int te, double attenuation, float ov
 //  Creation:   June 6, 2013
 //
 // ****************************************************************************
-
-void
-avtOpacityMap::SetTableFloatNOC(unsigned char *arr, int te, double attenuation)
-{
-    if (attenuation < -1. || attenuation > 1.)
-    {
-        debug1 << "Bad attenuation value " << attenuation << std::endl;
-        EXCEPTION0(ImproperUseException);
-    }
-
-    if (transferFn1D != NULL) { delete [] transferFn1D; }
-
-    tableEntries = te;
-    transferFn1D = new RGBAF[tableEntries]();
-    minVisibleScalarIndex = maxVisibleScalarIndex = -1;
-
-    for (int i = 0 ; i < tableEntries ; i++)
-    {
-	double bp = tan(1.570796327 * (0.5 - attenuation*0.49999));
-	double alpha = pow((float) arr[i*4+3]/255.0f, (float)bp);
-        transferFn1D[i].R = (float)arr[i*4+0]/255.0f;
-        transferFn1D[i].G = (float)arr[i*4+1]/255.0f;
-        transferFn1D[i].B = (float)arr[i*4+2]/255.0f;
-        transferFn1D[i].A = alpha;
-        if (transferFn1D[i].A != 0 && minVisibleScalarIndex == -1) {
-            minVisibleScalarIndex = i;
-        }
-
-    }
-
-    for (int i=tableEntries-1; i>=0; i--)
-    {
-        if (transferFn1D[i].A != 0 && maxVisibleScalarIndex == -1){
-            maxVisibleScalarIndex = i;
-        }
-    }
-
-    //
-    // We need to set the intermediate vars again since the table size has
-    // potentially changed.
-    //
-    SetIntermediateVars();
-}
-
 void
 avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, float over)
 {
@@ -439,6 +395,67 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
         }
 
     }
+    for (int i=tableEntries-1; i>=0; i--)
+    {
+        if (transferFn1D[i].A != 0 && maxVisibleScalarIndex == -1){
+            maxVisibleScalarIndex = i;
+        }
+    }
+
+    //
+    // We need to set the intermediate vars again since the table size has
+    // potentially changed.
+    //
+    SetIntermediateVars();
+}
+
+
+// ****************************************************************************
+//  Method: avtOpacityMap::SetTableFloatNOC
+//
+//  Purpose:
+//      A version of function SetTableFloat that does not apply the opacity
+//      correction term to it
+//
+//  Arguments:
+//      arr             The new table in RGBA format.
+//      te              The number of entries in arr.
+//      attenuation     The attenuation parameter specified
+//      over            Reducing based on the number of slices
+//
+//  Programmer: Qi WU
+//  Creation:   Sat Jun 10 22:21:27 MST 2018
+//
+// ****************************************************************************
+void
+avtOpacityMap::SetTableFloatNOC(unsigned char *arr, int te, double attenuation)
+{
+    if (attenuation < -1. || attenuation > 1.)
+    {
+        debug1 << "Bad attenuation value " << attenuation << std::endl;
+        EXCEPTION0(ImproperUseException);
+    }
+
+    if (transferFn1D != NULL) { delete [] transferFn1D; }
+
+    tableEntries = te;
+    transferFn1D = new RGBAF[tableEntries]();
+    minVisibleScalarIndex = maxVisibleScalarIndex = -1;
+
+    for (int i = 0 ; i < tableEntries ; i++)
+    {
+	double bp = tan(1.570796327 * (0.5 - attenuation*0.49999));
+	double alpha = pow((float) arr[i*4+3]/255.0f, (float)bp);
+        transferFn1D[i].R = (float)arr[i*4+0]/255.0f;
+        transferFn1D[i].G = (float)arr[i*4+1]/255.0f;
+        transferFn1D[i].B = (float)arr[i*4+2]/255.0f;
+        transferFn1D[i].A = alpha;
+        if (transferFn1D[i].A != 0 && minVisibleScalarIndex == -1) {
+            minVisibleScalarIndex = i;
+        }
+
+    }
+
     for (int i=tableEntries-1; i>=0; i--)
     {
         if (transferFn1D[i].A != 0 && maxVisibleScalarIndex == -1){
@@ -495,24 +512,34 @@ double avtOpacityMap::GetMaxVisibleScalar()
 //  Programmer: Pascal Grosset
 //  Creation:   July 14, 2016
 //
+//  Modifications:
+//
+//    Qi WU, Sat Jun 10 22:21:27 MST 2018
+//    Code formatting
+//
 // ****************************************************************************
-void avtOpacityMap::computeVisibleRange()
+void avtOpacityMap::ComputeVisibleRange()
 {
     double scalarRange = max - min;
     if (minVisibleScalarIndex == 0)
         minVisibleScalar =  min;
     else
-        minVisibleScalar = ( ((float)minVisibleScalarIndex/(tableEntries-1)) * scalarRange) + min;
+        minVisibleScalar = (((float)minVisibleScalarIndex/(tableEntries-1)) *
+                            scalarRange) + min;
     
     if (maxVisibleScalarIndex == tableEntries-1)
         maxVisibleScalar =  max;
     else
-        maxVisibleScalar = ( ((float)maxVisibleScalarIndex/(tableEntries-1)) * scalarRange) + min;
+        maxVisibleScalar = (((float)maxVisibleScalarIndex/(tableEntries-1)) * 
+                            scalarRange) + min;
 
      debug5 << " max: " << max << " min: " << min 
-	    << " scalarRange: " << scalarRange << " minVisibleScalarIndex: " << minVisibleScalarIndex 
-	    << " maxVisibleScalarIndex: " << maxVisibleScalarIndex << " tableEntries: " << tableEntries
-	    << " maxVisibleScalar: " << maxVisibleScalar << " minVisibleScalar: " << minVisibleScalar 
+	    << " scalarRange: " << scalarRange 
+            << " minVisibleScalarIndex: " << minVisibleScalarIndex 
+	    << " maxVisibleScalarIndex: " << maxVisibleScalarIndex 
+            << " tableEntries: " << tableEntries
+	    << " maxVisibleScalar: " << maxVisibleScalar 
+            << " minVisibleScalar: " << minVisibleScalar 
 	    << std::endl;
 }
 

@@ -59,28 +59,42 @@
 #   OSPRay is only required if requested (VISIT_OSPRAY is set to true/on).
 #   Change OSPRay messages type to STATUS.
 #
+#   Kathleen Biagas, Mon Jul 18 10:04:22 PDT 2016
+#   Remove SurfaceAndWireframeMapper, and specialized mappers for
+#   Structured/Rectilinear grids.
+#
+#   Kathleen Biagas, Tue Feb 6 14:15:43 PST 2018
+#   Moved avtLookupTable from avt/Pipeline/Data to here, and
+#   visit_vtk/full/vtkDepthSortPolyData2 to vtk, due to their dependence on
+#   vtkRendering.
+#
+#   Kathleen Biagas, Thu June 7, 2018
+#   No longer add 'VTK_DEFINITIONS' to target. Add vtkRenderingVolumeOpenGL2
+#   to link line.  Needed because the module is now init'd from
+#   InitVTKRendering.
+#
+#   Kathleen Biagas, Fri Jun  8 12:17:45 PDT 2018
+#   Remove vtkRenderingVolumeOpenGL2 from link line. Moved module init back
+#   into volume plot.
+#
+#   Qi WU, Sat Jun 10 22:21:27 MST 2018
+#   Remove the old VISIT_OSPRAY configurations because they are too old. 
+#   Additional Note: The FindOSPRay.cmake file is broken for a recent version
+#                    of OSPRay. We should use the built-inosprayConfig.cmake
+#                    file to find OSPRay instead.
+#
 #****************************************************************************/
 
+#---------------------------------------------------------------
+# Note (qi): have to disable OSPRay related code here since the 
+#            FindOSPRay.cmake file is broken
+#---------------------------------------------------------------
 # if(VISIT_OSPRAY)
 #    SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
 #        ${VISIT_SOURCE_DIR}/avt/Plotter/OSPRay/CMake)
 #    FIND_PACKAGE(OSPRay REQUIRED)
 # endif()
-
-SET(VISIT_VTK_MANTA_SOURCES
-Manta/vtkMantaPolyDataMapper.C 
-Manta/vtkMantaTexture.C
-Manta/vtkMantaProperty.C 
-Manta/vtkMantaActor.C 
-Manta/vtkMantaCamera.C 
-Manta/vtkMantaLight.C 
-Manta/vtkMantaDataSetMapper.C
-Manta/vtkMantaObjectFactory.C 
-Manta/vtkMantaRenderer.C 
-Manta/vtkMantaManager.C
-Manta/vtkMantaCubeAxesActor.C
-)
-
+#
 # SET(VISIT_VTK_OSPRAY_SOURCES
 #     OSPRay/vtkOSPRay/vtkOSPRay.h
 #     OSPRay/vtkOSPRay/vtkOSPRayActor.cxx
@@ -105,29 +119,20 @@ CONFIGURE_FILE(
 )
 
 SET(AVTPLOTTER_OPENGL_SOURCES
-avtOpenGLExtensionManager.C 
-avtOpenGLSurfaceAndWireframeRenderer.C 
-vtk/vtkOpenGLRectilinearGridMapper.C 
-vtk/vtkOpenGLStructuredGridMapper.C 
-vtk/vtkOpenGLTexturedBackgroundMapper.C 
-vtk/vtkTexturedPointsPainter.C
+vtk/vtkOpenGLPointMapper.C
+vtk/vtkOpenGLTexturedBackgroundMapper.C
 )
-
-IF(VISIT_USE_GLEW)
-    SET(GRAPHICS_INCLUDES ${GLEW_INCLUDE_DIR})
-ELSE(VISIT_USE_GLEW)
-    SET(GRAPHICS_INCLUDES ${OPENGL_INCLUDE_DIR})
-ENDIF(VISIT_USE_GLEW)
 
 SET(AVTPLOTTER_VTK_SOURCES
 vtk/InitVTKRendering.C 
 vtk/vtkAxesActor2D.C 
 vtk/vtkBackgroundActor.C 
+vtk/vtkDepthSortPolyData2.C
 vtk/vtkLineLegend.C 
 vtk/vtkMultiFontVectorText.C 
 vtk/vtkParallelImageSpaceRedistributor.C 
-vtk/vtkRectilinearGridMapper.C 
-vtk/vtkStructuredGridMapper.C 
+vtk/vtkPointGlyphMapper.C 
+vtk/vtkPointMapper.C 
 vtk/vtkTexturedBackgroundActor.C 
 vtk/vtkTimeSliderActor.C 
 vtk/vtkTriad2D.C 
@@ -135,7 +140,6 @@ vtk/vtkVectorFontCharacterData.C
 vtk/vtkVisItAxisActor.C 
 vtk/vtkVisItAxisActor2D.C 
 vtk/vtkVisItCubeAxesActor.C 
-vtk/vtkVisItDataSetMapper.C 
 vtk/vtkVisItScalarBarActor.C 
 vtk/vtkVisItScalarBarWithOpacityActor.C 
 vtk/vtkVisItTextActor.C
@@ -149,7 +153,6 @@ avtCustomRenderer.C
 avtDecorationsDrawable.C
 avtDecorationsMapper.C
 avtDrawable.C
-avtDrawer.C
 avtExternallyRenderedImagesActor.C
 avtGeometryDrawable.C
 avtImageDrawable.C
@@ -162,15 +165,16 @@ avtLevelsMapper.C
 avtLevelsPointGlyphMapper.C
 avtLightList.C
 avtLineoutActor.C
+avtLookupTable.C
 avtMapper.C
+avtMapperBase.C
+avtMapper2D.C
 avtPickActor.C
 avtPlot.C
 avtPlotMetaData.C
-avtPointGlypher.C
+avtPointMapper.C
 avtSoftwareShader.C
-avtSurfaceAndWireframeRenderer.C
 avtTensorGlyphMapper.C
-avtTheater.C
 avtTransparencyActor.C
 avtUserDefinedMapper.C
 avtVariableLegend.C
@@ -183,15 +187,11 @@ ${AVTPLOTTER_VTK_SOURCES}
 ${AVTPLOTTER_OPENGL_SOURCES}
 )
 
-IF(VISIT_MANTA)
-  SET(AVTPLOTTER_SOURCES ${AVTPLOTTER_SOURCES} ${VISIT_VTK_MANTA_SOURCES} )
-ENDIF(VISIT_MANTA)
-
-# IF(VISIT_OSPRAY)
-#   SET(AVTPLOTTER_SOURCES ${AVTPLOTTER_SOURCES} ${VISIT_VTK_OSPRAY_SOURCES})
-#   SET(VTK_INCLUDE_DIRS ${VTK_INCLUDE_DIRS}
-#       ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Rendering/Volume)
-# ENDIF(VISIT_OSPRAY)
+#IF(VISIT_OSPRAY)
+#    SET(AVTPLOTTER_SOURCES ${AVTPLOTTER_SOURCES} ${VISIT_VTK_OSPRAY_SOURCES} )
+#    SET(VTK_INCLUDE_DIRS ${VTK_INCLUDE_DIRS}
+#        ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Rendering/Volume)
+#ENDIF(VISIT_OSPRAY)
 
 INCLUDE_DIRECTORIES(
 ${VISIT_COMMON_INCLUDES}
@@ -208,67 +208,48 @@ ${VISIT_SOURCE_DIR}/avt/Pipeline/Data
 ${VISIT_SOURCE_DIR}/avt/Pipeline/Pipeline
 ${VISIT_SOURCE_DIR}/avt/Pipeline/Sinks
 ${VISIT_SOURCE_DIR}/avt/Pipeline/Sources
-${VISIT_SOURCE_DIR}/avt/Plotter/Manta
-# ${VISIT_SOURCE_DIR}/avt/Plotter/OSPRay
-# ${VISIT_SOURCE_DIR}/avt/Plotter/OSPRay/vtkOSPRay
+#${VISIT_SOURCE_DIR}/avt/Plotter/OSPRay
+#${VISIT_SOURCE_DIR}/avt/Plotter/OSPRay/vtkOSPRay
 ${VISIT_SOURCE_DIR}/avt/View
 ${VISIT_SOURCE_DIR}/visit_vtk/full
 ${VISIT_SOURCE_DIR}/visit_vtk/lightweight
 ${PROJECT_BINARY_DIR}/avt/Plotter/vtk/
 ${VTK_INCLUDE_DIRS}
-${GRAPHICS_INCLUDES}
 )
 
 # Add link directories
-LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} ${VTK_LIBRARY_DIRS} ${MESA_LIBRARY_DIR} ${GLEW_LIBRARY_DIR} )
+LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} )
 
 
 #********************************* SERIAL ************************************
 ADD_LIBRARY(avtplotter_ser ${AVTPLOTTER_SOURCES})
-IF(HAVE_LIB_R)
-    TARGET_LINK_LIBRARIES(avtplotter_ser visitcommon avtmath avtview avtfilters_ser avtpipeline_ser visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB} vtkFiltersStatisticsGnuR)
-ELSE(HAVE_LIB_R)
-    TARGET_LINK_LIBRARIES(avtplotter_ser visitcommon avtmath avtview avtfilters_ser avtpipeline_ser visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB})
-ENDIF(HAVE_LIB_R)
-# Add vtk defines
-ADD_TARGET_DEFINITIONS(avtplotter_ser "${VTK_DEFINITIONS}")
-IF(VISIT_MANTA)
-  TARGET_LINK_LIBRARIES(avtplotter_ser ${MANTA_TARGET_LINK_LIBRARIES})
-ENDIF(VISIT_MANTA)
+TARGET_LINK_LIBRARIES(avtplotter_ser 
+    visitcommon avtmath avtview avtfilters_ser avtpipeline_ser visit_vtk 
+    lightweight_visit_vtk vtkFiltersHybrid vtkRenderingOpenGL2 
+    vtkRenderingFreeType ${OPENGL_LIBRARIES})
+
+#---------------------------------------------------------------
+# Note (qi): have to disable OSPRay related code here since the 
+#            FindOSPRay.cmake file is broken
+#---------------------------------------------------------------
 # IF(VISIT_OSPRAY)
-#     # MESSAGE(STATUS "OSPRAY_TARGET_LINK_LIBRARIES: " ${OSPRAY_TARGET_LINK_LIBRARIES})
-#     # MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
-#     # MESSAGE(STATUS "OSPRAY_INCLUDE_DIRS: " ${OSPRAY_INCLUDE_DIRS})
-#     # TARGET_LINK_LIBRARIES(avtplotter_ser ${OSPRAY_TARGET_LINK_LIBRARIES}
-#     #     ${OSPRAY_LIBRARIES} ${VTK_LIBRARIES})
-#     # INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIRS} ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Parallel/Core)
-#     TARGET_LINK_LIBRARIES(avtplotter_ser ${OSPRAY_LIBRARIES})
-#     INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
+#     MESSAGE(STATUS "OSPRAY_TARGET_LINK_LIBRARIES: " ${OSPRAY_TARGET_LINK_LIBRARIES})
+#     MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
+#     MESSAGE(STATUS "OSPRAY_INCLUDE_DIRS: " ${OSPRAY_INCLUDE_DIRS})
+#     TARGET_LINK_LIBRARIES(avtplotter_ser ${OSPRAY_TARGET_LINK_LIBRARIES}
+#         ${OSPRAY_LIBRARIES} ${VTK_LIBRARIES})
+#     INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIRS} ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Parallel/Core)
 # ENDIF(VISIT_OSPRAY)
 VISIT_INSTALL_TARGETS(avtplotter_ser)
 
 #********************************* PARALLEL **********************************
 IF(VISIT_PARALLEL)
     ADD_PARALLEL_LIBRARY(avtplotter_par ${AVTPLOTTER_SOURCES})
-    IF(HAVE_LIB_R)
-        TARGET_LINK_LIBRARIES(avtplotter_par visitcommon avtmath avtview avtfilters_par avtpipeline_par visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB} vtkFiltersStatisticsGnuR)
-    ELSE(HAVE_LIB_R)
-        TARGET_LINK_LIBRARIES(avtplotter_par visitcommon avtmath avtview avtfilters_par avtpipeline_par visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingCore vtkRenderingFreeType vtkRenderingFreeTypeOpenGL ${GLEW_LIB})
-    ENDIF(HAVE_LIB_R)
-    # Add vtk defines
-    ADD_TARGET_DEFINITIONS(avtplotter_par "${VTK_DEFINITIONS}")
-    IF(VISIT_MANTA)
-      TARGET_LINK_LIBRARIES(avtplotter_par ${MANTA_TARGET_LINK_LIBRARIES})
-      #IF(ICET_FOUND)
-      #  INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})
-      #  LINK_DIRECTORIES(${ICET_LIBRARY_DIR})
-      #ENDIF(ICET_FOUND)
-    ENDIF(VISIT_MANTA)
+    TARGET_LINK_LIBRARIES(avtplotter_par visitcommon avtmath avtview avtfilters_par avtpipeline_par visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingOpenGL2 vtkRenderingFreeType ${OPENGL_LIBRARIES})
     # IF(VISIT_OSPRAY)
-    #     TARGET_LINK_LIBRARIES(avtplotter_par ${OSPRAY_LIBRARIES})
-    # 	INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
+    #     TARGET_LINK_LIBRARIES(avtplotter_par ${OSPRAY_TARGET_LINK_LIBRARIES}
+    #         ${OSPRAY_LIBRARIES})
     # ENDIF(VISIT_OSPRAY)
-
     VISIT_INSTALL_TARGETS(avtplotter_par)
 ENDIF(VISIT_PARALLEL)
 
