@@ -41,6 +41,7 @@
 #include <string>
 #include <AttributeSubject.h>
 
+class TransferFunctionWidget;
 #include <ColorControlPointList.h>
 #include <GaussianControlPointList.h>
 
@@ -64,10 +65,14 @@ class VolumeAttributes : public AttributeSubject
 public:
     enum Renderer
     {
-        Default,
+        Splatting,
+        Texture3D,
         RayCasting,
         RayCastingIntegration,
-        RayCastingSLIVR
+        SLIVR,
+        RayCastingSLIVR,
+        RayCastingOSPRay,
+        Tuvok
     };
     enum GradientType
     {
@@ -139,6 +144,7 @@ public:
     void SelectOpacityVariable();
     void SelectCompactVariable();
     void SelectFreeformOpacity();
+    void SelectTransferFunction2DWidgets();
     void SelectMaterialProperties();
 
     // Property setting methods
@@ -165,11 +171,13 @@ public:
     void SetSamplesPerRay(int samplesPerRay_);
     void SetRendererType(Renderer rendererType_);
     void SetGradientType(GradientType gradientType_);
+    void SetNum3DSlices(int num3DSlices_);
     void SetScaling(Scaling scaling_);
     void SetSkewFactor(double skewFactor_);
     void SetLimitsMode(LimitsMode limitsMode_);
     void SetSampling(SamplingType sampling_);
     void SetRendererSamples(float rendererSamples_);
+    void SetTransferFunctionDim(int transferFunctionDim_);
     void SetLowGradientLightingReduction(LowGradientLightingReduction lowGradientLightingReduction_);
     void SetLowGradientLightingClampFlag(bool lowGradientLightingClampFlag_);
     void SetLowGradientLightingClampValue(double lowGradientLightingClampValue_);
@@ -204,11 +212,15 @@ public:
     int                            GetSamplesPerRay() const;
     Renderer                       GetRendererType() const;
     GradientType                   GetGradientType() const;
+    int                            GetNum3DSlices() const;
     Scaling                        GetScaling() const;
     double                         GetSkewFactor() const;
     LimitsMode                     GetLimitsMode() const;
     SamplingType                   GetSampling() const;
     float                          GetRendererSamples() const;
+    const AttributeGroupVector     &GetTransferFunction2DWidgets() const;
+          AttributeGroupVector     &GetTransferFunction2DWidgets();
+    int                            GetTransferFunctionDim() const;
     LowGradientLightingReduction   GetLowGradientLightingReduction() const;
     bool                           GetLowGradientLightingClampFlag() const;
     double                         GetLowGradientLightingClampValue() const;
@@ -218,6 +230,18 @@ public:
     // Persistence methods
     virtual bool CreateNode(DataNode *node, bool completeSave, bool forceAdd);
     virtual void SetFromNode(DataNode *node);
+
+
+    // Attributegroup convenience methods
+    void AddTransferFunction2DWidgets(const TransferFunctionWidget &);
+    void ClearTransferFunction2DWidgets();
+    void RemoveTransferFunction2DWidgets(int i);
+    int  GetNumTransferFunction2DWidgets() const;
+    TransferFunctionWidget &GetTransferFunction2DWidgets(int i);
+    const TransferFunctionWidget &GetTransferFunction2DWidgets(int i) const;
+
+    TransferFunctionWidget &operator [] (int i);
+    const TransferFunctionWidget &operator [] (int i) const;
 
     // Enum conversion functions
     static std::string Renderer_ToString(Renderer);
@@ -299,11 +323,14 @@ public:
         ID_samplesPerRay,
         ID_rendererType,
         ID_gradientType,
+        ID_num3DSlices,
         ID_scaling,
         ID_skewFactor,
         ID_limitsMode,
         ID_sampling,
         ID_rendererSamples,
+        ID_transferFunction2DWidgets,
+        ID_transferFunctionDim,
         ID_lowGradientLightingReduction,
         ID_lowGradientLightingClampFlag,
         ID_lowGradientLightingClampValue,
@@ -311,6 +338,8 @@ public:
         ID__LAST
     };
 
+protected:
+    AttributeGroup *CreateSubAttributeGroup(int index);
 private:
     bool                     legendFlag;
     bool                     lightingFlag;
@@ -335,11 +364,14 @@ private:
     int                      samplesPerRay;
     int                      rendererType;
     int                      gradientType;
+    int                      num3DSlices;
     int                      scaling;
     double                   skewFactor;
     int                      limitsMode;
     int                      sampling;
     float                    rendererSamples;
+    AttributeGroupVector     transferFunction2DWidgets;
+    int                      transferFunctionDim;
     int                      lowGradientLightingReduction;
     bool                     lowGradientLightingClampFlag;
     double                   lowGradientLightingClampValue;
@@ -349,6 +381,6 @@ private:
     static const char *TypeMapFormatString;
     static const private_tmfs_t TmfsStruct;
 };
-#define VOLUMEATTRIBUTES_TMFS "bbafiabissUbfbfbfbfbiiiidiifibdD"
+#define VOLUMEATTRIBUTES_TMFS "bbafiabissUbfbfbfbfbiiiiidiifa*iibdD"
 
 #endif

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -160,7 +160,7 @@ avtVolumePlot : public avtVolumeDataPlot
     avtVolumeVariableLegend        *varLegend;
     avtLegend_p                     varLegendRefPtr;
 
-    virtual avtMapperBase   *GetMapper(void);
+    virtual avtMapper       *GetMapper(void);
     virtual avtDataObject_p  ApplyOperators(avtDataObject_p);
     virtual avtDataObject_p  ApplyRenderingTransformation(avtDataObject_p);
     virtual void             CustomizeBehavior(void);

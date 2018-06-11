@@ -1187,9 +1187,9 @@ avtMassVoxelExtractor::SampleVariable_Trilinear(int first, int last, int w, int 
         float z_back = *prop_K;        float z_front = 1. - z_back;   
 
         // get the index and distance from the center of the neighbouring cells
-        getIndexandDistFromCenter(x_right, newInd[0], index_left, index_right,   dist_from_left, dist_from_right);
-        getIndexandDistFromCenter(y_top,   newInd[1], index_bottom,index_top,    dist_from_bottom,dist_from_top);
-        getIndexandDistFromCenter(z_back,  newInd[2], index_front, index_back,   dist_from_front, dist_from_back);
+        GetIndexandDistFromCenter(x_right, newInd[0], index_left, index_right,   dist_from_left, dist_from_right);
+        GetIndexandDistFromCenter(y_top,   newInd[1], index_bottom,index_top,    dist_from_bottom,dist_from_top);
+        GetIndexandDistFromCenter(z_back,  newInd[2], index_front, index_back,   dist_from_front, dist_from_back);
 
         int indices[6];
         indices[4] = index_front;       indices[5] = index_back;
@@ -1227,7 +1227,7 @@ avtMassVoxelExtractor::SampleVariable_Trilinear(int first, int last, int w, int 
         if (ncell_arrays > 0)
         {
             int indexT[8];
-            computeIndices(dims, indices, indexT);
+            ComputeIndices(dims, indices, indexT);
                 
             for (int l = 0 ; l < ncell_arrays ; l++) // ncell_arrays: usually 1
             {
@@ -1236,7 +1236,7 @@ avtMassVoxelExtractor::SampleVariable_Trilinear(int first, int last, int w, int 
                 for (int m = 0 ; m < cell_size[l] ; m++)
                 {   // cell_size[l] usually 1
                     AssignEight(cell_vartypes[l], values, indexT, cell_size[l], m, cell_array);         
-                    double scalarValue = trilinearInterpolate(values, dist_from_left, dist_from_bottom, dist_from_front);
+                    double scalarValue = TrilinearInterpolate(values, dist_from_left, dist_from_bottom, dist_from_front);
 
                     tmpSampleList[count][cell_index[l]+m] = scalarValue; 
                 }
@@ -1249,7 +1249,7 @@ avtMassVoxelExtractor::SampleVariable_Trilinear(int first, int last, int w, int 
         if (npt_arrays > 0)
         {
             int indexT[8];
-            computeIndicesVert(dims, indices, indexT);
+            ComputeIndicesVert(dims, indices, indexT);
 
             for (int l = 0 ; l < npt_arrays ; l++)
             {
@@ -1258,7 +1258,7 @@ avtMassVoxelExtractor::SampleVariable_Trilinear(int first, int last, int w, int 
                 for (int m = 0 ; m < pt_size[l] ; m++)
                 {
                     AssignEight(pt_vartypes[l], values, indexT, pt_size[l], m, pt_array);
-                    double scalarValue = trilinearInterpolate(values, x_left, y_bottom, z_front);
+                    double scalarValue = TrilinearInterpolate(values, x_left, y_bottom, z_front);
 
                     tmpSampleList[count][pt_index[l]+m] = scalarValue;
                 }

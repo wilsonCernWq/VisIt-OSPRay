@@ -66,15 +66,19 @@
 #include <avtDatasetExaminer.h>
 #include <avtHexahedronExtractor.h>
 #include <avtHexahedron20Extractor.h>
+#include <avtSLIVRVoxelExtractor.h>
 #include <avtMassVoxelExtractor.h>
+#include <avtMemory.h>
 #include <avtParallel.h>
 #include <avtPointExtractor.h>
 #include <avtPyramidExtractor.h>
 #include <avtRayFunction.h>
+#include <avtRelativeValueSamplePointArbitrator.h>
 #include <avtSamplePoints.h>
 #include <avtTetrahedronExtractor.h>
 #include <avtVolume.h>
 #include <avtWedgeExtractor.h>
+#include <avtCallback.h>
 
 #include <DebugStream.h>
 #include <InvalidCellTypeException.h>
@@ -86,7 +90,7 @@
 
 #include <limits>
 #include <algorithm>
-
+#include <stack>
 
 // ****************************************************************************
 //  Method: avtSamplePointExtractor constructor
@@ -137,14 +141,29 @@
 //
 //    Mark C. Miller, Thu Oct  2 09:41:37 PDT 2014
 //    Initialize lightDirection.
+//
+//    Qi WU TODO
+//
 // ****************************************************************************
 
 avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
-    : avtSamplePointExtractorBase(w, h, d)
 {
+    width  = w;
+    height = h;
+    depth  = d;
+
+    currentNode = 0;
+    totalNodes  = 0;
+
+    projectedImageExtents[0] = 0;
+    projectedImageExtents[1] = 0; 
+    projectedImageExtents[2] = 0; 
+    projectedImageExtents[3] = 0;
+
     hexExtractor        = NULL;
     hex20Extractor      = NULL;
     massVoxelExtractor  = NULL;
+    slivrVoxelExtractor = NULL;
     pointExtractor      = NULL;
     pyramidExtractor    = NULL;
     tetExtractor        = NULL;
@@ -155,12 +174,42 @@ avtSamplePointExtractor::avtSamplePointExtractor(int w, int h, int d)
 #else
     sendCells        = false;
 #endif
+    jitter           = false;
     rayfoo           = NULL;
+
+    rectilinearGridsAreInWorldSpace = false;
+    aspect = 1.;
+
+    shouldDoTiling = false;
 
     modeIs3D = true;
     SetKernelBasedSampling(false);
 
+    shouldSetUpArbitrator    = false;
+    arbitratorPrefersMinimum = false;
+    arbitrator               = NULL;
+
+    patchCount = 0;
+
     trilinearInterpolation = false;
+    rayCastingSLIVR = false;
+    rayCastingSLIVRParallel = false;
+
+    modelViewProj = vtkMatrix4x4::New();
+
+    lighting = false;
+    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0; 
+    lightPosition[3] = 1.0;
+    lightDirection[0] = 0; lightDirection[1] = 0; lightDirection[2] = -1;
+    materialProperties[0] = 0.4; materialProperties[1] = 0.75; 
+    materialProperties[3] = 0.0; materialProperties[3] = 15.0;
+
+    depthBuffer = NULL;
+    rgbColorBuffer = NULL;
+
+    transferFn1D = NULL;
+
+    ospray = NULL;
 }
 
 
@@ -203,6 +252,11 @@ avtSamplePointExtractor::~avtSamplePointExtractor()
         delete massVoxelExtractor;
         massVoxelExtractor = NULL;
     }
+    if (slivrVoxelExtractor != NULL)
+    {
+        delete slivrVoxelExtractor;
+        slivrVoxelExtractor = NULL;
+    }
     if (tetExtractor != NULL)
     {
         delete tetExtractor;
@@ -223,6 +277,13 @@ avtSamplePointExtractor::~avtSamplePointExtractor()
         delete pyramidExtractor;
         pyramidExtractor = NULL;
     }
+    if (arbitrator != NULL)
+    {
+        delete arbitrator;
+        arbitrator = NULL;
+    }
+
+    DelImgPatches();
 }
 
 
@@ -242,6 +303,114 @@ avtSamplePointExtractor::SetKernelBasedSampling(bool val)
 {
     kernelBasedSampling = val;
     avtRay::SetKernelBasedSampling(kernelBasedSampling);
+}
+
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::SetRectilinearGridsAreInWorldSpace
+//
+//  Purpose:
+//      Tells this object that any input rectilinear grids are in world space,
+//      not image space.
+//
+//  Programmer: Hank Childs
+//  Creation:   November 19, 2004
+//
+//  Modifications:
+//    Jeremy Meredith, Thu Feb 15 12:14:04 EST 2007
+//    Set rectilinearGridsAreInWorldSpace based on the passed in value
+//    (which might be false), not to true.
+//
+// ****************************************************************************
+
+void
+avtSamplePointExtractor::SetRectilinearGridsAreInWorldSpace(bool val,
+                 const avtViewInfo &v, double a)
+{
+    rectilinearGridsAreInWorldSpace = val;
+    viewInfo = v;
+    aspect = a;
+}
+
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::RestrictToTile
+//
+//  Purpose:
+//      Tells the extractor whether or not it should only sample within a tile.
+//
+//  Programmer: Hank Childs
+//  Creation:   November 19, 2004
+//
+// ****************************************************************************
+
+void
+avtSamplePointExtractor::RestrictToTile(int wmin, int wmax, int hmin, int hmax)
+{
+    shouldDoTiling = true;
+    width_min  = wmin;
+    width_max  = wmax;
+    height_min = hmin;
+    height_max = hmax;
+    modified = true;
+}
+
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::Execute
+//
+//  Purpose:
+//      This is the real execute method that gets the sample points out of a
+//      dataset.
+//
+//  Programmer: Hank Childs
+//  Creation:   December 5, 2000
+//
+//  Modifications:
+//
+//    Kathleen Bonnell, Sat Apr 21 13:06:27 PDT 2001 
+//    Moved major portion of code to recursive Execute method that walks 
+//    down the data tree.
+//
+//    Hank Childs, Wed Jun  6 10:31:04 PDT 2001
+//    Removed domain list argument.  Blew away outdated comments.
+//
+//    Eric Brugger, Mon Nov  5 13:46:04 PST 2001
+//    Modified to always compile the timing code.
+//
+//    Hank Childs, Thu Nov 15 15:39:48 PST 2001
+//    Set up the extractors here (instead of constructor), since they must
+//    know how many variables they are working on.
+//
+//    Hank Childs, Mon Nov 19 14:56:40 PST 2001
+//    Gave progress while resampling.
+//
+//    Qi WU TODO
+//    Add more profiling
+//
+// ****************************************************************************
+
+void
+avtSamplePointExtractor::Execute(void)
+{
+    int timingsIndex = visitTimer->StartTimer();
+
+    int timingsSetUpExtractors = visitTimer->StartTimer();
+    SetUpExtractors();
+    visitTimer->StopTimer(timingsSetUpExtractors, 
+			  "avtSamplePointExtractor::Execute "
+			  "SetUpExtractors");
+
+    int timingsExecuteTree = visitTimer->StartTimer();
+    avtDataTree_p tree = GetInputDataTree();
+    totalNodes = tree->GetNumberOfLeaves();
+    currentNode = 0;
+    ExecuteTree(tree);
+    visitTimer->StopTimer(timingsExecuteTree, 
+			  "avtSamplePointExtractor::Execute "
+			  "executeTree");
+
+    visitTimer->StopTimer(timingsIndex, "Sample point extraction");
 }
 
 
@@ -311,6 +480,10 @@ avtSamplePointExtractor::SetUpExtractors(void)
     {
         delete massVoxelExtractor;
     }
+    if (slivrVoxelExtractor != NULL)
+    {
+        delete slivrVoxelExtractor;
+    }
     if (tetExtractor != NULL)
     {
         delete tetExtractor;
@@ -335,6 +508,7 @@ avtSamplePointExtractor::SetUpExtractors(void)
     hexExtractor = new avtHexahedronExtractor(width, height, depth, volume,cl);
     hex20Extractor = new avtHexahedron20Extractor(width, height, depth, volume,cl);
     massVoxelExtractor = new avtMassVoxelExtractor(width, height, depth, volume,cl);
+    slivrVoxelExtractor = new avtSLIVRVoxelExtractor(width, height, depth, volume,cl);
     tetExtractor = new avtTetrahedronExtractor(width, height, depth,volume,cl);
     wedgeExtractor = new avtWedgeExtractor(width, height, depth, volume, cl);
     pointExtractor = new avtPointExtractor(width, height, depth, volume, cl);
@@ -346,6 +520,8 @@ avtSamplePointExtractor::SetUpExtractors(void)
     int weightIndex = (rayfoo != NULL) ? rayfoo->GetWeightVariableIndex() : -1;
     massVoxelExtractor->SetWeightVariableIndex(weightIndex);
 
+    slivrVoxelExtractor->SetTrilinear(trilinearInterpolation);
+
     hexExtractor->SendCellsMode(sendCells);
     hex20Extractor->SendCellsMode(sendCells);
     tetExtractor->SendCellsMode(sendCells);
@@ -355,7 +531,8 @@ avtSamplePointExtractor::SetUpExtractors(void)
 
     hexExtractor->SetJittering(jitter);
     hex20Extractor->SetJittering(jitter);
-//    massVoxelExtractor->SetJittering(jitter);
+    // massVoxelExtractor->SetJittering(jitter);
+    // slivrVoxelExtractor->SetJittering(jitter);
     tetExtractor->SetJittering(jitter);
     wedgeExtractor->SetJittering(jitter);
     pointExtractor->SetJittering(jitter);
@@ -369,6 +546,8 @@ avtSamplePointExtractor::SetUpExtractors(void)
                                  height_min, height_max-1);
         massVoxelExtractor->Restrict(width_min, width_max-1,
                                      height_min, height_max-1);
+        slivrVoxelExtractor->Restrict(width_min, width_max-1,
+                                      height_min, height_max-1);
         tetExtractor->Restrict(width_min, width_max-1,
                                height_min, height_max-1);
         wedgeExtractor->Restrict(width_min, width_max-1, height_min, 
@@ -378,6 +557,26 @@ avtSamplePointExtractor::SetUpExtractors(void)
         pyramidExtractor->Restrict(width_min, width_max-1,
                                    height_min, height_max-1);
     }
+}
+
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::SetUpArbitrator
+//
+//  Purpose:
+//      Tells this module that it should set up an arbitrator.
+//
+//  Programmer: Hank Childs
+//  Creation:   January 15, 2008
+//
+// ****************************************************************************
+
+void
+avtSamplePointExtractor::SetUpArbitrator(std::string &name, bool pm)
+{
+    arbitratorVarName        = name;
+    arbitratorPrefersMinimum = pm;
+    shouldSetUpArbitrator    = true;
 }
 
 
@@ -404,7 +603,36 @@ avtSamplePointExtractor::SetUpExtractors(void)
 void
 avtSamplePointExtractor::PreExecute(void)
 {
-    avtSamplePointExtractorBase::PreExecute();
+    avtDatasetToSamplePointsFilter::PreExecute();
+
+    if (shouldSetUpArbitrator)
+    {
+        avtSamplePoints_p samples = GetTypedOutput();
+        int nvars = samples->GetNumberOfRealVariables();
+        int theMatch = -1;
+        int tmpIndex = 0;
+        for (int i = 0 ; i < nvars ; i++)
+        {
+            bool foundMatch = false;
+            if (samples->GetVariableName(i) == arbitratorVarName)
+                foundMatch = true;
+
+            if (foundMatch)
+            {
+                theMatch = tmpIndex;
+                break;
+            }
+            else
+                tmpIndex += samples->GetVariableSize(i);
+        }
+
+        if (theMatch != -1)
+        {
+            arbitrator = new avtRelativeValueSamplePointArbitrator(
+                                      arbitratorPrefersMinimum, tmpIndex);
+            avtRay::SetArbitrator(arbitrator);
+        }
+    }
 
     if (GetInput()->GetInfo().GetAttributes().GetTopologicalDimension() == 0)
     {
@@ -435,28 +663,347 @@ avtSamplePointExtractor::PreExecute(void)
 
 
 // ****************************************************************************
-//  Method: avtSamplePointExtractor::DoSampling
+//  Method: avtSamplePointExtractor::PostExecute
 //
 //  Purpose:
-//      Performs sampling, called by base class ExecuteTree method.
+//      Unregisters the sample point arbitrator
+//
+//  Programmer: Hank Childs
+//  Creation:   January 15, 2008
+//
+// ****************************************************************************
+
+void
+avtSamplePointExtractor::PostExecute(void)
+{
+    avtDatasetToSamplePointsFilter::PostExecute();
+
+    if (shouldSetUpArbitrator)
+    {
+        avtRay::SetArbitrator(NULL);
+        if (arbitrator != NULL)
+        {
+            delete arbitrator;
+            arbitrator = NULL;
+        }
+    }
+}
+
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::ExecuteTree
+//
+//  Purpose:
+//      This is the recursive execute method that gets the sample points 
+//      out of a dataset.  
 //
 //  Arguments:
-//      ds      The data set that should be processed.
-//      idx     The index of the dataset.
+//      dt      The data tree that should be processed.
 //
-//  Programmer: Kathleen Biagas 
-//  Creation:   April 18, 2018
+//  Programmer: Kathleen Bonnell 
+//  Creation:   April 21, 2001. 
+//
+//  Modifications:
+//
+//    Hank Childs, Wed Jun  6 10:22:48 PDT 2001
+//    Renamed ExecuteTree.
+//
+//    Hank Childs, Tue Jun 19 19:24:39 PDT 2001
+//    Put in logic to handle bad data trees.
+//
+//    Hank Childs, Tue Nov 13 15:22:07 PST 2001
+//    Add support for multiple variables.
+//
+//    Hank Childs, Mon Nov 19 14:56:40 PST 2001
+//    Gave progress while resampling.
+//
+//    Hank Childs, Mon Apr 15 15:34:43 PDT 2002
+//    Give clearer error messages.
+//
+//    Hank Childs, Fri Jul 18 11:42:10 PDT 2003
+//    Do not sample ghost zones.  This gives slightly better performance.
+//    And ghost zones occasionally have the wrong value (due to problems with
+//    the code that produced it).
+//
+//    Hank Childs, Sun Dec 14 11:07:56 PST 2003
+//    Make use of massVoxelExtractor.
+//
+//    Hank Childs, Fri Aug 27 16:47:45 PDT 2004
+//    Rename ghost data arrays.
+//
+//    Hank Childs, Fri Nov 19 13:57:02 PST 2004
+//    If the rectilinear grids are in world space, then let the mass voxel
+//    extractor know about it.
+//
+//    Hank Childs, Sat Jan 29 13:32:54 PST 2005
+//    Added 2D extractors.
+//
+//    Hank Childs, Sun Jan  1 10:53:09 PST 2006
+//    Moved raster based sampling into its own method.  Added support for
+//    kernel based sampling.
+//
+//    Manasa Prasad, 
+//    Converted the recursive function to iteration
+//
+// ****************************************************************************
+struct datatree_childindex {
+    avtDataTree_p dt; int idx; bool visited;
+    datatree_childindex(avtDataTree_p dt_, int idx_) : 
+    dt(dt_), idx(idx_), visited(false) {}
+};
+
+void
+avtSamplePointExtractor::ExecuteTree(avtDataTree_p dt)
+{
+    StackTimer t0("avtSamplePointExtractor::ExecuteTree");
+
+    // // Check memory
+    // unsigned long m_size, m_rss;
+    // avtMemory::GetMemorySize(m_size, m_rss);
+    // debug5 << PAR_Rank() 
+    // 	      << " ~ avtSamplePointExtractor::ExecuteTree  .. .  " 
+    //        << "    Memory use before: " 
+    // 	      << m_size << "  rss (MB): " << m_rss/(1024*1024) << endl;
+
+    //----------------------------------------------------------
+    // Initialize RayCastingSLIVR sampling state
+    //----------------------------------------------------------
+    totalAssignedPatches = dt->GetNChildren();
+    patchCount = 0;
+    imageMetaPatchVector.clear();
+    imgDataHashMap.clear();
+
+    if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
+        return;
+
+    debug5 << " ~ avtSamplePointExtractor::dt->GetNChildren() "  
+	   << dt->GetNChildren() << endl;
+
+    //----------------------------------------------------------
+    // Process tree
+    //----------------------------------------------------------
+    int timingsExecuteTreeProcess = visitTimer->StartTimer();
+    std::stack<datatree_childindex*> nodes;
+    // Iterative depth-first sampling
+    nodes.push(new datatree_childindex(dt,0));
+    while (!nodes.empty())
+    {
+	//-----------------------------------------------
+	// initialize tree structure
+	//-----------------------------------------------
+        datatree_childindex *ci=nodes.top();
+        avtDataTree_p ch=ci->dt;
+
+        if (ch->GetNChildren() != 0)
+        {
+            nodes.pop();  // if it has children, it never gets processed below
+            for (int i = 0; i < ch->GetNChildren(); i++)
+            {
+                if (ch->ChildIsPresent(i))
+                {
+                    if (*ch == NULL || 
+			(ch->GetNChildren() <= 0 && 
+			 (!(ch->HasData())))) { continue; }
+                    nodes.push(new datatree_childindex(ch->GetChild(i),i));
+		    if (rayCastingSLIVR == true && avtCallback::UseOSPRay())
+		    {
+			int timingsInitOSPRayPatch = visitTimer->StartTimer();
+			ospray->InitPatch(i);
+			visitTimer->StopTimer(timingsInitOSPRayPatch,
+					      "avtSamplePointExtractor::"
+					      "ExecuteTree "
+					      "OSPRay::InitPatch");
+		    } 
+
+                }
+            }
+            continue;
+        }
+
+	//
+        // do the work
+	//
+        nodes.pop();
+
+        if (*ch == NULL || (ch->GetNChildren() <= 0 && (!(ch->HasData()))))
+            continue;
+
+        //
+        // Get the dataset for this leaf in the tree.
+        //
+	int timingsPopGetData = visitTimer->StartTimer();
+        vtkDataSet *ds = ch->GetDataRepresentation().GetDataVTK();
+	visitTimer->StopTimer(timingsPopGetData,
+			      "avtSamplePointExtractor::ExecuteTree "
+			      "Pop and GetDataVTK");		
+
+        //
+        // Iterate over all cells in the mesh and call the appropriate
+        // extractor for each cell to get the sample points.
+        //
+        if (kernelBasedSampling) {
+	    ospout << "[avtSamplePointExtractor] KernelBasedSampling" 
+		   << patchCount << std::endl;
+	    int timingsKernelBasedSample = visitTimer->StartTimer();
+	    KernelBasedSample(ds);
+	    visitTimer->StopTimer(timingsKernelBasedSample,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "KernelBasedSample");
+	}
+        else
+        {
+	    ospout << "[avtSamplePointExtractor] RasterBasedSampling " 
+		   << patchCount << std::endl;
+	    // Get transfer function
+	    int timingsRasterBasedGetTfn = visitTimer->StartTimer();
+            if (rayCastingSLIVR == true)
+            {
+		int timingsGetTfnRange = visitTimer->StartTimer();
+                double sr[2]; // Scalar Range
+                ds->GetScalarRange(sr);
+		visitTimer->StopTimer(timingsGetTfnRange,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "Get Data Scalar Range");
+
+		int timingsGetTfnTfnRange = visitTimer->StartTimer();
+                double tfnr[2]; // Transfer Function Range
+                tfnr[0] = transferFn1D->GetMin();
+                tfnr[1] = transferFn1D->GetMax();
+                double tfnVisibleRange[2];
+                tfnVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
+                tfnVisibleRange[1] = transferFn1D->GetMaxVisibleScalar();
+		visitTimer->StopTimer(timingsGetTfnTfnRange,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "Get TFN Range");		
+
+		int timingsGetTfnSetRange = visitTimer->StartTimer();
+                slivrVoxelExtractor->SetScalarRange(sr);
+                slivrVoxelExtractor->SetTFVisibleRange(tfnVisibleRange);
+		visitTimer->StopTimer(timingsGetTfnSetRange,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "Set TFN Range to Extractor");
+            }
+	    visitTimer->StopTimer(timingsRasterBasedGetTfn,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "Get Transfer Function before "
+				  "RasterBasedSample");		
+	    // do the work
+	    int timingsRasterBasedSample = visitTimer->StartTimer();
+            RasterBasedSample(ds,ci->idx);
+	    visitTimer->StopTimer(timingsRasterBasedSample,
+				  "avtSamplePointExtractor::ExecuteTree "
+				  "RasterBasedSample(ds, ci->idx)");
+        }
+
+        UpdateProgress(10*currentNode+9, 10*totalNodes);
+        currentNode++;
+    }
+
+    // Stop Timing
+    visitTimer->StopTimer(timingsExecuteTreeProcess, 
+			  "avtSamplePointExtractor::ExecuteTree "
+			  "Process Tree");
+
+    // // Check memory after
+    // avtMemory::GetMemorySize(m_size, m_rss);
+    // debug5 << PAR_Rank() << " ~ Memory use after: " 
+    // 	   << m_size << "  rss (MB): " << m_rss/(1024*1024)
+    //        <<  " avtSamplePointExtractor::ExecuteTree done" 
+    // 	   << endl;
+}
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::DelImgPatches
+//
+//  Purpose:
+//      allocates space to the pointer address and copy the image generated
+//      to it
+//
+//  Programmer: TODO
+//  Creation:   
+//
+//  Modifications:
+//
+//      Qi WU: TODO
+//      Rename based on VisIt naming convension
+//
+// ****************************************************************************
+void
+avtSamplePointExtractor::DelImgPatches() {
+    imageMetaPatchVector.clear();
+    for (iter_t it=imgDataHashMap.begin(); it!=imgDataHashMap.end(); it++)
+    {
+        if ((*it).second.imagePatch != NULL) { 
+	    delete [](*it).second.imagePatch;
+	}
+        (*it).second.imagePatch = NULL;
+    }
+    imgDataHashMap.clear();
+}
+
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::GetImgData
+//
+//  Purpose:
+//      Copies a patchover
+//
+//  Programmer: TODO
+//  Creation:   
+//
+//  Modifications:
+//
+//      Qi WU: TODO
+//      Rename based on VisIt naming convension
+//      Does shallow copy instead deep copy for efficiency
+//
+// ****************************************************************************
+void 
+avtSamplePointExtractor::GetAndDelImgData
+(int patchId, slivr::ImgData &tempImgData) 
+{
+    size_t imagePatchSize = 
+	imageMetaPatchVector[patchId].dims[0] * 
+	imageMetaPatchVector[patchId].dims[1] * sizeof(float) * 4;
+    iter_t it = imgDataHashMap.find(patchId);
+    tempImgData.procId = it->second.procId;
+    tempImgData.patchNumber = it->second.patchNumber;
+    // do shallow copy instead of deep copy
+    tempImgData.imagePatch = it->second.imagePatch;
+    // memcpy(tempImgData.imagePatch,
+    // 	      it->second.imagePatch,
+    //        imagePatchSize);
+    // delete [](*it).second.imagePatch;
+    it->second.imagePatch = NULL;
+}
+
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::InitMetaPatch
+//
+//  Purpose:
+//
+//  Programmer: 
+//  Creation:   
 //
 //  Modifications:
 //
 // ****************************************************************************
-void
-avtSamplePointExtractor::DoSampling(vtkDataSet *ds, int idx)
+slivr::ImgMetaData
+avtSamplePointExtractor::InitMetaPatch(int id)
 {
-    if (kernelBasedSampling)
-        KernelBasedSample(ds);
-    else
-        RasterBasedSample(ds, idx);
+    slivr::ImgMetaData temp;
+    temp.inUse = 0;
+    temp.procId = PAR_Rank();
+    temp.destProcId = PAR_Rank();
+    temp.patchNumber = id;
+    temp.dims[0] = temp.dims[1] = -1;
+    temp.screen_ll[0] = temp.screen_ll[1] = -1;
+    temp.screen_ur[0] = temp.screen_ur[1] = -1;
+    temp.avg_z = -1.0;
+    temp.eye_z = -1.0;
+    temp.clip_z = -1.0;
+    return temp;
 }
 
 
@@ -610,7 +1157,6 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 {
     StackTimer t0("avtSamplePointExtractor::RasterBasedSample");
 
-    //debug5 << PAR_Rank() << " avtSamplePointExtractor::RasterBasedSample  " << num << std::endl;
     if (modeIs3D && ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
         avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
@@ -627,11 +1173,131 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             varsizes.push_back(samples->GetVariableSize(i));
         }
 
-        massVoxelExtractor->SetGridsAreInWorldSpace(
-            rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
-        massVoxelExtractor->SetTransferFn(transferFn1D);
-        massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
+        if (rayCastingSLIVR)
+        {
+            // Use SLIVR mass voxel extractor.
+	    
+	    //-----------------------------
+	    // Compositing Setup
+	    //-----------------------------
+	    int timingsSetupExtractor = visitTimer->StartTimer();
+
+            slivrVoxelExtractor->SetGridsAreInWorldSpace(
+                rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
+
+            slivrVoxelExtractor->SetDepthBuffer(depthBuffer, 
+					  bufferExtents[1] * bufferExtents[3]);
+            slivrVoxelExtractor->SetRGBBuffer(rgbColorBuffer, 
+                                           bufferExtents[1], bufferExtents[3]);
+            slivrVoxelExtractor->SetBufferExtents(bufferExtents);
+
+            slivrVoxelExtractor->SetViewDirection(viewDirection);
+            slivrVoxelExtractor->SetMVPMatrix(modelViewProj);
+            slivrVoxelExtractor->SetClipPlanes(clipPlanes);
+            slivrVoxelExtractor->SetPanPercentages(panPercentage);
+            slivrVoxelExtractor->SetDepthExtents(depthExtents);
+
+            slivrVoxelExtractor->SetProcIdPatchID(PAR_Rank(),num);
+
+            slivrVoxelExtractor->SetLighting(lighting);
+            slivrVoxelExtractor->SetLightDirection(lightDirection);
+            slivrVoxelExtractor->SetMatProperties(materialProperties);
+            slivrVoxelExtractor->SetTransferFn(transferFn1D);
+
+	    // Properties used by RC OSPRay
+            slivrVoxelExtractor->SetImageZoom(imageZoom);
+            slivrVoxelExtractor->SetRendererSampleRate(rendererSampleRate);
+
+            // Pass OSPRay reference
+            slivrVoxelExtractor->SetOSPRay(ospray);
+            slivrVoxelExtractor->SetFullImageExtents(fullImageExtents);
+
+	    visitTimer->StopTimer(timingsSetupExtractor,
+				  "avtSamplePointExtractor::RasterBasedSample "
+				  "Setup RectlinearGrid Extractor");
+
+	    //-----------------------------
+	    // Extract
+	    //-----------------------------
+	    int timingsExtract = visitTimer->StartTimer();
+            slivrVoxelExtractor->Extract((vtkRectilinearGrid *) ds, 
+					 varnames, varsizes);
+	    visitTimer->StopTimer(timingsExtract,
+				  "avtSamplePointExtractor::RasterBasedSample "
+				  "Do SLIVR Extraction");
+
+	    //-----------------------------
+	    // Get rendering results
+	    // put them into a proper vector, sort them based on z value
+	    //-----------------------------
+	    int timingsGetResult = visitTimer->StartTimer();
+	    slivr::ImgMetaData tmpImageMetaPatch;
+            tmpImageMetaPatch = InitMetaPatch(patchCount);
+
+            slivrVoxelExtractor->GetImageDimensions(
+                     tmpImageMetaPatch.inUse,     tmpImageMetaPatch.dims,
+                     tmpImageMetaPatch.screen_ll, tmpImageMetaPatch.screen_ur,
+                     tmpImageMetaPatch.eye_z,     tmpImageMetaPatch.clip_z);
+            if (tmpImageMetaPatch.inUse == 1)
+            {
+                tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
+                tmpImageMetaPatch.destProcId = tmpImageMetaPatch.procId;
+                imageMetaPatchVector.push_back(tmpImageMetaPatch);
+
+		slivr::ImgData tmpImageDataHash;
+                tmpImageDataHash.procId = tmpImageMetaPatch.procId;
+                tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
+                tmpImageDataHash.imagePatch = 
+		    new float[tmpImageMetaPatch.dims[0] * 
+			      tmpImageMetaPatch.dims[1] * 4];
+
+                slivrVoxelExtractor->GetComputedImage(
+                                                  tmpImageDataHash.imagePatch);
+                imgDataHashMap.insert(
+	 	      std::pair<int, slivr::ImgData> (tmpImageDataHash.patchNumber, 
+						 tmpImageDataHash));
+                patchCount++;
+            }
+	    visitTimer->StopTimer(timingsGetResult,
+				  "avtSamplePointExtractor::RasterBasedSample "
+				  "Get Result");
+
+        }
+        else
+        {
+            massVoxelExtractor->SetGridsAreInWorldSpace(
+                rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
+            massVoxelExtractor->SetTransferFn(transferFn1D);
+
+	    int timingsExtract = visitTimer->StartTimer();
+            massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames,
+					varsizes);
+	    visitTimer->StopTimer(timingsExtract,
+				  "avtSamplePointExtractor::RasterBasedSample "
+				  "Do Mass Extraction");
+
+        }
+
         return;
+    }
+
+    //---------------------------------------------------------
+    // Other Grid
+    //---------------------------------------------------------
+    ospout << "[avtSamplePointExtractor] RasterBasedSample "
+           << "modeIs3D = " << modeIs3D << " " << std::endl;
+    if (rayCastingSLIVR == true)
+    {
+	std::cerr << (int)(ds->GetDataObjectType()) << std::endl
+		  << "Warning: Dataset is not a VTK_RECTILINEAR_GRID," 
+		  << std::endl
+		  << "         Currently RayCasting:SLIVR/OSPRay renderer"
+		  << std::endl
+		  << "         only support rectilinear grid," 
+		  << std::endl
+		  << "         Thus request cannot be completed."
+		  << std::endl;
+
     }
 
     int numCells = ds->GetNumberOfCells();
@@ -1789,12 +2455,13 @@ avtSamplePointExtractor::SendCellsMode(bool mode)
 
 
 // ****************************************************************************
-//  Method: avtSamplePointExtractor::SendJittering
+//  Method: avtSamplePointExtractor::SetJittering
 //
 //  Purpose:
 //      Tell the individual cell extractors whether or not to jitter.
 //
 //  Arguments:
+//      j     true if the cell extractors should jitter
 //
 //  Programmer: Hank Childs
 //  Creation:   January 9, 2009
@@ -1802,8 +2469,10 @@ avtSamplePointExtractor::SendCellsMode(bool mode)
 // ****************************************************************************
 
 void
-avtSamplePointExtractor::SendJittering()
+avtSamplePointExtractor::SetJittering(bool j)
 {
+    jitter = j;
+
     if (hexExtractor != NULL)
     {
         hexExtractor->SetJittering(jitter);
@@ -1827,6 +2496,10 @@ avtSamplePointExtractor::SendJittering()
     if (massVoxelExtractor != NULL)
     {
         massVoxelExtractor->SetJittering(jitter);
+    }
+    if (slivrVoxelExtractor != NULL)
+    {
+        slivrVoxelExtractor->SetJittering(jitter);
     }
 }
 
@@ -1856,6 +2529,79 @@ avtSamplePointExtractor::FilterUnderstandsTransformedRectMesh()
         return false;
     else
         return true;
+}
+
+
+// ****************************************************************************
+//  Method: avtSamplePointExtractor::GetLoadingInfoForArrays
+//
+//  Purpose:
+//      Gets the "loading info" the data arrays.  The loading info pertains
+//      to how to put the variable information into a cell so that it can
+//      be handed off to a derived type of avtExtractor.
+//
+//  Programmer: Hank Childs
+//  Creation:   June 1, 2007
+//
+// ****************************************************************************
+
+void
+avtSamplePointExtractor::GetLoadingInfoForArrays(vtkDataSet *ds,
+                                                 LoadingInfo &li)
+{
+    int  i, j, k;
+
+    avtSamplePoints_p samples = GetTypedOutput();
+    int numVars = samples->GetNumberOfRealVariables(); // Counts vector as 1
+    li.nVars = samples->GetNumberOfVariables();        // Counts vector as 3
+
+    int ncd = ds->GetCellData()->GetNumberOfArrays();
+    li.cellDataIndex.resize(ncd);
+    li.cellDataSize.resize(ncd);
+    li.cellArrays.resize(ncd);
+    for (i = 0 ; i < ncd ; i++)
+    {
+        vtkDataArray *arr = ds->GetCellData()->GetArray(i);
+        li.cellArrays[i] = arr;
+        const char *name = arr->GetName();
+        li.cellDataSize[i]  = arr->GetNumberOfComponents();
+        li.cellDataIndex[i] = -1;
+        for (j = 0 ; j < numVars ; j++)
+        {
+            if (samples->GetVariableName(j) == name)
+            {
+                int idx = 0;
+                for (k = 0 ; k < j ; k++)
+                    idx += samples->GetVariableSize(k);
+                li.cellDataIndex[i] = idx;
+                break;
+            }
+        }
+    }
+
+    int npd = ds->GetPointData()->GetNumberOfArrays();
+    li.pointDataIndex.resize(npd);
+    li.pointDataSize.resize(npd);
+    li.pointArrays.resize(npd);
+    for (i = 0 ; i < npd ; i++)
+    {
+        vtkDataArray *arr = ds->GetPointData()->GetArray(i);
+        li.pointArrays[i] = arr;
+        const char *name = arr->GetName();
+        li.pointDataSize[i]  = arr->GetNumberOfComponents();
+        li.pointDataIndex[i] = -1;
+        for (j = 0 ; j < numVars ; j++)
+        {
+            if (samples->GetVariableName(j) == name)
+            {
+                int idx = 0;
+                for (k = 0 ; k < j ; k++)
+                    idx += samples->GetVariableSize(k);
+                li.pointDataIndex[i] = idx;
+                break;
+            }
+        }
+    }
 }
 
 
