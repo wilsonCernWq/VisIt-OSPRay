@@ -173,11 +173,9 @@ function build_ospray_in_source
 {
     # set compiler if the user hasn't explicitly set CC and CXX
     if [ -z $CC ]; then
-        echo "***NOTE: Defaulting to use gcc/g++!"
-        echo -n "         Please set env variables 'CC' and 'CXX' to"
-        echo " a different supported compiler (icpc/clang) if desired."
-        export CC=gcc
-        export CXX=g++
+        echo "***NOTE: using compiler $C_COMPILER/$CXX_COMPILER!"
+        export CC=$C_COMPILER
+        export CXX=$CXX_COMPILER
     fi
 
     #### Build OSPRay ####
