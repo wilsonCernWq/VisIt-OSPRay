@@ -109,15 +109,13 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtVoxelExtractor
     void             SetOpacityVariableIndex(int val) { opacityVariableIndex = val; }
     void             SetWeightVariableIndex(int val) { weightVariableIndex = val; }
 
-    void             SetTransferFn(avtOpacityMap *tfn1D) { transferFn1D = tfn1D; };
+    void             SetTransferFn(avtOpacityMap *_transferFn1D) { transferFn1D = _transferFn1D; };
 
   protected:
     template <typename Precision>
     struct PrecisionArrays
     {
-        PrecisionArrays() : prop_buffer_I(NULL),
-	                    prop_buffer_J(NULL),
-	                    prop_buffer_K(NULL),
+        PrecisionArrays() : prop_buffer_I(NULL),prop_buffer_J(NULL),prop_buffer_K(NULL),
                             t(NULL)
         {
         }
@@ -151,8 +149,8 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtVoxelExtractor
     };
 
   protected:
-    int             opacityVariableIndex;
-    int             weightVariableIndex;
+    int              opacityVariableIndex;
+    int              weightVariableIndex;
 
     PrecisionArrays<float>  f_arr;
     PrecisionArrays<double> d_arr;
@@ -171,7 +169,7 @@ class AVTFILTERS_API avtMassVoxelExtractor : public avtVoxelExtractor
     bool            *valid_sample;
     bool             regularGridSpacing;
 
-    avtOpacityMap   *transferFn1D;
+    avtOpacityMap    *transferFn1D;
 
 protected:
     void             ExtractWorldSpaceGrid(vtkRectilinearGrid *,
@@ -182,10 +180,8 @@ protected:
                                   std::vector<std::string> &varorder,
                                   std::vector<int> &varsize);
     bool             ComputeSamples(const double *, const double*, int first, int last);
-    bool             ComputeSamples_Regular(const double *, const double*, 
-					    int first, int last);
-    bool             ComputeSamples_Irregular(const double *, const double*, 
-					      int first, int last);
+    bool             ComputeSamples_Regular(const double *, const double*, int first, int last);
+    bool             ComputeSamples_Irregular(const double *, const double*, int first, int last);
     void             SampleVariable(int, int, int, int);
     void             SampleVariable_Common(int, int, int, int);
     void             SampleVariable_Trilinear(int, int, int, int);

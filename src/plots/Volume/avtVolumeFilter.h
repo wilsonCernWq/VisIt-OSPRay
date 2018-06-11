@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -44,13 +44,11 @@
 #define AVT_VOLUME_FILTER_H
 
 #include <avtDatasetToDatasetFilter.h>
+#include <avtOpacityMap.h>
 
 #include <VolumeAttributes.h>
-#include <avtImage.h>
-#include <avtSLIVROSPRayFilter.h> // ospray integration
 
-#include <vtkMatrix4x4.h>
-#include <vtkCamera.h>
+#include <avtImage.h>
 
 class     WindowAttributes;
 
@@ -91,21 +89,21 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
                                   { return "Volume rendering"; };
 
     avtImage_p               RenderImage(avtImage_p, const WindowAttributes &);
-    avtImage_p               RenderImageRaycastingSLIVR(avtImage_p opaque_image, 
-							const WindowAttributes &);
+#ifdef VISIT_SLIVR
+    avtImage_p               RenderImageRaycastingSLIVR(avtImage_p opaque_image, const WindowAttributes &);
+#endif
     int                      GetNumberOfStages(const WindowAttributes &);
 
   protected:
     VolumeAttributes         atts;
     char                    *primaryVariable;
 
+    avtOpacityMap            CreateOpacityMap(double range[2]);
+
     virtual void             Execute(void);
     virtual avtContract_p    ModifyContract(avtContract_p);
     virtual void             VerifyInput(void);
     virtual bool             FilterUnderstandsTransformedRectMesh();
-
-    // ospray integration
-    OSPVisItContext *ospray;
 };
 
 

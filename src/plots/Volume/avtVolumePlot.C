@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2017, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -232,9 +232,8 @@ bool
 avtVolumePlot::PlotIsImageBased(void)
 {
     return (atts.GetRendererType() == VolumeAttributes::RayCasting ||
-            atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
-	    atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay ||
-            atts.GetRendererType() == VolumeAttributes::RayCastingIntegration);
+            atts.GetRendererType() == VolumeAttributes::RayCastingIntegration ||
+            atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR);
 }
 
 
@@ -439,7 +438,7 @@ avtVolumePlot::SetLegend(bool legendOn)
 //  Method: avtVolumePlot::GetMapper
 //
 //  Purpose:
-//      Gets the mapper as its base class (avtMapper) for our base
+//      Gets the mapper as its base class (avtMapperBase) for our base
 //      class (avtPlot).
 //
 //  Returns:    The mapper for this plot.
@@ -449,7 +448,7 @@ avtVolumePlot::SetLegend(bool legendOn)
 //
 // ****************************************************************************
 
-avtMapper *
+avtMapperBase *
 avtVolumePlot::GetMapper(void)
 {
     return mapper;
@@ -650,6 +649,9 @@ bool DataMustBeResampled(avtDataObject_p input)
 //    Don't calc gradient for raycasting integration, lighting isn't applied
 //    for this case.
 //
+//    Alister Maguire, Fri May 12 10:15:45 PDT 2017
+//    Replaced the Texture3D renderer with the Default renderer.
+//
 // ****************************************************************************
 
 avtDataObject_p
@@ -687,7 +689,6 @@ avtVolumePlot::ApplyRenderingTransformation(avtDataObject_p input)
 
     if (atts.GetRendererType() == VolumeAttributes::RayCasting ||
         atts.GetRendererType() == VolumeAttributes::RayCastingIntegration ||
-        atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay ||
         atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR)
     {
 #ifdef ENGINE
@@ -741,7 +742,7 @@ avtVolumePlot::ApplyRenderingTransformation(avtDataObject_p input)
             InternalResampleAttributes resampleAtts;
             resampleAtts.SetDistributedResample(false);
             resampleAtts.SetTargetVal(atts.GetResampleTarget());
-            resampleAtts.SetPrefersPowersOfTwo(atts.GetRendererType() == VolumeAttributes::Texture3D);
+            resampleAtts.SetPrefersPowersOfTwo(atts.GetRendererType() == VolumeAttributes::Default);
             resampleAtts.SetUseTargetVal(true);
 
             // Unless user forced resampling use actual logical bounds if they exist.

@@ -54,15 +54,13 @@ struct RGBA
     float         A;
 };
 
-struct RGBAF
+struct _RGBA
 {
     float R;
     float G;
     float B;
     float A;
 };
-
-// added by Qi, for using RGBAF nicely outside the function
 
 // ****************************************************************************
 //  Class: avtOpacityMap
@@ -101,11 +99,9 @@ class PIPELINE_API avtOpacityMap
     void operator = (const avtOpacityMap &obj);
 
     const RGBA                  *GetTable(void) { return table; };
-    const RGBAF                 *GetTableFloat(void) { return transferFn1D; };
     void                         SetTable(unsigned char *, int, double = 1.);
     void                         SetTable(unsigned char *arr, int te, double attenuation, float over);
     void                         SetTableFloat(unsigned char *arr, int te, double attenuation, float over);
-    void                         SetTableFloatNOC(unsigned char *arr, int te, double attenuation);
     void                         SetTable(RGBA *, int, double = 1.);
     const RGBA                  &GetOpacity(double);
 
@@ -131,7 +127,7 @@ class PIPELINE_API avtOpacityMap
     friend PIPELINE_API ostream &operator << (ostream &, const avtOpacityMap &);
   protected:
     RGBA                        *table;
-    RGBAF                       *transferFn1D;
+    _RGBA                       *transferFn1D;
     int                          tableEntries;
 
     double                       max, min;
@@ -241,7 +237,7 @@ avtOpacityMap::QueryTF(double scalarValue, double color[4]) const
     if (scalarValue <= min){
         int index = 0;
 
-        RGBAF colorRGBA = transferFn1D[index];
+        _RGBA colorRGBA = transferFn1D[index];
         color[0] = colorRGBA.R;
         color[1] = colorRGBA.G;
         color[2] = colorRGBA.B;
@@ -252,7 +248,7 @@ avtOpacityMap::QueryTF(double scalarValue, double color[4]) const
 
     if (scalarValue >= max){
         int index = tableEntries-1;
-        RGBAF colorRGBA = transferFn1D[index];
+        _RGBA colorRGBA = transferFn1D[index];
         color[0] = colorRGBA.R;
         color[1] = colorRGBA.G;
         color[2] = colorRGBA.B;
@@ -262,7 +258,7 @@ avtOpacityMap::QueryTF(double scalarValue, double color[4]) const
     }
 
     int indexLow, indexHigh;
-    RGBAF colorRGBALow, colorRGBAHigh;
+    _RGBA colorRGBALow, colorRGBAHigh;
     double colorLow[4], colorHigh[4];
     float indexPos, indexDiff;
 

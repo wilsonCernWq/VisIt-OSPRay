@@ -45,20 +45,8 @@
 
 #include <filters_exports.h>
 
-#include <avtDatasetToImageFilter.h>
-#include <avtViewInfo.h>
-#include <avtOpacityMap.h>
-#include <avtSLIVROSPRayFilter.h>
-#include <avtSLIVRImgCommunicator.h>
+#include <avtRayTracerBase.h>
 
-#include <vtkCamera.h>
-
-#include <map>
-#include <limits>
-#include <vector>
-
-class   avtRayFunction;
-class   vtkMatrix4x4;
 
 // ****************************************************************************
 //  Class: avtRayTracer
@@ -105,7 +93,7 @@ class   vtkMatrix4x4;
 //
 // ****************************************************************************
 
-class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
+class AVTFILTERS_API avtRayTracer : public avtRayTracerBase
 {
   public:
                           avtRayTracer();
@@ -113,90 +101,16 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
 
     virtual const char   *GetType(void) { return "avtRayTracer"; };
     virtual const char   *GetDescription(void) { return "Ray tracing"; };
-    virtual void          ReleaseData(void);
 
-    void                  SetView(const avtViewInfo &);
-
-    static int            GetNumberOfStages(int, int, int);
-
-    void                  InsertOpaqueImage(avtImage_p);
-
-    void                  SetRayFunction(avtRayFunction *);
-    void                  SetScreen(int, int);
-    void                  SetSamplesPerRay(int);
-    void                  SetBackgroundColor(const unsigned char [3]);
     void                  SetBackgroundMode(int mode);
     void                  SetGradientBackgroundColors(const double [3],
                                                       const double [3]);
-    int                   GetSamplesPerRay(void)  { return samplesPerRay; };
-    const int            *GetScreen(void)         { return screen; };
-    void                  SetKernelBasedSampling(bool v)
-    { kernelBasedSampling = v; };
-    void                  SetLighting(bool l) { lighting = l; };
-    void                  SetLightPosition(double _lightPos[4])
-    { for (int i=0;i<4;i++) lightPosition[i] = _lightPos[i]; }
-    void                  SetLightDirection(double _lightDir[3]) 
-    { for (int i=0;i<3;i++) lightDirection[i] = _lightDir[i]; }
-    void                  SetMatProperties(double _matProp[4]) 
-    { for (int i=0;i<4;i++) materialProperties[i] = _matProp[i]; }
-    void                  SetTransferFn(avtOpacityMap *_transferFn1D) 
-    { transferFn1D = _transferFn1D; };
-    void                  SetViewDirection(double *vd)
-    { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; }
-    void                  SetTrilinear(bool t) { trilinearInterpolation = t; };
-    void                  SetRayCastingSLIVR(bool _rayCastingSLIVR)
-    { rayCastingSLIVR = _rayCastingSLIVR; };
-    void                  SetRendererSampleRate(double r)
-    { rendererSampleRate = r; }
-
-    void                  SetOSPRay(OSPVisItContext *ptr) { ospray = ptr; }
-protected:
-    
-    // ospray integration
-    OSPVisItContext *ospray;
-
-    avtSLIVRImgCommunicator imgComm;
-    avtViewInfo             view;
-
-    int                   screen[2];
-    int                   samplesPerRay;
-    double                rendererSampleRate;
-    bool                  kernelBasedSampling;
-    bool                  trilinearInterpolation;
+  protected:
     int                   backgroundMode;
-    unsigned char         background[3];
     double                gradBG1[3];
     double                gradBG2[3];
-    avtRayFunction       *rayfoo;
-    
-    bool                  lighting;
-    double                lightPosition[4];
-    
-    double                lightDirection[3];
-    double                materialProperties[4];
-    double                viewDirection[3];
-    double                panPercentage[2];
-    avtOpacityMap        *transferFn1D;
-
-    bool                  rayCastingSLIVR;
-    bool                  convexHullOnRCSLIVR;
-    avtImage_p            opaqueImage;
 
     virtual void          Execute(void);
-    virtual avtContract_p ModifyContract(avtContract_p);
-    static int            GetNumberOfDivisions(int, int, int);
-    virtual bool          FilterUnderstandsTransformedRectMesh();
-    void                  TightenClippingPlanes(const avtViewInfo &view,
-                                                vtkMatrix4x4 *,
-                                                double &, double &);
-
-    void                  ComputeRay(double camera[3], 
-				     double position[3], double ray[3]);
-    bool                  CheckInBounds(double volBounds[6], double coord[3]);
-    bool                  Intersect(double bounds[6], double ray[3], 
-				    double cameraPos[3], 
-				    double &tMin, double &tMax);
-
 };
 
 

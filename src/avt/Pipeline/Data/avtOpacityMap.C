@@ -78,7 +78,7 @@ avtOpacityMap::avtOpacityMap(int te)
     tableEntries = te;
     table = new RGBA[tableEntries];
   
-    transferFn1D = new RGBAF[tableEntries]();
+    transferFn1D = new _RGBA[tableEntries]();
     // RGBA contains a padded byte after the B and before the A.  Use a memset
     // to make sure this inaccessible byte is initialized.  This will allow
     // us to avoid purify issues.
@@ -104,8 +104,8 @@ avtOpacityMap::avtOpacityMap(const avtOpacityMap &obj)
     tableEntries = obj.tableEntries;
     table = new RGBA[tableEntries];
     memcpy(table, obj.table, tableEntries * sizeof(RGBA));
-    transferFn1D = new RGBAF[tableEntries];
-    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(RGBAF));
+    transferFn1D = new _RGBA[tableEntries];
+    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(_RGBA));
     min = obj.min;
     max = obj.max;
     range = obj.range;
@@ -122,8 +122,8 @@ void avtOpacityMap::operator = (const avtOpacityMap &obj)
     tableEntries = obj.tableEntries;
     table = new RGBA[tableEntries];
     memcpy(table, obj.table, tableEntries * sizeof(RGBA));
-    transferFn1D = new RGBAF[tableEntries];
-    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(RGBAF));
+    transferFn1D = new _RGBA[tableEntries];
+    memcpy(transferFn1D, obj.transferFn1D, tableEntries * sizeof(_RGBA));
     min = obj.min;
     max = obj.max;
     range = obj.range;
@@ -270,7 +270,7 @@ avtOpacityMap::SetTable(unsigned char *arr, int te, double attenuation)
 
     tableEntries = te;
     table = new RGBA[tableEntries];
-    transferFn1D = new RGBAF[tableEntries];
+    transferFn1D = new _RGBA[tableEntries];
     for (int i = 0 ; i < tableEntries ; i++)
     {
         table[i].R = arr[i*4];
@@ -363,50 +363,6 @@ avtOpacityMap::SetTable(unsigned char *arr, int te, double attenuation, float ov
 //  Creation:   June 6, 2013
 //
 // ****************************************************************************
-
-void
-avtOpacityMap::SetTableFloatNOC(unsigned char *arr, int te, double attenuation)
-{
-    if (attenuation < -1. || attenuation > 1.)
-    {
-        debug1 << "Bad attenuation value " << attenuation << std::endl;
-        EXCEPTION0(ImproperUseException);
-    }
-
-    if (transferFn1D != NULL) { delete [] transferFn1D; }
-
-    tableEntries = te;
-    transferFn1D = new RGBAF[tableEntries]();
-    minVisibleScalarIndex = maxVisibleScalarIndex = -1;
-
-    for (int i = 0 ; i < tableEntries ; i++)
-    {
-	double bp = tan(1.570796327 * (0.5 - attenuation*0.49999));
-	double alpha = pow((float) arr[i*4+3]/255.0f, (float)bp);
-        transferFn1D[i].R = (float)arr[i*4+0]/255.0f;
-        transferFn1D[i].G = (float)arr[i*4+1]/255.0f;
-        transferFn1D[i].B = (float)arr[i*4+2]/255.0f;
-        transferFn1D[i].A = alpha;
-        if (transferFn1D[i].A != 0 && minVisibleScalarIndex == -1) {
-            minVisibleScalarIndex = i;
-        }
-
-    }
-
-    for (int i=tableEntries-1; i>=0; i--)
-    {
-        if (transferFn1D[i].A != 0 && maxVisibleScalarIndex == -1){
-            maxVisibleScalarIndex = i;
-        }
-    }
-
-    //
-    // We need to set the intermediate vars again since the table size has
-    // potentially changed.
-    //
-    SetIntermediateVars();
-}
-
 void
 avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, float over)
 {
@@ -422,7 +378,7 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
     }
 
     tableEntries = te;
-    transferFn1D = new RGBAF[tableEntries]();
+    transferFn1D = new _RGBA[tableEntries]();
     minVisibleScalarIndex =  maxVisibleScalarIndex = -1;
     for (int i = 0 ; i < tableEntries ; i++)
     {
@@ -436,15 +392,21 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
         transferFn1D[i].A = alpha;
         if (alpha != 0 && minVisibleScalarIndex == -1){
             minVisibleScalarIndex = i;
+            //debug5 << "starting alpha = 0 at i= " << i << std::endl;
         }
 
+        //debug5 << i << " : " << transferFn1D[i].R << ", " << transferFn1D[i].G << ", " << transferFn1D[i].B <<  ", " << transferFn1D[i].A << std::endl;
     }
     for (int i=tableEntries-1; i>=0; i--)
     {
         if (transferFn1D[i].A != 0 && maxVisibleScalarIndex == -1){
             maxVisibleScalarIndex = i;
+            //debug5 << "ending alpha = 0 at i= " << i << std::endl;
         }
     }
+
+
+    //debug5 << "minVisibleScalarIndex: " << minVisibleScalarIndex << "   maxVisibleScalarIndex: " << maxVisibleScalarIndex << std::endl;
 
     //
     // We need to set the intermediate vars again since the table size has
@@ -452,8 +414,6 @@ avtOpacityMap::SetTableFloat(unsigned char *arr, int te, double attenuation, flo
     //
     SetIntermediateVars();
 }
-
-
 // ****************************************************************************
 //  Method: avtOpacityMap::GetMinVisibleScalar
 //
@@ -504,16 +464,17 @@ void avtOpacityMap::computeVisibleRange()
     else
         minVisibleScalar = ( ((float)minVisibleScalarIndex/(tableEntries-1)) * scalarRange) + min;
     
+
+
     if (maxVisibleScalarIndex == tableEntries-1)
         maxVisibleScalar =  max;
     else
         maxVisibleScalar = ( ((float)maxVisibleScalarIndex/(tableEntries-1)) * scalarRange) + min;
 
-     debug5 << " max: " << max << " min: " << min 
-	    << " scalarRange: " << scalarRange << " minVisibleScalarIndex: " << minVisibleScalarIndex 
-	    << " maxVisibleScalarIndex: " << maxVisibleScalarIndex << " tableEntries: " << tableEntries
-	    << " maxVisibleScalar: " << maxVisibleScalar << " minVisibleScalar: " << minVisibleScalar 
-	    << std::endl;
+
+     debug5 << "max: " << max << "  min: " << min << "  scalarRange: " << scalarRange << "  minVisibleScalarIndex: " << minVisibleScalarIndex <<
+             "  maxVisibleScalarIndex: " << maxVisibleScalarIndex << "   tableEntries: " << tableEntries << 
+             "  maxVisibleScalar: " << maxVisibleScalar << "   minVisibleScalar: " << minVisibleScalar << std::endl;
 }
 
 // ****************************************************************************
@@ -572,6 +533,9 @@ avtOpacityMap::SetTable(RGBA *arr, int te, double attenuation)
     //
     SetIntermediateVars();
 }
+
+
+
 
 
 // ****************************************************************************
