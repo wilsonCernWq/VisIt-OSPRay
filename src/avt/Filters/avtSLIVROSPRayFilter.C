@@ -537,8 +537,14 @@ void OSPVisItTransferFunction::Set(const OSPVisItColor *table,
 //
 // ****************************************************************************
 
-void OSPContext_ErrorFunc(OSPError, const char* msg) { osperr << msg; }
-void OSPContext_StatusFunc(const char* msg) { ospout << msg; }
+void OSPContext_ErrorFunc(OSPError, const char* msg) { 
+    osperr << "#osp: (rank " << PAR_Rank() << ")" 
+           << msg; 
+}
+void OSPContext_StatusFunc(const char* msg) { 
+    osperr << "#osp: (rank " << PAR_Rank() << ")" 
+           << msg; 
+}
 void OSPVisItContext::InitOSP(int numThreads) 
 { 
     OSPDevice device = ospGetCurrentDevice();
@@ -550,11 +556,6 @@ void OSPVisItContext::InitOSP(int numThreads)
 	gethostname(hname, 200);
         ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
 #endif
-	// load ospray module
-	OSPError err = ospLoadModule("visit");
-	if (err != OSP_NO_ERROR) {
-	    osperr << "[Error] can't load visit module" << std::endl;
-	}
 	// initialize ospray
         ospout << "[ospray] Initialize OSPRay";
 	device = ospNewDevice();	
@@ -573,6 +574,11 @@ void OSPVisItContext::InitOSP(int numThreads)
 	ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
 	ospDeviceCommit(device);
 	ospSetCurrentDevice(device);
+	// load ospray module
+	OSPError err = ospLoadModule("visit");
+	if (err != OSP_NO_ERROR) {
+	    osperr << "[Error] can't load visit module" << std::endl;
+	}
     }
     initialized = true;
 }
