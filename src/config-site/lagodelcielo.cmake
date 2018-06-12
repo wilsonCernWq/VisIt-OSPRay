@@ -1,7 +1,7 @@
 #/ssd/users/qwu/VisIt/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Tue Jun 12 17:40:49 MDT 2018
+## created: Tue Jun 12 17:50:03 MDT 2018
 ## system: Linux lagodelcielo 4.4.120-45-default #1 SMP Wed Mar 14 20:51:49 UTC 2018 (623211f) x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -117,7 +117,7 @@ VISIT_OPTION_DEFAULT(TBB_ROOT ${VISITHOME}/tbb/tbb2018_20171205oss/${VISITARCH})
 ## OSPRay
 ##
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${VISITHOME}/ospray/1.4.3/${VISITARCH}/lib/cmake/ospray-1.4.3)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${VISITHOME}/ospray/1.4.3/${VISITARCH}/lib64/cmake/ospray-1.4.3)
 
 ##
 ## PIDX
