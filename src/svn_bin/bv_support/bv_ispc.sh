@@ -142,7 +142,7 @@ function bv_ispc_is_installed
         return 1
     fi
 
-    check_if_installed "ispc"
+    check_if_installed "ispc" $ISPC_VERSION
     if [[ $? == 0 ]] ; then
         return 1
     fi
@@ -152,7 +152,7 @@ function bv_ispc_is_installed
 function bv_ispc_build
 {
     if [[ "$DO_ISPC" == "yes" && "$USE_SYSTEM_ISPC" == "no" ]] ; then
-        check_if_installed "ispc"
+        check_if_installed "ispc" $ISPC_VERSION
         if [[ $? == 0 ]] ; then
             info "Skipping build of ISPC"
         else

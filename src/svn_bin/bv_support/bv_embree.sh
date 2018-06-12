@@ -147,7 +147,7 @@ function bv_embree_is_installed
         return 1
     fi
 
-    check_if_installed "embree"
+    check_if_installed "embree" $EMBREE_VERSION
     if [[ $? == 0 ]] ; then
         return 1
     fi
@@ -157,7 +157,7 @@ function bv_embree_is_installed
 function bv_embree_build
 {
     if [[ "$DO_EMBREE" == "yes" && "$USE_SYSTEM_EMBREE" == "no" ]] ; then
-        check_if_installed "embree"
+        check_if_installed "embree" $EMBREE_VERSION
         if [[ $? == 0 ]] ; then
             info "Skipping build of embree"
         else
