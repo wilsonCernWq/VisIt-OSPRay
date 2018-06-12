@@ -155,7 +155,7 @@ function bv_tbb_is_installed
 function bv_tbb_build
 {
     if [[ "$DO_TBB" == "yes" && "$USE_SYSTEM_TBB" == "no" ]] ; then
-        check_if_installed "tbb"
+        check_if_installed "tbb" $TBB_VERSION
         if [[ $? == 0 ]] ; then
             info "Skipping build of TBB"
         else
