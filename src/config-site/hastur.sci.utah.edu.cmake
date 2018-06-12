@@ -1,21 +1,21 @@
-#/ssd/users/qwu/VisIt/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
+#/home/sci/qwu/software/Hastur/VisIt/3rdparty/visit/cmake/3.8.1/linux-x86_64_gcc-7.1/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Tue Jun 12 17:52:11 MDT 2018
-## system: Linux lagodelcielo 4.4.120-45-default #1 SMP Wed Mar 14 20:51:49 UTC 2018 (623211f) x86_64 x86_64 x86_64 GNU/Linux
+## created: Tue Jun 12 17:56:34 MDT 2018
+## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
 ##
 ## Setup VISITHOME & VISITARCH variables.
 ##
-SET(VISITHOME /ssd/users/qwu/VisIt)
-SET(VISITARCH linux-x86_64_gcc-7.3)
+SET(VISITHOME /home/sci/qwu/software/Hastur/VisIt/3rdparty/visit)
+SET(VISITARCH linux-x86_64_gcc-7.1)
 
 ## Compiler flags.
 ##
 VISIT_OPTION_DEFAULT(VISIT_C_COMPILER gcc TYPE FILEPATH)
 VISIT_OPTION_DEFAULT(VISIT_CXX_COMPILER g++ TYPE FILEPATH)
-VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER /usr/bin/gfortran TYPE FILEPATH)
+VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER /home/sci/qwu/software/gcc/gcc-7.1.0-install/bin/gfortran TYPE FILEPATH)
 VISIT_OPTION_DEFAULT(VISIT_C_FLAGS " -m64 -fPIC  -O2 -g -fvisibility=hidden" TYPE STRING)
 VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O2 -g -std=c++98 -fvisibility=hidden" TYPE STRING)
 
@@ -24,7 +24,7 @@ VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O2 -g -std=c++98 -fvisibilit
 ##
 VISIT_OPTION_DEFAULT(VISIT_PARALLEL ON TYPE BOOL)
 ## (configured w/ mpi compiler wrapper)
-VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/compilers_and_libraries_2018.1.163/linux/mpi/intel64/bin/mpicc TYPE FILEPATH)
+VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/impi/2017.2.174/bin64/mpicc TYPE FILEPATH)
 
 ##
 ## VisIt Thread Option
@@ -82,7 +82,7 @@ VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz
 ## BOOST
 ##
 SETUP_APP_VERSION(BOOST 1_67_0)
-VISIT_OPTION_DEFAULT(VISIT_BOOST_DIR /usr)
+VISIT_OPTION_DEFAULT(VISIT_BOOST_DIR ${VISITHOME}/boost/${BOOST_VERSION}/${VISITARCH})
 
 ##
 ## EMBREE
@@ -116,12 +116,6 @@ VISIT_OPTION_DEFAULT(TBB_ROOT ${VISITHOME}/tbb/tbb2018_20171205oss/${VISITARCH})
 ##
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${VISITHOME}/ospray/1.4.3/${VISITARCH}/lib64/cmake/ospray-1.4.3)
-
-##
-## PIDX
-##
-SETUP_APP_VERSION(PIDX 0.9.1)
-VISIT_OPTION_DEFAULT(VISIT_PIDX_DIR /home/sci/qwu/software/Lagodelcielo/PIDX/install)
 
 ##
 ## Silo
