@@ -101,8 +101,7 @@ function bv_ospray_host_profile
     if [[ -d $OSPRAY_INSTALL_DIR/lib ]]; then
         echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
     elif [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then
-        mv $OSPRAY_INSTALL_DIR/lib64 $OSPRAY_INSTALL_DIR/lib
-        echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
+        echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib64/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
     else
         error "No library path for OSPRay has been found."
     fi
