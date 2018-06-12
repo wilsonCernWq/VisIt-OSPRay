@@ -697,8 +697,8 @@ SET(CXX_TEST_PATH ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 # configure options
 #-----------------------------------------------------------------------------
 OPTION(VISIT_PARALLEL "Build VisIt's parallel compute engine." OFF)
-
 OPTION(VISIT_SLIVR    "Build VisIt with support for the SLIVR volume rendering library." ON)
+OPTION(VISIT_OSPRAY   "Build VisIt with support for the OSPRay volume rendering library." OFF)
 OPTION(VISIT_STATIC   "Build VisIt statically." OFF)
 IF(VISIT_STATIC)
     ADD_DEFINITIONS(-DVISIT_STATIC)
@@ -873,6 +873,11 @@ VISIT_3RDPARTY_VAR(MDSPLUS_DIR   "Path containing the MDSplus library's include 
 VISIT_3RDPARTY_VAR(ZLIB_DIR      "Path containing the zlib library's include and lib")
 VISIT_3RDPARTY_VAR(MOAB_DIR      "Path containing the MOAB library's include and lib")
 VISIT_3RDPARTY_VAR(MOAB_MPI_DIR  "Path containing the parallel MOAB library's include and lib")
+
+VISIT_3RDPARTY_VAR(OSPRAY_DIR    "Path containing the OSPRay library's include and lib")
+VISIT_3RDPARTY_VAR(EMBREE_ROOT   "Path containing the embree library's include and lib")
+VISIT_3RDPARTY_VAR(ISPC_ROOT     "Path containing the ISPC library's include and lib")
+VISIT_3RDPARTY_VAR(TBB_ROOT      "Path containing the TBB library's include and lib")
 
 #-----------------------------------------------------------------------------
 # Read the version
@@ -1161,19 +1166,22 @@ ENDIF(VISIT_THREAD)
 IF(VISIT_OSPRAY)
     # setup variables 
     SET(OSPRAY_USE_EXTERNAL_EMBREE ON)
-    SET(ospray_DIR ${VISIT_OSPRAY_DIR})
-    SET(embree_DIR ${VISIT_EMBREE_ROOT})
-    SET(ISPC_EXECUTABLE ${VISIT_ISPC_ROOT})
+    SET(ospray_DIR ${OSPRAY_DIR})
+    SET(embree_DIR ${EMBREE_ROOT})
+    SET(ISPC_EXECUTABLE ${ISPC_ROOT})
+    IF(NOT DEFINED TBB_ROOT)
+      SET(TBB_ROOT ${VISIT_TBB_ROOT})
+    ENDIF(NOT DEFINED TBB_ROOT)     
     FIND_PACKAGE(ospray REQUIRED)
+    # setup ospray
+    ADD_DEFINITIONS(-DVISIT_OSPRAY)
+    INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
+    LINK_DIRECTORIES(${VISIT_OSPRAY_DIR}/../..)
     # additional module library
     SET(OSPRAY_LIBRARIES
       ${OSPRAY_LIBRARIES}
       ${LIBRARY_PATH_PREFIX}ospray_module_visit${LIBRARY_SUFFIX}
       ${LIBRARY_PATH_PREFIX}visit_image_composite${LIBRARY_SUFFIX})
-    # include ospray
-    ADD_DEFINITIONS(-DVISIT_OSPRAY) # this cam be removed ??
-    INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIR})
-    LINK_DIRECTORIES(${VISIT_OSPRAY_DIR}/../..)
     # debug
     MESSAGE(STATUS "OSPRAY_INCLUDE_DIR: " ${OSPRAY_INCLUDE_DIR})
     MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
