@@ -26,7 +26,7 @@ function bv_tbb_alt_tbb_dir
 
 function bv_tbb_depends_on
 {
-    if [[ "$USE_SYSTEM_TBB" == "yes" ]]; then
+    if [[ "$USE_SYSTEM_TBB" == "yes" ]] ; then
         echo ""
     else
         echo ""
@@ -38,7 +38,7 @@ function bv_tbb_initialize_vars
     info "initializing TBB vars"
     if [[ "$DO_TBB" == "yes" ]] ; then
         if [[ "$USE_SYSTEM_TBB" == "no" ]]; then
-            TBB_INSTALL_DIR=$VISITDIR/tbb/$VISITARCH/$TBB_VERSION
+            TBB_INSTALL_DIR=$VISITDIR/tbb/$TBB_VERSION/$VISITARCH
         fi
     fi
 }
@@ -72,8 +72,8 @@ function bv_tbb_host_profile
         echo "##" >> $HOSTCONF
         echo "## TBB" >> $HOSTCONF
         echo "##" >> $HOSTCONF
-        if [[ "$USE_SYSTEM_TBB"="no" ]]; then
-            echo "VISIT_OPTION_DEFAULT(TBB_ROOT \${VISITHOME}/tbb/\${VISITARCH}/$TBB_VERSION)" >> $HOSTCONF
+        if [[ "$USE_SYSTEM_TBB" == "no" ]]; then
+            echo "VISIT_OPTION_DEFAULT(TBB_ROOT \${VISITHOME}/tbb/$TBB_VERSION/\${VISITARCH})" >> $HOSTCONF
         else
             echo "VISIT_OPTION_DEFAULT(TBB_ROOT ${TBB_INSTALL_DIR})" >> $HOSTCONF
         fi
@@ -117,15 +117,14 @@ function build_tbb
     # Unzip the TBB tarball and copy it to the VisIt installation.
     info "Installing prebuilt TBB"
     tar zxvf $TBB_FILE
-    mkdir $VISITDIR/tbb
-    mkdir $VISITDIR/tbb/$VISITARCH
-    cp -R $TBB_VERSION "$VISITDIR/tbb/$VISITARCH"
+    mkdir -p $VISITDIR/tbb/$TBB_VERSION/$VISITARCH
+    cp -R $TBB_VERSION/* "$VISITDIR/tbb/$TBB_VERSION/$VISITARCH"
     rm -rf $TBB_VERSION
 
     # others
     if [[ "$DO_GROUP" == "yes" ]] ; then
-        chmod -R ug+w,a+rX "$VISITDIR/tbb/$VISITARCH"
-        chgrp -R ${GROUP} "$VISITDIR/tbb/$VISITARCH"
+        chmod -R ug+w,a+rX "$VISITDIR/tbb/$TBB_VERSION/$VISITARCH"
+        chgrp -R ${GROUP} "$VISITDIR/tbb/$TBB_VERSION/$VISITARCH"
     fi
     cd "$START_DIR"
     info "Done with TBB"
@@ -142,11 +141,11 @@ function bv_tbb_is_enabled
 
 function bv_tbb_is_installed
 {
-    if [[ "$USE_SYSTEM_TBB"="yes" ]]; then   
+    if [[ "$USE_SYSTEM_TBB" == "yes" ]]; then   
         return 1
     fi
 
-    check_if_installed "tbb"
+    check_if_installed "tbb" $TBB_VERSION
     if [[ $? == 0 ]] ; then
         return 1
     fi
@@ -155,7 +154,7 @@ function bv_tbb_is_installed
 
 function bv_tbb_build
 {
-    if [[ "$DO_TBB" == "yes" && "$USE_SYSTEM_TBB"="no" ]] ; then
+    if [[ "$DO_TBB" == "yes" && "$USE_SYSTEM_TBB" == "no" ]] ; then
         check_if_installed "tbb"
         if [[ $? == 0 ]] ; then
             info "Skipping build of TBB"
