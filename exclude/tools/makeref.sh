@@ -8,6 +8,7 @@ RELPATH() {
 }
 
 COPYFILE() {
+    mkdir -p ${WORKSRC}/src-ref
     install -Dv ${VISITSRC}/$1 ${WORKSRC}/src-ref/$1
 }
 
@@ -29,7 +30,7 @@ READFILES $WORKSRC/src
 
 # removed files
 echo "Processing removed files"
-for i in $(cat removelist.txt); do 
+for i in $(cat exclude/tools/removelist.txt); do 
     echo " -- Processing: $i" 
     COPYFILE $i
 done
