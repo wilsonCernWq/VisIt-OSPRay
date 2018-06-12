@@ -34,7 +34,7 @@ function bv_ispc_initialize_vars
     info "initializing ispc vars"
     if [[ "$DO_ISPC" == "yes" ]] ; then
         if [[ "$USE_SYSTEM_ISPC" == "no" ]]; then
-            ISPC_INSTALL_DIR=$VISITDIR/ispc/$VISITARCH/$ISPC_INSTALL_DIR_NAME
+            ISPC_INSTALL_DIR=$VISITDIR/ispc/$ISPC_VERSION/$VISITARCH
         fi
     fi
 }
@@ -72,7 +72,7 @@ function bv_ispc_host_profile
         echo "## ISPC" >> $HOSTCONF
         echo "##" >> $HOSTCONF
         if [[ "$USE_SYSTEM_ISPC" == "no" ]]; then
-            echo "VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT \${VISITHOME}/ispc/\${VISITARCH}/$ISPC_INSTALL_DIR_NAME)" >> $HOSTCONF
+            echo "VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT \${VISITHOME}/ispc/$ISPC_VERSION/\${VISITARCH})" >> $HOSTCONF
         else
             echo "VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT ${ISPC_INSTALL_DIR})" >> $HOSTCONF
         fi
@@ -116,13 +116,12 @@ function build_ispc
     # Unzip the ISPC tarball and copy it to the VisIt installation.
     info "Installing prebuilt ISPC"    
     tar zxvf $ISPC_FILE
-    mkdir $VISITDIR/ispc
-    mkdir $VISITDIR/ispc/$VISITARCH
-    cp -R $ISPC_INSTALL_DIR_NAME "$VISITDIR/ispc/$VISITARCH"
+    mkdir -p $VISITDIR/ispc/$ISPC_VERSION/$VISITARCH
+    cp -R $ISPC_INSTALL_DIR_NAME/* "$VISITDIR/ispc/$ISPC_VERSION/$VISITARCH"
     rm -rf $ISPC_INSTALL_DIR_NAME
     if [[ "$DO_GROUP" == "yes" ]] ; then
-        chmod -R ug+w,a+rX "$VISITDIR/ispc/$VISITARCH"
-        chgrp -R ${GROUP} "$VISITDIR/ispc/$VISITARCH"
+        chmod -R ug+w,a+rX "$VISITDIR/ispc/$ISPC_VERSION/$VISITARCH"
+        chgrp -R ${GROUP} "$VISITDIR/ispc/$ISPC_VERSION/$VISITARCH"
     fi
     cd "$START_DIR"
     info "Done with ISPC"
@@ -139,7 +138,7 @@ function bv_ispc_is_enabled
 
 function bv_ispc_is_installed
 {
-    if [[ "$USE_SYSTEM_ISPC"="yes" ]]; then   
+    if [[ "$USE_SYSTEM_ISPC" == "yes" ]]; then   
         return 1
     fi
 
@@ -152,7 +151,7 @@ function bv_ispc_is_installed
 
 function bv_ispc_build
 {
-    if [[ "$DO_ISPC" == "yes" && "$USE_SYSTEM_ISPC"="no" ]] ; then
+    if [[ "$DO_ISPC" == "yes" && "$USE_SYSTEM_ISPC" == "no" ]] ; then
         check_if_installed "ispc"
         if [[ $? == 0 ]] ; then
             info "Skipping build of ISPC"

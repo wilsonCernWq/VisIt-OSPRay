@@ -34,7 +34,7 @@ function bv_embree_initialize_vars
     info "initializing embree vars"
     if [[ "$DO_EMBREE" == "yes" ]] ; then
         if [[ "$USE_SYSTEM_EMBREE" == "no" ]]; then
-            EMBREE_INSTALL_DIR=$VISITDIR/embree/$VISITARCH/$EMBREE_INSTALL_DIR_NAME
+            EMBREE_INSTALL_DIR=$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH
         fi
     fi
 }
@@ -71,7 +71,7 @@ function bv_embree_host_profile
         echo "## EMBREE" >> $HOSTCONF
         echo "##" >> $HOSTCONF
         if [[ "$USE_SYSTEM_EMBREE" == "no" ]]; then
-            echo "VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT \${VISITHOME}/embree/\${VISITARCH}/$EMBREE_INSTALL_DIR_NAME)" >> $HOSTCONF
+            echo "VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT \${VISITHOME}/embree/$EMBREE_VERSION/\${VISITARCH})" >> $HOSTCONF
         else
             echo "VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT ${EMBREE_INSTALL_DIR})" >> $HOSTCONF
         fi
@@ -121,13 +121,12 @@ function build_embree
     tar zxvf $EMBREE_FILE
     rm $EMBREE_INSTALL_DIR_NAME/lib/libtbbmalloc.so.2
     rm $EMBREE_INSTALL_DIR_NAME/lib/libtbb.so.2
-    mkdir $VISITDIR/embree
-    mkdir $VISITDIR/embree/$VISITARCH
-    cp -R $EMBREE_INSTALL_DIR_NAME "$VISITDIR/embree/$VISITARCH"
+    mkdir -p $VISITDIR/embree/$EMBREE_VERSION/$VISITARCH
+    cp -R $EMBREE_INSTALL_DIR_NAME/* "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"
     rm -rf $EMBREE_INSTALL_DIR_NAME
     if [[ "$DO_GROUP" == "yes" ]] ; then
-        chmod -R ug+w,a+rX "$VISITDIR/embree/$VISITARCH"
-        chgrp -R ${GROUP} "$VISITDIR/embree/$VISITARCH"
+        chmod -R ug+w,a+rX "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"
+        chgrp -R ${GROUP} "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"
     fi
     cd "$START_DIR"
     info "Done with embree"
@@ -144,7 +143,7 @@ function bv_embree_is_enabled
 
 function bv_embree_is_installed
 {
-    if [[ "$USE_SYSTEM_EMBREE"="yes" ]]; then   
+    if [[ "$USE_SYSTEM_EMBREE" == "yes" ]]; then   
         return 1
     fi
 
@@ -157,7 +156,7 @@ function bv_embree_is_installed
 
 function bv_embree_build
 {
-    if [[ "$DO_EMBREE" == "yes" && "$USE_SYSTEM_EMBREE"="no" ]] ; then
+    if [[ "$DO_EMBREE" == "yes" && "$USE_SYSTEM_EMBREE" == "no" ]] ; then
         check_if_installed "embree"
         if [[ $? == 0 ]] ; then
             info "Skipping build of embree"
