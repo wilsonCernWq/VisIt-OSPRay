@@ -424,7 +424,7 @@ avtVoxelExtractor::FindRange(vtkDataArray *coordArray, int ind, double c,
 }
 
 // ****************************************************************************
-//  Method: avtVoxelExtractor::ComputeIndices
+//  Method: avtVoxelExtractor::computeIndices
 //
 //  Purpose:
 //              back: 5, front: 4,  top:3, bottom:2,  ;right: 1, left:0
@@ -439,7 +439,7 @@ avtVoxelExtractor::FindRange(vtkDataArray *coordArray, int ind, double c,
 // ****************************************************************************
 
 void 
-avtVoxelExtractor::ComputeIndices(int dims[3], int indices[6], int returnIndices[8]) const
+avtVoxelExtractor::computeIndices(int dims[3], int indices[6], int returnIndices[8]) const
 {
     int K0 = (indices[4])*((dims[0]-1)*(dims[1]-1));
     int K1 = (indices[5])*((dims[0]-1)*(dims[1]-1));
@@ -460,7 +460,7 @@ avtVoxelExtractor::ComputeIndices(int dims[3], int indices[6], int returnIndices
 }
 
 void 
-avtVoxelExtractor::ComputeIndicesVert(int dims[3], int indices[6], int returnIndices[8]) const
+avtVoxelExtractor::computeIndicesVert(int dims[3], int indices[6], int returnIndices[8]) const
 {
     int K0 = (indices[4])*((dims[0])*(dims[1]));
     int K1 = (indices[5])*((dims[0])*(dims[1]));
@@ -481,7 +481,7 @@ avtVoxelExtractor::ComputeIndicesVert(int dims[3], int indices[6], int returnInd
 }
 
 // ****************************************************************************
-//  Method: avtImgCommunicator::TrilinearInterpolate
+//  Method: avtImgCommunicator::trilinearInterpolate
 //
 //  Purpose:
 //      Trilinear interpolation
@@ -494,7 +494,7 @@ avtVoxelExtractor::ComputeIndicesVert(int dims[3], int indices[6], int returnInd
 // ****************************************************************************
 
 double
-avtVoxelExtractor::TrilinearInterpolate(double vals[8], float distRight, 
+avtVoxelExtractor::trilinearInterpolate(double vals[8], float distRight, 
     float distTop, float distBack) const
 {
     float dist_from_right = 1.0 - distRight;
@@ -519,7 +519,7 @@ avtVoxelExtractor::TrilinearInterpolate(double vals[8], float distRight,
 }
 
 // ****************************************************************************
-//  Method: avtVoxelExtractor::GetIndexandDistFromCenter
+//  Method: avtVoxelExtractor::getIndexandDistFromCenter
 //
 //  Purpose:
 //
@@ -531,7 +531,7 @@ avtVoxelExtractor::TrilinearInterpolate(double vals[8], float distRight,
 // ****************************************************************************
 
 void 
-avtVoxelExtractor::GetIndexandDistFromCenter(float dist, 
+avtVoxelExtractor::getIndexandDistFromCenter(float dist, 
     int index, int &index_before, int &index_after,
     float &dist_before, float &dist_after) const
 {

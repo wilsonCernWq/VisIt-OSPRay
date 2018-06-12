@@ -37,31 +37,25 @@
 *****************************************************************************/
 
 // ************************************************************************* //
-//                                 avtRayTracer.h                            //
+//                             avtRayTracerBase.h                            //
 // ************************************************************************* //
 
-#ifndef AVT_RAY_TRACER_H
-#define AVT_RAY_TRACER_H
+#ifndef AVT_RAY_TRACER_BASE_H
+#define AVT_RAY_TRACER_BASE_H
 
 #include <filters_exports.h>
 
 #include <avtDatasetToImageFilter.h>
 #include <avtViewInfo.h>
 #include <avtOpacityMap.h>
-#include <avtSLIVROSPRayFilter.h>
-#include <avtSLIVRImgCommunicator.h>
-
-#include <vtkCamera.h>
 
 #include <map>
-#include <limits>
-#include <vector>
 
 class   avtRayFunction;
 class   vtkMatrix4x4;
 
 // ****************************************************************************
-//  Class: avtRayTracer
+//  Class: avtRayTracerBase
 //
 //  Purpose:
 //      Performs ray tracing, taking in a dataset as a source and has an
@@ -105,13 +99,13 @@ class   vtkMatrix4x4;
 //
 // ****************************************************************************
 
-class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
+class AVTFILTERS_API avtRayTracerBase : public avtDatasetToImageFilter
 {
   public:
-                          avtRayTracer();
-    virtual              ~avtRayTracer();
+                          avtRayTracerBase();
+    virtual              ~avtRayTracerBase();
 
-    virtual const char   *GetType(void) { return "avtRayTracer"; };
+    virtual const char   *GetType(void) { return "avtRayTracerBase"; };
     virtual const char   *GetDescription(void) { return "Ray tracing"; };
     virtual void          ReleaseData(void);
 
@@ -130,37 +124,19 @@ class AVTFILTERS_API avtRayTracer : public avtDatasetToImageFilter
                                                       const double [3]);
     int                   GetSamplesPerRay(void)  { return samplesPerRay; };
     const int            *GetScreen(void)         { return screen; };
-    void                  SetKernelBasedSampling(bool v)
-    { kernelBasedSampling = v; };
-    void                  SetLighting(bool l) { lighting = l; };
-    void                  SetLightPosition(double _lightPos[4])
-    { for (int i=0;i<4;i++) lightPosition[i] = _lightPos[i]; }
-    void                  SetLightDirection(double _lightDir[3]) 
-    { for (int i=0;i<3;i++) lightDirection[i] = _lightDir[i]; }
-    void                  SetMatProperties(double _matProp[4]) 
-    { for (int i=0;i<4;i++) materialProperties[i] = _matProp[i]; }
-    void                  SetTransferFn(avtOpacityMap *_transferFn1D) 
-    { transferFn1D = _transferFn1D; };
-    void                  SetViewDirection(double *vd)
-    { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; }
-    void                  SetTrilinear(bool t) { trilinearInterpolation = t; };
-    void                  SetRayCastingSLIVR(bool _rayCastingSLIVR)
-    { rayCastingSLIVR = _rayCastingSLIVR; };
-    void                  SetRendererSampleRate(double r)
-    { rendererSampleRate = r; }
 
-    void                  SetOSPRay(OSPVisItContext *ptr) { ospray = ptr; }
-protected:
-    
-    // ospray integration
-    OSPVisItContext *ospray;
+    void                  SetKernelBasedSampling(bool v) { kernelBasedSampling = v; };
 
-    avtSLIVRImgCommunicator imgComm;
-    avtViewInfo             view;
+
+    void                  SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
+    void                  SetTrilinear(bool t) {trilinearInterpolation = t; };
+
+
+  protected:
+    avtViewInfo           view;
 
     int                   screen[2];
     int                   samplesPerRay;
-    double                rendererSampleRate;
     bool                  kernelBasedSampling;
     bool                  trilinearInterpolation;
     int                   backgroundMode;
@@ -168,35 +144,18 @@ protected:
     double                gradBG1[3];
     double                gradBG2[3];
     avtRayFunction       *rayfoo;
-    
-    bool                  lighting;
-    double                lightPosition[4];
-    
-    double                lightDirection[3];
-    double                materialProperties[4];
-    double                viewDirection[3];
-    double                panPercentage[2];
     avtOpacityMap        *transferFn1D;
 
-    bool                  rayCastingSLIVR;
-    bool                  convexHullOnRCSLIVR;
     avtImage_p            opaqueImage;
 
-    virtual void          Execute(void);
+    virtual void          Execute(void) = 0;
+
     virtual avtContract_p ModifyContract(avtContract_p);
     static int            GetNumberOfDivisions(int, int, int);
     virtual bool          FilterUnderstandsTransformedRectMesh();
     void                  TightenClippingPlanes(const avtViewInfo &view,
                                                 vtkMatrix4x4 *,
                                                 double &, double &);
-
-    void                  ComputeRay(double camera[3], 
-				     double position[3], double ray[3]);
-    bool                  CheckInBounds(double volBounds[6], double coord[3]);
-    bool                  Intersect(double bounds[6], double ray[3], 
-				    double cameraPos[3], 
-				    double &tMin, double &tMax);
-
 };
 
 
