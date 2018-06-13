@@ -14,11 +14,15 @@ else
 fi
 
 ROOT=$(pwd)
-cd ${ROOT}/Downloads/bv_files/${PREMAKE_VERSION}
+cd ${ROOT}/bv_files/${PREMAKE_VERSION}
 if [[ ! -f build_visit ]]; then
     echo "please provide build_visit file"
     exit 1
 fi
+DIR_BUILD=/scratch/users/qwu/VisIt/3rdparty/$PREMAKE_VERSION
+DIR_INSTALL=/ssd/users/qwu/VisIt/3rdparty/$PREMAKE_VERSION
+mkdir -p $DIR_BUILD
+mkdir -p $DIR_INSTALL
 
 ARGS=""
 ARGS=${ARGS}" --debug --no-visit "
@@ -26,13 +30,14 @@ ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
 ARGS=${ARGS}" --makeflags -j24 "
 ARGS=${ARGS}" --parallel "
 ARGS=${ARGS}" --cmake --qt --python "
-ARGS=${ARGS}" --alt-boost-dir /usr "
 ARGS=${ARGS}" --hdf5 --netcdf --szip --silo --uintah"
-ARGS=${ARGS}" --ispc --embree --tbb --ospray "
+ARGS=${ARGS}" --ispc --embree --ospray "
+ARGS=${ARGS}" --alt-boost-dir /usr "
+ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2017_20170604oss "
 ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
-ARGS=${ARGS}" --thirdparty-path /ssd/users/qwu/VisIt "
-ARGS=${ARGS}" --installation-build-dir /scratch/users/qwu/VisIt "
-    
+ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
+ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
+
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --skip-opengl-context-check "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
