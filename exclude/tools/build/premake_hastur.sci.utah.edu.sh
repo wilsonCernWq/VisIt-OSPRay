@@ -25,7 +25,7 @@ fi
 
 ARGS=""
 ARGS=${ARGS}" --debug --no-visit "
-ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
+ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++11 "
 ARGS=${ARGS}" --makeflags -j8 "
 ARGS=${ARGS}" --cmake --qt --python"
 ARGS=${ARGS}" --boost "
@@ -36,7 +36,7 @@ ARGS=${ARGS}" --thirdparty-path /home/sci/qwu/software/Hastur/VisIt/3rdparty/vis
 ARGS=${ARGS}" --installation-build-dir /data/qwu/VisIt/3rdparty "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
-    ARGS=${ARGS}" --skip-opengl-context-check "
+    ARGS=${ARGS}" --llvm --mesagl "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
     ARGS=${ARGS}" --slivr "
 fi

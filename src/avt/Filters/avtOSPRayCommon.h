@@ -40,10 +40,16 @@
 #define AVT_OSPRAY_COMMON_H
 
 #include <avtParallel.h>
-
 #include <DebugStream.h>
 #include <TimingsManager.h>
 #include <ImproperUseException.h>
+
+#ifndef VISIT_OSPRAY
+# error "VISIT_OSPRAY is not defined but ospray is used"
+#else
+# include "ospray/ospray.h"
+# include "ospray/visit/VisItImageComposite.h"
+#endif
 
 #include <vtkType.h>
 #include <vtkMatrix4x4.h>
@@ -207,7 +213,8 @@ namespace ospray
 //  Creation:
 //
 // ****************************************************************************
-namespace ospray {
+namespace ospray 
+{
     void WriteArrayToPPM
         (std::string filename, float *image, int dimX, int dimY);
     void WriteArrayToPPM
@@ -221,16 +228,12 @@ namespace ospray {
 // 
 // ****************************************************************************
 
-#ifdef VISIT_OSPRAY
-# include "ospray/ospray.h"
-# include "ospray/visit/VisItImageComposite.h"
-# define OSP_PERSPECTIVE              1
-# define OSP_ORTHOGRAPHIC             2
-# define OSP_BLOCK_BRICKED_VOLUME     3
-# define OSP_SHARED_STRUCTURED_VOLUME 4
-# define OSP_INVALID                  5
-# define OSP_VALID                    6
-#endif
+#define OSP_PERSPECTIVE              1
+#define OSP_ORTHOGRAPHIC             2
+#define OSP_BLOCK_BRICKED_VOLUME     3
+#define OSP_SHARED_STRUCTURED_VOLUME 4
+#define OSP_INVALID                  5
+#define OSP_VALID                    6
 
 // ****************************************************************************
 // Debug ostreams customized for ospray
@@ -254,9 +257,6 @@ namespace ospray
     // ************************************************************************
     inline bool InitVerbose() 
     {
-#ifndef VISIT_OSPRAY
-	return false;
-#else
         // ********************************************************************
 	//
 	// OSPRay defines following environmental variables
@@ -292,7 +292,6 @@ namespace ospray
 	} else {
 	    return false;
 	}
-#endif
     }
 
     // ************************************************************************
@@ -301,9 +300,6 @@ namespace ospray
     //
     // ************************************************************************
     inline int InitOSPRaySpp() {
-#ifndef VISIT_OSPRAY
-	return 1;
-#else
 	int spp = 1;
 	const char* env_spp = std::getenv("OSPRAY_SPP");
 	if (env_spp) {
@@ -312,7 +308,6 @@ namespace ospray
 	    }
 	}	
 	return spp;
-#endif
     }
     inline bool CheckVerbose() // initialize OSPRAY_VERBOSE
     {
@@ -331,9 +326,15 @@ namespace ospray
 // Over-write ostream marcos
 //
 // ****************************************************************************
+#ifdef ospout
+#undef ospout
+#endif
 #define ospout \
     if (!ospray::CheckVerbose() && !DebugStream::Level5()) ; \
     else (*ospray::osp_out)
+#ifdef osperr
+#undef osperr
+#endif
 #define osperr \
     if (!ospray::CheckVerbose() && !DebugStream::Level1()) ; \
     else (*ospray::osp_err)
@@ -348,7 +349,6 @@ namespace ospray
 //  Creation:   
 //
 // ****************************************************************************
-#ifdef VISIT_OSPRAY
 class OSPVisItContext;
 class OSPVisItVolume 
 {
@@ -494,7 +494,6 @@ class OSPVisItVolume
 	}
     }
 };
-#endif//VISIT_OSPRAY
 
 
 // ****************************************************************************
@@ -508,7 +507,6 @@ class OSPVisItVolume
 //
 // ****************************************************************************
 
-#ifdef VISIT_OSPRAY
 struct OSPVisItLight
 {
     OSPLight aLight;
@@ -526,7 +524,6 @@ struct OSPVisItLight
     void Init(const OSPRenderer& renderer);
     void Set(double materialProperties[4], double viewDirection[3]);
 };
-#endif//VISIT_OSPRAY
 
 
 // ****************************************************************************
@@ -540,7 +537,6 @@ struct OSPVisItLight
 //
 // ****************************************************************************
 
-#ifdef VISIT_OSPRAY
 struct OSPVisItRenderer
 {
 public:
@@ -582,7 +578,6 @@ public:
     void SetCamera(const OSPCamera& camera);
     void SetModel(const OSPModel& world);
 };
-#endif//VISIT_OSPRAY
 
 
 // ****************************************************************************
@@ -596,7 +591,6 @@ public:
 //
 // ****************************************************************************
 
-#ifdef VISIT_OSPRAY
 struct OSPVisItCamera
 {
 public:
@@ -650,7 +644,6 @@ public:
 	     const int screenExtents[2]);
     void SetScreen(float xMin, float xMax, float yMin, float yMax);
 };
-#endif//VISIT_OSPRAY
 
 
 // ****************************************************************************
@@ -664,9 +657,8 @@ public:
 //
 // ****************************************************************************
 
-#ifdef VISIT_OSPRAY
 struct OSPVisItColor { float R,G,B, A; };
-#endif//VISIT_OSPRAY
+
 
 // ****************************************************************************
 //  Struct:  OSPVisItTransferFunction
@@ -679,7 +671,6 @@ struct OSPVisItColor { float R,G,B, A; };
 //
 // ****************************************************************************
 
-#ifdef VISIT_OSPRAY
 struct OSPVisItTransferFunction
 {
 public:
@@ -703,7 +694,6 @@ public:
 	     const float datamin,
 	     const float datamax);
 };
-#endif//VISIT_OSPRAY
 
 
 // ****************************************************************************
@@ -726,22 +716,16 @@ class OSPVisItContext
     // ************************************************************************
     OSPVisItContext() 
     {
-#ifdef VISIT_OSPRAY
 	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
 	initialized = false;
-#endif//VISIT_OSPRAY
     }
     ~OSPVisItContext() {	
-#ifdef VISIT_OSPRAY
-	// clean stuffs
 	volumes.clear();
 	renderer.Clean();
 	camera.Clean();
 	transferfcn.Clean();
-#endif//VISIT_OSPRAY
     }
 
-#ifdef VISIT_OSPRAY
 private:
     friend class OSPVisItVolume;
  public:
@@ -778,7 +762,6 @@ private:
     void InitOSP(int numThreads = 0);
     void InitPatch(int id);
     OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
-#endif//VISIT_OSPRAY
 };
 
 
@@ -819,7 +802,7 @@ namespace ospray
 	visitTimer->StopTimer(timingDetail, 
 			      (c + "::" + f + " " + str).c_str());
 	ospray::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(),
-			       "ospout");
+                                "debug5");
 	debug5 << c << "::" << f << " " << str << " Done" << std::endl;
     }
 };

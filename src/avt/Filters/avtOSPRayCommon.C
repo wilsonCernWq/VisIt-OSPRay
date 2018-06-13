@@ -306,7 +306,6 @@ ospray::CompositeBackground(int screen[2],
 			 float         *opaqueImageDepth,
 			 unsigned char *&imgFinal)
 {
-#ifdef VISIT_OSPRAY
     if (UseThreadedBlend_MetaData) {
     visit::CompositeBackground(screen,
 			       compositedImageExtents,
@@ -317,7 +316,6 @@ ospray::CompositeBackground(int screen[2],
 			       opaqueImageDepth,
 			       imgFinal);
     } else {
-#endif
     for (int y = 0; y < screen[1]; y++)
     {
 	for (int x = 0; x < screen[0]; x++)
@@ -379,9 +377,7 @@ ospray::CompositeBackground(int screen[2],
 	    }
 	}
     }
-#ifdef VISIT_OSPRAY
     }
-#endif
 }
 
 
@@ -468,7 +464,6 @@ double ospray::rad2deg (double radins) {
     return radins / 4.0 / atan (1.0) * 180.0;
 }
 
-#ifdef VISIT_OSPRAY
 // other function
 void 
 OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z, 
@@ -1035,7 +1030,6 @@ void OSPVisItContext::InitPatch(int id)
     }
     volumes[id].parent = this;
 }
-#endif//VISIT_OSPRAY
 
 
 // ****************************************************************************

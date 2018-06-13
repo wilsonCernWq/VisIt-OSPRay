@@ -44,11 +44,14 @@
 #define AVT_VOLUME_FILTER_H
 
 #include <avtDatasetToDatasetFilter.h>
-#include <avtOpacityMap.h>
 
 #include <VolumeAttributes.h>
 
 #include <avtImage.h>
+#include <avtOpacityMap.h>
+#ifdef VISIT_OSPRAY
+# include <avtOSPRayCommon.h>
+#endif
 
 class     WindowAttributes;
 
