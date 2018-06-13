@@ -1,14 +1,14 @@
-#/home/sci/qwu/software/Hastur/VisIt/3rdparty/visit/cmake/3.8.1/linux-x86_64_gcc-7.1/bin/cmake
+#/ssd/qwu/VisIt/3rdparty/rc2.13/cmake/3.8.1/linux-x86_64_gcc-7.1/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Tue Jun 12 22:05:37 MDT 2018
+## created: Wed Jun 13 07:20:18 MDT 2018
 ## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
 ##
 ## Setup VISITHOME & VISITARCH variables.
 ##
-SET(VISITHOME /home/sci/qwu/software/Hastur/VisIt/3rdparty/visit)
+SET(VISITHOME /ssd/qwu/VisIt/3rdparty/rc2.13)
 SET(VISITARCH linux-x86_64_gcc-7.1)
 
 ## Compiler flags.
@@ -17,7 +17,7 @@ VISIT_OPTION_DEFAULT(VISIT_C_COMPILER gcc TYPE FILEPATH)
 VISIT_OPTION_DEFAULT(VISIT_CXX_COMPILER g++ TYPE FILEPATH)
 VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER /home/sci/qwu/software/gcc/gcc-7.1.0-install/bin/gfortran TYPE FILEPATH)
 VISIT_OPTION_DEFAULT(VISIT_C_FLAGS " -m64 -fPIC  -O2 -g -fvisibility=hidden" TYPE STRING)
-VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O2 -g -std=c++98 -fvisibility=hidden" TYPE STRING)
+VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O2 -g -std=c++11 -fvisibility=hidden" TYPE STRING)
 
 ##
 ## Parallel Build Setup.
@@ -111,7 +111,7 @@ VISIT_OPTION_DEFAULT(VISIT_NETCDF_LIBDEP HDF5_LIBRARY_DIR hdf5_hl HDF5_LIBRARY_D
 ##
 ## TBB
 ##
-VISIT_OPTION_DEFAULT(TBB_ROOT ${VISITHOME}/tbb/tbb2018_20171205oss/${VISITARCH})
+VISIT_OPTION_DEFAULT(TBB_ROOT /home/sci/qwu/software/tbb2017_20170604oss)
 
 ##
 ## OSPRay
