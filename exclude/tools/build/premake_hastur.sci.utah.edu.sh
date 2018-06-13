@@ -22,6 +22,10 @@ if [[ ! -f build_visit ]]; then
     echo "please provide build_visit file"
     exit 1
 fi
+DIR_BUILD=/data/qwu/VisIt/3rdparty/$PREMAKE_VERSION
+DIR_INSTALL=/ssd/qwu/VisIt/3rdparty/$PREMAKE_VERSION
+mkdir -p $DIR_BUILD
+mkdir -p $DIR_INSTALL
 
 ARGS=""
 ARGS=${ARGS}" --debug --no-visit "
@@ -31,9 +35,10 @@ ARGS=${ARGS}" --cmake --qt --python"
 ARGS=${ARGS}" --boost "
 ARGS=${ARGS}" --parallel "
 ARGS=${ARGS}" --hdf5 --netcdf --szip --silo --uintah "
-ARGS=${ARGS}" --ispc --embree --tbb --ospray "
-ARGS=${ARGS}" --thirdparty-path /home/sci/qwu/software/Hastur/VisIt/3rdparty/visit "
-ARGS=${ARGS}" --installation-build-dir /data/qwu/VisIt/3rdparty "
+ARGS=${ARGS}" --ispc --embree --ospray "
+ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2017_20170604oss "
+ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
+ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --skip-opengl-context-check "
