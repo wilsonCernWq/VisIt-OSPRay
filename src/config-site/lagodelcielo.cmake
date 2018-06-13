@@ -1,14 +1,14 @@
-#/ssd/users/qwu/VisIt/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
+#/ssd/users/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Tue Jun 12 17:52:11 MDT 2018
+## created: Wed Jun 13 03:10:08 MDT 2018
 ## system: Linux lagodelcielo 4.4.120-45-default #1 SMP Wed Mar 14 20:51:49 UTC 2018 (623211f) x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
 ##
 ## Setup VISITHOME & VISITARCH variables.
 ##
-SET(VISITHOME /ssd/users/qwu/VisIt)
+SET(VISITHOME /ssd/users/qwu/VisIt/3rdparty/trunk)
 SET(VISITARCH linux-x86_64_gcc-7.3)
 
 ## Compiler flags.
@@ -132,6 +132,6 @@ VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP
 ##
 ## Uintah
 ##
-#SETUP_APP_VERSION(UINTAH 2.5.0)
-#VISIT_OPTION_DEFAULT(VISIT_UINTAH_DIR ${VISITHOME}/uintah/${UINTAH_VERSION}/${VISITARCH})
+SETUP_APP_VERSION(UINTAH 2.5.0)
+VISIT_OPTION_DEFAULT(VISIT_UINTAH_DIR ${VISITHOME}/uintah/${UINTAH_VERSION}/${VISITARCH})
 
