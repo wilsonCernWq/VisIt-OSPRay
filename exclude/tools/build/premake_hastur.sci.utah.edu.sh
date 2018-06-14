@@ -29,7 +29,7 @@ mkdir -p $DIR_INSTALL
 
 ARGS=""
 ARGS=${ARGS}" --debug --no-visit "
-ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
+ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++11 "
 ARGS=${ARGS}" --makeflags -j8 "
 ARGS=${ARGS}" --cmake --qt --python"
 ARGS=${ARGS}" --boost "

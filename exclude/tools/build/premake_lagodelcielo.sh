@@ -40,6 +40,7 @@ ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --skip-opengl-context-check "
+    # ARGS=${ARGS}" --llvm --mesagl"
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
     ARGS=${ARGS}" --slivr "
 fi
