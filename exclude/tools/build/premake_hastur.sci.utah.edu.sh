@@ -41,7 +41,7 @@ ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
-    ARGS=${ARGS}" --llvm --mesagl "
+    ARGS=${ARGS}" --skip-opengl-context-check "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
     ARGS=${ARGS}" --slivr "
 fi
