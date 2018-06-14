@@ -1,7 +1,7 @@
 #/ssd/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.1/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Wed Jun 13 09:08:47 MDT 2018
+## created: Wed Jun 13 21:26:31 MDT 2018
 ## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -60,16 +60,6 @@ VISIT_OPTION_DEFAULT(VISIT_QT_DIR ${VISITHOME}/qt/${QT_VERSION}/${VISITARCH})
 ##
 SETUP_APP_VERSION(QWT 6.1.2)
 VISIT_OPTION_DEFAULT(VISIT_QWT_DIR ${VISITHOME}/qwt/${QWT_VERSION}/${VISITARCH})
-
-##
-## LLVM
-##
-VISIT_OPTION_DEFAULT(VISIT_LLVM_DIR ${VISITHOME}/llvm/4.0.0/${VISITARCH})
-
-##
-## MesaGL
-##
-VISIT_OPTION_DEFAULT(VISIT_MESAGL_DIR ${VISITHOME}/mesagl/17.1.9/${VISITARCH})
 
 ##
 ## VTK
