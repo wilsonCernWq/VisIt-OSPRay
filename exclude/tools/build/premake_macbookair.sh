@@ -14,7 +14,7 @@ mkdir -p $DIR_BUILD
 mkdir -p $DIR_INSTALL
 
 ARGS=""
-ARGS=${ARGS}" --debug --no-visit --static "
+ARGS=${ARGS}" --debug --no-visit "
 ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
 ARGS=${ARGS}" --makeflags -j2 "
 ARGS=${ARGS}" --cmake --python --qt --parallel "
