@@ -30,7 +30,7 @@ ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
 ARGS=${ARGS}" --makeflags -j24 "
 ARGS=${ARGS}" --parallel "
 ARGS=${ARGS}" --cmake --qt --python "
-ARGS=${ARGS}" --hdf5 --netcdf --szip --silo --uintah"
+ARGS=${ARGS}" --hdf5 --netcdf --szip --silo "
 ARGS=${ARGS}" --ispc --embree --ospray "
 ARGS=${ARGS}" --alt-boost-dir /usr "
 ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2017_20170604oss "
@@ -40,9 +40,8 @@ ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --skip-opengl-context-check "
-    # ARGS=${ARGS}" --llvm --mesagl"
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
-    ARGS=${ARGS}" --slivr "
+    ARGS=${ARGS}" --slivr --uintah "
 fi
 
 # ------------------------------ 

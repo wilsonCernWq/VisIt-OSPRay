@@ -75,21 +75,25 @@
             <lib name="cfitsio"/>
             <lib name="conduit"/>
             <lib name="cgns"/>
+            <lib name="embree"/>
             <lib name="gdal"/>
             <lib name="fastbit"/>
             <lib name="fastquery"/>
             <lib name="hdf5"/>
             <lib name="h5part"/>
+            <lib name="ispc"/>
             <lib name="mpich"/>
             <lib name="mxml"/>
             <lib name="netcdf"/>
             <lib name="nektarpp"/>
             <lib name="openexr"/>
             <lib name="openssl"/>
+            <lib name="ospray"/>
             <lib name="pidx"/>
             <lib name="pyside"/>
             <lib name="silo"/>
             <lib name="szip"/>
+            <lib name="tbb"/>
             <lib name="uintah"/>
             <lib name="visus"/>
             <lib name="xdmf"/>
@@ -170,6 +174,10 @@
         -->
         <group name="nonio" comment="Build non I/O libraries" enabled="no">
             <lib name="icet"/>
+            <lib name="embree"/>
+            <lib name="ispc"/>
+            <lib name="tbb"/>
+            <lib name="ospray"/>
         </group>
 
         <!--

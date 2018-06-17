@@ -85,32 +85,28 @@
 #
 #****************************************************************************/
 
-#---------------------------------------------------------------
-# Note (qi): have to disable OSPRay related code here since the 
-#            FindOSPRay.cmake file is broken
-#---------------------------------------------------------------
-# if(VISIT_OSPRAY)
-#    SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-#        ${VISIT_SOURCE_DIR}/avt/Plotter/OSPRay/CMake)
-#    FIND_PACKAGE(OSPRay REQUIRED)
-# endif()
-#
-# SET(VISIT_VTK_OSPRAY_SOURCES
-#     OSPRay/vtkOSPRay/vtkOSPRay.h
-#     OSPRay/vtkOSPRay/vtkOSPRayActor.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayCamera.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayLight.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayManager.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.h
-#     OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayProperty.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayRenderer.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayTexture.cxx
-#     OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.h
-#     OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.cxx
-#     OSPRay/vtkOSPRayModule.h
-# )
+#if(VISIT_OSPRAY)
+#   SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
+#       ${VISIT_SOURCE_DIR}/avt/Plotter/OSPRay/CMake)
+#   FIND_PACKAGE(OSPRay REQUIRED)
+#endif()
+
+#SET(VISIT_VTK_OSPRAY_SOURCES
+#    OSPRay/vtkOSPRay/vtkOSPRay.h
+#    OSPRay/vtkOSPRay/vtkOSPRayActor.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayCamera.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayLight.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayManager.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.h
+#    OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayProperty.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayRenderer.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayTexture.cxx
+#    OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.h
+#    OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.cxx
+#    OSPRay/vtkOSPRayModule.h
+#)
 
 # create configuration file to pass off cmake options
 CONFIGURE_FILE(
@@ -227,30 +223,20 @@ TARGET_LINK_LIBRARIES(avtplotter_ser
     visitcommon avtmath avtview avtfilters_ser avtpipeline_ser visit_vtk 
     lightweight_visit_vtk vtkFiltersHybrid vtkRenderingOpenGL2 
     vtkRenderingFreeType ${OPENGL_LIBRARIES})
-
-#---------------------------------------------------------------
-# Note (qi): have to disable OSPRay related code here since the 
-#            FindOSPRay.cmake file is broken
-#---------------------------------------------------------------
-# IF(VISIT_OSPRAY)
-#     MESSAGE(STATUS "OSPRAY_TARGET_LINK_LIBRARIES: " ${OSPRAY_TARGET_LINK_LIBRARIES})
-#     MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
-#     MESSAGE(STATUS "OSPRAY_INCLUDE_DIRS: " ${OSPRAY_INCLUDE_DIRS})
-#     TARGET_LINK_LIBRARIES(avtplotter_ser ${OSPRAY_TARGET_LINK_LIBRARIES}
-#         ${OSPRAY_LIBRARIES} ${VTK_LIBRARIES})
-#     INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIRS} ${VISIT_SOURCE_DIR}/../../VTK-6.1.0/Parallel/Core)
-# ENDIF(VISIT_OSPRAY)
+IF(VISIT_OSPRAY)
+    TARGET_LINK_LIBRARIES(avtplotter_ser ${OSPRAY_LIBRARIES} ${VTK_LIBRARIES})
+    INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIRS})
+ENDIF(VISIT_OSPRAY)
 VISIT_INSTALL_TARGETS(avtplotter_ser)
 
 #********************************* PARALLEL **********************************
 IF(VISIT_PARALLEL)
     ADD_PARALLEL_LIBRARY(avtplotter_par ${AVTPLOTTER_SOURCES})
     TARGET_LINK_LIBRARIES(avtplotter_par visitcommon avtmath avtview avtfilters_par avtpipeline_par visit_vtk lightweight_visit_vtk vtkFiltersHybrid vtkRenderingOpenGL2 vtkRenderingFreeType ${OPENGL_LIBRARIES})
-    # IF(VISIT_OSPRAY)
-    #     TARGET_LINK_LIBRARIES(avtplotter_par ${OSPRAY_TARGET_LINK_LIBRARIES}
-    #         ${OSPRAY_LIBRARIES})
-    # ENDIF(VISIT_OSPRAY)
+    IF(VISIT_OSPRAY)
+      TARGET_LINK_LIBRARIES(avtplotter_par ${OSPRAY_LIBRARIES})
+      INCLUDE_DIRECTORIES(${OSPRAY_INCLUDE_DIRS})
+    ENDIF(VISIT_OSPRAY)
     VISIT_INSTALL_TARGETS(avtplotter_par)
 ENDIF(VISIT_PARALLEL)
-
 

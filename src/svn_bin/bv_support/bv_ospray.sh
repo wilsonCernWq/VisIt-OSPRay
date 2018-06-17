@@ -1,37 +1,3 @@
-function bv_ospray_ensure_built_or_ready
-{
-    BUILD_NAME=$1
-    BUILD_VERSION=$2
-    INSTALL_DIR=$VISITDIR/$BUILD_NAME/$BUILD_VERSION/$VISITARCH
-    BUILD_DIR=$3
-    SRC_FILE=$4
-    DOWNLOAD_PATH=$5
-    DOWNLOAD_NAME=$6
-
-    info "Checking for ${BUILD_NAME}-${BUILD_VERSION}"
-    
-    ALREADY_INSTALLED="NO"
-    HAVE_TARBALL="NO"
-    
-    check_if_installed $BUILD_NAME $BUILD_VERSION
-    if [[ $? == 0 || -d $BUILD_DIR ]] ; then
-        ALREADY_INSTALLED="YES"
-    fi
-    if [[ -e ${SRC_FILE%.gz} || -e ${SRC_FILE} ]] ; then
-        HAVE_TARBALL="YES"
-    fi
-    
-    if [[ "$ALREADY_INSTALLED" == "NO" && "$HAVE_TARBALL" == "NO" ]] ; then
-        download_file ${DOWNLOAD_NAME} ${DOWNLOAD_PATH}
-        if [[ $? != 0 ]] ; then
-            warn "Error: Cannot obtain source for $BUILD_NAME."
-            return 1
-        fi
-        mv ${DOWNLOAD_NAME} ${SRC_FILE}
-    fi
-    return 0
-}
-
 # Module automatically read in from construct_build_visit
 # Insert header and comments
 function bv_ospray_initialize
@@ -51,27 +17,30 @@ function bv_ospray_disable
 
 function bv_ospray_depends_on
 {
-    depends_on="cmake tbb ispc embree"
+    depends_on="cmake ispc embree tbb"
+    #echo | cpp -fopenmp -dM | grep -i open
+    #if [[ "$DO_TBB" == "yes" ]]; then
+    #    depends_on="${depends_on} tbb"
+    #fi
     echo ${depends_on}
 }
 
 function bv_ospray_info
 {
     # versions
-    export OSPRAY_VERSION=${OSPRAY_VERSION:-"1.4.3"}
-    export OSPRAY_VISIT_MODULE_VERSION=${OSPRAY_VISIT_MODULE_VERSION:-"1.4.x"}
+    export OSPRAY_VERSION=${OSPRAY_VERSION:-"1.6.1"}
+    export OSPRAY_VISIT_MODULE_VERSION=${OSPRAY_VISIT_MODULE_VERSION:-"1.6.x"}
     
     # ospray source
     export OSPRAY_TARBALL=${OSPRAY_TARBALL:-"ospray-${OSPRAY_VERSION}.tar.gz"}
     export OSPRAY_BUILD_DIR=${OSPRAY_BUILD_DIR:-"ospray-${OSPRAY_VERSION}"}
-    export OSPRAY_DOWNLOAD_URL=${OSPRAY_DOWNLOAD_URL:-"https://github.com/ospray/ospray/archive/"}
-    export OSPRAY_DOWNLOAD_SRC=${OSPRAY_DOWNLOAD_SRC:-"v${OSPRAY_VERSION}.tar.gz"}
+    export OSPRAY_DOWNLOAD_URL=${OSPRAY_DOWNLOAD_URL:-"https://github.com/wilsonCernWq/module_visit/releases/download/v1.6.x/"}
 
     # ospray module
-    export OSPRAY_VISIT_MODULE_TARBALL=${OSPRAY_VISIT_MODULE_TARBALL:-"ospray-visit-module-${OSPRAY_VISIT_MODULE_VERSION}.zip"}
+    export OSPRAY_VISIT_MODULE_TARBALL=${OSPRAY_VISIT_MODULE_TARBALL:-"ospray-module-visit-release-${OSPRAY_VISIT_MODULE_VERSION}.zip"}
+    export OSPRAY_VISIT_MODULE_UNTAR_DIR=${OSPRAY_VISIT_MODULE_UNTAR_DIR:-"module_visit-release-${OSPRAY_VISIT_MODULE_VERSION}"}
     export OSPRAY_VISIT_MODULE_BUILD_DIR=${OSPRAY_VISIT_MODULE_BUILD_DIR:-"${OSPRAY_BUILD_DIR}/modules/module_visit"}
-    export OSPRAY_VISIT_MODULE_DOWNLOAD_URL=${OSPRAY_VISIT_MODULE_DOWNLOAD_URL:-"https://github.com/wilsonCernWq/module_visit/archive/"}
-    export OSPRAY_VISIT_MODULE_DOWNLOAD_SRC=${OSPRAY_VISIT_MODULE_DOWNLOAD_SRC:-"release-${OSPRAY_VISIT_MODULE_VERSION}.zip"}
+    export OSPRAY_VISIT_MODULE_DOWNLOAD_URL=${OSPRAY_VISIT_MODULE_DOWNLOAD_URL:-"https://github.com/wilsonCernWq/module_visit/releases/download/v1.6.x/"}
     
     # checksum
     export OSPRAY_MD5_CHECKSUM=""
@@ -93,17 +62,19 @@ function bv_ospray_print_usage
 
 function bv_ospray_host_profile
 {
-    echo >> $HOSTCONF
-    echo "##" >> $HOSTCONF
-    echo "## OSPRay" >> $HOSTCONF
-    echo "##" >> $HOSTCONF
-    echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)" >> $HOSTCONF
-    if [[ -d $OSPRAY_INSTALL_DIR/lib ]]; then
-        echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
-    elif [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then
-        echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib64/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
-    else
-        error "No library path for OSPRay has been found."
+    if [[ "$DO_OSPRAY" == "yes" ]]; then
+        echo >> $HOSTCONF
+        echo "##" >> $HOSTCONF
+        echo "## OSPRay" >> $HOSTCONF
+        echo "##" >> $HOSTCONF
+        echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)" >> $HOSTCONF
+        if [[ -d $OSPRAY_INSTALL_DIR/lib ]]; then
+            echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
+        elif [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then
+            echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib64/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
+        else
+            error "No library path for OSPRay has been found."
+        fi
     fi
 }
 
@@ -118,21 +89,19 @@ function bv_ospray_is_enabled
 function bv_ospray_ensure
 {
     if [[ "$DO_OSPRAY" == "yes" ]]; then
-        bv_ospray_ensure_built_or_ready "ospray" \
+        ensure_built_or_ready "ospray" \
             $OSPRAY_VERSION \
             $OSPRAY_BUILD_DIR \
             $OSPRAY_TARBALL \
-            $OSPRAY_DOWNLOAD_URL \
-            $OSPRAY_DOWNLOAD_SRC
+            $OSPRAY_DOWNLOAD_URL 
         if [[ $? != 0 ]] ; then
             return 1
         fi
-        bv_ospray_ensure_built_or_ready "ospray-visit-module" \
+        ensure_built_or_ready "ospray-visit-module" \
             $OSPRAY_VISIT_MODULE_VERSION \
             $OSPRAY_VISIT_MODULE_BUILD_DIR \
             $OSPRAY_VISIT_MODULE_TARBALL \
-            $OSPRAY_VISIT_MODULE_DOWNLOAD_URL \
-            $OSPRAY_VISIT_MODULE_DOWNLOAD_SRC
+            $OSPRAY_VISIT_MODULE_DOWNLOAD_URL
         if [[ $? != 0 ]] ; then
             return 1
         fi
@@ -143,7 +112,7 @@ function bv_ospray_ensure
 function bv_ospray_initialize_vars
 {
     info "initializing ospray vars"
-    if [[ "$DO_OSPRAY" == "yes" ]] ; then
+    if [[ "$DO_OSPRAY" == "yes" ]]; then
         OSPRAY_INSTALL_DIR="${VISITDIR}/ospray/${OSPRAY_VERSION}/${VISITARCH}"
         OSPRAY_INCLUDE_DIR="${OSPRAY_INSTALL_DIR}/include"
         OSPRAY_LIB_DIR="${OSPRAY_INSTALL_DIR}/lib"
@@ -220,18 +189,18 @@ function build_ospray
     # prepare directories
     prepare_build_dir $OSPRAY_BUILD_DIR $OSPRAY_TARBALL
     untarred_ospray=$?
-    if [[ $untarred_ospray == -1 ]] ; then
+    if [[ $untarred_ospray == -1 ]]; then
         warn "Unable to prepare OSPRay build directory. Giving up!"
         return 1
     fi
     prepare_build_dir $OSPRAY_VISIT_MODULE_BUILD_DIR $OSPRAY_VISIT_MODULE_TARBALL
     untarred_ospray_visit_module=$?
-    if [[ $untarred_ospray_visit_module == -1 ]] ; then
+    if [[ $untarred_ospray_visit_module == -1 ]]; then
         warn "Unable to prepare OSPRay build directory. Giving up!"
         return 1
-    elif [[ $untarred_ospray_visit_module == 1 ]] ; then
+    elif [[ $untarred_ospray_visit_module == 1 ]]; then
         rm -fr $OSPRAY_VISIT_MODULE_BUILD_DIR
-        mv module_visit-release-$OSPRAY_VISIT_MODULE_VERSION $OSPRAY_VISIT_MODULE_BUILD_DIR
+        mv $OSPRAY_VISIT_MODULE_UNTAR_DIR $OSPRAY_VISIT_MODULE_BUILD_DIR
     fi
 
     # build and install
@@ -239,7 +208,7 @@ function build_ospray
     build_ospray_in_source
 
     # others
-    if [[ "$DO_GROUP" == "yes" ]] ; then
+    if [[ "$DO_GROUP" == "yes" ]]; then
         chmod -R ug+w,a+rX "$VISITDIR/ospray"
         chgrp -R ${GROUP} "$VISITDIR/ospray"
     fi
@@ -257,7 +226,7 @@ function bv_ospray_build
             info "Skipping OSPRay build. OSPRay is already installed."
         else
             build_ospray
-            if [[ $? != 0 ]] ; then
+            if [[ $? != 0 ]]; then
                 error "Unable to build or install OSPRay. Bailing out."
             fi
         fi

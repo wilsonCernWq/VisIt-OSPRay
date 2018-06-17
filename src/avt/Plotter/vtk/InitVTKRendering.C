@@ -49,10 +49,6 @@
 
 #include <vtk/InitVTKRenderingConfig.h>
 
-// #ifdef VISIT_OSPRAY
-// #include <vtkOSPRayObjectFactory.h>
-// #endif
-
 #include <avtCallback.h>
 #include <DebugStream.h>
 
@@ -200,16 +196,6 @@ vtkVisItGraphicsFactory::vtkVisItGraphicsFactory()
 void
 InitVTKRendering::Initialize(void)
 {
-// #ifdef VISIT_OSPRAY
-//     if (avtCallback::UseOSPRay())
-//     {
-//       debug1 << "InitVTKRendering::Initializing turning on OSPRay" << endl;
-//       vtkOSPRayObjectFactory* ofactory = vtkOSPRayObjectFactory::New();
-//       vtkObjectFactory::RegisterFactory(ofactory);
-//       ofactory->Delete();
-//     }
-// #endif
-
     // Register the factory that allows VisIt objects to override vtk objects.
     vtkVisItGraphicsFactory *factory = vtkVisItGraphicsFactory::New();
     vtkObjectFactory::RegisterFactory(factory);

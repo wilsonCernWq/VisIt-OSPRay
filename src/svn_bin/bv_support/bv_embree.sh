@@ -41,7 +41,7 @@ function bv_embree_initialize_vars
 
 function bv_embree_info
 {
-    export EMBREE_VERSION=${EMBREE_VERSION:-"2.16.5"}
+    export EMBREE_VERSION=${EMBREE_VERSION:-"3.2.0"}
     if [[ "$OPSYS" == "Darwin" ]] ; then
         export EMBREE_FILE=${EMBREE_FILE:-"embree-${EMBREE_VERSION}.x86_64.macosx.tar.gz"}
     else
@@ -94,8 +94,8 @@ function bv_embree_ensure
             error "Unable to build embree.  ${EMBREE_FILE} not found."
         fi
     elif [[ "$USE_SYSTEM_EMBREE" == "yes" ]] ; then
-        if [[ ! -d $EMBREE_INSTALL_DIR/include/embree2 ]]; then
-            error "Unable to find embree2 in the alternative path, perhaps a wrong embree version is provided."
+        if [[ ! -d $EMBREE_INSTALL_DIR/include/embree3 ]]; then
+            error "Unable to find embree v3.+ in the alternative path, perhaps a wrong embree version is provided."
         fi
     fi
 }
