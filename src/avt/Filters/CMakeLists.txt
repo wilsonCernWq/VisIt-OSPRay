@@ -144,7 +144,10 @@ ENDIF()
 IF(VISIT_OSPRAY)
     LIST(APPEND AVTFILTERS_SOURCES
          avtOSPRayCommon.C
-         avtOSPRayImageCompositor.C)
+         avtOSPRayImageCompositor.C
+         avtOSPRayRayTracer.C
+         avtOSPRaySamplePointExtractor.C
+         avtOSPRayVoxelExtractor.C)
     ADD_DEFINITIONS(-DVISIT_OSPRAY)
     IF(ICET_FOUND)
         # If we have Ice-T then add -DHAVE_ICET to the compilation flags.
