@@ -76,18 +76,9 @@ bool CheckThreadedBlend_Communicator()
     if (env_use) { 
 	use = atoi(env_use) <= 0; 
     }
-    // if (!use) {
-    //     ospout << "[avtOSPRayImageCompositor] "
-    //            << "Not Using Multi-Threading for Blending"
-    //            << std::endl;
-    // } else {
-    //     ospout << "[avtOSPRayImageCompositor] "
-    //            << "Using Multi-Threading for Blending"
-    //            << std::endl;
-    // }
     return use;
 }
-bool UseThreadedBlend_Communicator = CheckThreadedBlend_Communicator();
+static bool UseThreadedBlend_Communicator = CheckThreadedBlend_Communicator();
 
 // ***************************************************************************
 //  Class: avtOSPRayIC_IceT
@@ -139,7 +130,7 @@ bool avtOSPRayIC_IceT::Valid() {
 
 #if defined(PARALLEL) && defined(VISIT_OSPRAY_ICET)
 const bool avtOSPRayIC_IceT::usage =
-                  avtOSPRayIC_IceT::CheckUsage(); 
+    avtOSPRayIC_IceT::CheckUsage(); 
 bool avtOSPRayIC_IceT::CheckUsage()
 {
     bool use_icet = false;
@@ -147,15 +138,6 @@ bool avtOSPRayIC_IceT::CheckUsage()
     if (env_use_icet) { 
 	use_icet = atoi(env_use_icet) > 0; 
     }
-    // if (!use_icet) {
-    //     // ospout << "[avtOSPRayImageCompositor] "
-    //     //        << "Not Using IceT for Image Compositing"
-    //     //        << std::endl;
-    // } else {
-    //     ospout << "[avtOSPRayImageCompositor] "
-    //            << "Using IceT for Image Compositing"
-    //            << std::endl;
-    // }
     return use_icet;
 }
 const IceTDouble avtOSPRayIC_IceT::identity[16] = 
@@ -172,7 +154,7 @@ const IceTFloat avtOSPRayIC_IceT::bgColor[4] =
 const float*   avtOSPRayIC_IceT::imgData = NULL;
 int            avtOSPRayIC_IceT::imgMeta[4] = {0,0,0,0};
 const IceTEnum avtOSPRayIC_IceT::strategy =
-                  avtOSPRayIC_IceT::CheckStrategy();
+    avtOSPRayIC_IceT::CheckStrategy();
 IceTEnum       avtOSPRayIC_IceT::CheckStrategy() 
 {
     if (avtOSPRayIC_IceT::Valid()) {
@@ -183,23 +165,15 @@ IceTEnum       avtOSPRayIC_IceT::CheckStrategy()
         switch (strategy) {
         case 0:
             ret = ICET_STRATEGY_REDUCE;
-            ospout << "[avtOSPRayIC_IceT] Strategy Reduce" 
-                   << std::endl;
             break;
         case 1:
             ret = ICET_SINGLE_IMAGE_STRATEGY_TREE;
-            ospout << "[avtOSPRayIC_IceT] Strategy Tree" 
-                   << std::endl;
             break;
         case 2:
             ret = ICET_SINGLE_IMAGE_STRATEGY_RADIXK;
-            ospout << "[avtOSPRayIC_IceT] Strategy Radix-k" 
-                   << std::endl;
             break;
         default:
             ret = ICET_SINGLE_IMAGE_STRATEGY_BSWAP;
-            ospout << "[avtOSPRayIC_IceT] Strategy BSwap" 
-                   << std::endl;
             break;
         }
         return ret;
@@ -213,7 +187,7 @@ IceTEnum       avtOSPRayIC_IceT::CheckStrategy()
 /*! regular member functions */
 avtOSPRayIC_IceT::avtOSPRayIC_IceT(int mpiSize, int mpiRank)
     : avtOSPRayIC_Implementation(mpiSize, mpiRank)
-{	
+{
 #if defined(PARALLEL) && defined(VISIT_OSPRAY_ICET)
     MPISize = IceTInt(mpiSize);
     MPIRank = IceTInt(mpiRank);
@@ -221,6 +195,23 @@ avtOSPRayIC_IceT::avtOSPRayIC_IceT(int mpiSize, int mpiRank)
     comm = icetCreateMPICommunicator(VISIT_MPI_COMM);
     context = icetCreateContext(comm);
     icetDestroyMPICommunicator(comm);
+    // debug
+    if (avtOSPRayIC_IceT::Valid() && mpiRank == 0) {
+        switch (avtOSPRayIC_IceT::strategy) {
+        case 0:
+            ospout << "[avtOSPRayIC_IceT] Strategy Reduce" << std::endl;
+            break;
+        case 1:
+            ospout << "[avtOSPRayIC_IceT] Strategy Tree" << std::endl;
+            break;
+        case 2:
+            ospout << "[avtOSPRayIC_IceT] Strategy Radix-k" << std::endl;
+            break;
+        default:
+            ospout << "[avtOSPRayIC_IceT] Strategy BSwap" << std::endl;
+            break;
+        }
+    }
 #endif
 }
 
@@ -509,6 +500,27 @@ avtOSPRayImageCompositor::avtOSPRayImageCompositor()
 #endif
     finalImage = NULL;
     compositor = NULL;
+    // debug
+    if (mpiRank == 0) {
+        if (!UseThreadedBlend_Communicator) {
+            ospout << "[avtOSPRayImageCompositor] "
+                   << "Not Using Multi-Threading for Blending"
+                   << std::endl;
+        } else {
+            ospout << "[avtOSPRayImageCompositor] "
+                   << "Using Multi-Threading for Blending"
+                   << std::endl;
+        }
+        if (!avtOSPRayIC_IceT::Valid()) {
+            ospout << "[avtOSPRayImageCompositor] "
+                   << "Not Using IceT for Image Compositing"
+                   << std::endl;
+        } else {
+            ospout << "[avtOSPRayImageCompositor] "
+                   << "Using IceT for Image Compositing"
+                   << std::endl;
+        }
+    }
     //////////////////////////////////////////////////////////////////////////
     intermediateImageExtents[0] = intermediateImageExtents[1] = 0.0;
     intermediateImageExtents[2] = intermediateImageExtents[3] = 0.0;

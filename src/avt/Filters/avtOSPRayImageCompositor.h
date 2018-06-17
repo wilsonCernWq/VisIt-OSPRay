@@ -44,6 +44,7 @@
 #define AVT_OSPRAY_IMG_COMMUNICATOR_H
 
 #include <avtOSPRayCommon.h>
+
 #include <string>
 #include <vector>
 #include <map>
@@ -53,18 +54,6 @@
 #ifdef PARALLEL
 # include <mpi.h>
 #endif
-
-//#define MSG_DATA   100
-//#define MSG_RESULT 101
-
-//const int SEND    = 1;
-//const int RECEIVE = 2;
-
-/* struct imageBuffer  */
-/* { */
-/*     float *image; */
-/*     float  depth; */
-/* }; */
 
 // ***************************************************************************
 //  Class: avtOSPRayImageCompositor
@@ -126,7 +115,6 @@ class avtOSPRayImageCompositor
 				 float *&, const int dstExtents[4]);
     static void BlendBackToFront(const float *, const int srcExtents[4], 
 				 float *&, const int dstExtents[4]);
-
     void Barrier();
 
  private:
@@ -172,7 +160,6 @@ class avtOSPRayImageCompositor
     //void SerialInit(int W, int H);
     //void SerialSetTile(const float*, const int*, const float&);
     //void SerialComposite(float*&);
-
 
  private:
     // Basic MPI information
