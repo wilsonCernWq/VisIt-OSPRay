@@ -49,8 +49,9 @@
 
 #include <avtImage.h>
 #include <avtOpacityMap.h>
+
 #ifdef VISIT_OSPRAY
-# include <avtOSPRayCommon.h>
+#include <avtOSPRayCommon.h>
 #endif
 
 class     WindowAttributes;
@@ -92,8 +93,9 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
                                   { return "Volume rendering"; };
 
     avtImage_p               RenderImage(avtImage_p, const WindowAttributes &);
-#ifdef VISIT_SLIVR
-    avtImage_p               RenderImageRaycastingSLIVR(avtImage_p opaque_image, const WindowAttributes &);
+#if defined(VISIT_SLIVR) || defined(VISIT_OSPRAY)
+    avtImage_p               RenderImageRayCasting(avtImage_p opaque_image,
+                                                   const WindowAttributes &);
 #endif
     int                      GetNumberOfStages(const WindowAttributes &);
 
@@ -107,6 +109,10 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
     virtual avtContract_p    ModifyContract(avtContract_p);
     virtual void             VerifyInput(void);
     virtual bool             FilterUnderstandsTransformedRectMesh();
+
+#ifdef VISIT_OSPRAY
+    OSPVisItContext *ospray;
+#endif
 };
 
 
