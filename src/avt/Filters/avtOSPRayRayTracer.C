@@ -37,33 +37,38 @@
 *****************************************************************************/
 
 // ************************************************************************* //
-//                        avtOSPRayRayTracer.C                                //
+//                       avtOSPRayRayTracer.C                                //
 // ************************************************************************* //
 
 #include <avtOSPRayRayTracer.h>
 
-#include <vector>
-
 #include <visit-config.h>
-
-#include <vtkImageData.h>
-#include <vtkMatrix4x4.h>
 
 #include <avtDataset.h>
 #include <avtImage.h>
 #include <avtParallel.h>
 #include <avtRayCompositer.h>
-//#include <avtOSPRaySamplePointExtractor.h>
+#include <avtOSPRaySamplePointExtractor.h>
 #include <avtWorldSpaceToImageSpaceTransform.h>
 
 #include <DebugStream.h>
 #include <ImproperUseException.h>
 #include <TimingsManager.h>
+#include <StackTimer.h>
+
+#include <vtkImageData.h>
+#include <vtkMatrix4x4.h>
+
+#include <vector>
 
 using     std::vector;
 
-//bool OSPRaysortImgMetaDataByDepth(imgMetaData const& before, imgMetaData const& after){ return before.avg_z > after.avg_z; }
-//bool OSPRaysortImgMetaDataByEyeSpaceDepth(imgMetaData const& before, imgMetaData const& after){ return before.eye_z > after.eye_z; }
+bool OSPRaySortImgMetaDataByDepth(ospray::ImgMetaData const& before, 
+                                  ospray::ImgMetaData const& after)
+{ return before.avg_z > after.avg_z; }
+bool OSPRaySortImgMetaDataByEyeSpaceDepth(ospray::ImgMetaData const& before,
+                                          ospray::ImgMetaData const& after)
+{ return before.eye_z > after.eye_z; }
 
 // ****************************************************************************
 //  Method: avtOSPRayRayTracer constructor
@@ -85,16 +90,17 @@ using     std::vector;
 
 avtOSPRayRayTracer::avtOSPRayRayTracer() : avtRayTracerBase()
 {
-
-    // panPercentage[0] = 0;
-    // panPercentage[1] = 0;
-    // lighting = false;
-    // lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
-    // lightPosition[3] = 1.0;
-    // materialProperties[0] = 0.4;
-    // materialProperties[1] = 0.75;
-    // materialProperties[2] = 0.0;
-    // materialProperties[3] = 15.0;
+    panPercentage[0] = 0;
+    panPercentage[1] = 0;
+    lighting = false;
+    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
+    lightPosition[3] = 1.0;
+    materialProperties[0] = 0.4;
+    materialProperties[1] = 0.75;
+    materialProperties[2] = 0.0;
+    materialProperties[3] = 15.0;
+    // ospray
+    ospray = NULL;
 }
 
 
@@ -212,4 +218,637 @@ avtOSPRayRayTracer::~avtOSPRayRayTracer()
 void
 avtOSPRayRayTracer::Execute()
 {
+    //======================================================================//
+    // Initialization and Debug
+    //======================================================================//
+    // check memory in the beginning
+    ospout << "[avrRayTracer] entering execute" << std::endl;
+    ospray::CheckMemoryHere("[avtRayTracer] Execute", "ospout");    
+
+    // initialize current time
+    StackTimer t0("Ray Tracing");
+
+    //======================================================================//
+    // Start of original pipeline
+    //======================================================================//
+    bool parallelOn = (imgComm.GetParSize() == 1) ? false : true;
+    if (rayfoo == NULL)
+    {
+	debug1 << "Never set ray function for ray tracer." << endl;
+	EXCEPTION0(ImproperUseException);
+    }
+
+    //
+    // First we need to transform all of domains into camera space.
+    //
+    ospout << "[avrRayTracer] compute camera" << std::endl;
+    double aspect = 1.;
+    if (screen[1] > 0)
+    {
+        aspect = (double)screen[0] / (double)screen[1];
+    }
+
+    double scale[3] = {1,1,1};
+    vtkMatrix4x4 *transform = vtkMatrix4x4::New();
+    avtWorldSpaceToImageSpaceTransform::CalculateTransform(view, transform,
+                                                           scale, aspect);
+    double newNearPlane, newFarPlane, oldNearPlane, oldFarPlane;
+    TightenClippingPlanes(view, transform, newNearPlane, newFarPlane);
+    oldNearPlane = view.nearPlane;  oldFarPlane  = view.farPlane;
+    view.nearPlane = newNearPlane;  view.farPlane  = newFarPlane;
+    transform->Delete();
+
+    avtWorldSpaceToImageSpaceTransform trans(view, aspect);
+    trans.SetInput(GetInput());
+
+    //
+    // Extract all of the samples from the dataset.
+    //
+    avtOSPRaySamplePointExtractor extractor(screen[0], screen[1], samplesPerRay);
+    extractor.SetJittering(true);
+    extractor.SetTransferFn(transferFn1D);
+    extractor.SetInput(trans.GetOutput());
+	
+    //
+    // Before Rendering
+    //
+    double dbounds[6];  // Extents of the volume in world coordinates
+    vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
+    vtkMatrix4x4  *screen_to_model_transform = vtkMatrix4x4::New();
+    vtkMatrix4x4  *screen_to_camera_transform = vtkMatrix4x4::New();
+    vtkImageData  *opaqueImageVTK = NULL;
+    unsigned char *opaqueImageData = NULL;
+    float         *opaqueImageZB = NULL;
+    std::vector<float> opaqueImageDepth(screen[0] * screen[1], oldFarPlane);
+    int            fullImageExtents[4];
+
+    //
+    // Ray casting: OSPRay ~ Setup
+    //
+    //extractor.SetRayCastingOSPRay(true);
+
+    //
+    // Camera Settings
+    //
+    vtkCamera *sceneCam = vtkCamera::New();
+    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
+    sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
+    sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
+    sceneCam->SetViewAngle(view.viewAngle);
+    sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
+    if (view.orthographic) { sceneCam->ParallelProjectionOn(); }
+    else { sceneCam->ParallelProjectionOff(); }
+    sceneCam->SetParallelScale(view.parallelScale);	
+    // Clip planes
+    double oldclip[2] = {oldNearPlane, oldFarPlane};
+    panPercentage[0] = view.imagePan[0];
+    panPercentage[1] = view.imagePan[1];
+    // Scaling
+    vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
+    matScale->Identity(); 
+    // Scale + Model + View Matrix
+    vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
+    vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
+    vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
+    // Zooming
+    vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
+    vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
+    matZoom->Identity(); 
+    matZoom->SetElement(0, 0, view.imageZoom); 
+    matZoom->SetElement(1, 1, view.imageZoom);
+    vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, 
+                              matZoomViewModelScale);
+    // Projection:
+    //
+    // https://www.vtk.org/doc/release/6.1/html/classvtkCamera.html
+    // HASH: #a4d9a509bf60f1555a70ecdee758c2753
+    //
+    // The Z buffer that is passed from visit is in clip scape with z 
+    // limits of -1 and 1. However, using VTK 6.1.0, the z limits are 
+    // wired. So, the projection matrix from VTK is hijacked here and
+    // adjusted to be within -1 and 1 too
+    //
+    // Actually the correct way of using VTK GetProjectionTransformMatrix 
+    // is to set near and far plane as -1 and 1
+    //
+    vtkMatrix4x4 *matProj = 
+        sceneCam->GetProjectionTransformMatrix(aspect, -1, 1);
+    double sceneSize[2];
+    if (!view.orthographic) {
+        sceneSize[0] = 2.0 * oldNearPlane / matProj->GetElement(0, 0);
+        sceneSize[1] = 2.0 * oldNearPlane / matProj->GetElement(1, 1);
+    }
+    else {
+        sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
+	    sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
+    }
+    // Compute model_to_screen_transform matrix
+    vtkMatrix4x4::Multiply4x4(matProj,matZoomViewModelScale,
+                              model_to_screen_transform);
+    vtkMatrix4x4::Invert(model_to_screen_transform,
+                         screen_to_model_transform);
+    vtkMatrix4x4::Invert(matProj,
+                         screen_to_camera_transform);
+    // Debug
+    ospout << "[avrRayTracer] matZoom " << *matZoom << std::endl;
+    ospout << "[avrRayTracer] matViewModel " << *matViewModel << std::endl;
+    ospout << "[avrRayTracer] matScale " << *matScale << std::endl;
+    ospout << "[avrRayTracer] matProj " << *matProj << std::endl;
+    // Cleanup
+    matScale->Delete();
+    matViewModel->Delete();
+    matViewModelScale->Delete();
+    matZoom->Delete();
+    matZoomViewModelScale->Delete();
+    matProj->Delete();
+    // Get the full image extents of the volume
+    double depthExtents[2];
+    GetSpatialExtents(dbounds);
+    ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
+                                    panPercentage, view.imageZoom,
+                                    model_to_screen_transform,
+                                    fullImageExtents, depthExtents);
+    fullImageExtents[0] = std::max(fullImageExtents[0], 0);
+    fullImageExtents[2] = std::max(fullImageExtents[2], 0);
+    fullImageExtents[1] = std::min(1+fullImageExtents[1], screen[0]);
+    fullImageExtents[3] = std::min(1+fullImageExtents[3], screen[1]);
+    // Debug
+    ospout << "[avrRayTracer] View settings: " << endl
+           << "  inheriant view direction: "
+           << viewDirection[0] << " "
+           << viewDirection[1] << " "
+           << viewDirection[2] << std::endl
+           << "  camera: "       
+           << view.camera[0] << ", " 
+           << view.camera[1] << ", " 
+           << view.camera[2] << std::endl
+           << "  focus: "    
+           << view.focus[0] << ", " 
+           << view.focus[1] << ", " 
+           << view.focus[2] << std::endl
+           << "  viewUp: "    
+           << view.viewUp[0] << ", " 
+           << view.viewUp[1] << ", " 
+           << view.viewUp[2] << std::endl
+           << "  viewAngle: " << view.viewAngle << std::endl
+           << "  eyeAngle:  " << view.eyeAngle  << std::endl
+           << "  parallelScale: " << view.parallelScale  << std::endl
+           << "  setScale: " << view.setScale << std::endl
+           << "  scale:    " 
+           << scale[0] << " " 
+           << scale[1] << " " 
+           << scale[2] << " " 
+           << std::endl
+           << "  nearPlane: " << view.nearPlane << std::endl
+           << "  farPlane:  " << view.farPlane  << std::endl
+           << "  imagePan[0]: " << view.imagePan[0] << std::endl 
+           << "  imagePan[1]: " << view.imagePan[1] << std::endl
+           << "  imageZoom:   " << view.imageZoom   << std::endl
+           << "  orthographic: " << view.orthographic << std::endl
+           << "  shear[0]: " << view.shear[0] << std::endl
+           << "  shear[1]: " << view.shear[1] << std::endl
+           << "  shear[2]: " << view.shear[2] << std::endl
+           << "  oldNearPlane: " << oldNearPlane << std::endl
+           << "  oldFarPlane:  " << oldFarPlane  << std::endl
+           << "  aspect: " << aspect << std::endl
+           << "[avrRayTracer] sceneSize: " 
+           << sceneSize[0] << " " 
+           << sceneSize[1] << std::endl
+           << "[avrRayTracer] screen: " 
+           << screen[0] << " " << screen[1] << std::endl
+           << "[avrRayTracer] data bounds: " << std::endl
+           << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
+           << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
+           << "\t" << dbounds[4] << " " << dbounds[5] << std::endl
+           << "[avrRayTracer] full image extents: " << std::endl
+           << "\t" << fullImageExtents[0] << " "
+           << "\t" << fullImageExtents[1] << std::endl
+           << "\t" << fullImageExtents[2] << " "
+           << "\t" << fullImageExtents[3] << std::endl;
+    ospout << "[avrRayTracer] model_to_screen_transform: " 
+           << *model_to_screen_transform << std::endl;
+    ospout << "[avrRayTracer] screen_to_model_transform: " 
+           << *screen_to_model_transform << std::endl;
+    ospout << "[avrRayTracer] screen_to_camera_transform: " 
+           << *screen_to_camera_transform << std::endl;
+
+    //===================================================================//
+    // ospray stuffs
+    //===================================================================//   
+    ospray::CheckMemoryHere("[avtRayTracer] Execute before ospray", 
+                           "ospout");
+    // initialize ospray
+    // -- multi-threading enabled
+    ospray->InitOSP();
+    // camera
+    ospout << "[avrRayTracer] make ospray camera" << std::endl;
+    if (!view.orthographic) {
+        ospray->camera.Init(OSPVisItCamera::PERSPECTIVE);
+    }
+    else {
+        ospray->camera.Init(OSPVisItCamera::ORTHOGRAPHIC);
+    }
+    ospray->camera.Set(view.camera,
+                       view.focus, 
+                       view.viewUp, 
+                       viewDirection,
+                       sceneSize, 
+                       aspect, 
+                       view.viewAngle, 
+                       view.imageZoom,
+                       view.imagePan, 
+                       fullImageExtents, 
+                       screen);
+    ospray->SetScaling(scale);
+    // transfer function
+    ospout  << "[avrRayTracer] make ospray transfer function" 
+            << std::endl;
+    ospray->transferfcn.Init();
+    ospray->transferfcn.Set
+        ((OSPVisItColor*)transferFn1D->GetTableFloat(), 
+         transferFn1D->GetNumberOfTableEntries(),
+         (float)transferFn1D->GetMin(),
+         (float)transferFn1D->GetMax());
+    // renderer
+    ospout << "[avrRayTracer] make ospray renderer" << std::endl;
+    ospray->renderer.Init();
+    ospray->renderer.Set(materialProperties, viewDirection, lighting);
+    ospray->SetDataBounds(dbounds);
+    // check memory
+    ospray::CheckMemoryHere("[avtRayTracer] Execute after ospray",
+                           "ospout");    
+
+    // 
+    // Continuation of previous pipeline
+    //
+    extractor.SetJittering(false);
+    extractor.SetLighting(lighting);
+    extractor.SetLightDirection(lightDirection);
+    extractor.SetMatProperties(materialProperties);
+    extractor.SetViewDirection(viewDirection);
+    extractor.SetTransferFn(transferFn1D);
+    extractor.SetClipPlanes(oldclip);
+    extractor.SetPanPercentages(view.imagePan);
+    extractor.SetImageZoom(view.imageZoom);
+    extractor.SetRendererSampleRate(rendererSampleRate); 
+    extractor.SetDepthExtents(depthExtents);
+    extractor.SetMVPMatrix(model_to_screen_transform);
+    extractor.SetFullImageExtents(fullImageExtents);
+    // sending ospray
+    extractor.SetOSPRay(ospray);
+
+    //
+    // Capture background
+    //
+    opaqueImageVTK  = opaqueImage->GetImage().GetImageVTK();
+    opaqueImageData = 
+        (unsigned char *)opaqueImageVTK->GetScalarPointer(0, 0, 0);
+    opaqueImageZB   = opaqueImage->GetImage().GetZBuffer();
+    int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
+    extractor.SetDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
+    extractor.SetRGBBuffer  (opaqueImageData, screen[0],screen[1]);
+    extractor.SetBufferExtents(bufferScreenExtents);
+    // Set the background to OSPRay
+    for (int y = 0; y < screen[1]; ++y) {
+        for (int x = 0; x < screen[0]; ++x) {
+            int index = x + y * screen[0];
+            int    screenCoord[2] = {x, y};
+            double screenDepth = opaqueImageZB[index] * 2 - 1;
+            double worldCoord[3];
+            ospray::ProjectScreenToCamera
+                (screenCoord, screenDepth, 
+                 screen[0], screen[1],
+                 screen_to_camera_transform, 
+                 worldCoord);
+            opaqueImageDepth[index] = -worldCoord[2];
+        }
+    }
+    ospray->SetBgBuffer(opaqueImageDepth.data(), 
+                        bufferScreenExtents);
+    
+    // TODO We cannot delete camera here, why ?
+    //sceneCam->Delete();
+    
+    //
+    // For curvilinear and unstructured meshes, it makes sense to convert the
+    // cells to image space.  But for rectilinear meshes, it is not the
+    // most efficient strategy.  So set some flags here that allow the
+    // extractor to do the extraction in world space.
+    //
+    if (!kernelBasedSampling)
+    {
+	trans.SetPassThruRectilinearGrids(true);
+	extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
+    }
+
+    // Qi debug
+    ospray::CheckMemoryHere("[avtRayTracer] Execute raytracing setup done",
+			   "ospout");
+
+    // Execute raytracer
+    avtDataObject_p samples = extractor.GetOutput();
+
+    //
+    // Ray casting: SLIVR ~ After Rendering
+    //
+    // Only required to force an update 
+    // Need to find a way to get rid of that!!!!
+    avtRayCompositer rc(rayfoo);
+    rc.SetInput(samples);
+    avtImage_p image  = rc.GetTypedOutput();
+    
+    // Execute rendering
+    // This will call the execute function
+    {
+        StackTimer t1("AllPatchRendering");
+        image->Update(GetGeneralContract()); 
+    }
+
+    //
+    // Image Compositing
+    //
+    // Timing
+    {
+
+    }
+    //int timingCompositinig = visitTimer->StartTimer();
+    //int timingOnlyCompositinig = visitTimer->StartTimer();
+    int timingDetail;
+    // Initialization
+    float *compositedData = NULL;
+    int compositedW, compositedH;
+    int compositedExtents[4];
+    // Debug
+    int numPatches = extractor.GetImgPatchSize();
+    ospout << "[avtRayTracer] Total num of patches " 
+           << numPatches << std::endl;
+    for (int i=0; i<numPatches; i++) {
+        ospray::ImgMetaData currImgMeta = extractor.GetImgMetaPatch(i);
+        ospout << "[avtRayTracer] Rank " << PAR_Rank() << " "
+               << "Idx " << i << " (" << currImgMeta.patchNumber << ") " 
+               << " depth " << currImgMeta.eye_z << std::endl
+               << "current patch size = " 
+               << currImgMeta.dims[0] << ", " 
+               << currImgMeta.dims[1] << std::endl
+               << "current patch starting" 
+               << " X = " << currImgMeta.screen_ll[0] 
+               << " Y = " << currImgMeta.screen_ll[1] << std::endl
+               << "current patch ending" 
+               << " X = " << currImgMeta.screen_ur[0] 
+               << " Y = " << currImgMeta.screen_ur[1] << std::endl;
+    }
+    //-------------------------------------------------------------------//
+    // IceT: If each rank has only one patch, we use IceT to composite
+    //-------------------------------------------------------------------//
+    if (imgComm.IceTValid() && extractor.GetImgPatchSize() == 1) {
+        //---------------------------------------------------------------//
+        // Setup Local Tile
+        ospray::ImgMetaData currMeta = extractor.GetImgMetaPatch(0);
+        ospray::ImgData     currData;
+        currData.imagePatch = NULL;
+        extractor.GetAndDelImgData /* do shallow copy inside */
+            (currMeta.patchNumber, currData);
+        //---------------------------------------------------------------//
+        //---------------------------------------------------------------//
+        // First Composition
+        if (PAR_Size() > 1) { 
+            compositedW = fullImageExtents[1] - fullImageExtents[0];
+            compositedH = fullImageExtents[3] - fullImageExtents[2];
+            compositedExtents[0] = fullImageExtents[0];
+            compositedExtents[1] = fullImageExtents[1];
+            compositedExtents[2] = fullImageExtents[2];
+            compositedExtents[3] = fullImageExtents[3];
+            if (PAR_Rank() == 0) {
+                compositedData = 
+                    new float[4 * compositedW * compositedH]();
+            }
+            int currExtents[4] = 
+                {std::max(currMeta.screen_ll[0]-fullImageExtents[0], 0), 
+                 std::min(currMeta.screen_ur[0]-fullImageExtents[0], 
+                          compositedW), 
+                 std::max(currMeta.screen_ll[1]-fullImageExtents[2], 0),
+                 std::min(currMeta.screen_ur[1]-fullImageExtents[2],
+                          compositedH)};
+            imgComm.IceTInit(compositedW, compositedH);
+            imgComm.IceTSetTile(currData.imagePatch, 
+                                currExtents,
+                                currMeta.eye_z);
+            imgComm.IceTComposite(compositedData);
+            if (currData.imagePatch != NULL) {
+                delete[] currData.imagePatch;
+                currData.imagePatch = NULL;
+            }
+        } else {
+            compositedW = currMeta.dims[0];
+            compositedH = currMeta.dims[1];
+            compositedExtents[0] = fullImageExtents[0];
+            compositedExtents[1] = fullImageExtents[0] + compositedW;
+            compositedExtents[2] = fullImageExtents[2];
+            compositedExtents[3] = fullImageExtents[2] + compositedH;
+            compositedData = currData.imagePatch;
+            currData.imagePatch = NULL;
+        }
+        //---------------------------------------------------------------//
+        //---------------------------------------------------------------//
+        // Memory
+        ospray::CheckMemoryHere("[avtRayTracer] Execute "
+                               "IceT Compositing Done", 
+                               "ospout");
+        //---------------------------------------------------------------//
+    }
+    //-------------------------------------------------------------------//
+    // SERIAL: Image Composition
+    //-------------------------------------------------------------------//
+    else if (parallelOn == false) {
+        //---------------------------------------------------------------//
+        // Get the Metadata for All Patches
+        ospray::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
+                                 "Serial-Composite: Get the Metadata for "
+                                 "All Patches");
+        // contains the metadata to composite the image
+        std::vector<ospray::ImgMetaData> allPatchMeta;
+        std::vector<ospray::ImgData>     allPatchData;
+        // get the number of patches
+        int numPatches = extractor.GetImgPatchSize();
+        for (int i=0; i<numPatches; i++)
+            {
+                allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
+            }
+        ospray::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
+                                "Serial-Composite: Get the Metadata for "
+                                "All Patches");
+        //---------------------------------------------------------------//
+        //---------------------------------------------------------------//
+        // Sort with the Largest z First
+        ospray::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
+                                 "Serial-Composite: Sort with the Largest "
+                                 "z First");
+        std::sort(allPatchMeta.begin(), allPatchMeta.end(), 
+                  &OSPRaySortImgMetaDataByEyeSpaceDepth);
+        ospray::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
+                                "Serial-Composite: Sort with the Largest "
+                                "z First");
+        //---------------------------------------------------------------//
+        //---------------------------------------------------------------//
+        // Blend Images
+        ospray::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
+                                 "Serial-Composite: Blend Images");
+        compositedW = fullImageExtents[1] - fullImageExtents[0];
+        compositedH = fullImageExtents[3] - fullImageExtents[2];
+        compositedExtents[0] = fullImageExtents[0];
+        compositedExtents[1] = fullImageExtents[0] + compositedW;
+        compositedExtents[2] = fullImageExtents[2];
+        compositedExtents[3] = fullImageExtents[2] + compositedH;	    
+        if (PAR_Rank() == 0) {
+            compositedData = new float[compositedW * compositedH * 4]();
+        }
+        for (int i=0; i<numPatches; i++)
+            {
+                ospray::ImgMetaData currImgMeta = allPatchMeta[i];
+                ospray::ImgData     currImgData;
+                currImgData.imagePatch = NULL;
+                extractor.GetAndDelImgData /* do shallow copy inside */
+                    (currImgMeta.patchNumber, currImgData);
+                const float* currData = currImgData.imagePatch;
+                const int currExtents[4] = 
+                    {currImgMeta.screen_ll[0], currImgMeta.screen_ur[0], 
+                     currImgMeta.screen_ll[1], currImgMeta.screen_ur[1]};
+                avtOSPRayImageCompositor::BlendBackToFront(currData,
+                                                           currExtents,
+                                                           compositedData, 
+                                                           compositedExtents);
+                // Clean up data
+                if (currImgData.imagePatch != NULL) {
+                    delete[] currImgData.imagePatch;
+                }
+                currImgData.imagePatch = NULL;
+            }
+        allPatchMeta.clear();
+        allPatchData.clear();
+        ospray::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
+                                "Serial-Composite: Blend Images");
+        //---------------------------------------------------------------//
+        //---------------------------------------------------------------//
+        // Memory
+        ospray::CheckMemoryHere("[avtRayTracer] Execute "
+                               "Sequential Compositing Done", 
+                               "ospout");
+        //---------------------------------------------------------------//
+    } 
+    //
+    // PARALLEL: Image Composition
+    //
+    else { 
+        //---------------------------------------------------------------//
+        // Parallel Direct Send
+        ospray::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
+                                 "Parallel-Composite: "
+                                 "Parallel Direct Send");
+        int tags[2] = {1081, 1681};
+        int tagGather = 2681;
+        int *regions = NULL;
+        imgComm.RegionAllocation(regions);
+        int myRegionHeight =
+            imgComm.ParallelDirectSendManyPatches
+            (extractor.imgDataHashMap, extractor.imageMetaPatchVector,
+             numPatches, regions, imgComm.GetParSize(), tags, 
+             fullImageExtents);
+        imgComm.gatherImages(regions, imgComm.GetParSize(), 
+                             imgComm.intermediateImage, 
+                             imgComm.intermediateImageExtents, 
+                             imgComm.intermediateImageExtents, 
+                             tagGather, fullImageExtents, myRegionHeight);
+
+        ospray::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
+                                "Parallel-Composite: "
+                                "Parallel Direct Send");
+        //---------------------------------------------------------------//
+        //---------------------------------------------------------------//
+        // Some Cleanup
+        ospray::CheckSectionStart("avtRayTracer", "Execute", timingDetail,
+                                 "Parallel-Composite: Some Cleanup");
+        if (regions != NULL)
+            delete [] regions;
+        regions = NULL;
+        if (imgComm.intermediateImage != NULL)
+            delete [] imgComm.intermediateImage;
+        imgComm.intermediateImage = NULL;		
+        imgComm.Barrier();
+        ospray::CheckSectionStop("avtRayTracer", "Execute", timingDetail,
+                                "Parallel-Composite: Some Cleanup");
+        //---------------------------------------------------------------//
+        //---------------------------------------------------------------//
+        // Setup for Final Composition
+        compositedW = 
+            imgComm.finalImageExtents[1] -
+            imgComm.finalImageExtents[0];
+        compositedH = 
+            imgComm.finalImageExtents[3] -
+            imgComm.finalImageExtents[2];
+        compositedExtents[0] = imgComm.finalImageExtents[0];
+        compositedExtents[1] = imgComm.finalImageExtents[1];
+        compositedExtents[2] = imgComm.finalImageExtents[2];
+        compositedExtents[3] = imgComm.finalImageExtents[3];
+        if (PAR_Rank() == 0) {
+            compositedData = imgComm.GetFinalImageBuffer();
+        }
+        //--------------------------------------------------------------//
+        //--------------------------------------------------------------//
+        // Memory
+        ospray::CheckMemoryHere("[avtRayTracer] Execute "
+                               "Parallel Compositing Done", 
+                               "ospout");
+        //--------------------------------------------------------------//
+    }	
+    //visitTimer->StopTimer(timingOnlyCompositinig, "Pure Compositing");
+
+    ///////////////////////////////////////////////////////////////////
+    //
+    // Final Composition for Displaying
+    //
+    ///////////////////////////////////////////////////////////////////
+    if (PAR_Rank() == 0) {
+        // Blend
+        avtImage_p finalImage = new avtImage(this);
+        vtkImageData *finalVTKImage = 
+            avtImageRepresentation::NewImage(screen[0], screen[1]);
+        finalImage->GetImage() = finalVTKImage;
+        unsigned char *finalImageBuffer = 
+            finalImage->GetImage().GetRGBBuffer();
+        ospray::CompositeBackground(screen,
+                                   compositedExtents,
+                                   compositedW,
+                                   compositedH,
+                                   compositedData,
+                                   opaqueImageData,
+                                   opaqueImageZB,
+                                   finalImageBuffer);
+        // Cleanup
+        finalVTKImage->Delete();
+        SetOutput(finalImage);
+    }
+    if (compositedData != NULL) { 
+        delete [] compositedData;
+    }
+    compositedData = NULL; 
+    ospout << "[avtRayTracer] Raycasting OSPRay is Done !" << std::endl;
+	
+    //
+    // time compositing
+    //
+    //visitTimer->StopTimer(timingCompositinig, "Compositing");
+	
+    //
+    // Clean up
+    //
+    screen_to_model_transform->Delete();
+    model_to_screen_transform->Delete();
+    screen_to_camera_transform->Delete();
+
+    //
+    // Write timing to file
+    // Postpone this
+    //
+    // visitTimer->DumpTimings();
+
 }

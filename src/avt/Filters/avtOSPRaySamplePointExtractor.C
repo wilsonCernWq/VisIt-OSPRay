@@ -68,7 +68,6 @@
 #include <limits>
 #include <algorithm>
 
-
 // ****************************************************************************
 //  Method: avtOSPRaySamplePointExtractor constructor
 //
@@ -141,6 +140,8 @@ avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h, int d
 
     depthBuffer = NULL;
     rgbColorBuffer = NULL;
+
+    ospray = NULL;
 }
 
 
@@ -174,7 +175,7 @@ avtOSPRaySamplePointExtractor::~avtOSPRaySamplePointExtractor()
         osprayVoxelExtractor = NULL;
     }
 
-    delImgPatches();
+    DelImgPatches();
 }
 
 
@@ -240,7 +241,7 @@ avtOSPRaySamplePointExtractor::SetUpExtractors(void)
         delete osprayVoxelExtractor;
     }
     osprayVoxelExtractor = new avtOSPRayVoxelExtractor(width, height, depth, volume,cl);
-//    slivrVoxelExtractor->SetJittering(jitter);
+    //osprayVoxelExtractor->SetJittering(jitter);
     if (shouldDoTiling)
     {
         osprayVoxelExtractor->Restrict(width_min, width_max-1,
@@ -268,24 +269,35 @@ avtOSPRaySamplePointExtractor::SetUpExtractors(void)
 void
 avtOSPRaySamplePointExtractor::DoSampling(vtkDataSet *ds, int idx)
 {
-    //initialize sampling state
+    // initialize ospray
+    StackTimer t0("avtOSPRaySamplePointExtractor::DoSampling "
+                  "OSPVisItContext::InitPatch");
+    ospray->InitPatch(idx);
+
+    // initialize sampling state
     patchCount = 0;
     imageMetaPatchVector.clear();
     imgDataHashMap.clear();
 
-    double _scalarRange[2];
-    ds->GetScalarRange(_scalarRange);
+    // volume scalar range
+    double scalarRange[2]; 
+    {
+        StackTimer t1("avtOSPRaySamplePointExtractor::DoSampling "
+                      "Retrieve Volume Scalar Range");
+        ds->GetScalarRange(scalarRange);
+    }
 
-    double _tfRange[2];
-    _tfRange[0] = transferFn1D->GetMin();
-    _tfRange[1] = transferFn1D->GetMax();
+    // transfer function visible range
+    double tfnVisibleRange[2];
+    {
+        StackTimer t2("avtOSPRaySamplePointExtractor::DoSampling "
+                      "Retrieve TFN Visible Range");
+        tfnVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
+        tfnVisibleRange[1] = transferFn1D->GetMaxVisibleScalar();
+    }
 
-    double _tfVisibleRange[2];
-    _tfVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
-    _tfVisibleRange[1] = transferFn1D->GetMaxVisibleScalar();
-
-    osprayVoxelExtractor->SetScalarRange(_scalarRange);
-    osprayVoxelExtractor->SetTFVisibleRange(_tfVisibleRange);
+    osprayVoxelExtractor->SetScalarRange(scalarRange);
+    osprayVoxelExtractor->SetTFVisibleRange(tfnVisibleRange);
     RasterBasedSample(ds, idx);
 }
 
@@ -322,7 +334,6 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 {
     StackTimer t0("avtOSPRaySamplePointExtractor::RasterBasedSample");
 
-    //debug5 << PAR_Rank() << " avtOSPRaySamplePointExtractor::RasterBasedSample  " << num << std::endl;
     if (ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
         avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
@@ -341,58 +352,86 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 
         // Use OSPRay mass voxel extractor.
 
-        //
+        //-----------------------------
         // Compositing Setup
-        osprayVoxelExtractor->SetGridsAreInWorldSpace(
-            rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
+        //-----------------------------
+        osprayVoxelExtractor->SetGridsAreInWorldSpace
+            (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
 
-        osprayVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
-        osprayVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
-        osprayVoxelExtractor->setBufferExtents(bufferExtents);
+        osprayVoxelExtractor->SetDepthBuffer(depthBuffer,
+                                             bufferExtents[1] * bufferExtents[3]);
+        osprayVoxelExtractor->SetRGBBuffer(rgbColorBuffer,
+                                           bufferExtents[1], bufferExtents[3]);
+        osprayVoxelExtractor->SetBufferExtents(bufferExtents);
 
-        osprayVoxelExtractor->SetViewDirection(view_direction);
+        osprayVoxelExtractor->SetViewDirection(viewDirection);
         osprayVoxelExtractor->SetMVPMatrix(modelViewProj);
         osprayVoxelExtractor->SetClipPlanes(clipPlanes);
         osprayVoxelExtractor->SetPanPercentages(panPercentage);
         osprayVoxelExtractor->SetDepthExtents(depthExtents);
 
-        osprayVoxelExtractor->setProcIdPatchID(PAR_Rank(),num);
+        osprayVoxelExtractor->SetProcIdPatchID(PAR_Rank(), num);
 
         osprayVoxelExtractor->SetLighting(lighting);
         osprayVoxelExtractor->SetLightDirection(lightDirection);
         osprayVoxelExtractor->SetMatProperties(materialProperties);
         osprayVoxelExtractor->SetTransferFn(transferFn1D);
 
-        //debug5 << PAR_Rank() << " avtOSPRaySamplePointExtractor::RasterBasedSample extract ...  " << num << std::endl;
+        osprayVoxelExtractor->SetImageZoom(imageZoom);
+        osprayVoxelExtractor->SetRendererSampleRate(rendererSampleRate);
+        
+        osprayVoxelExtractor->SetOSPRay(ospray);
+        osprayVoxelExtractor->SetFullImageExtents(fullImageExtents);
 
+        //-----------------------------
+        // Extract
+        //-----------------------------        
         osprayVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
 
-        //debug5 << PAR_Rank() << " avtOSPRaySamplePointExtractor::RasterBasedSample extract done!" << num << std::endl;
-
-        //
+        //-----------------------------
         // Get rendering results
-        //
-        ImgMetaData      tmpImageMetaPatch;
-        tmpImageMetaPatch = initMetaPatch(patchCount);
+        // put them into a proper vector, sort them based on z value
+        //-----------------------------        
+        ospray::ImgMetaData tmpImageMetaPatch;
+        tmpImageMetaPatch = InitMetaPatch(patchCount);
 
-        osprayVoxelExtractor->getImageDimensions(tmpImageMetaPatch.inUse, tmpImageMetaPatch.dims, tmpImageMetaPatch.screen_ll, tmpImageMetaPatch.screen_ur, tmpImageMetaPatch.eye_z, tmpImageMetaPatch.clip_z);
+        osprayVoxelExtractor->GetImageDimensions
+            (tmpImageMetaPatch.inUse,     tmpImageMetaPatch.dims, 
+             tmpImageMetaPatch.screen_ll, tmpImageMetaPatch.screen_ur, 
+             tmpImageMetaPatch.eye_z,     tmpImageMetaPatch.clip_z);
         if (tmpImageMetaPatch.inUse == 1)
         {
             tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
             tmpImageMetaPatch.destProcId = tmpImageMetaPatch.procId;
             imageMetaPatchVector.push_back(tmpImageMetaPatch);
 
-            ImgData tmpImageDataHash;
+            ospray::ImgData tmpImageDataHash;
             tmpImageDataHash.procId = tmpImageMetaPatch.procId;
             tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
-            tmpImageDataHash.imagePatch = new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] * 4 ];
+            tmpImageDataHash.imagePatch = 
+                new float[tmpImageMetaPatch.dims[0] * 
+                          tmpImageMetaPatch.dims[1] * 4];
 
-            osprayVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
-            imgDataHashMap.insert( std::pair<int, ImgData> (tmpImageDataHash.patchNumber , tmpImageDataHash) );
-            //writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(tmpImageMetaPatch.procId) + "_"+ toStr(tmpImageMetaPatch.patchNumber), tmpImageDataHash.imagePatch, tmpImageMetaPatch.dims[0], tmpImageMetaPatch.dims[1]);
+            osprayVoxelExtractor->GetComputedImage(tmpImageDataHash.imagePatch);
+            imgDataHashMap.insert
+                (std::pair<int, ImgData> (tmpImageDataHash.patchNumber,
+                                          tmpImageDataHash));
 
             patchCount++;
         }
+    } else {
+        //---------------------------------------------------------
+        // Other Grid
+        //---------------------------------------------------------
+        const std::string msg = 
+            "Warning: Dataset is not a VTK_RECTILINEAR_GRID,\n"
+            "         Currently the RayCasting:OSPRay renderer\n"
+            "         only supports rectilinear grid,\n" 
+            "         Thus request cannot be completed.";
+        osperr << (int)(ds->GetDataObjectType()) << std::endl
+               << msg
+               << std::endl;
+        ospray::Exception(msg);
     }
 }
 
@@ -445,66 +484,75 @@ avtOSPRaySamplePointExtractor::FilterUnderstandsTransformedRectMesh()
 
 
 // ****************************************************************************
-//  Method: avtOSPRaySamplePointExtractor::delImgPatches
+//  Method: avtOSPRaySamplePointExtractor::DelImgPatches
 //
 //  Purpose:
-//      allocates space to the pointer address and copy the image generated to it
+//      allocates space to the pointer address and copy the image generated
+//      to it
 //
-//  Programmer: 
+//  Programmer: TODO
 //  Creation:   
 //
 //  Modifications:
 //
+//      Qi WU: TODO
+//      Rename based on VisIt naming convension
+//
 // ****************************************************************************
 void
-avtOSPRaySamplePointExtractor::delImgPatches()
-{
+avtOSPRaySamplePointExtractor::DelImgPatches() {
     imageMetaPatchVector.clear();
-
     for (iter_t it=imgDataHashMap.begin(); it!=imgDataHashMap.end(); it++)
     {
-        if ((*it).second.imagePatch != NULL)
-            delete [](*it).second.imagePatch;
-
+        if ((*it).second.imagePatch != NULL) { 
+	    delete [](*it).second.imagePatch;
+	}
         (*it).second.imagePatch = NULL;
     }
-
     imgDataHashMap.clear();
 }
 
 
-
 // ****************************************************************************
-//  Method: avtOSPRaySamplePointExtractor::getImgData
+//  Method: avtOSPRaySamplePointExtractor::GetImgData
 //
 //  Purpose:
-//      copies a patchover
+//      Copies a patchover
 //
-//  Programmer: 
+//  Programmer: TODO
 //  Creation:   
 //
 //  Modifications:
 //
+//      Qi WU: TODO
+//      Rename based on VisIt naming convension
+//      Does shallow copy instead deep copy for efficiency
+//
 // ****************************************************************************
 void 
-avtOSPRaySamplePointExtractor::getnDelImgData(int patchId, ImgData &tempImgData)
+avtOSPRaySamplePointExtractor::GetAndDelImgData(int patchId, 
+                                          ospray::ImgData &tempImgData) 
 {
+    size_t imagePatchSize = 
+	imageMetaPatchVector[patchId].dims[0] * 
+	imageMetaPatchVector[patchId].dims[1] * sizeof(float) * 4;
     iter_t it = imgDataHashMap.find(patchId);
-
     tempImgData.procId = it->second.procId;
     tempImgData.patchNumber = it->second.patchNumber;
-    memcpy(tempImgData.imagePatch,it->second.imagePatch,imageMetaPatchVector[patchId].dims[0] * 4 * imageMetaPatchVector[patchId].dims[1] * sizeof(float));
-
-    delete [](*it).second.imagePatch;
+    // do shallow copy instead of deep copy
+    tempImgData.imagePatch = it->second.imagePatch;
+    // memcpy(tempImgData.imagePatch,
+    // 	      it->second.imagePatch,
+    //        imagePatchSize);
+    // delete [](*it).second.imagePatch;
     it->second.imagePatch = NULL;
 }
 
 
 // ****************************************************************************
-//  Method: avtOSPRaySamplePointExtractor::
+//  Method: avtOSPRaySamplePointExtractor::InitMetaPatch
 //
 //  Purpose:
-//      allocates space to the pointer address and copy the image generated to it
 //
 //  Programmer: 
 //  Creation:   
@@ -512,10 +560,10 @@ avtOSPRaySamplePointExtractor::getnDelImgData(int patchId, ImgData &tempImgData)
 //  Modifications:
 //
 // ****************************************************************************
-ImgMetaData
-avtOSPRaySamplePointExtractor::initMetaPatch(int id)
+ospray::ImgMetaData
+avtOSPRaySamplePointExtractor::InitMetaPatch(int id)
 {
-    ImgMetaData temp;
+    ospray::ImgMetaData temp;
     temp.inUse = 0;
     temp.procId = PAR_Rank();
     temp.destProcId = PAR_Rank();
@@ -526,6 +574,5 @@ avtOSPRaySamplePointExtractor::initMetaPatch(int id)
     temp.avg_z = -1.0;
     temp.eye_z = -1.0;
     temp.clip_z = -1.0;
-
     return temp;
 }

@@ -42,6 +42,7 @@
 #include <avtParallel.h>
 #include <DebugStream.h>
 #include <TimingsManager.h>
+#include <StackTimer.h>
 #include <ImproperUseException.h>
 
 #ifndef VISIT_OSPRAY

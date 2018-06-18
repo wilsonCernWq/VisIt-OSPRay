@@ -79,6 +79,10 @@
 #include <avtSLIVRRayTracer.h>
 #endif
 
+#ifdef VISIT_OSPRAY
+#include <avtOSPRayRayTracer.h>
+#endif
+
 //
 // Function Prototypes
 //

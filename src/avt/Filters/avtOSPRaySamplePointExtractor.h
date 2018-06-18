@@ -46,15 +46,13 @@
 #include <filters_exports.h>
 
 #include <avtSamplePointExtractorBase.h>
-
-#include <vector>
-#include <map>
+#include <avtOSPRayCommon.h> // this ensures VISIT_OSPRAY is defined
+class     avtOSPRayVoxelExtractor;
 
 #include <vtkMatrix4x4.h>
 
-#include <avtOSPRayCommon.h>
-
-class  avtOSPRayVoxelExtractor;
+#include <vector>
+#include <map>
 
 // ****************************************************************************
 //  Class: avtOSPRaySamplePointExtractor
@@ -116,7 +114,7 @@ class  avtOSPRayVoxelExtractor;
 //    Added support for polygons.
 //
 // ****************************************************************************
-using namespace ospray;
+
 class AVTFILTERS_API avtOSPRaySamplePointExtractor 
     : public avtSamplePointExtractorBase
 {
@@ -131,35 +129,73 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
 
 
     void                      SetLighting(bool l) {lighting = l; };
-    void                      SetLightPosition(double _lightPos[4]) { for (int i=0;i<4;i++) lightPosition[i]=_lightPos[i]; }
-    void                      SetLightDirection(double _lightDir[3]) { for (int i=0;i<3;i++) lightDirection[i]=_lightDir[i]; }
-    void                      SetMatProperties(double _matProp[4]) { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; }
-    void                      SetViewDirection(double *vD){ for (int i=0; i<3; i++) view_direction[i] = vD[i]; }
-    void                      SetClipPlanes(double _camClip[2]){ clipPlanes[0]=_camClip[0]; clipPlanes[1]=_camClip[1]; }
-    void                      SetPanPercentages(double _pan[2]){ panPercentage[0]=_pan[0]; panPercentage[1]=_pan[1]; }
-    void                      SetDepthExtents(double _depthExtents[2]){ depthExtents[0]=_depthExtents[0]; depthExtents[1]=_depthExtents[1]; }
-    void                      SetMVPMatrix(vtkMatrix4x4 *_mvp){ modelViewProj->DeepCopy(_mvp); }
+    void                      SetLightPosition(double lp[4])
+                     { for (int i = 0; i < 4; ++i) lightPosition[i] = lp[i]; };
+    void                      SetLightDirection(double ld[3]) 
+                    { for (int i = 0; i < 3; ++i) lightDirection[i] = ld[i]; };
+    void                      SetMatProperties(double _matProp[4]) 
+                  { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; };
+    void                      SetTransferFn(avtOpacityMap *tfn1D) 
+                                                     { transferFn1D = tfn1D; };
+    void                      SetViewDirection(double *vD)
+                         { for (int i=0; i<3; i++) viewDirection[i] = vD[i]; };
+    void                      SetClipPlanes(double cp[2])
+                             { clipPlanes[0] = cp[0]; clipPlanes[1] = cp[1]; };
+    void                      SetPanPercentages(double p[2])
+                         { panPercentage[0] = p[0]; panPercentage[1] = p[1]; };
+    void                      SetDepthExtents(double de[2])
+                         { depthExtents[0] = de[0]; depthExtents[1] = de[1]; };
+    void                      SetMVPMatrix(vtkMatrix4x4 *mvp)
+                                             { modelViewProj->DeepCopy(mvp); };
 
-    void                      getSpatialExtents(double _spatialExtents[6]){ for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i]; }
-    void                      getAvgPatchExtents(double _avgPatchExtents[6]){ for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i]; }
-    void                      getCellDimension(double _cellDimension[6]){ for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i]; }
+    void                      GetSpatialExtents(double se[6])
+                   { for (int i=0; i<6; i++) se[i] = minMaxSpatialBounds[i]; };
+    void                      GetAvgPatchExtents(double ae[6])
+                       { for (int i=0; i<3; i++) ae[i] = avgPatchExtents[i]; };
+    void                      GetCellDimension(double cd[6])
+                         { for (int i=0; i<3; i++) cd[i] = cellDimension[i]; };
+    //void                      GetProjectedExents(int pe[4])
+    //               { for (int i=0; i<4; i++) pe[i]=projectedImageExtents[i]; };
 
-    // Getting image information
-    int                       getImgPatchSize(){ return patchCount;}
-                       // gets the number of patches
-    ImgMetaData               getImgMetaPatch(int patchId){ return imageMetaPatchVector.at(patchId);} // gets the metadata
-    void                      getnDelImgData(int patchId, ImgData &tempImgData);                      // gets the image & erase its existence
-    void                      delImgPatches();                                                        // deletes patches
+    // Getting Image Information
+    // Gets the max number of patches it could have
+    //int                       GetTotalAssignedPatches() 
+    //                                          { return totalAssignedPatches; };
+    // Gets the number of patches
+    int                       GetImgPatchSize() { return patchCount; };
+    // Gets the metadata
+    ospray::ImgMetaData       GetImgMetaPatch(int patchId)
+                                  { return imageMetaPatchVector.at(patchId); };
+    // Gets the image & erase its existence
+    void                      GetAndDelImgData(int patchId,
+					       ospray::ImgData &tempImgData);
+    // Deletes patches
+    void                      DelImgPatches();
 
     // Set background buffer
-    void                      setDepthBuffer(float *_zBuffer, int size){ depthBuffer=_zBuffer; }
-    void                      setRGBBuffer(unsigned char  *_colorBuffer, int width, int height){ rgbColorBuffer=_colorBuffer; }
-    void                      setBufferExtents(int _extents[4]){ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
+    void                      SetImageZoom(double z) { imageZoom = z; }
+    void                      SetDepthBuffer(float *zBuffer, int size)
+                                                     { depthBuffer= zBuffer; };
+    void                      SetRGBBuffer(unsigned char *cb, int w, int h)
+                                                      { rgbColorBuffer = cb; };
+    void                      SetBufferExtents(int e[4])
+                          { for (int i=0; i<4; i++) bufferExtents[i] = e[i]; };
 
-    // Output data for RC OSPRay
-    std::vector<ImgMetaData>    imageMetaPatchVector;
-    std::multimap<int, ImgData> imgDataHashMap;
-    typedef std::multimap<int, ImgData>::iterator iter_t;
+    // Added by Qi (March 2018) for RayCasting:OSPRay  
+    void SetOSPRay(OSPVisItContext* o) { ospray = o; }
+    void SetRendererSampleRate(double r) { rendererSampleRate = r; }
+    void SetFullImageExtents(int extents[4]) 
+    {
+	fullImageExtents[0] = extents[0];
+	fullImageExtents[1] = extents[1];
+	fullImageExtents[2] = extents[2];
+	fullImageExtents[3] = extents[3];
+    }
+
+    // Output data for RayCasting OSPRay
+    std::vector<ospray::ImgMetaData>    imageMetaPatchVector;
+    std::multimap<int, ospray::ImgData> imgDataHashMap;
+    typedef std::multimap<int, ospray::ImgData>::iterator iter_t;
 
   protected:
     virtual void              DoSampling(vtkDataSet *, int);
@@ -172,17 +208,22 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     double                    cellDimension[3];
 
     // Background + other plots
-    float                    *depthBuffer;             // depth buffer for the background and other plots
-    unsigned char            *rgbColorBuffer;          // bounding box + pseudo color + ...
-    int                       bufferExtents[4];         // extents of the buffer( minX, maxX, minY, maxY)
+    // depth buffer for the background and other plots
+    float                    *depthBuffer; 
+    // bounding box + pseudo color + ...
+    unsigned char            *rgbColorBuffer; 
+    // extents of the buffer (minX, maxX, minY, maxY)
+    int                       bufferExtents[4];
 
-    avtOSPRayVoxelExtractor   *osprayVoxelExtractor;
+    avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
     int                       patchCount;
+
     // Camera stuff
-    double                    view_direction[3];
+    double                    viewDirection[3];
     double                    depthExtents[2];
     double                    clipPlanes[2];
     double                    panPercentage[2];
+    double                    imageZoom;
     vtkMatrix4x4             *modelViewProj;
 
     // lighting & material
@@ -191,9 +232,15 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     double                    lightDirection[3];
     double                    materialProperties[4];
 
-    ImgMetaData               initMetaPatch(int id);    // initialize a patch
+    // OSPRay
+    int                       fullImageExtents[4];
+    OSPVisItContext          *ospray;
+    double                    rendererSampleRate;
 
-    void                      RasterBasedSample(vtkDataSet *, int num=0);
+    // others
+    ospray::ImgMetaData       InitMetaPatch(int id);    // initialize a patch
+    void                      RasterBasedSample(vtkDataSet *, int num = 0);
+
 };
 
 

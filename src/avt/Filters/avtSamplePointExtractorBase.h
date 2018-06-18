@@ -138,15 +138,15 @@ class AVTFILTERS_API avtSamplePointExtractorBase
                                   { return "Extracting sample points";}
 
     void                      SetRectilinearGridsAreInWorldSpace(bool, 
-                                                   const avtViewInfo &,double);
+                                                   const avtViewInfo &, double);
     void                      RestrictToTile(int, int, int, int);
     void                      StopTiling(void) { shouldDoTiling = false; }
 
 
     void                      SetUpArbitrator(std::string &name, bool min);
 
-    void                      SetTransferFn(avtOpacityMap *_transferFn1D)
-                                  { transferFn1D = _transferFn1D; }
+    void                      SetTransferFn(avtOpacityMap *tfn)
+                                  { transferFn1D = tfn; };
 
     void                      SetJittering(bool);
 

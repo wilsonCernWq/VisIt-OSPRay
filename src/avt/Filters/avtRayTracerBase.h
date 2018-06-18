@@ -128,7 +128,7 @@ class AVTFILTERS_API avtRayTracerBase : public avtDatasetToImageFilter
     void                  SetKernelBasedSampling(bool v) { kernelBasedSampling = v; };
 
 
-    void                  SetTransferFn(avtOpacityMap *_transferFn1D) {transferFn1D = _transferFn1D; };
+    void                  SetTransferFn(avtOpacityMap *tfn) {transferFn1D = tfn; };
     void                  SetTrilinear(bool t) {trilinearInterpolation = t; };
 
 
