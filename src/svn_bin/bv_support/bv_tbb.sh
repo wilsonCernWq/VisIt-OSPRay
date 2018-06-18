@@ -41,6 +41,7 @@ function bv_tbb_initialize_vars
             TBB_INSTALL_DIR=$VISITDIR/tbb/$TBB_VERSION/$VISITARCH
         fi
     fi
+    export TBB_ROOT="${TBB_INSTALL_DIR}"
 }
 
 function bv_tbb_info
