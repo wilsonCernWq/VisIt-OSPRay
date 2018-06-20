@@ -105,107 +105,33 @@ namespace ospray {
     //                                                  //
     //////////////////////////////////////////////////////
     inline bool InitVerbose() {
-	const char* env_verbose   = std::getenv("OSPRAY_VERBOSE");
-	const char* env_debug     = std::getenv("OSPRAY_DEBUG");
-	const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");	
-	bool verbose = false;
-	if (env_verbose) { if (atoi(env_verbose) > 0) { verbose = true; } }
-	if (env_debug) { if (atoi(env_debug) > 0) { verbose = true; } }
-	if (env_log_level) { if (atoi(env_log_level) > 0) { verbose = true; } }
-	if (verbose) {
-	    ospray::osp_out = &std::cout;
-	    ospray::osp_err = &std::cerr;
-	    return true;
+        const char* env_verbose   = std::getenv("OSPRAY_VERBOSE");
+        const char* env_debug     = std::getenv("OSPRAY_DEBUG");
+        const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");	
+        bool verbose = false;
+        if (env_verbose) { if (atoi(env_verbose) > 0) { verbose = true; } }
+        if (env_debug) { if (atoi(env_debug) > 0) { verbose = true; } }
+        if (env_log_level) { if (atoi(env_log_level) > 0) { verbose = true; } }
+        if (verbose) {
+            ospray::osp_out = &std::cout;
+            ospray::osp_err = &std::cerr;
+            return true;
 	} else { return false; }
     }
     inline int InitOSPRaySpp() {
-	int spp = 1;
-	const char* env_spp = std::getenv("OSPRAY_SPP");
-	if (env_spp) { if (atoi(env_spp) > 0) { spp = atoi(env_spp); } }
-	return spp;
+        int spp = 1;
+        const char* env_spp = std::getenv("OSPRAY_SPP");
+        if (env_spp) { if (atoi(env_spp) > 0) { spp = atoi(env_spp); } }
+        return spp;
     }
     inline bool CheckVerbose() { // initialize OSPRAY_VERBOSE    
-	static bool OSPRAY_VERBOSE = ospray::InitVerbose();
-	return OSPRAY_VERBOSE;
+        static bool OSPRAY_VERBOSE = ospray::InitVerbose();
+        return OSPRAY_VERBOSE;
     }
     inline int CheckOSPRaySpp() {
-	static int spp = InitOSPRaySpp();
-	return spp;
+        static int spp = InitOSPRaySpp();
+        return spp;
     }
-};
-
-// ****************************************************************************
-//  Struct:  OSPVisItContext
-//
-//  Purpose:
-//
-//
-//  Programmer: Qi WU
-//  Creation:   
-//
-// ****************************************************************************
-
-class OSPVisItCamera;
-class OSPVisItColor;
-class OSPVisItLight;
-class OSPVisItRenderer;
-class OSPVisItTransferFunction;
-class OSPVisItVolume;
-
-class OSPVisItContext
-{
- public:
-    // ************************************************************************
-    // We expose this in header because iy will be called in other components
-    // where we dont have direct library linkage
-    // ************************************************************************
-    OSPVisItContext() 
-    {
-	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
-    }
-    ~OSPVisItContext() {	
-	volumes.clear();
-	renderer.Clean();
-	camera.Clean();
-	transferfcn.Clean();
-    }
-
-    // helper
-    void Render(float xMin, float xMax, float yMin, float yMax,
-		int imgWidth, int imgHeight, 
-		float*& dest, OSPVisItVolume* volume);
-    void InitOSP(int numThreads = 0);
-    void Finalize();
-    void InitPatch(int id);
-    OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
-
-    // parameters
-    void SetDataBounds(double dbounds[6]) {
-	for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
-    }
-    void SetBgBuffer(float* depth, int extents[4]) {
-	renderer.maxDepthBuffer = depth;
-	renderer.maxDepthSize.x = extents[1] - extents[0];
-	renderer.maxDepthSize.y = extents[3] - extents[2];
-    }
-    void SetScaling(double s[3]) { 
-	regionScaling.x = (float)s[0];
-	regionScaling.y = (float)s[1];
-	regionScaling.z = (float)s[2]; 
-    }
-
-    OSPVisItRenderer renderer;
-    OSPVisItCamera   camera;
-    OSPVisItTransferFunction transferfcn;
-    std::map<int, OSPVisItVolume> volumes;
-
-private:
-    
-    friend class OSPVisItVolume;
-    osp::vec3f     regionScaling;
-    double bounds[6];
-    static bool initialized;
-    
 };
 
 // ****************************************************************************
@@ -219,6 +145,7 @@ private:
 //
 // ****************************************************************************
 
+class OSPVisItContext;
 class OSPVisItVolume 
 {
  private:
@@ -300,17 +227,17 @@ class OSPVisItVolume
     // destructor
     ~OSPVisItVolume() { Clean(); }    
     void Clean() {
-	CleanFB();
-	CleanVolume();	
-	CleanWorld();
+        CleanFB();
+        CleanVolume();	
+        CleanWorld();
     }
     
     // other function
     void Set(int type, void *ptr, 
-	     double *X, double *Y, double *Z, 
-	     int nX, int nY, int nZ, 
-	     double volumePBox[6], double volumeBBox[6],
-	     double mtl[4], float sr, bool shading);
+             double *X, double *Y, double *Z, 
+             int nX, int nY, int nZ, 
+             double volumePBox[6], double volumeBBox[6],
+             double mtl[4], float sr, bool shading);
     bool GetDVRFlag() { return enableDVR; }
     void SetDVRFlag(bool mode) { enableDVR = mode; }
     bool GetFinishedFlag() { return finished; }
@@ -321,28 +248,28 @@ class OSPVisItVolume
     void InitWorld();
     void SetWorld();
     void CleanWorld() {
-	if (world != NULL) {	    
-	    ospRelease(world);
-	    world = NULL;
-	}
-	worldType = OSP_INVALID;
+        if (world != NULL) {	    
+            ospRelease(world);
+            world = NULL;
+        }
+        worldType = OSP_INVALID;
     }
 	
     // ospVolume component
     void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME); 
     OSPVolume GetVolume() { return volume; }
     void SetVolume(int type, void *ptr,
-		   double *X, double *Y, double *Z, 
-		   int nX, int nY, int nZ,
-		   double volumePBox[6], 
-		   double volumeBBox[6]);
+                   double *X, double *Y, double *Z, 
+                   int nX, int nY, int nZ,
+                   double volumePBox[6], 
+                   double volumeBBox[6]);
     void CleanVolume() {	
-	if (volume != NULL) { ospRelease(volume); volume = NULL; }
-	if (voxelData != NULL) { 
-	    ospRelease(voxelData);
-	    voxelData = NULL; 
-	}
-	volumeType = OSP_INVALID;
+        if (volume != NULL) { ospRelease(volume); volume = NULL; }
+        if (voxelData != NULL) { 
+            ospRelease(voxelData);
+            voxelData = NULL; 
+        }
+        volumeType = OSP_INVALID;
     }
 
     // framebuffer component     
@@ -350,18 +277,18 @@ class OSPVisItVolume
     void RenderFB();
     float* GetFBData();
     void CleanFB() {
-	if (framebufferData != NULL) { 
-	    ospUnmapFrameBuffer(framebufferData, framebuffer); 
-	    framebufferData = NULL;
-	}
-	if (framebuffer != NULL) { 
-	    ospRelease(framebuffer); 	    
-	    framebuffer = NULL;
-	}
-	if (framebufferBg != NULL) {
-	    ospRelease(framebufferBg); 	    
-	    framebufferBg = NULL;
-	}
+        if (framebufferData != NULL) { 
+            ospUnmapFrameBuffer(framebufferData, framebuffer); 
+            framebufferData = NULL;
+        }
+        if (framebuffer != NULL) { 
+            ospRelease(framebuffer); 	    
+            framebuffer = NULL;
+        }
+        if (framebufferBg != NULL) {
+            ospRelease(framebufferBg); 	    
+            framebufferBg = NULL;
+        }
     }
 };
 
@@ -383,10 +310,10 @@ struct OSPVisItLight
     OSPLight sLight; // constant sun light
     OSPData  lightdata;
     OSPVisItLight() {
-	aLight = NULL;
-	dLight = NULL;
-	sLight = NULL;
-	lightdata = NULL;
+        aLight = NULL;
+        dLight = NULL;
+        sLight = NULL;
+        lightdata = NULL;
     }
     ~OSPVisItLight() { Clean(); }
     void Clean() {/* TODO should we delete them? */}
@@ -409,8 +336,8 @@ struct OSPVisItRenderer
 {
 public:
     enum State {
-	INVALID, /* TODO do we need this actually ? */
-	SCIVIS,
+        INVALID, /* TODO do we need this actually ? */
+        SCIVIS,
     } rendererType;
     OSPRenderer renderer;
     OSPVisItLight lights;
@@ -420,26 +347,26 @@ public:
     bool flagOneSidedLighting;
     bool flagShadowsEnabled;
     bool flagAoTransparencyEnabled;
-    float       *maxDepthBuffer;  // depth buffer for the background (shared, never delete)
+    float       *maxDepthBuffer;  // depth buffer (shared, never delete)
     osp::vec2i   maxDepthSize;    // buffer extents (minX, maxX, minY, max)  
 public:
     OSPVisItRenderer() {
-	renderer = NULL;
-	rendererType = INVALID;
-	aoSamples = 0;
-	spp = ospray::CheckOSPRaySpp();
-	flagOneSidedLighting = false;
-	flagShadowsEnabled = false;
-	flagAoTransparencyEnabled = false;
+        renderer = NULL;
+        rendererType = INVALID;
+        aoSamples = 0;
+        spp = ospray::CheckOSPRaySpp();
+        flagOneSidedLighting = false;
+        flagShadowsEnabled = false;
+        flagAoTransparencyEnabled = false;
     }
     ~OSPVisItRenderer() { Clean(); }
     void Clean() {
-	if (renderer != NULL) {
-	    lights.Clean();
-	    ospRelease(renderer);
-	    renderer = NULL;
-	    rendererType = INVALID;
-	}
+        if (renderer != NULL) {
+            lights.Clean();
+            ospRelease(renderer);
+            renderer = NULL;
+            rendererType = INVALID;
+        }
     }
     void Init();
     void Set(double materialProperties[4], double viewDirection[3], bool);
@@ -462,9 +389,9 @@ struct OSPVisItCamera
 {
 public:
     enum State {
-	INVALID,
-	PERSPECTIVE,
-	ORTHOGRAPHIC,
+        INVALID,
+        PERSPECTIVE,
+        ORTHOGRAPHIC,
     } cameraType;
     OSPCamera camera;
     float panx; // this is a ratio [0, 1]
@@ -478,37 +405,37 @@ public:
     osp::vec2f imgS, imgE;
 public:
     OSPVisItCamera() {
-	camera = NULL;
-	cameraType = INVALID;
-	panx = 0.0f;
-	pany = 0.0f;
-	zoom = 1.0f;
-	size[0] = size[1] = 0.0f;
-	imgS.x = 0.f;
-	imgS.y = 0.f;
-	imgE.x = 0.f;
-	imgE.y = 0.f;
+        camera = NULL;
+        cameraType = INVALID;
+        panx = 0.0f;
+        pany = 0.0f;
+        zoom = 1.0f;
+        size[0] = size[1] = 0.0f;
+        imgS.x = 0.f;
+        imgS.y = 0.f;
+        imgE.x = 0.f;
+        imgE.y = 0.f;
     }
     ~OSPVisItCamera() { Clean(); }
     void Clean() {
-	if (camera != NULL) {
-	    ospRelease(camera);
-	    camera = NULL;
-	    cameraType = INVALID;
-	}
+        if (camera != NULL) {
+            ospRelease(camera);
+            camera = NULL;
+            cameraType = INVALID;
+        }
     }
     void Init(State type);
     void Set(const double camp[3], 
-	     const double camf[3], 
-	     const double camu[3], 
-	     const double camd[3],
-	     const double sceneSize[2],
-	     const double aspect, 
-	     const double fovy, 
-	     const double zoom_ratio, 
-	     const double pan_ratio[2],
-	     const int bufferExtents[4],
-	     const int screenExtents[2]);
+             const double camf[3], 
+             const double camu[3], 
+             const double camd[3],
+             const double sceneSize[2],
+             const double aspect, 
+             const double fovy, 
+             const double zoom_ratio, 
+             const double pan_ratio[2],
+             const int bufferExtents[4],
+             const int screenExtents[2]);
     void SetScreen(float xMin, float xMax, float yMin, float yMax);
 };
 
@@ -543,21 +470,88 @@ public:
     OSPTransferFunction  transferfcn;
 public:
     OSPVisItTransferFunction() {
-	transferfcn = NULL;
-	transferfcnType = INVALID;
+        transferfcn = NULL;
+        transferfcnType = INVALID;
     }
     void Clean() {
-	if (transferfcn != NULL) {
-	    ospRelease(transferfcn);
-	    transferfcn = NULL;
-	    transferfcnType = INVALID;
-	}
+        if (transferfcn != NULL) {
+            ospRelease(transferfcn);
+            transferfcn = NULL;
+            transferfcnType = INVALID;
+        }
     }
     void Init();
     void Set(const OSPVisItColor* table,
-	     const unsigned int size, 
-	     const float datamin,
-	     const float datamax);
+             const unsigned int size, 
+             const float datamin,
+             const float datamax);
+};
+
+// ****************************************************************************
+//  Struct:  OSPVisItContext
+//
+//  Purpose:
+//
+//
+//  Programmer: Qi WU
+//  Creation:   
+//
+// ****************************************************************************
+
+class OSPVisItContext
+{
+public:
+    // ************************************************************************
+    // We expose this in header because iy will be called in other components
+    // where we dont have direct library linkage
+    // ************************************************************************
+    OSPVisItContext() 
+    {
+        regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
+    }
+    ~OSPVisItContext() {	
+        volumes.clear();
+        renderer.Clean();
+        camera.Clean();
+        transferfcn.Clean();
+    }
+
+    // helper
+    void Render(float xMin, float xMax, float yMin, float yMax,
+                int imgWidth, int imgHeight, 
+                float*& dest, OSPVisItVolume* volume);
+    void InitOSP(int numThreads = 0);
+    void Finalize();
+    void InitPatch(int id);
+    OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
+
+    // parameters
+    void SetDataBounds(double dbounds[6]) {
+        for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
+    }
+    void SetBgBuffer(float* depth, int extents[4]) {
+        renderer.maxDepthBuffer = depth;
+        renderer.maxDepthSize.x = extents[1] - extents[0];
+        renderer.maxDepthSize.y = extents[3] - extents[2];
+    }
+    void SetScaling(double s[3]) { 
+        regionScaling.x = (float)s[0];
+        regionScaling.y = (float)s[1];
+        regionScaling.z = (float)s[2]; 
+    }
+
+    OSPVisItRenderer renderer;
+    OSPVisItCamera   camera;
+    OSPVisItTransferFunction transferfcn;
+    std::map<int, OSPVisItVolume> volumes;
+
+private:
+    
+    friend class OSPVisItVolume;
+    osp::vec3f     regionScaling;
+    double bounds[6];
+    static bool initialized;
+    
 };
 
 #endif//AVT_OSPRAY_COMMON_H
@@ -620,16 +614,16 @@ namespace ospray
 
     struct ImgMetaData
     {
-	int procId;       // processor that produced the patch
-	int patchNumber;  // id of the patch on that processor
-	int destProcId;   // destination proc where this patch gets composited
-	int inUse;        // whether the patch is composed locally or not
-	int dims[2];      // height, width
-	int screen_ll[2]; // (lower left)  position in the final image
-	int screen_ur[2]; // (upper right)
-	float avg_z;      // camera space depth of the patch (average)
-	float eye_z;      // camera space z
-	float clip_z;     // clip space z
+        int procId;       // processor that produced the patch
+        int patchNumber;  // id of the patch on that processor
+        int destProcId;   // destination proc where this patch gets composited
+        int inUse;        // whether the patch is composed locally or not
+        int dims[2];      // height, width
+        int screen_ll[2]; // (lower left)  position in the final image
+        int screen_ur[2]; // (upper right)
+        float avg_z;      // camera space depth of the patch (average)
+        float eye_z;      // camera space z
+        float clip_z;     // clip space z
     };
 
     // ************************************************************************
@@ -645,14 +639,14 @@ namespace ospray
     
     struct ImgData
     {
-	// acts as a key
-	int procId;        // processor that produced the patch
-	int patchNumber;   // id of the patch on that processor
-	float *imagePatch; // the image data - RGBA
-	ImgData() { imagePatch = NULL; }
-	bool operator==(const ImgData &a) {
-	    return (patchNumber == a.patchNumber);
-	}
+        // acts as a key
+        int procId;        // processor that produced the patch
+        int patchNumber;   // id of the patch on that processor
+        float *imagePatch; // the image data - RGBA
+        ImgData() { imagePatch = NULL; }
+        bool operator==(const ImgData &a) {
+            return (patchNumber == a.patchNumber);
+        }
     };
 
     // ************************************************************************
@@ -662,34 +656,36 @@ namespace ospray
     // ************************************************************************
         
     void CheckMemoryHere(const std::string& message, 
-			 std::string debugN = "debug5");
+                         std::string debugN = "debug5");
     void CheckMemoryHere(const std::string& message, 
-			 std::ostream& out);
+                         std::ostream& out);
 
     typedef int timestamp;
     inline void CheckSectionStart(const std::string& c,
-				  const std::string& f,
-				  timestamp& timingDetail,
-				  const std::string& str) 
+                                  const std::string& f,
+                                  timestamp& timingDetail,
+                                  const std::string& str) 
     {
-	debug5 << c << "::" << f << " " << str << " Start" << std::endl;
-	timingDetail = visitTimer->StartTimer();	    
+        debug5 << c << "::" << f << " " << str << " Start" << std::endl;
+        timingDetail = visitTimer->StartTimer();	    
     }
     
     inline void CheckSectionStop(const std::string& c,
-				 const std::string& f, 
-				 timestamp& timingDetail,
-				 const std::string& str) 
+                                 const std::string& f, 
+                                 timestamp& timingDetail,
+                                 const std::string& str) 
     {
-	visitTimer->StopTimer(timingDetail, 
-			      (c + "::" + f + " " + str).c_str());
-	ospray::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(),
+        visitTimer->StopTimer(timingDetail, 
+                              (c + "::" + f + " " + str).c_str());
+        ospray::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(),
                                 "debug5");
-	debug5 << c << "::" << f << " " << str << " Done" << std::endl;
+        debug5 << c << "::" << f << " " << str << " Done" << std::endl;
     }
 
     inline void Exception(const std::string str)
-    { 
+    {
+        std::cerr << str << std::endl;
+        debug1    << str << std::endl;
         EXCEPTION1(VisItException, str.c_str()); 
     }
 
@@ -700,40 +696,40 @@ namespace ospray
          vtkMatrix4x4 *mvp, int screenCoord[2]);
     
     void ProjectScreenToWorld
-	(const int screenCoord[2], const double z,
-	 const int screenWidth, const int screenHeight, 
-	 const double panPercentage[2], const double imageZoom,
-	 vtkMatrix4x4 *imvp, double worldCoord[3]);
+        (const int screenCoord[2], const double z,
+         const int screenWidth, const int screenHeight, 
+         const double panPercentage[2], const double imageZoom,
+         vtkMatrix4x4 *imvp, double worldCoord[3]);
 
     void ProjectScreenToCamera
-	(const int screenCoord[2], const double z,
-	 const int screenWidth, const int screenHeight,
-	 vtkMatrix4x4 *imvp, double cameraCoord[3]);
+        (const int screenCoord[2], const double z,
+         const int screenWidth, const int screenHeight,
+         vtkMatrix4x4 *imvp, double cameraCoord[3]);
 
     inline void ProjectScreenToWorld
-	(const int x, const int y, const double z,
-	 const int screenWidth, const int screenHeight, 
-	 const double panPercentage[2], const double imageZoom,
-	 vtkMatrix4x4 *imvp, double worldCoord[3]) 
+        (const int x, const int y, const double z,
+         const int screenWidth, const int screenHeight, 
+         const double panPercentage[2], const double imageZoom,
+         vtkMatrix4x4 *imvp, double worldCoord[3]) 
     {
-	int screen_coord[2] = {x, y};
-	ProjectScreenToWorld(screen_coord, z, screenWidth, screenHeight, 
+        int screen_coord[2] = {x, y};
+        ProjectScreenToWorld(screen_coord, z, screenWidth, screenHeight, 
                              panPercentage, imageZoom, imvp, worldCoord);
     }
 
     void ProjectWorldToScreenCube
-	(const double cube[6], const int screenWidth, const int screenHeight, 
-	 const double panPercentage[2], const double imageZoom, 
-	 vtkMatrix4x4 *mvp,int screenExtents[4], double depthExtents[2]);
+        (const double cube[6], const int screenWidth, const int screenHeight, 
+         const double panPercentage[2], const double imageZoom, 
+         vtkMatrix4x4 *mvp,int screenExtents[4], double depthExtents[2]);
 
     void CompositeBackground(int screen[2],
-			     int compositedImageExtents[4],
-			     int compositedImageWidth,
-			     int compositedImageHeight,
-			     float *compositedImageBuffer,
-			     unsigned char *opaqueImageColor,
-			     float         *opaqueImageDepth,
-			     unsigned char *&imgFinal);
+                             int compositedImageExtents[4],
+                             int compositedImageWidth,
+                             int compositedImageHeight,
+                             float *compositedImageBuffer,
+                             unsigned char *opaqueImageColor,
+                             float         *opaqueImageDepth,
+                             unsigned char *&imgFinal);
     
     void WriteArrayToPPM
         (std::string filename, const float *image, int dimX, int dimY);

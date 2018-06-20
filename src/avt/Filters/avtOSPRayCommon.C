@@ -92,16 +92,17 @@ void OSPVisItContext::InitOSP(int numThreads)
 	ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
 #endif
 	// load ospray device
-	ospout << "[ospray] Initialize OSPRay";	
+	ospout << "[ospray] Initialize OSPRay" << std::endl;	
 	OSPDevice device = ospGetCurrentDevice();
 	if (!device) {
-	    device = ospNewDevice(); 
+		ospout << "[ospray] device not found, creating one" << std::endl;
+	    device = ospNewDevice("default"); 
 	    if (DebugStream::Level5()) { 
-		ospout << " debug mode";
+		ospout << "[ospray] --> debug mode" << std::endl;
 		ospDeviceSet1i(device, "debug", 0);
 	    }	
 	    if (numThreads > 0) {
-		ospout << " numThreads: " << numThreads;
+		ospout << "[ospray] --> numThreads: " << numThreads << std::endl;
 		ospDeviceSet1i(device, "numThreads", numThreads);
 	    }
 	    ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
@@ -109,7 +110,6 @@ void OSPVisItContext::InitOSP(int numThreads)
 	    ospDeviceCommit(device);
 	    ospSetCurrentDevice(device);
 	}
-	ospout << std::endl;
 	// load ospray module
 	OSPError err = ospLoadModule("visit");
 	if (err != OSP_NO_ERROR) {

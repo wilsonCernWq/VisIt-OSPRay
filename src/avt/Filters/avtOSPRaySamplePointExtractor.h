@@ -37,7 +37,7 @@
 *****************************************************************************/
 
 // ************************************************************************* //
-//                      avtOSPRaySamplePointExtractor.h                       //
+//                      avtOSPRaySamplePointExtractor.h                      //
 // ************************************************************************* //
 
 #ifndef AVT_OSPRAY_SAMPLE_POINT_EXTRACTOR_H
@@ -123,7 +123,7 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     virtual                  ~avtOSPRaySamplePointExtractor();
 
     virtual const char       *GetType(void)
-                                         { return "avtOSPRaySamplePointExtractor"; };
+                                   { return "avtOSPRaySamplePointExtractor"; };
     virtual const char       *GetDescription(void)
                                          { return "Extracting sample points";};
 
@@ -154,18 +154,15 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
                        { for (int i=0; i<3; i++) ae[i] = avgPatchExtents[i]; };
     void                      GetCellDimension(double cd[6])
                          { for (int i=0; i<3; i++) cd[i] = cellDimension[i]; };
-    // Gets the number of patches
+
     int                       GetImgPatchSize() { return patchCount; };
-    // Gets the metadata
     ospray::ImgMetaData       GetImgMetaPatch(int patchId)
                                   { return imageMetaPatchVector.at(patchId); };
-    // Gets the image & erase its existence
     void                      GetAndDelImgData(int patchId,
-					       ospray::ImgData &tempImgData);
-    // Deletes patches
+                                               ospray::ImgData &tempImgData);
     void                      DelImgPatches();
 
-    // Set background buffer
+
     void                      SetImageZoom(double z) { imageZoom = z; }
     void                      SetDepthBuffer(float *zBuffer, int size)
                                                      { depthBuffer= zBuffer; };
@@ -179,10 +176,10 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     void SetRendererSampleRate(double r) { rendererSampleRate = r; }
     void SetFullImageExtents(int extents[4]) 
     {
-	fullImageExtents[0] = extents[0];
-	fullImageExtents[1] = extents[1];
-	fullImageExtents[2] = extents[2];
-	fullImageExtents[3] = extents[3];
+        fullImageExtents[0] = extents[0];
+        fullImageExtents[1] = extents[1];
+        fullImageExtents[2] = extents[2];
+        fullImageExtents[3] = extents[3];
     }
 
     // Output data for RayCasting OSPRay
@@ -191,25 +188,29 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     typedef std::multimap<int, ospray::ImgData>::iterator iter_t;
 
   protected:
+    
+    virtual void              InitSampling(avtDataTree_p dt);
     virtual void              DoSampling(vtkDataSet *, int);
     virtual void              SetUpExtractors(void);
     virtual void              SendJittering(void);
     virtual bool              FilterUnderstandsTransformedRectMesh(void);
-
+    void                      RasterBasedSample(vtkDataSet *, int num = 0);
+    ospray::ImgMetaData       InitMetaPatch(int id); // initialize a patch
+    
+    avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
+    
     double                    minMaxSpatialBounds[6];
     double                    avgPatchExtents[3];
     double                    cellDimension[3];
-
-    // Background + other plots
-    // depth buffer for the background and other plots
-    float                    *depthBuffer; 
-    // bounding box + pseudo color + ...
-    unsigned char            *rgbColorBuffer; 
-    // extents of the buffer (minX, maxX, minY, maxY)
-    int                       bufferExtents[4];
-
-    avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
     int                       patchCount;
+    
+    // Background + other plots
+    //   depthBuffer    : depth buffer for the background and other plots
+    //   rgbColorBuffer : bounding box + pseudo color + ...
+    //   bufferExtents  : extents of the buffer (minX, maxX, minY, maxY)
+    float                    *depthBuffer; 
+    unsigned char            *rgbColorBuffer; 
+    int                       bufferExtents[4];
 
     // Camera stuff
     double                    viewDirection[3];
@@ -229,10 +230,6 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     int                       fullImageExtents[4];
     OSPVisItContext          *ospray;
     double                    rendererSampleRate;
-
-    // others
-    ospray::ImgMetaData       InitMetaPatch(int id);    // initialize a patch
-    void                      RasterBasedSample(vtkDataSet *, int num = 0);
 
 };
 

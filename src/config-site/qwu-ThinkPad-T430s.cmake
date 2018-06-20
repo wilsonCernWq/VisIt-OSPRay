@@ -1,7 +1,7 @@
 #/home/qwu/work/visit/3rdparty/installs/trunk/cmake/3.8.1/linux-x86_64_gcc-6.3/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Mon Jun 18 02:53:55 MDT 2018
+## created: Wed Jun 20 04:43:25 MDT 2018
 ## system: Linux qwu-ThinkPad-T430s 4.10.0-42-generic #46-Ubuntu SMP Mon Dec 4 14:38:01 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 

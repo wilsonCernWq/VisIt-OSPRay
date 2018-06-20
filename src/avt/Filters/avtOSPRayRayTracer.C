@@ -86,6 +86,9 @@ bool OSPRaySortImgMetaDataByEyeSpaceDepth(ospray::ImgMetaData const& before,
 //    Pascal Grosset, Fri Sep 20 2013
 //    Added ray casting slivr & trilinear interpolation
 //
+//    Qi WU, Wed Jun 20 2018
+//    Added support for raycasting ospray
+//
 // ****************************************************************************
 
 avtOSPRayRayTracer::avtOSPRayRayTracer() : avtRayTracerBase()
@@ -99,7 +102,7 @@ avtOSPRayRayTracer::avtOSPRayRayTracer() : avtRayTracerBase()
     materialProperties[1] = 0.75;
     materialProperties[2] = 0.0;
     materialProperties[3] = 15.0;
-    // ospray
+
     ospray = NULL;
 }
 
@@ -213,6 +216,9 @@ avtOSPRayRayTracer::~avtOSPRayRayTracer()
 //    Fix camera matrices multiplication order for ray casting OSPRay
 //    Also fixed panning for ray casting OSPRay
 //
+//    Qi WU, Wed Jun 20 2018
+//    Added support for raycasting ospray
+//
 // ****************************************************************************
 
 void
@@ -234,8 +240,8 @@ avtOSPRayRayTracer::Execute()
     bool parallelOn = (imgComm.GetParSize() == 1) ? false : true;
     if (rayfoo == NULL)
     {
-	debug1 << "Never set ray function for ray tracer." << endl;
-	EXCEPTION0(ImproperUseException);
+        debug1 << "Never set ray function for ray tracer." << endl;
+        EXCEPTION0(ImproperUseException);
     }
 
     //
@@ -264,7 +270,8 @@ avtOSPRayRayTracer::Execute()
     //
     // Extract all of the samples from the dataset.
     //
-    avtOSPRaySamplePointExtractor extractor(screen[0], screen[1], samplesPerRay);
+    avtOSPRaySamplePointExtractor extractor(screen[0], screen[1],
+                                            samplesPerRay);
     extractor.SetJittering(true);
     extractor.SetTransferFn(transferFn1D);
     extractor.SetInput(trans.GetOutput());
@@ -281,10 +288,6 @@ avtOSPRayRayTracer::Execute()
     float         *opaqueImageZB = NULL;
     std::vector<float> opaqueImageDepth(screen[0] * screen[1], oldFarPlane);
     int            fullImageExtents[4];
-
-    //
-    // Setup
-    //
 
     //
     // Camera Settings
@@ -364,9 +367,9 @@ avtOSPRayRayTracer::Execute()
     double depthExtents[2];
     GetSpatialExtents(dbounds);
     ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
-                                    panPercentage, view.imageZoom,
-                                    model_to_screen_transform,
-                                    fullImageExtents, depthExtents);
+                                     panPercentage, view.imageZoom,
+                                     model_to_screen_transform,
+                                     fullImageExtents, depthExtents);
     fullImageExtents[0] = std::max(fullImageExtents[0], 0);
     fullImageExtents[2] = std::max(fullImageExtents[2], 0);
     fullImageExtents[1] = std::min(1+fullImageExtents[1], screen[0]);
@@ -435,7 +438,7 @@ avtOSPRayRayTracer::Execute()
     // ospray stuffs
     //===================================================================//   
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute before ospray", 
-                           "ospout");
+                            "ospout");
     // initialize ospray
     // -- multi-threading enabled
     ospray->InitOSP();
@@ -475,7 +478,7 @@ avtOSPRayRayTracer::Execute()
     ospray->SetDataBounds(dbounds);
     // check memory
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
-                           "ospout");    
+                            "ospout");    
 
     // 
     // Continuation of previous pipeline
@@ -537,8 +540,9 @@ avtOSPRayRayTracer::Execute()
     extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
 
     // Qi debug
-    ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute raytracing setup done",
-			   "ospout");
+    ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute "
+                            "raytracing setup done",
+                            "ospout");
 
     // Execute raytracer
     avtDataObject_p samples = extractor.GetOutput();
@@ -563,7 +567,7 @@ avtOSPRayRayTracer::Execute()
     // Image Compositing
     //
     // Initialization
-    int timingDetail;
+    int timingIdx;
     float *compositedData = NULL;
     int compositedW, compositedH;
     int compositedExtents[4];
@@ -641,8 +645,8 @@ avtOSPRayRayTracer::Execute()
         //---------------------------------------------------------------//
         // Memory
         ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute "
-                               "IceT Compositing Done", 
-                               "ospout");
+                                "IceT Compositing Done", 
+                                "ospout");
         //---------------------------------------------------------------//
     }
     //-------------------------------------------------------------------//
@@ -651,37 +655,37 @@ avtOSPRayRayTracer::Execute()
     else if (parallelOn == false) {
         //---------------------------------------------------------------//
         // Get the Metadata for All Patches
-        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingDetail,
-                                 "Serial-Composite: Get the Metadata for "
-                                 "All Patches");
+        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
+                                  "Serial-Composite: Get the Metadata for "
+                                  "All Patches");
         // contains the metadata to composite the image
         std::vector<ospray::ImgMetaData> allPatchMeta;
         std::vector<ospray::ImgData>     allPatchData;
         // get the number of patches
         int numPatches = extractor.GetImgPatchSize();
         for (int i=0; i<numPatches; i++)
-	{
-	    allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
-	}
-        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingDetail,
-                                "Serial-Composite: Get the Metadata for "
-                                "All Patches");
+        {
+            allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
+        }
+        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
+                                 "Serial-Composite: Get the Metadata for "
+                                 "All Patches");
         //---------------------------------------------------------------//
         //---------------------------------------------------------------//
         // Sort with the Largest z First
-        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingDetail,
-                                 "Serial-Composite: Sort with the Largest "
-                                 "z First");
+        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
+                                  "Serial-Composite: Sort with the Largest "
+                                  "z First");
         std::sort(allPatchMeta.begin(), allPatchMeta.end(), 
                   &OSPRaySortImgMetaDataByEyeSpaceDepth);
-        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingDetail,
-                                "Serial-Composite: Sort with the Largest "
-                                "z First");
+        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
+                                 "Serial-Composite: Sort with the Largest "
+                                 "z First");
         //---------------------------------------------------------------//
         //---------------------------------------------------------------//
         // Blend Images
-        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingDetail,
-                                 "Serial-Composite: Blend Images");
+        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
+                                  "Serial-Composite: Blend Images");
         compositedW = fullImageExtents[1] - fullImageExtents[0];
         compositedH = fullImageExtents[3] - fullImageExtents[2];
         compositedExtents[0] = fullImageExtents[0];
@@ -692,41 +696,41 @@ avtOSPRayRayTracer::Execute()
             compositedData = new float[compositedW * compositedH * 4]();
         }
         for (int i=0; i<numPatches; i++)
-	{
-	    ospray::ImgMetaData currImgMeta = allPatchMeta[i];
-	    ospray::ImgData     currImgData;
-	    currImgData.imagePatch = NULL;
-	    extractor.GetAndDelImgData /* do shallow copy inside */
-		(currImgMeta.patchNumber, currImgData);
-	    const float* currData = currImgData.imagePatch;
-	    const int currExtents[4] = 
-		{currImgMeta.screen_ll[0], currImgMeta.screen_ur[0], 
-		 currImgMeta.screen_ll[1], currImgMeta.screen_ur[1]};
-	    // ospray::WriteArrayToPPM
-	    // 	("/home/qwu/work/visit/build/img-"+std::to_string(i)+".ppm",
-	    // 	 currData,
-	    // 	 currImgMeta.screen_ur[0] - currImgMeta.screen_ll[0],
-	    // 	 currImgMeta.screen_ur[1] - currImgMeta.screen_ll[1]);
-	    avtOSPRayImageCompositor::BlendBackToFront(currData,
-						       currExtents,
-						       compositedData, 
-						       compositedExtents);
-	    // Clean up data
-	    if (currImgData.imagePatch != NULL) {
-		delete[] currImgData.imagePatch;
-	    }
-	    currImgData.imagePatch = NULL;
-	}
+        {
+            ospray::ImgMetaData currImgMeta = allPatchMeta[i];
+            ospray::ImgData     currImgData;
+            currImgData.imagePatch = NULL;
+            extractor.GetAndDelImgData /* do shallow copy inside */
+                (currImgMeta.patchNumber, currImgData);
+            const float* currData = currImgData.imagePatch;
+            const int currExtents[4] = 
+                {currImgMeta.screen_ll[0], currImgMeta.screen_ur[0], 
+                 currImgMeta.screen_ll[1], currImgMeta.screen_ur[1]};
+            // ospray::WriteArrayToPPM
+            // 	("/home/qwu/work/visit/build/img-"+std::to_string(i)+".ppm",
+            // 	 currData,
+            // 	 currImgMeta.screen_ur[0] - currImgMeta.screen_ll[0],
+            // 	 currImgMeta.screen_ur[1] - currImgMeta.screen_ll[1]);
+            avtOSPRayImageCompositor::BlendBackToFront(currData,
+                                                       currExtents,
+                                                       compositedData, 
+                                                       compositedExtents);
+            // Clean up data
+            if (currImgData.imagePatch != NULL) {
+                delete[] currImgData.imagePatch;
+            }
+            currImgData.imagePatch = NULL;
+        }
         allPatchMeta.clear();
         allPatchData.clear();
-        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingDetail,
-                                "Serial-Composite: Blend Images");
+        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
+                                 "Serial-Composite: Blend Images");
         //---------------------------------------------------------------//
         //---------------------------------------------------------------//
         // Memory
         ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute "
-                               "Sequential Compositing Done", 
-                               "ospout");
+                                "Sequential Compositing Done", 
+                                "ospout");
         //---------------------------------------------------------------//
     } 
     //
@@ -735,9 +739,9 @@ avtOSPRayRayTracer::Execute()
     else { 
         //---------------------------------------------------------------//
         // Parallel Direct Send
-        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingDetail,
-                                 "Parallel-Composite: "
-                                 "Parallel Direct Send");
+        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
+                                  "Parallel-Composite: "
+                                  "Parallel Direct Send");
         int tags[2] = {1081, 1681};
         int tagGather = 2681;
         int *regions = NULL;
@@ -753,14 +757,14 @@ avtOSPRayRayTracer::Execute()
                              imgComm.intermediateImageExtents, 
                              tagGather, fullImageExtents, myRegionHeight);
 
-        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingDetail,
-                                "Parallel-Composite: "
-                                "Parallel Direct Send");
+        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
+                                 "Parallel-Composite: "
+                                 "Parallel Direct Send");
         //---------------------------------------------------------------//
         //---------------------------------------------------------------//
         // Some Cleanup
-        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingDetail,
-                                 "Parallel-Composite: Some Cleanup");
+        ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
+                                  "Parallel-Composite: Some Cleanup");
         if (regions != NULL)
             delete [] regions;
         regions = NULL;
@@ -768,8 +772,8 @@ avtOSPRayRayTracer::Execute()
             delete [] imgComm.intermediateImage;
         imgComm.intermediateImage = NULL;		
         imgComm.Barrier();
-        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingDetail,
-                                "Parallel-Composite: Some Cleanup");
+        ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
+                                 "Parallel-Composite: Some Cleanup");
         //---------------------------------------------------------------//
         //---------------------------------------------------------------//
         // Setup for Final Composition
@@ -790,8 +794,8 @@ avtOSPRayRayTracer::Execute()
         //--------------------------------------------------------------//
         // Memory
         ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute "
-                               "Parallel Compositing Done", 
-                               "ospout");
+                                "Parallel Compositing Done", 
+                                "ospout");
         //--------------------------------------------------------------//
     }	
 
@@ -801,7 +805,6 @@ avtOSPRayRayTracer::Execute()
     //
     ///////////////////////////////////////////////////////////////////
     if (PAR_Rank() == 0) {
-        // Blend
         avtImage_p finalImage = new avtImage(this);
         vtkImageData *finalVTKImage = 
             avtImageRepresentation::NewImage(screen[0], screen[1]);
@@ -809,14 +812,13 @@ avtOSPRayRayTracer::Execute()
         unsigned char *finalImageBuffer = 
             finalImage->GetImage().GetRGBBuffer();
         ospray::CompositeBackground(screen,
-                                   compositedExtents,
-                                   compositedW,
-                                   compositedH,
-                                   compositedData,
-                                   opaqueImageData,
-                                   opaqueImageZB,
-                                   finalImageBuffer);
-        // Cleanup
+                                    compositedExtents,
+                                    compositedW,
+                                    compositedH,
+                                    compositedData,
+                                    opaqueImageData,
+                                    opaqueImageZB,
+                                    finalImageBuffer);
         finalVTKImage->Delete();
         SetOutput(finalImage);
     }

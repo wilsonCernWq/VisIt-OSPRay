@@ -124,7 +124,10 @@ avtSLIVRSamplePointExtractor::avtSLIVRSamplePointExtractor(int w, int h, int d)
     : avtSamplePointExtractorBase(w, h, d)
 {
     slivrVoxelExtractor = NULL;
+
     patchCount = 0;
+    imageMetaPatchVector.clear();
+    imgDataHashMap.clear();
 
     modelViewProj = vtkMatrix4x4::New();
 
@@ -176,7 +179,6 @@ avtSLIVRSamplePointExtractor::~avtSLIVRSamplePointExtractor()
 
     delImgPatches();
 }
-
 
 // ****************************************************************************
 //  Method: avtSLIVRSamplePointExtractor::SetUpExtractors
@@ -239,13 +241,40 @@ avtSLIVRSamplePointExtractor::SetUpExtractors(void)
     {
         delete slivrVoxelExtractor;
     }
-    slivrVoxelExtractor = new avtSLIVRVoxelExtractor(width, height, depth, volume,cl);
-//    slivrVoxelExtractor->SetJittering(jitter);
+    slivrVoxelExtractor = new avtSLIVRVoxelExtractor(width, height, depth,
+													 volume,cl);
+    //slivrVoxelExtractor->SetJittering(jitter);
     if (shouldDoTiling)
     {
         slivrVoxelExtractor->Restrict(width_min, width_max-1,
                                       height_min, height_max-1);
     }
+}
+
+// ****************************************************************************
+//  Method: avtSLIVRSamplePointExtractor::InitSampling
+//
+//  Purpose:
+//      Initialize sampling, called by base class ExecuteTree method before.
+//      the actual iteration starts. This function might be useful for
+//      children classes
+//
+//  Arguments:
+//      dt      The dataset tree that should be processed.
+//
+//  Programmer: Qi WU 
+//  Creation:   April 18, 2018
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+void
+avtSLIVRSamplePointExtractor::InitSampling(avtDataTree_p dt)
+{
+    patchCount = 0;
+    imageMetaPatchVector.clear();
+    imgDataHashMap.clear();
 }
 
 // ****************************************************************************
@@ -268,17 +297,8 @@ avtSLIVRSamplePointExtractor::SetUpExtractors(void)
 void
 avtSLIVRSamplePointExtractor::DoSampling(vtkDataSet *ds, int idx)
 {
-    //initialize sampling state
-    //patchCount = 0;
-    //imageMetaPatchVector.clear();
-    //imgDataHashMap.clear();
-
     double _scalarRange[2];
     ds->GetScalarRange(_scalarRange);
-
-    double _tfRange[2];
-    _tfRange[0] = transferFn1D->GetMin();
-    _tfRange[1] = transferFn1D->GetMax();
 
     double _tfVisibleRange[2];
     _tfVisibleRange[0] = transferFn1D->GetMinVisibleScalar();
@@ -322,7 +342,6 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 {
     StackTimer t0("avtSLIVRSamplePointExtractor::RasterBasedSample");
 
-    //debug5 << PAR_Rank() << " avtSLIVRSamplePointExtractor::RasterBasedSample  " << num << std::endl;
     
     if (ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
@@ -340,15 +359,16 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             varsizes.push_back(samples->GetVariableSize(i));
         }
 
-        // Use SLIVR mass voxel extractor.
-
         //
         // Compositing Setup
+		//
         slivrVoxelExtractor->SetGridsAreInWorldSpace(
             rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
 
-        slivrVoxelExtractor->setDepthBuffer(depthBuffer, bufferExtents[1]*bufferExtents[3]);
-        slivrVoxelExtractor->setRGBBuffer(rgbColorBuffer, bufferExtents[1],bufferExtents[3]);
+        slivrVoxelExtractor->setDepthBuffer(depthBuffer,
+									 bufferExtents[1]*bufferExtents[3]);
+        slivrVoxelExtractor->setRGBBuffer(rgbColorBuffer,
+									 bufferExtents[1],bufferExtents[3]);
         slivrVoxelExtractor->setBufferExtents(bufferExtents);
 
         slivrVoxelExtractor->SetViewDirection(view_direction);
@@ -364,11 +384,9 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         slivrVoxelExtractor->SetMatProperties(materialProperties);
         slivrVoxelExtractor->SetTransferFn(transferFn1D);
 
-        //debug5 << PAR_Rank() << " avtSLIVRSamplePointExtractor::RasterBasedSample extract ...  " << num << std::endl;
 
-        slivrVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
-
-        //debug5 << PAR_Rank() << " avtSLIVRSamplePointExtractor::RasterBasedSample extract done!" << num << std::endl;
+        slivrVoxelExtractor->Extract((vtkRectilinearGrid *) ds,
+									 varnames, varsizes);
 
         //
         // Get rendering results
@@ -376,7 +394,12 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         imgMetaData      tmpImageMetaPatch;
         tmpImageMetaPatch = initMetaPatch(patchCount);
 
-        slivrVoxelExtractor->getImageDimensions(tmpImageMetaPatch.inUse, tmpImageMetaPatch.dims, tmpImageMetaPatch.screen_ll, tmpImageMetaPatch.screen_ur, tmpImageMetaPatch.eye_z, tmpImageMetaPatch.clip_z);
+        slivrVoxelExtractor->getImageDimensions(tmpImageMetaPatch.inUse,
+												tmpImageMetaPatch.dims,
+												tmpImageMetaPatch.screen_ll,
+												tmpImageMetaPatch.screen_ur,
+												tmpImageMetaPatch.eye_z,
+												tmpImageMetaPatch.clip_z);
         if (tmpImageMetaPatch.inUse == 1)
         {
             tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
@@ -386,11 +409,14 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             imgData tmpImageDataHash;
             tmpImageDataHash.procId = tmpImageMetaPatch.procId;
             tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
-            tmpImageDataHash.imagePatch = new float[ tmpImageMetaPatch.dims[0]*tmpImageMetaPatch.dims[1] * 4 ];
+            tmpImageDataHash.imagePatch =
+				new float[tmpImageMetaPatch.dims[0] *
+						  tmpImageMetaPatch.dims[1] * 4];
 
             slivrVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
-            imgDataHashMap.insert( std::pair<int, imgData> (tmpImageDataHash.patchNumber , tmpImageDataHash) );
-            //writeArrayToPPM("/home/pascal/Desktop/debugImages/local_" + toStr(tmpImageMetaPatch.procId) + "_"+ toStr(tmpImageMetaPatch.patchNumber), tmpImageDataHash.imagePatch, tmpImageMetaPatch.dims[0], tmpImageMetaPatch.dims[1]);
+            imgDataHashMap.insert
+				(std::pair<int, imgData>(tmpImageDataHash.patchNumber,
+										 tmpImageDataHash));
 
             patchCount++;
         }

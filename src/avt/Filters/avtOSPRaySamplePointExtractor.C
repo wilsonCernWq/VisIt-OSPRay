@@ -120,7 +120,8 @@
 //    Initialize lightDirection.
 // ****************************************************************************
 
-avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h, int d)
+avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h,
+                                                             int d)
     : avtSamplePointExtractorBase(w, h, d)
 {
     osprayVoxelExtractor = NULL;
@@ -138,8 +139,12 @@ avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h, int d
 
     depthBuffer = NULL;
     rgbColorBuffer = NULL;
+
     ospray = NULL;    
+
     patchCount = 0;
+    imageMetaPatchVector.clear();
+    imgDataHashMap.clear();
 }
 
 
@@ -238,13 +243,43 @@ avtOSPRaySamplePointExtractor::SetUpExtractors(void)
     {
         delete osprayVoxelExtractor;
     }
-    osprayVoxelExtractor = new avtOSPRayVoxelExtractor(width, height, depth, volume,cl);
-    //osprayVoxelExtractor->SetJittering(jitter);
+    osprayVoxelExtractor = new avtOSPRayVoxelExtractor(width, height, depth,
+                                                       volume,cl);
+    // osprayVoxelExtractor->SetJittering(jitter);
     if (shouldDoTiling)
     {
         osprayVoxelExtractor->Restrict(width_min, width_max-1,
                                       height_min, height_max-1);
     }
+}
+
+// ****************************************************************************
+//  Method: avtOSPRaySamplePointExtractor::InitSampling
+//
+//  Purpose:
+//      Initialize sampling, called by base class ExecuteTree method before.
+//      the actual iteration starts. This function might be useful for
+//      children classes
+//
+//  Arguments:
+//      dt      The dataset tree that should be processed.
+//
+//  Programmer: Qi WU 
+//  Creation:   June 18, 2018
+//
+//  Modifications:
+//
+// ****************************************************************************
+
+void
+avtOSPRaySamplePointExtractor::InitSampling(avtDataTree_p dt)
+{
+    for (int i = 0; i < dt->GetNChildren(); ++i)
+    { ospray->InitPatch(i); }
+    
+    patchCount = 0;
+    imageMetaPatchVector.clear();
+    imgDataHashMap.clear();
 }
 
 // ****************************************************************************
@@ -341,8 +376,6 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             varsizes.push_back(samples->GetVariableSize(i));
         }
 
-        // Use OSPRay mass voxel extractor.
-	ospray->InitPatch(num);
         //-----------------------------
         // Compositing Setup
         //-----------------------------	
@@ -350,7 +383,7 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
 
         osprayVoxelExtractor->SetDepthBuffer(depthBuffer,
-                                             bufferExtents[1] * bufferExtents[3]);
+                                          bufferExtents[1] * bufferExtents[3]);
         osprayVoxelExtractor->SetRGBBuffer(rgbColorBuffer,
                                            bufferExtents[1], bufferExtents[3]);
         osprayVoxelExtractor->SetBufferExtents(bufferExtents);
@@ -372,18 +405,19 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         osprayVoxelExtractor->SetRendererSampleRate(rendererSampleRate);       
         osprayVoxelExtractor->SetFullImageExtents(fullImageExtents);
 
-	osprayVoxelExtractor->SetOSPRay(ospray);
+        osprayVoxelExtractor->SetOSPRay(ospray);
 
         //-----------------------------
         // Extract
         //-----------------------------
-        osprayVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
+        osprayVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames,
+                                      varsizes);
 
         //-----------------------------
         // Get rendering results
         // put them into a proper vector, sort them based on z value
         //-----------------------------
-	ospray::ImgMetaData tmpImageMetaPatch;
+        ospray::ImgMetaData tmpImageMetaPatch;
         tmpImageMetaPatch = InitMetaPatch(patchCount);
 
         osprayVoxelExtractor->GetImageDimensions
@@ -403,7 +437,8 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
                 new float[tmpImageMetaPatch.dims[0] * 
                           tmpImageMetaPatch.dims[1] * 4];
 
-            osprayVoxelExtractor->GetComputedImage(tmpImageDataHash.imagePatch);
+            osprayVoxelExtractor->GetComputedImage
+                                                (tmpImageDataHash.imagePatch);
             imgDataHashMap.insert
                 (std::pair<int, ospray::ImgData> (tmpImageDataHash.patchNumber,
                                                   tmpImageDataHash));
@@ -415,13 +450,12 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         // Other Grid
         //---------------------------------------------------------
         const std::string msg = 
-            "Warning: Dataset is not a VTK_RECTILINEAR_GRID,\n"
+            "Warning: Dataset type " +
+            std::to_string((int)(ds->GetDataObjectType())) + " " 
+            "is not a VTK_RECTILINEAR_GRID,\n"
             "         Currently the RayCasting:OSPRay renderer\n"
             "         only supports rectilinear grid,\n" 
             "         Thus request cannot be completed.";
-        osperr << (int)(ds->GetDataObjectType()) << std::endl
-               << msg
-               << std::endl;
         ospray::Exception(msg);
     }
 }
