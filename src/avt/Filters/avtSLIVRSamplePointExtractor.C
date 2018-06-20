@@ -269,9 +269,9 @@ void
 avtSLIVRSamplePointExtractor::DoSampling(vtkDataSet *ds, int idx)
 {
     //initialize sampling state
-    patchCount = 0;
-    imageMetaPatchVector.clear();
-    imgDataHashMap.clear();
+    //patchCount = 0;
+    //imageMetaPatchVector.clear();
+    //imgDataHashMap.clear();
 
     double _scalarRange[2];
     ds->GetScalarRange(_scalarRange);
@@ -323,6 +323,7 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
     StackTimer t0("avtSLIVRSamplePointExtractor::RasterBasedSample");
 
     //debug5 << PAR_Rank() << " avtSLIVRSamplePointExtractor::RasterBasedSample  " << num << std::endl;
+    
     if (ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
         avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();

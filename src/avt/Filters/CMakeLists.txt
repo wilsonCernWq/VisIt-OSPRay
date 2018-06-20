@@ -147,7 +147,8 @@ IF(VISIT_OSPRAY)
          avtOSPRayImageCompositor.C
          avtOSPRayRayTracer.C
          avtOSPRaySamplePointExtractor.C
-         avtOSPRayVoxelExtractor.C)
+         avtOSPRayVoxelExtractor.C
+	 )
     ADD_DEFINITIONS(-DVISIT_OSPRAY)
     IF(ICET_FOUND)
         # If we have Ice-T then add -DHAVE_ICET to the compilation flags.

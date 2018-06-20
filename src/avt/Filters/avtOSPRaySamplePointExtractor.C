@@ -67,6 +67,7 @@
 
 #include <limits>
 #include <algorithm>
+#include <stack>
 
 // ****************************************************************************
 //  Method: avtOSPRaySamplePointExtractor constructor
@@ -123,10 +124,7 @@ avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h, int d
     : avtSamplePointExtractorBase(w, h, d)
 {
     osprayVoxelExtractor = NULL;
-    patchCount = 0;
-
     modelViewProj = vtkMatrix4x4::New();
-
     lighting = false;
     lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
     lightPosition[3] = 1.0;
@@ -140,8 +138,8 @@ avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h, int d
 
     depthBuffer = NULL;
     rgbColorBuffer = NULL;
-
-    ospray = NULL;
+    ospray = NULL;    
+    patchCount = 0;
 }
 
 
@@ -271,14 +269,7 @@ avtOSPRaySamplePointExtractor::DoSampling(vtkDataSet *ds, int idx)
 {
     // initialize ospray
     StackTimer t0("avtOSPRaySamplePointExtractor::DoSampling "
-                  "OSPVisItContext::InitPatch");
-    ospray->InitPatch(idx);
-
-    // initialize sampling state
-    patchCount = 0;
-    imageMetaPatchVector.clear();
-    imgDataHashMap.clear();
-
+                  "OSPVisItContext::InitPatch");    
     // volume scalar range
     double scalarRange[2]; 
     {
@@ -351,10 +342,10 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         }
 
         // Use OSPRay mass voxel extractor.
-
+	ospray->InitPatch(num);
         //-----------------------------
         // Compositing Setup
-        //-----------------------------
+        //-----------------------------	
         osprayVoxelExtractor->SetGridsAreInWorldSpace
             (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
 
@@ -378,21 +369,21 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         osprayVoxelExtractor->SetTransferFn(transferFn1D);
 
         osprayVoxelExtractor->SetImageZoom(imageZoom);
-        osprayVoxelExtractor->SetRendererSampleRate(rendererSampleRate);
-        
-        osprayVoxelExtractor->SetOSPRay(ospray);
+        osprayVoxelExtractor->SetRendererSampleRate(rendererSampleRate);       
         osprayVoxelExtractor->SetFullImageExtents(fullImageExtents);
+
+	osprayVoxelExtractor->SetOSPRay(ospray);
 
         //-----------------------------
         // Extract
-        //-----------------------------        
+        //-----------------------------
         osprayVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
 
         //-----------------------------
         // Get rendering results
         // put them into a proper vector, sort them based on z value
-        //-----------------------------        
-        ospray::ImgMetaData tmpImageMetaPatch;
+        //-----------------------------
+	ospray::ImgMetaData tmpImageMetaPatch;
         tmpImageMetaPatch = InitMetaPatch(patchCount);
 
         osprayVoxelExtractor->GetImageDimensions
@@ -414,8 +405,8 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 
             osprayVoxelExtractor->GetComputedImage(tmpImageDataHash.imagePatch);
             imgDataHashMap.insert
-                (std::pair<int, ImgData> (tmpImageDataHash.patchNumber,
-                                          tmpImageDataHash));
+                (std::pair<int, ospray::ImgData> (tmpImageDataHash.patchNumber,
+                                                  tmpImageDataHash));
 
             patchCount++;
         }

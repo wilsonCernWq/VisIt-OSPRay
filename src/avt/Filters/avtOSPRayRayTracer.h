@@ -116,7 +116,6 @@ class AVTFILTERS_API avtOSPRayRayTracer : public avtRayTracerBase
                       { for (int i=0;i<4;i++) materialProperties[i] = mp[i]; };
     void                  SetViewDirection(double *vd)
                          { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; };
-    void                  SetTrilinear(bool t) { trilinearInterpolation = t; };
     void                  SetRendererSampleRate(double r)
                                                     { rendererSampleRate = r; };
     void                  SetOSPRay(OSPVisItContext *ptr) { ospray = ptr; };

@@ -277,7 +277,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         //   This is to check if the patch is a cell data or a point data
         //   I have to assume cell dataset has a higher priority
         if (ncell_arrays > 0) {
-            ospout << "[avtMassVoxelExtractor] Cell Dataset " << std::endl;
+            ospout << "[avtOSPRayVoxelExtractor] Cell Dataset " << std::endl;
             if (ncell_arrays != 1 || cell_size[0] != 1) {
                 ospray::Exception("Trying to plot more than one field, "
                                   "which is not supported by OSPRay. "
@@ -290,7 +290,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             volumeDataType = cell_vartypes[0];
         }
         else if (npt_arrays > 0) {
-            ospout << "[avtMassVoxelExtractor] Point Dataset " << std::endl;
+            ospout << "[avtOSPRayVoxelExtractor] Point Dataset " << std::endl;
             if (npt_arrays != 1 || pt_size[0] != 1) {
                 ospray::Exception("Trying to plot more than one field, "
                                   "which is not supported by OSPRay. "
@@ -304,7 +304,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         } else {
             osperr << "WARNING: Empty dataset." << std::endl;
         }
-        ospout << "[avtMassVoxelExtractor] patch dimension "
+        ospout << "[avtOSPRayVoxelExtractor] patch dimension "
                << nX << " " << nY << " " << nZ << std::endl;
         // Calculate ghost region boundaries
         //   ghost_boundaries is an array to indicate if the patch contains
@@ -387,7 +387,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         xMax = patchScreenExtents[1];
         yMin = patchScreenExtents[2];
         yMax = patchScreenExtents[3];
-        ospout << "[avtMassVoxelExtractor] patch ghost bounds:"
+        ospout << "[avtOSPRayVoxelExtractor] patch ghost bounds:"
                << "   " << ghost_bound[0] << " " << ghost_bound[3] 
                << " | " << ghost_bound[1] << " " << ghost_bound[4] 
                << " | " << ghost_bound[2] << " " << ghost_bound[5]
@@ -416,7 +416,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                       "Create ImgArray (Pre-OSPRay preparation)");
         // assign data to the class
         //xMax+=1; yMax+=1;
-        ospout << "[avtMassVoxelExtractor] patch extents " 
+        ospout << "[avtOSPRayVoxelExtractor] patch extents " 
                << xMin << " " << xMax << " "
                << yMin << " " << yMax << std::endl;
         if (xMin < fullImageExtents[0]) { xMin = fullImageExtents[0]; }
@@ -477,7 +477,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                 volumeBBox[4] = ghost_bound[4] ? Y[nY-2] : volumePBox[4];
                 volumeBBox[5] = ghost_bound[5] ? Z[nZ-2] : volumePBox[5];
             }
-            ospout << "[avtMassVoxelExtractor] patch data position:" 
+            ospout << "[avtOSPRayVoxelExtractor] patch data position:" 
                    << " " << volumePBox[0]
                    << " " << volumePBox[1]
                    << " " << volumePBox[2]
@@ -486,7 +486,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                    << " " << volumePBox[4]
                    << " " << volumePBox[5]
                    << std::endl;  
-            ospout << "[avtMassVoxelExtractor] patch data bbox:" 
+            ospout << "[avtOSPRayVoxelExtractor] patch data bbox:" 
                    << " " << volumeBBox[0]
                    << " " << volumeBBox[1]
                    << " " << volumeBBox[2]
@@ -511,7 +511,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         }
 
 	// Render Volume
-	int timing_render_volume = visitTimer->StartTimer();
         {
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "

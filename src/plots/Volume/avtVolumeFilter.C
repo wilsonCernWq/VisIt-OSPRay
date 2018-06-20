@@ -320,7 +320,8 @@ avtVolumeFilter::CreateOpacityMap(double range[2])
     {
         if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
             (atts.GetSampling() == VolumeAttributes::Trilinear))
-            om.SetTable(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0, atts.GetRendererSamples());
+            om.SetTable(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0,
+			atts.GetRendererSamples());
         else
         {
             // Set the opacity map just using the transfer function.
@@ -428,7 +429,7 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
         software = new avtSLIVRRayTracer;
     } else if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {  
         software = new avtOSPRayRayTracer;
-	if (ospray == NULL) { ospray = new OSPVisItContext(); }
+	if (ospray == NULL) { ospray = new OSPVisItContext; }
 	((avtOSPRayRayTracer*)software)->SetOSPRay(ospray);
     }
     software->SetInput(termsrc.GetOutput());
@@ -448,9 +449,8 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     software->SetTransferFn(&om);
 
     debug5 << "Min visible scalar range: " << om.GetMinVisibleScalar() << " "
-           << "Max visible scalar range: " <<  om.GetMaxVisibleScalar()
+           << "Max visible scalar range: " << om.GetMaxVisibleScalar()
            << std::endl;
-
 
     //
     // Determine which variables to use and tell the ray function.
@@ -484,10 +484,10 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
         {
             opacIndex = count;
         }
-       // if (vl.varnames[i] == gradName)
-       // {
-       //     gradIndex = count;
-       // }
+	// if (vl.varnames[i] == gradName)
+	// {
+	//     gradIndex = count;
+	// }
         count += vl.varsizes[i];
     }
 
@@ -529,8 +529,7 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     //
     software->SetRayFunction(compositeRF);
     software->SetSamplesPerRay(atts.GetSamplesPerRay());
-    debug5 << "Sampling rate: "  << atts.GetRendererSamples() << std::endl;
-
+    debug5 << "Sampling rate: " << atts.GetRendererSamples() << std::endl;
 
     //
     // Set camera parameters
@@ -559,7 +558,6 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
                      depth_ * viewDirection[2]) * atts.GetRendererSamples();
         software->SetSamplesPerRay(numSlices);
     }
-
     software->SetView(vi);
 
     double view_dir[3];
@@ -574,37 +572,14 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
         view_dir[1] /= mag;
         view_dir[2] /= mag;
     }
-    if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {        
-        ((avtSLIVRRayTracer*)software)->SetViewDirection(view_dir);
-    } else if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {  
-        ((avtOSPRayRayTracer*)software)->SetViewDirection(view_dir);
-    }
-
 
     //
     // Set up lighting and material properties
     //
-    if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {        
-        if (atts.GetLightingFlag())
-            ((avtSLIVRRayTracer*)software)->SetLighting(true);
-        else
-            ((avtSLIVRRayTracer*)software)->SetLighting(false);
-    } else if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {  
-        if (atts.GetLightingFlag())
-            ((avtOSPRayRayTracer*)software)->SetLighting(true);
-        else
-            ((avtOSPRayRayTracer*)software)->SetLighting(false);
-    }
-
     double tempLightDir[3];
     tempLightDir[0] = ((window.GetLights()).GetLight(0)).GetDirection()[0];
     tempLightDir[1] = ((window.GetLights()).GetLight(0)).GetDirection()[1];
     tempLightDir[2] = ((window.GetLights()).GetLight(0)).GetDirection()[2];
-    if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {        
-        ((avtSLIVRRayTracer*)software)->SetLightDirection(tempLightDir);
-    } else if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {  
-        ((avtOSPRayRayTracer*)software)->SetLightDirection(tempLightDir);
-    }
 
     double *matProp = atts.GetMaterialProperties();
     double materialPropArray[4];
@@ -612,10 +587,18 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     materialPropArray[1] = matProp[1];
     materialPropArray[2] = matProp[2];
     materialPropArray[3] = matProp[3];
-    if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {        
-        ((avtSLIVRRayTracer*)software)->SetMatProperties(materialPropArray);
-    } else if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {  
-        ((avtOSPRayRayTracer*)software)->SetMatProperties(materialPropArray);
+
+    if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
+	((avtSLIVRRayTracer*)software)->SetViewDirection(view_dir);
+	((avtSLIVRRayTracer*)software)->SetLighting(atts.GetLightingFlag());
+	((avtSLIVRRayTracer*)software)->SetLightDirection(tempLightDir);
+	((avtSLIVRRayTracer*)software)->SetMatProperties(materialPropArray);
+    } else if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
+	((avtOSPRayRayTracer*)software)->SetViewDirection(view_dir);
+	((avtOSPRayRayTracer*)software)->SetLighting(atts.GetLightingFlag());
+        ((avtOSPRayRayTracer*)software)->SetLightDirection(tempLightDir);
+	((avtOSPRayRayTracer*)software)->SetMatProperties(materialPropArray);
+	((avtOSPRayRayTracer*)software)->SetRendererSampleRate(atts.GetRendererSamples());
     }
 
     //
