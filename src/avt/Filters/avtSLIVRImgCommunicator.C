@@ -152,6 +152,9 @@ void avtSLIVRImgComm_IceT::Composite(float*& output)
 //
 //  Modifications:
 //
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay (RayCasting:OSPRay)
+//
 // ***************************************************************************
 
 avtSLIVRImgCommunicator::avtSLIVRImgCommunicator()
@@ -299,6 +302,9 @@ avtSLIVRImgCommunicator::PlaceImage(const float *srcImage,
 //
 //  Modifications:
 //
+//    Qi WU, Wed Jun 20 2018
+//    Add support for threaded blending using OSPRay
+//
 // **************************************************************************
 void
 avtSLIVRImgCommunicator::BlendWithBackground(float *&image,
@@ -329,6 +335,9 @@ avtSLIVRImgCommunicator::BlendWithBackground(float *&image,
 //  Creation:   August 19, 2016
 //
 //  Modifications:
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for threaded blending using OSPRay
 //
 // **************************************************************************
 
@@ -404,6 +413,9 @@ avtSLIVRImgCommunicator::BlendFrontToBack(const float *srcImage,
 //
 //  Modifications:
 //
+//    Qi WU, Wed Jun 20 2018
+//    Add support for threaded blending using OSPRay
+//
 // **************************************************************************
 
 void
@@ -474,6 +486,9 @@ avtSLIVRImgCommunicator::BlendBackToFront(const float *srcImage,
 //  Creation:   August 19, 2016
 //
 //  Modifications:
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for threaded blending using OSPRay
 //
 // **************************************************************************
 void

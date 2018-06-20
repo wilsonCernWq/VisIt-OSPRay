@@ -172,6 +172,9 @@ void Reflect(float vec[3], float normal[3], float refl[3])
 //    Kathleen Biagas, Fri Jul 13 09:23:55 PDT 2012
 //    Use double instead of float.
 //
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay (RayCasting:OSPRay)
+//
 // ****************************************************************************
 
 avtMassVoxelExtractor::avtMassVoxelExtractor
@@ -257,6 +260,9 @@ avtMassVoxelExtractor::avtMassVoxelExtractor
 //
 //    Hank Childs, Wed Dec 24 11:22:43 PST 2008
 //    Remove reference to ProportionSpaceToZBufferSpace data member.
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay (RayCasting:OSPRay)
 //
 // ****************************************************************************
 
@@ -417,6 +423,9 @@ ConvertToDouble(int vartype, int index, int s, int m, void *array)
 //
 //    Hank Childs, Fri Jun  1 16:40:10 PDT 2007
 //    Added support for non-scalars.
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay (RayCasting:OSPRay)
 //
 // ****************************************************************************
 
@@ -2274,6 +2283,9 @@ avtMassVoxelExtractor::SampleAlongSegment
 //  Creation:   August 14, 2016
 //
 //  Modifications:
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay (RayCasting:OSPRay)
 //
 // ****************************************************************************
 

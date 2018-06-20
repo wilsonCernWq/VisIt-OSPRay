@@ -704,6 +704,9 @@ avtSamplePointExtractor::PostExecute(void)
 //    Manasa Prasad, 
 //    Converted the recursive function to iteration
 //
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay
+//
 // ****************************************************************************
 struct datatree_childindex {
     avtDataTree_p dt; int idx; bool visited;
@@ -894,6 +897,9 @@ avtSamplePointExtractor::DelImgPatches(){
 //  Creation:   
 //
 //  Modifications:
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay
 //
 // ****************************************************************************
 
@@ -1087,6 +1093,9 @@ avtSamplePointExtractor::KernelBasedSample(vtkDataSet *ds)
 //
 //    Kevin Griffin, Fri Apr 22 16:31:57 PDT 2016
 //    Added support for polygons.
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay
 //
 // ****************************************************************************
 void CheckCellType(const int cellType) 

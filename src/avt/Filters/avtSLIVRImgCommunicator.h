@@ -77,6 +77,11 @@ struct imageBuffer{
 //  Programmer: Pascal Grosset
 //  Creation:   Spetember 20, 2013
 //
+//  Modifications:
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay (RayCasting:OSPRay)
+//
 // ***************************************************************************
 
 class avtSLIVRImgComm

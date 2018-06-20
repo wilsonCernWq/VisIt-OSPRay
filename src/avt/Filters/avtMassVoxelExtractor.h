@@ -99,6 +99,9 @@ class     vtkMatrix4x4;
 //    Kathleen Biagas, Fri Jul 13 09:44:45 PDT 2012
 //    Use double internally instead of float.
 //
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay (RayCasting:OSPRay)
+//
 // ****************************************************************************
 
 class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor

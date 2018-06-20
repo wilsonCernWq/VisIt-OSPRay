@@ -107,6 +107,9 @@ bool sortImgMetaDataByEyeSpaceDepth
 //    Pascal Grosset, Fri Sep 20 2013
 //    Added ray casting slivr & trilinear interpolation
 //
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay
+//
 // ****************************************************************************
 
 avtRayTracer::avtRayTracer()
@@ -441,6 +444,9 @@ avtRayTracer::CheckInBounds(double volBounds[6], double coord[3])
 //    Qi WU, Tue Aug 8 2017
 //    Fix camera matrices multiplication order for ray casting SLIVR
 //    Also fixed panning for ray casting SLIVR
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for volume rendering using OSPRay
 //
 // ****************************************************************************
 
