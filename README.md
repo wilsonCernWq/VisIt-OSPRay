@@ -12,29 +12,32 @@ This repository integrates OSPRay as the scalable volume rendering back-end into
 
 ### Building OSPRay
 
-Before the VisIt-OSPRay module is completely pushed into VisIt's official repository, you need to build OSPRay yourself first. There is a [fork](https://github.com/wilsonCernWq/ospray) of the official ospray repository which being actively
-maintained for this project. You will also need to download a seperarte ospray module [`module_visit`](https://github.com/wilsonCernWq/module_visit) for extra functionalities being added into ospray.
+You can use the `build_visit` script to build OSPRay and its dependencies. In order to enable ospray, you need to add the `--ospray` option to your `build_visit`:
 
-Then should be able to build ospray following OSPRay's documentation. Please pass `-DOSPRAY_MODULE_VISIT=ON` flag to cmake
-in order to have the visit module compiled. There is also a [script](https://github.com/wilsonCernWq/ospray/blob/master/premake.sh) that might be helpful for building ospray. You can read
-it or run `./premake.sh --help` to learn its usage.
+`./build_visit --ospray ... `
+
+Because OSPRay depends on TBB, ISPC and Embree, you might want to also enable `--ispc`, `--embree` and `--tbb`. If you have all these libraries downloaded alread, you can use alternative paths instead: 
+```
+--alt-tbb-dir <path-to-your-tbb>
+--alt-ispc-dir <path-to-your-ispc>
+--alt-embree-dir <path-to-your-embree>
+```
 
 ### Building VisIt
 
-Currently this repository can be used with this visit revision. For details about building VisIt, please go
+Currently this repository is compatable with visit `branch 2.13RC` revision `33187`. For details about building VisIt, please go
 to the Wiki [page](https://github.com/wilsonCernWq/VisIt-OSPRay/wiki).
 
 ```
-Working Copy Root Path: /home/sci/qwu/software/Kepler/VisIt/visit-trunk/src
-URL: http://visit.ilight.com/svn/visit/trunk/src
+URL: http://visit.ilight.com/svn/visit/branches/2.13RC/src
 Repository Root: http://visit.ilight.com/svn/visit
 Repository UUID: 18c085ea-50e0-402c-830e-de6fd14e8384
-Revision: 32167
+Revision: 33187
 Node Kind: directory
 Schedule: normal
-Last Changed Author: bonnell
-Last Changed Rev: 32166
-Last Changed Date: 2018-01-05 18:12:50 -0700 (Fri, 05 Jan 2018)
+Last Changed Author: alister
+Last Changed Rev: 33187
+Last Changed Date: 2018-06-05 16:51:12 -0600 (Tue, 05 Jun 2018)
 ```
 
 ## How to use this repository
@@ -42,16 +45,16 @@ Last Changed Date: 2018-01-05 18:12:50 -0700 (Fri, 05 Jan 2018)
 This repository only contains all the file I changed in VisIt source. Therefore the best way to 
 apply those changes is to create a patch file. 
 
-### What are the files will be removed
+### How to remove files
 There are some files should be removed from VisIt source due to some renaming. You can find the file lists
-in [`removelist.txt`](removelist.txt) file. However it will not cause any problem if those files are not removed.
+in [`exclude/tools/removelist.txt`](exclude/tools/removelist.txt) file. However it will not cause any problem if those files are not removed.
 
 ### How to create a patch file
 
 We can create a patch using `diff` on linux:
 
 ```
-./makeref.sh /path/to/visit/src/
+./exclude/tools/makeref.sh /path/to/visit/src/
 diff -Naur src-ref src > patch.txt
 cd /path/to/visit/src/
 patch -p1  < ../working/patch.txt
