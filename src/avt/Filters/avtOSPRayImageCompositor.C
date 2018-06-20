@@ -569,7 +569,7 @@ void avtOSPRayImageCompositor::BlendFrontToBack(const float *srcImage,
 					       const int dstExtents[4])
 {
     if (UseThreadedBlend_Communicator) {
-	visit::BlendFrontToBack(blendExtents,
+      ospray::visit::BlendFrontToBack(blendExtents,
 				srcExtents,
 				srcImage,
 				dstExtents,
@@ -642,7 +642,7 @@ void avtOSPRayImageCompositor::BlendBackToFront(const float *srcImage,
 					       const int dstExtents[4])
 {
     if (UseThreadedBlend_Communicator) {
-	visit::BlendBackToFront(blendExtents,
+      ospray::visit::BlendBackToFront(blendExtents,
 	                        srcExtents,
 	                        srcImage,
 	                        dstExtents,

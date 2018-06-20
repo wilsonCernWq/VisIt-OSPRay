@@ -911,7 +911,7 @@ ospray::CompositeBackground(int screen[2],
 			 unsigned char *&imgFinal)
 {
     if (UseThreadedBlend_MetaData) {
-    visit::CompositeBackground(screen,
+      ospray::visit::CompositeBackground(screen,
 			       compositedImageExtents,
 			       compositedImageWidth,
 			       compositedImageHeight,
