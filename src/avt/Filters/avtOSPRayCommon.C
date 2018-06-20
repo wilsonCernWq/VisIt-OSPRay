@@ -392,7 +392,7 @@ ospray::CompositeBackground(int screen[2],
 //
 // ****************************************************************************
 namespace ospray {
-void WriteArrayToPPM(std::string filename, float * image, int dimX, int dimY)
+void WriteArrayToPPM(std::string filename, const float * image, int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
 			     std::ios::out | std::ios::binary);
@@ -413,7 +413,7 @@ void WriteArrayToPPM(std::string filename, float * image, int dimX, int dimY)
     outputFile.close();
 }
 void WriteArrayToPPM(std::string filename, 
-		     unsigned char *image, 
+		     const unsigned char *image, 
 		     int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
@@ -421,13 +421,13 @@ void WriteArrayToPPM(std::string filename,
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
-	outputFile.write(reinterpret_cast<char*>(&image[y * dimX * 3]), 
+	outputFile.write(reinterpret_cast<const char*>(&image[y * dimX * 3]), 
 			 dimX * 3);
     } 
     outputFile.close();
 }
 void WriteArrayGrayToPPM(std::string filename, 
-			 float* image, 
+			 const float* image, 
 			 int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
@@ -714,8 +714,10 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
 				    OSP_FB_COLOR);
 }
 void OSPVisItVolume::RenderFB() {
+    std::cout << "render frame" << std::endl;
     ospRenderFrame(framebuffer, parent->renderer.renderer, OSP_FB_COLOR);
-    framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
+    std::cout << "done render frame" << std::endl;
+    framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);    
 }
 float* OSPVisItVolume::GetFBData() {
     return framebufferData;
@@ -947,10 +949,10 @@ void OSPContext_StatusFunc(const char* msg) {
     osperr << "#osp: (rank " << PAR_Rank() << ")" 
            << msg; 
 }
+bool OSPVisItContext::initialized = false;
 void OSPVisItContext::InitOSP(int numThreads) 
-{ 
-    OSPDevice device = ospGetCurrentDevice();
-    if (device == NULL) 
+{     
+    if (!OSPVisItContext::initialized) 
     {
 	// check hostname
 #ifdef __unix__
@@ -959,30 +961,33 @@ void OSPVisItContext::InitOSP(int numThreads)
         ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
 #endif
 	// initialize ospray
-        ospout << "[ospray] Initialize OSPRay";
-	device = ospNewDevice();	
-	// setup debug 
-	if (DebugStream::Level5()) {
-	    ospout << " debug mode";
-	    ospDeviceSet1i(device, "debug", 0);
+	std::cout << "[ospray] Initialize OSPRay";
+	OSPDevice device = ospGetCurrentDevice();
+	if (!device) {
+	    device = ospNewDevice();	
+	    // setup debug 
+	    if (DebugStream::Level5()) {
+		std::cout << " debug mode";
+		ospDeviceSet1i(device, "debug", 0);
+	    }
+	    // setup number of threads (this can only be hard-coded)
+	    if (numThreads > 0) {
+		std::cout << " numThreads: " << numThreads;
+		ospDeviceSet1i(device, "numThreads", numThreads);
+	    }
+	    ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
+	    ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
+	    ospDeviceCommit(device);
+	    ospSetCurrentDevice(device);
 	}
-	// setup number of threads (this can only be hard-coded)
-	if (numThreads > 0) {
-	    ospout << " numThreads: " << numThreads;
-	    ospDeviceSet1i(device, "numThreads", numThreads);
-	}
-	ospout << std::endl;
-	ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
-	ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
-	ospDeviceCommit(device);
-	ospSetCurrentDevice(device);
+	std::cout << std::endl;
 	// load ospray module
 	OSPError err = ospLoadModule("visit");
 	if (err != OSP_NO_ERROR) {
-	    osperr << "[Error] can't load visit module" << std::endl;
+	    std::cerr << "[Error] can't load visit module" << std::endl;
 	}
+	OSPVisItContext::initialized = true;
     }
-    initialized = true;
 }
 
 // We use this function to minimize interface
@@ -1020,15 +1025,21 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
 
 void OSPVisItContext::InitPatch(int id) 
 {
-    if (volumes.size() < id) {
-	debug1 << "ERROR: wrong patch index " << id << std::endl;
-	EXCEPTION1(VisItException, "ERROR: wrong patch index"); 
-	return;
+    // if (volumes.size() < id) {
+    // 	std::cerr << "ERROR: wrong patch index " << id << std::endl;
+    // 	EXCEPTION1(VisItException, "ERROR: wrong patch index"); 
+    // 	return;
+    // }
+    // if (volumes.size() == id) { 
+    // 	volumes.push_back(id); 
+    // }
+    // volumes[id].parent = this;
+    if (volumes.find(id) == volumes.end()) {
+	OSPVisItVolume v;
+	v.patchId = id;
+	v.parent = this;
+	volumes[id] = v;
     }
-    if (volumes.size() == id) { 
-	volumes.push_back(id); 
-    }
-    volumes[id].parent = this;
 }
 
 

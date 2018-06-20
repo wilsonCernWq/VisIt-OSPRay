@@ -154,13 +154,6 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
                        { for (int i=0; i<3; i++) ae[i] = avgPatchExtents[i]; };
     void                      GetCellDimension(double cd[6])
                          { for (int i=0; i<3; i++) cd[i] = cellDimension[i]; };
-    //void                      GetProjectedExents(int pe[4])
-    //               { for (int i=0; i<4; i++) pe[i]=projectedImageExtents[i]; };
-
-    // Getting Image Information
-    // Gets the max number of patches it could have
-    //int                       GetTotalAssignedPatches() 
-    //                                          { return totalAssignedPatches; };
     // Gets the number of patches
     int                       GetImgPatchSize() { return patchCount; };
     // Gets the metadata

@@ -62,6 +62,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <map>
 
 namespace ospray
 {
@@ -217,11 +218,11 @@ namespace ospray
 namespace ospray 
 {
     void WriteArrayToPPM
-        (std::string filename, float *image, int dimX, int dimY);
+        (std::string filename, const float *image, int dimX, int dimY);
     void WriteArrayToPPM
-        (std::string filename, unsigned char *image, int dimX, int dimY);
+        (std::string filename, const unsigned char *image, int dimX, int dimY);
     void WriteArrayGrayToPPM
-        (std::string filename , float * image, int dimX, int dimY);
+        (std::string filename, const float * image, int dimX, int dimY);
 };
 
 
@@ -396,7 +397,7 @@ class OSPVisItVolume
     
  public:
     // constructor
-    OSPVisItVolume(int id) {
+    OSPVisItVolume() {
 	// objects owned by the struct
 	world           = NULL;
 	worldType       = OSP_INVALID;
@@ -411,7 +412,7 @@ class OSPVisItVolume
 	dataPtr         = NULL;
 	dataType        = "";
 	// metadata for volume
-	patchId = id;    
+	//patchId = id;    
 	finished      = false; 
 	enableShading = false;
 	enableDVR     = false;
@@ -718,7 +719,7 @@ class OSPVisItContext
     OSPVisItContext() 
     {
 	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
-	initialized = false;
+
     }
     ~OSPVisItContext() {	
 	volumes.clear();
@@ -733,13 +734,13 @@ private:
     OSPVisItRenderer renderer;
     OSPVisItCamera   camera;
     OSPVisItTransferFunction transferfcn;
-    std::vector<OSPVisItVolume> volumes;
+    std::map<int, OSPVisItVolume> volumes;
 private:
     // class parameters
     osp::vec3f     regionScaling;
     double bounds[6];
     // ospray mode
-    bool initialized;
+    static bool initialized;
  public:
     // helper
     void Render(float xMin, float xMax, float yMin, float yMax,

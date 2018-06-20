@@ -1180,6 +1180,7 @@ IF(VISIT_OSPRAY)
     # additional module library
     SET(OSPRAY_LIBRARIES
       ${OSPRAY_LIBRARIES}
+      ${LIBRARY_PATH_PREFIX}ospray_module_ispc${LIBRARY_SUFFIX}
       ${LIBRARY_PATH_PREFIX}ospray_module_visit${LIBRARY_SUFFIX}
       ${LIBRARY_PATH_PREFIX}visit_image_composite${LIBRARY_SUFFIX})
     # debug

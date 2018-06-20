@@ -93,15 +93,21 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
                                   { return "Volume rendering"; };
 
     avtImage_p               RenderImage(avtImage_p, const WindowAttributes &);
+    
 #if defined(VISIT_SLIVR) || defined(VISIT_OSPRAY)
-    avtImage_p               RenderImageRayCasting(avtImage_p opaque_image,
+    avtImage_p               RenderImageRayCasting(avtImage_p,
                                                    const WindowAttributes &);
 #endif
+
     int                      GetNumberOfStages(const WindowAttributes &);
 
   protected:
     VolumeAttributes         atts;
     char                    *primaryVariable;
+
+#ifdef VISIT_OSPRAY
+    OSPVisItContext *ospray;
+#endif
 
     avtOpacityMap            CreateOpacityMap(double range[2]);
 
@@ -109,10 +115,6 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
     virtual avtContract_p    ModifyContract(avtContract_p);
     virtual void             VerifyInput(void);
     virtual bool             FilterUnderstandsTransformedRectMesh();
-
-#ifdef VISIT_OSPRAY
-    OSPVisItContext *ospray;
-#endif
 };
 
 

@@ -511,7 +511,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         }
 
 	// Render Volume
-	int timing_render_volume = visitTimer->StartTimer();
         {
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
