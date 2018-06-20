@@ -383,7 +383,6 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         // Get rendering results
         // put them into a proper vector, sort them based on z value
         //-----------------------------
-	std::cout << "retrieve sampling results" << std::endl;
 	ospray::ImgMetaData tmpImageMetaPatch;
         tmpImageMetaPatch = InitMetaPatch(patchCount);
 

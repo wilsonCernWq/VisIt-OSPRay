@@ -60,15 +60,6 @@ inline bool CheckThreadedBlend_MetaData()
     if (env_use) { 
 	use = atoi(env_use) <= 0; 
     }
-    // if (!use) {
-    //     std::cout << "[avtOSPRayCommon] "
-    //     	  << "Not Using Multi-Threading for Blending"
-    //     	  << std::endl;
-    // } else {
-    //     std::cout << "[avtOSPRayCommon] "
-    //     	  << "Using Multi-Threading for Blending"
-    //     	  << std::endl;
-    // }
     return use;
 }
 bool UseThreadedBlend_MetaData = CheckThreadedBlend_MetaData();
@@ -470,7 +461,8 @@ OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
 		    int nX, int nY, int nZ,
 		    double volumePBox[6], 
 		    double volumeBBox[6], 
-		    double mtl[4], float sr, bool shading)
+		    double mtl[4], float sr,
+		    bool shading)
 {
     /* OSPRay Volume */
     specularKs    = (float)mtl[2];
@@ -539,6 +531,8 @@ void OSPVisItVolume::InitVolume(unsigned char type) {
 	}
     }
 }
+
+#include <fstream>
 void 
 OSPVisItVolume::SetVolume(int type, void *ptr, 
 			  double *X, double *Y, double *Z, 
@@ -647,20 +641,36 @@ OSPVisItVolume::SetVolume(int type, void *ptr,
     ospSetVec3f(volume, "gridSpacing", scaledSpacing);
     ospSetVec3f(volume, "gridOrigin",  scaledOrigin);
     ospSetVec3i(volume, "dimensions",  regionSize);
-    ospSet1f(volume, "samplingRate", samplingRate);
+    ospSet1f(volume, "samplingRate", samplingRate); 
     ospSet1i(volume, "adaptiveSampling", 0);
-    ospSet1i(volume, "preIntegration", 1);
+    ospSet1i(volume, "preIntegration", 0);
     ospSet1i(volume, "singleShade", 0);
     ospSetVec3f(volume, "volumeGlobalBoundingBoxLower", scaledGlobalBBoxLower);
     ospSetVec3f(volume, "volumeGlobalBoundingBoxUpper", scaledGlobalBBoxUpper);
     ospCommit(volume);
+
+    /*save volume*/ /* data is valid */
+    /*
+    std::string fname = "/home/qwu/work/visit/build/patch"+std::to_string(patchId);
+    std::ofstream rawfile((fname+".raw").c_str(), ios::out | ios::binary);
+    rawfile.write((const char*)dataPtr, voxelSize * sizeof(float));
+    rawfile.close();
+    std::ofstream ospfile((fname+".osp").c_str(), ios::out);
+    ospfile << "<?xml version=\"1.0\"?>\n";
+    ospfile << "<volume name=\"volume\">\n";
+    ospfile << "<dimensions> " << nX << " " << nY << " " << nZ << " </dimensions>\n";
+    ospfile << "<voxelType> float </voxelType>\n";
+    ospfile << "<samplingRate> 1.0 </samplingRate>\n";
+    ospfile << "<filename> patch" << std::to_string(patchId) << ".raw </filename>\n";
+    ospfile << "</volume>\n";
+    ospfile.close();
+    */
 }
 
 // ospFrameBuffer component     
 void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
 {
     // preparation
-    osp::vec2i imageSize;
     imageSize.x = width;
     imageSize.y = height;
     // create max depth texture
@@ -714,10 +724,15 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
 				    OSP_FB_COLOR);
 }
 void OSPVisItVolume::RenderFB() {
-    std::cout << "render frame" << std::endl;
+    static int i = 0;
     ospRenderFrame(framebuffer, parent->renderer.renderer, OSP_FB_COLOR);
-    std::cout << "done render frame" << std::endl;
-    framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);    
+    framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
+    /* no image here */
+    // ospray::WriteArrayToPPM
+    // 	("/home/qwu/work/visit/build/img-osp-"+std::to_string(i++)+".ppm",
+    // 	 framebufferData,
+    // 	 imageSize.x,
+    // 	 imageSize.x);    
 }
 float* OSPVisItVolume::GetFBData() {
     return framebufferData;
@@ -950,6 +965,9 @@ void OSPContext_StatusFunc(const char* msg) {
            << msg; 
 }
 bool OSPVisItContext::initialized = false;
+void OSPVisItContext::Finalize()
+{
+}
 void OSPVisItContext::InitOSP(int numThreads) 
 {     
     if (!OSPVisItContext::initialized) 
@@ -958,21 +976,19 @@ void OSPVisItContext::InitOSP(int numThreads)
 #ifdef __unix__
 	char hname[200];
 	gethostname(hname, 200);
-        ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
+	ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
 #endif
-	// initialize ospray
-	std::cout << "[ospray] Initialize OSPRay";
+	// load ospray device
+	ospout << "[ospray] Initialize OSPRay";	
 	OSPDevice device = ospGetCurrentDevice();
 	if (!device) {
-	    device = ospNewDevice();	
-	    // setup debug 
-	    if (DebugStream::Level5()) {
-		std::cout << " debug mode";
+	    device = ospNewDevice(); 
+	    if (DebugStream::Level5()) { 
+		ospout << " debug mode";
 		ospDeviceSet1i(device, "debug", 0);
-	    }
-	    // setup number of threads (this can only be hard-coded)
+	    }	
 	    if (numThreads > 0) {
-		std::cout << " numThreads: " << numThreads;
+		ospout << " numThreads: " << numThreads;
 		ospDeviceSet1i(device, "numThreads", numThreads);
 	    }
 	    ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
@@ -980,11 +996,11 @@ void OSPVisItContext::InitOSP(int numThreads)
 	    ospDeviceCommit(device);
 	    ospSetCurrentDevice(device);
 	}
-	std::cout << std::endl;
+	ospout << std::endl;
 	// load ospray module
 	OSPError err = ospLoadModule("visit");
 	if (err != OSP_NO_ERROR) {
-	    std::cerr << "[Error] can't load visit module" << std::endl;
+	    osperr << "[Error] can't load visit module" << std::endl;
 	}
 	OSPVisItContext::initialized = true;
     }

@@ -367,6 +367,7 @@ class OSPVisItVolume
     OSPFrameBuffer      framebuffer;
     float              *framebufferData;
     OSPTexture2D        framebufferBg;
+    osp::vec2i imageSize;
     // --- ospray volume ---
     OSPVolume           volume;
     unsigned char       volumeType;
@@ -487,7 +488,7 @@ class OSPVisItVolume
 	    framebufferData = NULL;
 	}
 	if (framebuffer != NULL) { 
-	    ospFreeFrameBuffer(framebuffer); 	    
+	    ospRelease(framebuffer); 	    
 	    framebuffer = NULL;
 	}
 	if (framebufferBg != NULL) {
@@ -719,7 +720,6 @@ class OSPVisItContext
     OSPVisItContext() 
     {
 	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
-
     }
     ~OSPVisItContext() {	
 	volumes.clear();
@@ -762,6 +762,7 @@ private:
     }
     // patch 
     void InitOSP(int numThreads = 0);
+    void Finalize();
     void InitPatch(int id);
     OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
 };

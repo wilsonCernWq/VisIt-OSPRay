@@ -598,6 +598,7 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
 	((avtOSPRayRayTracer*)software)->SetLighting(atts.GetLightingFlag());
         ((avtOSPRayRayTracer*)software)->SetLightDirection(tempLightDir);
 	((avtOSPRayRayTracer*)software)->SetMatProperties(materialPropArray);
+	((avtOSPRayRayTracer*)software)->SetRendererSampleRate(atts.GetRendererSamples());
     }
 
     //

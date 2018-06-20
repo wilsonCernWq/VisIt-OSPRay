@@ -323,7 +323,7 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
     StackTimer t0("avtSLIVRSamplePointExtractor::RasterBasedSample");
 
     //debug5 << PAR_Rank() << " avtSLIVRSamplePointExtractor::RasterBasedSample  " << num << std::endl;
-    std::cout << "xxcx " << ds->GetDataObjectType() << std::endl;
+    
     if (ds->GetDataObjectType() == VTK_RECTILINEAR_GRID)
     {
         avtDataAttributes &atts = GetInput()->GetInfo().GetAttributes();
