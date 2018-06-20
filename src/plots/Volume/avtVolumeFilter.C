@@ -97,6 +97,9 @@ static void CreateViewInfoFromViewAttributes(avtViewInfo &,
 //    Hank Childs, Wed Nov 24 16:23:41 PST 2004
 //    Removed references to data members that have been moved.
 //
+//    Qi WU, Wed Jun 20 2018
+//    Add support for ospray volume rendering
+//
 // ****************************************************************************
 
 avtVolumeFilter::avtVolumeFilter()
@@ -116,6 +119,9 @@ avtVolumeFilter::avtVolumeFilter()
 //
 //    Hank Childs, Wed Nov 24 16:23:41 PST 2004
 //    Removed references to data members that have been moved.
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for ospray volume rendering
 //
 // ****************************************************************************
 
@@ -366,6 +372,9 @@ avtVolumeFilter::Execute(void)
 //    Cyrus Harrison, Wed Mar 13 08:29:11 PDT 2013
 //    We don't use lighting in the raycasting integration case.
 //    Make sure we don't require the gradient calc.
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for ospray volume rendering
 //
 // ****************************************************************************
 extern bool GetLogicalBounds(avtDataObject_p input,int &width,int &height, int &depth);
@@ -1208,6 +1217,9 @@ CreateViewInfoFromViewAttributes(avtViewInfo &vi, const View3DAttributes &view)
 //    Kathleen Biagas, Fri Jun 23 08:29:29 PDT 2017
 //    Modify how expressions are setup, to prevent multiple expressions
 //    with the same name being added to the ExpressionList.
+//
+//    Qi WU, Wed Jun 20 2018
+//    Add support for ospray volume rendering
 //
 // ****************************************************************************
 
