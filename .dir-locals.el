@@ -1,7 +1,7 @@
 ;;; Directory Local Variables
 ;;; See Info node `(emacs) Directory Variables' for more information.
 
-((nil
-  (c-basic-offset . 4)
-  (c-default-style . "linux")))
-(setq-default indent-tabs-mode nil)
+((nil . ((indent-tabs-mode . t)
+		 (tab-width . 4)))	 
+ (c-mode . ((c-file-style . "linux")
+			(c-basic-offset . 4))))
