@@ -51,7 +51,9 @@
 #include <avtOpacityMap.h>
 
 #ifdef VISIT_OSPRAY
-#include <avtOSPRayCommon.h>
+# define VISIT_OSPRAY_CONTEXT_ONLY /*dont have to include helper funcitons*/
+# include <avtOSPRayCommon.h>
+# undef VISIT_OSPRAY_CONTEXT_ONLY
 #endif
 
 class     WindowAttributes;

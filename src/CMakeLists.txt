@@ -1186,9 +1186,9 @@ IF(VISIT_OSPRAY)
     # debug
     MESSAGE(STATUS "OSPRAY_INCLUDE_DIR: " ${OSPRAY_INCLUDE_DIR})
     MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
-    MESSAGE(STATUS "OSPRAY for VisIt: ON")
+    MESSAGE(STATUS "OSPRay for VisIt: ON")
 ELSE(VISIT_OSPRAY)
-    MESSAGE(STATUS "OSPRAY for VisIt: OFF")
+    MESSAGE(STATUS "OSPRay for VisIt: OFF")
 ENDIF(VISIT_OSPRAY)
 
 #-----------------------------------------------------------------------------

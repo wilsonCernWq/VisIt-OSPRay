@@ -107,7 +107,9 @@ static void CreateViewInfoFromViewAttributes(avtViewInfo &,
 avtVolumeFilter::avtVolumeFilter()
 {
     primaryVariable = NULL;
+#ifdef VISIT_OSPRAY
     ospray = NULL;
+#endif
 }
 
 
@@ -131,9 +133,11 @@ avtVolumeFilter::~avtVolumeFilter()
         delete [] primaryVariable;
         primaryVariable = NULL;
     }
+#ifdef VISIT_OSPRAY
     if (ospray != NULL) {
 	delete ospray;
     }
+#endif
 }
 
 
@@ -313,7 +317,8 @@ avtVolumeFilter::CreateOpacityMap(double range[2])
     {
         om.SetTable(vtf, 256, atts.GetOpacityAttenuation() * 2.0 - 1.0, 
                     atts.GetRendererSamples());
-	om.SetTableFloatNOC(vtf, 256, atts.GetOpacityAttenuation() * 2.0 - 1.0); 
+	om.SetTableFloatNOC(vtf, 256,
+			    atts.GetOpacityAttenuation() * 2.0 - 1.0); 
     }
     else
 #endif
@@ -393,9 +398,11 @@ avtVolumeFilter::CreateOpacityMap(double range[2])
     return om;
 }
 
-extern bool GetLogicalBounds(avtDataObject_p input,int &width,int &height, int &depth);
+extern bool GetLogicalBounds(avtDataObject_p input,
+			     int &width,int &height, int &depth);
 
 #if defined(VISIT_SLIVR) || defined(VISIT_OSPRAY)
+
 // ****************************************************************************
 //  Method: avtVolumeFilter::RenderImageRayCasting
 //
@@ -425,12 +432,20 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     // Set up the volume renderer.
     //
     avtRayTracerBase *software = nullptr;
+#ifdef VISIT_SLIVR
     if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {        
         software = new avtSLIVRRayTracer;
-    } else if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {  
+    }
+    else
+#endif
+    {
+#ifdef VISIT_OSPRAY
+    if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
         software = new avtOSPRayRayTracer;
 	if (ospray == NULL) { ospray = new OSPVisItContext; }
 	((avtOSPRayRayTracer*)software)->SetOSPRay(ospray);
+    }
+#endif
     }
     software->SetInput(termsrc.GetOutput());
     software->InsertOpaqueImage(opaque_image);
@@ -467,7 +482,8 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     const char *gradvar = atts.GetOpacityVariable().c_str();
     if (strcmp(gradvar, "default") == 0)
         gradvar = primaryVariable;
-    // This name is explicitly sent to the avtGradientExpression in avtVolumePlot.
+    // This name is explicitly sent to the avtGradientExpression in
+    // avtVolumePlot.
     SNPRINTF(gradName, 128, "_%s_gradient", gradvar);
 
     for (int i = 0 ; i < vl.nvars ; i++)
@@ -547,11 +563,14 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     {
         double viewDirection[3];
         int numSlices;
-        viewDirection[0] = (view.GetViewNormal()[0] > 0)? view.GetViewNormal()[0]:
+        viewDirection[0] = (view.GetViewNormal()[0] > 0)?
+	    view.GetViewNormal()[0]:
             -view.GetViewNormal()[0];
-        viewDirection[1] = (view.GetViewNormal()[1] > 0)? view.GetViewNormal()[1]:
+        viewDirection[1] = (view.GetViewNormal()[1] > 0)?
+	    view.GetViewNormal()[1]:
             -view.GetViewNormal()[1];
-        viewDirection[2] = (view.GetViewNormal()[2] > 0)? view.GetViewNormal()[2]: 
+        viewDirection[2] = (view.GetViewNormal()[2] > 0)?
+	    view.GetViewNormal()[2]: 
             -view.GetViewNormal()[2];
         numSlices = (width_ * viewDirection[0] +
                      height_* viewDirection[1] + 
@@ -587,18 +606,27 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     materialPropArray[1] = matProp[1];
     materialPropArray[2] = matProp[2];
     materialPropArray[3] = matProp[3];
-
+    
+#ifdef VISIT_SLIVR
     if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
-	((avtSLIVRRayTracer*)software)->SetViewDirection(view_dir);
-	((avtSLIVRRayTracer*)software)->SetLighting(atts.GetLightingFlag());
-	((avtSLIVRRayTracer*)software)->SetLightDirection(tempLightDir);
-	((avtSLIVRRayTracer*)software)->SetMatProperties(materialPropArray);
-    } else if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
-	((avtOSPRayRayTracer*)software)->SetViewDirection(view_dir);
-	((avtOSPRayRayTracer*)software)->SetLighting(atts.GetLightingFlag());
-        ((avtOSPRayRayTracer*)software)->SetLightDirection(tempLightDir);
-	((avtOSPRayRayTracer*)software)->SetMatProperties(materialPropArray);
-	((avtOSPRayRayTracer*)software)->SetRendererSampleRate(atts.GetRendererSamples());
+	avtSLIVRRayTracer* s = (avtSLIVRRayTracer*)software;
+	s->SetViewDirection(view_dir);
+	s->SetLighting(atts.GetLightingFlag());
+	s->SetLightDirection(tempLightDir);
+	s->SetMatProperties(materialPropArray);
+    } else
+#endif
+    {
+#ifdef VISIT_OSPRAY
+    if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
+	avtOSPRayRayTracer* s = (avtOSPRayRayTracer*)software;
+	s->SetViewDirection(view_dir);
+	s->SetLighting(atts.GetLightingFlag());
+        s->SetLightDirection(tempLightDir);
+	s->SetMatProperties(materialPropArray);
+	s->SetRendererSampleRate(atts.GetRendererSamples());
+    }
+#endif
     }
 
     //
