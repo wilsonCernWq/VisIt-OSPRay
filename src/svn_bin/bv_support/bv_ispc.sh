@@ -2,7 +2,6 @@ function bv_ispc_initialize
 {
     export DO_ISPC="no"
     export USE_SYSTEM_ISPC="no"
-    export ISPC_INSTALL_DIR=""
     add_extra_commandline_args "ispc" "alt-ispc-dir" 1 "Use alternative directory for ispc"
 }
 

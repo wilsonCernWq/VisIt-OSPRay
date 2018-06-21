@@ -4,7 +4,7 @@ function bv_ospray_initialize
 {
     export DO_OSPRAY="no"
     export USE_SYSTEM_OSPRAY="no"
-    export OSPRAY_INSTALL_DIR=""
+    export OSPRAY_CONFIG_DIR=""
     add_extra_commandline_args "ospray" "alt-ospray-dir" 1 "Use alternative directory for ospray"
 }
 
@@ -23,7 +23,7 @@ function bv_ospray_alt_ospray_dir
     echo "Using alternate ospray directory"
     bv_ospray_enable
     USE_SYSTEM_OSPRAY="ospray"
-    OSPRAY_INSTALL_DIR="$1"
+    OSPRAY_CONFIG_DIR="$1"
 }
 
 function bv_ospray_check_openmp
@@ -103,14 +103,7 @@ function bv_ospray_host_profile
                 error "No library path for OSPRay has been found."
             fi
         else
-            if [[ -d $OSPRAY_INSTALL_DIR/lib ]]; then
-                echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${OSPRAY_INSTALL_DIR}/lib/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
-            elif [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then
-                echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${OSPRAY_INSTALL_DIR}/lib64/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
-            else
-                error "No library path for OSPRay has been found."
-            fi
-
+            echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${OSPRAY_CONFIG_DIR})" >> $HOSTCONF
         fi
     fi
 }
@@ -151,14 +144,19 @@ function bv_ospray_initialize_vars
     if [[ "$DO_OSPRAY" == "yes" ]]; then
         if [[ "$USE_SYSTEM_OSPRAY" == "no" ]]; then
             OSPRAY_INSTALL_DIR="${VISITDIR}/ospray/${OSPRAY_VERSION}/${VISITARCH}"
+        else
+            OSPRAY_INSTALL_DIR="${OSPRAY_CONFIG_DIR}/../../../"
         fi
+
+        # Qi's Note: Are those variables necessary ?
         OSPRAY_INCLUDE_DIR="${OSPRAY_INSTALL_DIR}/include"
-        if [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then        
+        if [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then
             OSPRAY_LIB_DIR="${OSPRAY_INSTALL_DIR}/lib64"
         else
             OSPRAY_LIB_DIR="${OSPRAY_INSTALL_DIR}/lib"
-        fi
-        OSPRAY_LIB="${OSPRAY_LIB_DIR}/libospray.so"
+        fi        
+        OSPRAY_LIB="${OSPRAY_LIB_DIR}/libospray.so"            
+
         VTK_USE_OSPRAY="yes"
     fi
 }

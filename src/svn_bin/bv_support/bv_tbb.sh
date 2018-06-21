@@ -2,7 +2,6 @@ function bv_tbb_initialize
 {
     export DO_TBB="no"
     export USE_SYSTEM_TBB="no"
-    export TBB_INSTALL_DIR=""
     add_extra_commandline_args "tbb" "alt-tbb-dir" 1 "Use alternative directory for tbb"
 }
 

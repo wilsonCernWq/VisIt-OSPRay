@@ -2,7 +2,6 @@ function bv_embree_initialize
 {
     export DO_EMBREE="no"
     export USE_SYSTEM_EMBREE="no"
-    export EMBREE_INSTALL_DIR=""
     add_extra_commandline_args "embree" "alt-embree-dir" 1 "Use alternative directory for embree"
 }
 
