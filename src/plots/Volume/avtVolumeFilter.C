@@ -80,7 +80,10 @@
 #endif
 
 #ifdef VISIT_OSPRAY
-#include <avtOSPRayRayTracer.h>
+# define VISIT_OSPRAY_CONTEXT_ONLY /*dont have to include helper funcitons*/
+# include <avtOSPRayCommon.h>
+# undef VISIT_OSPRAY_CONTEXT_ONLY
+# include <avtOSPRayRayTracer.h>
 #endif
 
 //
@@ -135,7 +138,7 @@ avtVolumeFilter::~avtVolumeFilter()
     }
 #ifdef VISIT_OSPRAY
     if (ospray != NULL) {
-	delete ospray;
+      delete (OSPVisItContext*)ospray;
     }
 #endif
 }
@@ -442,8 +445,9 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
 #ifdef VISIT_OSPRAY
     if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
         software = new avtOSPRayRayTracer;
-	if (ospray == NULL) { ospray = new OSPVisItContext; }
-	((avtOSPRayRayTracer*)software)->SetOSPRay(ospray);
+        if (ospray == NULL) { ospray = new OSPVisItContext; }
+        ((avtOSPRayRayTracer*)software)->SetOSPRay
+                                           ((OSPVisItContext*)ospray);
     }
 #endif
     }

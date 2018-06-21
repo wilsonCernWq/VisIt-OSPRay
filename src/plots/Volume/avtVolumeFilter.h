@@ -50,12 +50,6 @@
 #include <avtImage.h>
 #include <avtOpacityMap.h>
 
-#ifdef VISIT_OSPRAY
-# define VISIT_OSPRAY_CONTEXT_ONLY /*dont have to include helper funcitons*/
-# include <avtOSPRayCommon.h>
-# undef VISIT_OSPRAY_CONTEXT_ONLY
-#endif
-
 class     WindowAttributes;
 
 
@@ -80,6 +74,9 @@ class     WindowAttributes;
 //
 //    Jeremy Meredith, Thu Feb 15 11:44:28 EST 2007
 //    Added support for rectilinear grids with an inherent transform.
+//
+//    Qi WU, Wed Jun 20 2018
+//    Added support for ospray volume rendering filter
 //
 // ****************************************************************************
 
@@ -107,8 +104,8 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
     VolumeAttributes         atts;
     char                    *primaryVariable;
 
-#ifdef VISIT_OSPRAY
-    OSPVisItContext *ospray;
+#ifdef VISIT_OSPRAY /* handler for ospray volume rendering filter*/
+    void                    *ospray;
 #endif
 
     avtOpacityMap            CreateOpacityMap(double range[2]);

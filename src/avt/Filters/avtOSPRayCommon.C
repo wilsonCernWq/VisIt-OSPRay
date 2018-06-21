@@ -47,6 +47,7 @@
 #include <ImproperUseException.h>
 
 #include <ospray/ospray.h>
+#include <ospray/visit/VisItModuleCommon.h>
 #include <ospray/visit/VisItImageComposite.h>
 
 #ifdef __unix__
@@ -61,9 +62,10 @@ inline bool CheckThreadedBlend_MetaData() {
 }
 static bool UseThreadedBlend_MetaData = CheckThreadedBlend_MetaData();
 
-std::ostream *ospray::osp_out = &DebugStream::Stream5();
-std::ostream *ospray::osp_err = &DebugStream::Stream1();
-
+std::ostream *ospray::osp_out = (ospray::visit::CheckVerbose()) ?
+        &std::cout : &DebugStream::Stream5();
+std::ostream *ospray::osp_err = (ospray::visit::CheckVerbose()) ?
+        &std::cerr : &DebugStream::Stream1();
 
 // ****************************************************************************
 //
@@ -124,32 +126,14 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
 			     int imgWidth, int imgHeight,
 			     float*& dest, OSPVisItVolume* volume) 
 {
-    int timing_SetSubCamera = visitTimer->StartTimer();
+
     camera.SetScreen(xMin, xMax, yMin, yMax);
-    visitTimer->StopTimer(timing_SetSubCamera,
-			  "[OSPRay] Calling OSPContext::SetSubCamera");
-
-    int timing_SetModel = visitTimer->StartTimer();
     renderer.SetModel(volume->GetWorld());
-    renderer.SetCamera(camera.camera);
-    visitTimer->StopTimer(timing_SetModel,
-			  "[OSPRay] Calling OSPContext::SetModel");
-
-    int timing_InitFB = visitTimer->StartTimer();
+    renderer.SetCamera(*camera);
     volume->InitFB(imgWidth, imgHeight);
-    visitTimer->StopTimer(timing_InitFB,
-			  "[OSPRay] Calling OSPContext::InitFB");
-
-    int timing_RenderFB = visitTimer->StartTimer();
     volume->RenderFB();
-    visitTimer->StopTimer(timing_RenderFB,
-			  "[OSPRay] Calling OSPContext::RenderFB");
-
-    int timing_stdcopy = visitTimer->StartTimer();
     std::copy(volume->GetFBData(), 
 	      volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
-    visitTimer->StopTimer(timing_stdcopy, 
-			  "[OSPRay] Calling OSPContext::std::copy");
 }
 
 void OSPVisItContext::InitPatch(int id) 
@@ -294,7 +278,7 @@ OSPVisItVolume::SetVolume(int type, void *ptr,
 
     // other objects
     ospSetString(volume, "voxelType", dataType.c_str());
-    ospSetObject(volume, "transferFunction", parent->transferfcn.transferfcn);
+    ospSetObject(volume, "transferFunction", *(parent->tfn));
 
     // commit voxel data
     if (voxelData != NULL) { 
@@ -387,19 +371,19 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     //
     // It seems we need to also fix pan and zoom also
     //
-    const int Xs = 
-    	std::min((int)round((parent->camera.r_xl + parent->camera.panx) * 
-			    parent->camera.size[0]),
-		 parent->camera.size[0]-1);
-    const int Ys =
-	std::min((int)round((parent->camera.r_yl + parent->camera.pany) * 
-			    parent->camera.size[1]),
-		 parent->camera.size[1]-1);
+    const int Xs = parent->camera.GetWindowExts(0);
+    // std::min((int)round((parent->camera.r_xl + parent->camera.panx) * 
+    // 	    parent->camera.size[0]),
+    //  parent->camera.size[0]-1);
+    const int Ys = parent->camera.GetWindowExts(2);
+	// std::min((int)round((parent->camera.r_yl + parent->camera.pany) * 
+	// 		    parent->camera.size[1]),
+	// 	 parent->camera.size[1]-1);
     for (int i = 0; i < width; ++i) {
     	for (int j = 0; j < height; ++j) {
     	    maxDepth[i + j * width] = 
     		parent->renderer.maxDepthBuffer
-		[Xs + i + (Ys + j) * parent->renderer.maxDepthSize.x];
+              [Xs + i + (Ys + j) * parent->renderer.maxDepthSize.x];
     	}
     }
     framebufferBg = ospNewTexture2D(imageSize, OSP_TEXTURE_R32F, 
@@ -523,7 +507,7 @@ void OSPVisItRenderer::SetModel(const OSPModel& world)
 // OSPCamera
 //
 // ****************************************************************************
-
+/*
 void OSPVisItCamera::Init(State type) 
 {
     if (cameraType != type) {
@@ -589,13 +573,13 @@ void OSPVisItCamera::SetScreen(float xMin, float xMax, float yMin, float yMax)
     ospSetVec2f(camera, "imageEnd",   imgE);
     ospCommit(camera);
 }
-
+*/
 // ****************************************************************************
 //
 // OSPTransferFunction
 //
 // ****************************************************************************
-
+/*
 void OSPVisItTransferFunction::Init() 
 {
     if (transferfcnType == INVALID) {
@@ -633,6 +617,7 @@ void OSPVisItTransferFunction::Set(const OSPVisItColor *table,
     ospRelease(colorData);
     ospRelease(opacityData);
 }
+*/
 
 // ****************************************************************************
 //

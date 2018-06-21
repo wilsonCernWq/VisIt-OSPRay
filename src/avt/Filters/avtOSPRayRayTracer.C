@@ -287,7 +287,7 @@ avtOSPRayRayTracer::Execute()
     unsigned char *opaqueImageData = NULL;
     float         *opaqueImageZB = NULL;
     std::vector<float> opaqueImageDepth(screen[0] * screen[1], oldFarPlane);
-    int            fullImageExtents[4];
+    int            tileExtents[4];
 
     //
     // Camera Settings
@@ -369,11 +369,11 @@ avtOSPRayRayTracer::Execute()
     ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
                                      panPercentage, view.imageZoom,
                                      model_to_screen_transform,
-                                     fullImageExtents, depthExtents);
-    fullImageExtents[0] = std::max(fullImageExtents[0], 0);
-    fullImageExtents[2] = std::max(fullImageExtents[2], 0);
-    fullImageExtents[1] = std::min(1+fullImageExtents[1], screen[0]);
-    fullImageExtents[3] = std::min(1+fullImageExtents[3], screen[1]);
+                                     tileExtents, depthExtents);
+    tileExtents[0] = std::max(tileExtents[0], 0);
+    tileExtents[2] = std::max(tileExtents[2], 0);
+    tileExtents[1] = std::min(1+tileExtents[1], screen[0]);
+    tileExtents[3] = std::min(1+tileExtents[3], screen[1]);
     // Debug
     ospout << "[avrRayTracer] View settings: " << endl
            << "  inheriant view direction: "
@@ -423,10 +423,10 @@ avtOSPRayRayTracer::Execute()
            << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
            << "\t" << dbounds[4] << " " << dbounds[5] << std::endl
            << "[avrRayTracer] full image extents: " << std::endl
-           << "\t" << fullImageExtents[0] << " "
-           << "\t" << fullImageExtents[1] << std::endl
-           << "\t" << fullImageExtents[2] << " "
-           << "\t" << fullImageExtents[3] << std::endl;
+           << "\t" << tileExtents[0] << " "
+           << "\t" << tileExtents[1] << std::endl
+           << "\t" << tileExtents[2] << " "
+           << "\t" << tileExtents[3] << std::endl;
     ospout << "[avrRayTracer] model_to_screen_transform: " 
            << *model_to_screen_transform << std::endl;
     ospout << "[avrRayTracer] screen_to_model_transform: " 
@@ -436,7 +436,7 @@ avtOSPRayRayTracer::Execute()
 
     //===================================================================//
     // ospray stuffs
-    //===================================================================//   
+    //===================================================================//
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute before ospray", 
                             "ospout");
     // initialize ospray
@@ -444,38 +444,35 @@ avtOSPRayRayTracer::Execute()
     ospray->InitOSP();
     // camera
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
-    if (!view.orthographic) {
-        ospray->camera.Init(OSPVisItCamera::PERSPECTIVE);
-    }
-    else {
-        ospray->camera.Init(OSPVisItCamera::ORTHOGRAPHIC);
-    }
-    ospray->camera.Set(view.camera,
-                       view.focus, 
-                       view.viewUp, 
-                       viewDirection,
-                       sceneSize, 
-                       aspect, 
-                       view.viewAngle, 
-                       view.imageZoom,
-                       view.imagePan, 
-                       fullImageExtents, 
-                       screen);
-    ospray->SetScaling(scale);
+    // if (!view.orthographic) {
+    //     ospray->camera.Init(OSPVisItCamera::PERSPECTIVE);
+    // }
+    // else {
+    //     ospray->camera.Init(OSPVisItCamera::ORTHOGRAPHIC);
+    // }
+    ospray->camera.Set(view.orthographic, view.camera, view.focus, 
+                       view.viewUp,view.viewAngle, view.imagePan,
+                       view.imageZoom, sceneSize, screen, tileExtents);
     // transfer function
     ospout  << "[avrRayTracer] make ospray transfer function" 
             << std::endl;
-    ospray->transferfcn.Init();
-    ospray->transferfcn.Set
-        ((OSPVisItColor*)transferFn1D->GetTableFloat(), 
-         transferFn1D->GetNumberOfTableEntries(),
-         (float)transferFn1D->GetMin(),
-         (float)transferFn1D->GetMax());
+    // ospray->transferfcn.Init();
+    // ospray->transferfcn.Set
+    //     ((OSPVisItColor*)transferFn1D->GetTableFloat(), 
+    //      transferFn1D->GetNumberOfTableEntries(),
+    //      (float)transferFn1D->GetMin(),
+    //      (float)transferFn1D->GetMax());
+    ospray->tfn.Set(transferFn1D->GetTableFloat(), 
+                    transferFn1D->GetNumberOfTableEntries(),
+                    transferFn1D->GetMin(),
+                    transferFn1D->GetMax());
+    
     // renderer
     ospout << "[avrRayTracer] make ospray renderer" << std::endl;
     ospray->renderer.Init();
     ospray->renderer.Set(materialProperties, viewDirection, lighting);
     ospray->SetDataBounds(dbounds);
+    ospray->SetScaling(scale);
     // check memory
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    
@@ -495,7 +492,7 @@ avtOSPRayRayTracer::Execute()
     extractor.SetRendererSampleRate(rendererSampleRate); 
     extractor.SetDepthExtents(depthExtents);
     extractor.SetMVPMatrix(model_to_screen_transform);
-    extractor.SetFullImageExtents(fullImageExtents);
+    extractor.SetFullImageExtents(tileExtents);
     extractor.SetOSPRay(ospray); // sending ospray
 
     //
@@ -605,22 +602,22 @@ avtOSPRayRayTracer::Execute()
         //---------------------------------------------------------------//
         // First Composition
         if (PAR_Size() > 1) { 
-            compositedW = fullImageExtents[1] - fullImageExtents[0];
-            compositedH = fullImageExtents[3] - fullImageExtents[2];
-            compositedExtents[0] = fullImageExtents[0];
-            compositedExtents[1] = fullImageExtents[1];
-            compositedExtents[2] = fullImageExtents[2];
-            compositedExtents[3] = fullImageExtents[3];
+            compositedW = tileExtents[1] - tileExtents[0];
+            compositedH = tileExtents[3] - tileExtents[2];
+            compositedExtents[0] = tileExtents[0];
+            compositedExtents[1] = tileExtents[1];
+            compositedExtents[2] = tileExtents[2];
+            compositedExtents[3] = tileExtents[3];
             if (PAR_Rank() == 0) {
                 compositedData = 
                     new float[4 * compositedW * compositedH]();
             }
             int currExtents[4] = 
-                {std::max(currMeta.screen_ll[0]-fullImageExtents[0], 0), 
-                 std::min(currMeta.screen_ur[0]-fullImageExtents[0], 
+                {std::max(currMeta.screen_ll[0]-tileExtents[0], 0), 
+                 std::min(currMeta.screen_ur[0]-tileExtents[0], 
                           compositedW), 
-                 std::max(currMeta.screen_ll[1]-fullImageExtents[2], 0),
-                 std::min(currMeta.screen_ur[1]-fullImageExtents[2],
+                 std::max(currMeta.screen_ll[1]-tileExtents[2], 0),
+                 std::min(currMeta.screen_ur[1]-tileExtents[2],
                           compositedH)};
             imgComm.IceTInit(compositedW, compositedH);
             imgComm.IceTSetTile(currData.imagePatch, 
@@ -634,10 +631,10 @@ avtOSPRayRayTracer::Execute()
         } else {
             compositedW = currMeta.dims[0];
             compositedH = currMeta.dims[1];
-            compositedExtents[0] = fullImageExtents[0];
-            compositedExtents[1] = fullImageExtents[0] + compositedW;
-            compositedExtents[2] = fullImageExtents[2];
-            compositedExtents[3] = fullImageExtents[2] + compositedH;
+            compositedExtents[0] = tileExtents[0];
+            compositedExtents[1] = tileExtents[0] + compositedW;
+            compositedExtents[2] = tileExtents[2];
+            compositedExtents[3] = tileExtents[2] + compositedH;
             compositedData = currData.imagePatch;
             currData.imagePatch = NULL;
         }
@@ -686,12 +683,12 @@ avtOSPRayRayTracer::Execute()
         // Blend Images
         ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
                                   "Serial-Composite: Blend Images");
-        compositedW = fullImageExtents[1] - fullImageExtents[0];
-        compositedH = fullImageExtents[3] - fullImageExtents[2];
-        compositedExtents[0] = fullImageExtents[0];
-        compositedExtents[1] = fullImageExtents[0] + compositedW;
-        compositedExtents[2] = fullImageExtents[2];
-        compositedExtents[3] = fullImageExtents[2] + compositedH;	    
+        compositedW = tileExtents[1] - tileExtents[0];
+        compositedH = tileExtents[3] - tileExtents[2];
+        compositedExtents[0] = tileExtents[0];
+        compositedExtents[1] = tileExtents[0] + compositedW;
+        compositedExtents[2] = tileExtents[2];
+        compositedExtents[3] = tileExtents[2] + compositedH;	    
         if (PAR_Rank() == 0) {
             compositedData = new float[compositedW * compositedH * 4]();
         }
@@ -750,12 +747,12 @@ avtOSPRayRayTracer::Execute()
             imgComm.ParallelDirectSendManyPatches
             (extractor.imgDataHashMap, extractor.imageMetaPatchVector,
              numPatches, regions, imgComm.GetParSize(), tags, 
-             fullImageExtents);
+             tileExtents);
         imgComm.gatherImages(regions, imgComm.GetParSize(), 
                              imgComm.intermediateImage, 
                              imgComm.intermediateImageExtents, 
                              imgComm.intermediateImageExtents, 
-                             tagGather, fullImageExtents, myRegionHeight);
+                             tagGather, tileExtents, myRegionHeight);
 
         ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
                                  "Parallel-Composite: "

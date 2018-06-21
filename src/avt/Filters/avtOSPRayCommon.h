@@ -49,6 +49,8 @@
 #include <vtkMatrix4x4.h>
 
 #include <ospray/ospray.h>
+#include <ospray/visit/VisItModuleCommon.h>
+#include <ospray/visit/VisItWrapper.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -72,13 +74,13 @@
 #undef ospout
 #endif
 #define ospout \
-    if (!ospray::CheckVerbose() && !DebugStream::Level5()) ; \
+    if (!ospray::visit::CheckVerbose() && !DebugStream::Level5()) ; \
     else (*ospray::osp_out)
 #ifdef osperr
 #undef osperr
 #endif
 #define osperr \
-    if (!ospray::CheckVerbose() && !DebugStream::Level1()) ; \
+    if (!ospray::visit::CheckVerbose() && !DebugStream::Level1()) ; \
     else (*ospray::osp_err)
 namespace ospray {
     extern std::ostream *osp_out;
@@ -90,48 +92,6 @@ namespace ospray {
     // manually                                         //
     //                                                  //
     //////////////////////////////////////////////////////
-    //                                                  //
-    // OSPRay defines following environmental variables //
-    //                                                  //
-    // OSPRAY_DEBUG                                     //
-    // OSPRAY_THREADS                                   //
-    // OSPRAY_LOG_LEVEL                                 //
-    // OSPRAY_LOG_OUTPUT                                //
-    // OSPRAY_SET_AFFINITY                              //
-    //                                                  //
-    // We define one more environmental variable here   //
-    //                                                  //
-    // OSPRAY_VERBOSE                                   //
-    //                                                  //
-    //////////////////////////////////////////////////////
-    inline bool InitVerbose() {
-        const char* env_verbose   = std::getenv("OSPRAY_VERBOSE");
-        const char* env_debug     = std::getenv("OSPRAY_DEBUG");
-        const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");	
-        bool verbose = false;
-        if (env_verbose) { if (atoi(env_verbose) > 0) { verbose = true; } }
-        if (env_debug) { if (atoi(env_debug) > 0) { verbose = true; } }
-        if (env_log_level) { if (atoi(env_log_level) > 0) { verbose = true; } }
-        if (verbose) {
-            ospray::osp_out = &std::cout;
-            ospray::osp_err = &std::cerr;
-            return true;
-	} else { return false; }
-    }
-    inline int InitOSPRaySpp() {
-        int spp = 1;
-        const char* env_spp = std::getenv("OSPRAY_SPP");
-        if (env_spp) { if (atoi(env_spp) > 0) { spp = atoi(env_spp); } }
-        return spp;
-    }
-    inline bool CheckVerbose() { // initialize OSPRAY_VERBOSE    
-        static bool OSPRAY_VERBOSE = ospray::InitVerbose();
-        return OSPRAY_VERBOSE;
-    }
-    inline int CheckOSPRaySpp() {
-        static int spp = InitOSPRaySpp();
-        return spp;
-    }
 };
 
 // ****************************************************************************
@@ -354,7 +314,7 @@ public:
         renderer = NULL;
         rendererType = INVALID;
         aoSamples = 0;
-        spp = ospray::CheckOSPRaySpp();
+        spp = 1;
         flagOneSidedLighting = false;
         flagShadowsEnabled = false;
         flagAoTransparencyEnabled = false;
@@ -384,7 +344,7 @@ public:
 //  Creation:   
 //
 // ****************************************************************************
-
+/*
 struct OSPVisItCamera
 {
 public:
@@ -438,7 +398,7 @@ public:
              const int screenExtents[2]);
     void SetScreen(float xMin, float xMax, float yMin, float yMax);
 };
-
+*/
 // ****************************************************************************
 //  Struct:  OSPVisItColor
 //
@@ -450,7 +410,7 @@ public:
 //
 // ****************************************************************************
 
-struct OSPVisItColor { float R,G,B, A; };
+//struct OSPVisItColor { float R,G,B, A; };
 
 // ****************************************************************************
 //  Struct:  OSPVisItTransferFunction
@@ -462,7 +422,7 @@ struct OSPVisItColor { float R,G,B, A; };
 //  Creation:   
 //
 // ****************************************************************************
-
+/*
 struct OSPVisItTransferFunction
 {
 public:
@@ -486,6 +446,7 @@ public:
              const float datamin,
              const float datamax);
 };
+*/
 
 // ****************************************************************************
 //  Struct:  OSPVisItContext
@@ -512,8 +473,8 @@ public:
     ~OSPVisItContext() {	
         volumes.clear();
         renderer.Clean();
-        camera.Clean();
-        transferfcn.Clean();
+        camera.Delete();
+        tfn.Delete();
     }
 
     // helper
@@ -541,8 +502,8 @@ public:
     }
 
     OSPVisItRenderer renderer;
-    OSPVisItCamera   camera;
-    OSPVisItTransferFunction transferfcn;
+    ospray::visit::Camera   camera;
+    ospray::visit:: TransferFunction tfn;
     std::map<int, OSPVisItVolume> volumes;
 
 private:
