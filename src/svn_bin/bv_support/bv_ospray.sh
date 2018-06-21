@@ -3,6 +3,9 @@
 function bv_ospray_initialize
 {
     export DO_OSPRAY="no"
+    export USE_SYSTEM_OSPRAY="no"
+    export OSPRAY_INSTALL_DIR=""
+    add_extra_commandline_args "ospray" "alt-ospray-dir" 1 "Use alternative directory for ospray"
 }
 
 function bv_ospray_enable
@@ -15,13 +18,36 @@ function bv_ospray_disable
     DO_OSPRAY="no"
 }
 
+function bv_ospray_alt_ospray_dir
+{
+    echo "Using alternate ospray directory"
+    bv_ospray_enable
+    USE_SYSTEM_OSPRAY="ospray"
+    OSPRAY_INSTALL_DIR="$1"
+}
+
+function bv_ospray_check_openmp
+{
+    _OPENMP=$(echo | cpp -fopenmp -dM | grep -i open)
+    if [[ "$_OPENMP" == "#define _OPENMP"* ]]; then
+        return 0
+    fi
+    return -1
+}
+
 function bv_ospray_depends_on
 {
-    depends_on="cmake ispc embree tbb"
-    #echo | cpp -fopenmp -dM | grep -i open
-    #if [[ "$DO_TBB" == "yes" ]]; then
-    #    depends_on="${depends_on} tbb"
-    #fi
+    depends_on="cmake ispc embree"
+
+    if [[ "$DO_TBB" == "yes" ]]; then
+        depends_on="${depends_on} tbb"
+    else
+        bv_ospray_check_openmp
+        if [[ $? == -1 ]]; then
+            depends_on="${depends_on} tbb"
+        fi
+    fi
+
     echo ${depends_on}
 }
 
@@ -68,12 +94,23 @@ function bv_ospray_host_profile
         echo "## OSPRay" >> $HOSTCONF
         echo "##" >> $HOSTCONF
         echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)" >> $HOSTCONF
-        if [[ -d $OSPRAY_INSTALL_DIR/lib ]]; then
-            echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
-        elif [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then
-            echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib64/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
+        if [[ "$USE_SYSTEM_OSPRAY" == "no" ]]; then
+            if [[ -d $OSPRAY_INSTALL_DIR/lib ]]; then
+                echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
+            elif [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then
+                echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR \${VISITHOME}/ospray/$OSPRAY_VERSION/\${VISITARCH}/lib64/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
+            else
+                error "No library path for OSPRay has been found."
+            fi
         else
-            error "No library path for OSPRay has been found."
+            if [[ -d $OSPRAY_INSTALL_DIR/lib ]]; then
+                echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${OSPRAY_INSTALL_DIR}/lib/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
+            elif [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then
+                echo "VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${OSPRAY_INSTALL_DIR}/lib64/cmake/ospray-${OSPRAY_VERSION})" >> $HOSTCONF
+            else
+                error "No library path for OSPRay has been found."
+            fi
+
         fi
     fi
 }
@@ -88,7 +125,7 @@ function bv_ospray_is_enabled
 
 function bv_ospray_ensure
 {
-    if [[ "$DO_OSPRAY" == "yes" ]]; then
+    if [[ "$DO_OSPRAY" == "yes" && "$USE_SYSTEM_OSPRAY" == "no" ]]; then
         ensure_built_or_ready "ospray" \
             $OSPRAY_VERSION \
             $OSPRAY_BUILD_DIR \
@@ -104,8 +141,7 @@ function bv_ospray_ensure
             $OSPRAY_VISIT_MODULE_DOWNLOAD_URL
         if [[ $? != 0 ]] ; then
             return 1
-        fi
-
+        fi       
     fi
 }
 
@@ -113,11 +149,16 @@ function bv_ospray_initialize_vars
 {
     info "initializing ospray vars"
     if [[ "$DO_OSPRAY" == "yes" ]]; then
-        OSPRAY_INSTALL_DIR="${VISITDIR}/ospray/${OSPRAY_VERSION}/${VISITARCH}"
+        if [[ "$USE_SYSTEM_OSPRAY" == "no" ]]; then
+            OSPRAY_INSTALL_DIR="${VISITDIR}/ospray/${OSPRAY_VERSION}/${VISITARCH}"
+        fi
         OSPRAY_INCLUDE_DIR="${OSPRAY_INSTALL_DIR}/include"
-        OSPRAY_LIB_DIR="${OSPRAY_INSTALL_DIR}/lib"
+        if [[ -d $OSPRAY_INSTALL_DIR/lib64 ]]; then        
+            OSPRAY_LIB_DIR="${OSPRAY_INSTALL_DIR}/lib64"
+        else
+            OSPRAY_LIB_DIR="${OSPRAY_INSTALL_DIR}/lib"
+        fi
         OSPRAY_LIB="${OSPRAY_LIB_DIR}/libospray.so"
-
         VTK_USE_OSPRAY="yes"
     fi
 }
@@ -131,6 +172,10 @@ function bv_ospray_dry_run
 
 function bv_ospray_is_installed
 {
+    if [[ "$USE_SYSTEM_OSPRAY" == "yes" ]]; then   
+        return 1
+    fi
+
     check_if_installed "ospray" $OSPRAY_VERSION
     if [[ $? == 0 ]] ; then
         return 1
@@ -157,20 +202,32 @@ function build_ospray_in_source
     # set release and RPM settings
     info "Configure OSPRay . . . "
     CMAKE_INSTALL=${CMAKE_INSTALL:-"$VISITDIR/cmake/${CMAKE_VERSION}/$VISITARCH/bin"}
-    ${CMAKE_INSTALL}/cmake -D CMAKE_INSTALL_PREFIX=$OSPRAY_INSTALL_DIR \
-        -D embree_DIR=$EMBREE_INSTALL_DIR \
-        -D TBB_ROOT=$TBB_INSTALL_DIR \
-        -D ISPC_EXECUTABLE=$ISPC_INSTALL_DIR/ispc \
-        -D OSPRAY_BUILD_ISA=ALL \
-        -D OSPRAY_MODULE_VISIT=ON \
-        -D OSPRAY_MODULE_MPI=OFF \
-        -D OSPRAY_MODULE_MPI_APPS=OFF \
-        -D OSPRAY_APPS_EXAMPLEVIEWER=OFF \
-        -D OSPRAY_APPS_BENCHMARK=OFF \
-        -D OSPRAY_SG_CHOMBO=OFF \
-        -D OSPRAY_SG_OPENIMAGEIO=OFF \
-        -D OSPRAY_SG_VTK=OFF \
-        -D OSPRAY_ZIP_MODE=OFF \
+
+    CMAKE_VARS=""
+    CMAKE_VARS=${CMAKE_VARS}" -D CMAKE_INSTALL_PREFIX=${OSPRAY_INSTALL_DIR} "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_BUILD_ISA=ALL "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_MODULE_VISIT=ON "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_MODULE_MPI=OFF "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_MODULE_MPI_APPS=OFF "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_APPS_EXAMPLEVIEWER=OFF "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_APPS_BENCHMARK=OFF "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_SG_CHOMBO=OFF "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_SG_OPENIMAGEIO=OFF "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_SG_VTK=OFF "
+    CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_ZIP_MODE=OFF "
+    CMAKE_VARS=${CMAKE_VARS}" -D embree_DIR=${EMBREE_INSTALL_DIR} "
+    CMAKE_VARS=${CMAKE_VARS}" -D ISPC_EXECUTABLE=${ISPC_INSTALL_DIR}/ispc "
+    if [[ "${TBB_INSTALL_DIR}" == "" ]]; then
+        bv_ospray_check_openmp
+        if [[ $? == 0 ]]; then
+            CMAKE_VARS=${CMAKE_VARS}" -D OSPRAY_TASKING_SYSTEM=OpenMP "
+        else
+            error "OSPRay cannot find neither TBB nor OpenMP."
+        fi
+    else
+        CMAKE_VARS=${CMAKE_VARS}" -D TBB_ROOT=${TBB_INSTALL_DIR} "
+    fi
+    ${CMAKE_INSTALL}/cmake ${CMAKE_VARS} \
         .. || error "OSPRay did not configure correctly.  Giving up."
 
     #
@@ -220,7 +277,7 @@ function build_ospray
 function bv_ospray_build
 {
     cd "$START_DIR"
-    if [[ "$DO_OSPRAY" == "yes" ]]; then
+    if [[ "$DO_OSPRAY" == "yes" && "$USE_SYSTEM_OSPRAY" == "no" ]]; then
         check_if_installed "ospray" $OSPRAY_VERSION
         if [[ $? == 0 ]] ; then
             info "Skipping OSPRay build. OSPRay is already installed."

@@ -1,7 +1,7 @@
 #/ssd/users/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Sun Jun 17 03:46:25 MDT 2018
+## created: Wed Jun 20 18:48:02 MDT 2018
 ## system: Linux lagodelcielo 4.4.120-45-default #1 SMP Wed Mar 14 20:51:49 UTC 2018 (623211f) x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -74,13 +74,13 @@ VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT ${VISITHOME}/ispc/1.9.2/${VISITARCH})
 ##
 ## TBB
 ##
-VISIT_OPTION_DEFAULT(TBB_ROOT /home/sci/qwu/software/tbb2017_20170604oss)
+VISIT_OPTION_DEFAULT(TBB_ROOT ${VISITHOME}/tbb/tbb2018_20171205oss/${VISITARCH})
 
 ##
 ## OSPRay
 ##
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${VISITHOME}/ospray/1.6.1/${VISITARCH}/lib64/cmake/ospray-1.6.1)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.1)
 
 ##
 ## VTK
