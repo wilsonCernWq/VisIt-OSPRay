@@ -506,13 +506,16 @@ public:
     ospray::visit:: TransferFunction tfn;
     std::map<int, OSPVisItVolume> volumes;
 
+    void SetActiveVariable(const char* str) { varname = str; }
+    const std::string& GetActiveVariable() const { return varname; }
+    
 private:
     
     friend class OSPVisItVolume;
     osp::vec3f     regionScaling;
     double bounds[6];
     static bool initialized;
-    
+    std::string varname;
 };
 
 #endif//AVT_OSPRAY_COMMON_H

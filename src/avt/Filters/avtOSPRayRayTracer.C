@@ -473,6 +473,7 @@ avtOSPRayRayTracer::Execute()
     ospray->renderer.Set(materialProperties, viewDirection, lighting);
     ospray->SetDataBounds(dbounds);
     ospray->SetScaling(scale);
+    ospray->SetActiveVariable(activeVariable);
     // check memory
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    

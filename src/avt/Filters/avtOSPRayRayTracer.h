@@ -117,15 +117,20 @@ class AVTFILTERS_API avtOSPRayRayTracer : public avtRayTracerBase
     void                  SetViewDirection(double *vd)
                          { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; };
     void                  SetRendererSampleRate(double r)
-                                                    { rendererSampleRate = r; };
+                                                   { rendererSampleRate = r; };
     void                  SetOSPRay(OSPVisItContext *ptr) { ospray = ptr; };
-
+    void                  SetActiveVariable(const char* s)
+                                                       { activeVariable = s; };
+	
   protected:
     OSPVisItContext *ospray;
 
     virtual void          Execute(void);
 
     avtOSPRayImageCompositor imgComm;
+
+    const char*           activeVariable;
+    
     bool                  lighting;
     double                lightPosition[4];
     double                lightDirection[3];

@@ -240,10 +240,14 @@ avtVolumeFilter::Execute(void)
     int t1 = visitTimer->StartTimer();
 
     // Get the local histogram for this rank.
+    // const std::string variableName_ =
+    // 	(atts.GetScaling() == VolumeAttributes::Linear) ?
+    // 	primaryVariable : "_expr_" + std::string(primaryVariable);
+    // std::cout << "primaryVariable = " << primaryVariable << std::endl;
     std::vector<VISIT_LONG_LONG> numvals_in(numValsInHist, 0);
-    if( avtDatasetExaminer::CalculateHistogram(ds, primaryVariable,
-                                               minmax[0], minmax[1],
-                                               numvals_in) )
+    if(avtDatasetExaminer::CalculateHistogram(ds, primaryVariable,
+					      minmax[0], minmax[1],
+					      numvals_in))
         
     {
       debug1 << "CalculateHistogram failed for "
@@ -252,8 +256,8 @@ avtVolumeFilter::Execute(void)
 
     // Get the global histograms acrosss all ranks.
     std::vector<VISIT_LONG_LONG> numvals_out(numValsInHist, 0);
-    SumLongLongArrayAcrossAllProcessors( &(numvals_in[0]),
-                                         &(numvals_out[0]), numValsInHist);
+    SumLongLongArrayAcrossAllProcessors(&(numvals_in[0]),
+					&(numvals_out[0]), numValsInHist);
     
     VISIT_LONG_LONG maxVal = 0;
     for (i = 0 ; i < numValsInHist ; i++)
@@ -624,6 +628,7 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
 #ifdef VISIT_OSPRAY
     if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
 	avtOSPRayRayTracer* s = (avtOSPRayRayTracer*)software;
+	s->SetActiveVariable(primaryVariable);
 	s->SetViewDirection(view_dir);
 	s->SetLighting(atts.GetLightingFlag());
         s->SetLightDirection(tempLightDir);
