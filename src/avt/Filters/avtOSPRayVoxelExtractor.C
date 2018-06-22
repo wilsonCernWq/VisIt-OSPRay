@@ -278,19 +278,17 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         //   I have to assume cell dataset has a higher priority
         if (ncell_arrays > 0) {
             ospout << "[avtOSPRayVoxelExtractor] Cell Dataset " << std::endl;
-            if (ncell_arrays != 1 || cell_size[0] != 1) {
-		for (int i = 0; i < ncell_arrays; ++i) 
-		    ospout << rgrid->GetCellData()->GetArray(i)->GetName() << std::endl
-			   << "idx_cell_arrays: " << i << std::endl
-			   << "cell_index[" << i << "] "
-			   << cell_index[i] << std::endl
-			   << "cell_size[" << i << "] "
-			   << cell_size[i] << std::endl
-			   << "cell_vartypes[" << i << "] "
-			   << cell_vartypes[i] << std::endl << std::endl;		
-                // ospray::Exception("Trying to plot more than one field, "
-                //                   "which is not supported by OSPRay. "
-                //                   "Use other render type instead.");
+            for (int i = 0; i < ncell_arrays; ++i) {
+              ospout << "  name: " 
+                     << rgrid->GetCellData()->GetArray(i)->GetName() 
+                     << std::endl
+                     << "  idx_cell_arrays: " << i << std::endl
+                     << "  cell_index[" << i << "] "
+                     << cell_index[i] << std::endl
+                     << "  cell_size[" << i << "] "
+                     << cell_size[i] << std::endl
+                     << "  cell_vartypes[" << i << "] "
+                     << cell_vartypes[i] << std::endl << std::endl;
             }
             nX = dims[0] - 1;
             nY = dims[1] - 1;
@@ -300,19 +298,17 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         }
         else if (npt_arrays > 0) {
             ospout << "[avtOSPRayVoxelExtractor] Point Dataset " << std::endl;
-            if (npt_arrays != 1 || pt_size[0] != 1) {
-	    	for (int i = 0; i < npt_arrays; ++i) 
-	    	    ospout << rgrid->GetPointData()->GetArray(i)->GetName() << std::endl
-			   << "idx_pt_arrays: " << i << std::endl
-			   << "pt_index[" << i << "] "
-			   << pt_index[i] << std::endl
-			   << "pt_size[" << i << "] "
-			   << pt_size[i] << std::endl
-			   << "pt_vartypes[" << i << "] "
-			   << pt_vartypes[i] << std::endl << std::endl;
-                // ospray::Exception("Trying to plot more than one field, "
-                //                   "which is not supported by OSPRay. "
-                //                   "Use other render type instead.");
+            for (int i = 0; i < npt_arrays; ++i) {
+              ospout << "  name: " 
+                     << rgrid->GetPointData()->GetArray(i)->GetName() 
+                     << std::endl
+                     << "  idx_pt_arrays: " << i << std::endl
+                     << "  pt_index[" << i << "] "
+                     << pt_index[i] << std::endl
+                     << "  pt_size[" << i << "] "
+                     << pt_size[i] << std::endl
+                     << "  pt_vartypes[" << i << "] "
+                     << pt_vartypes[i] << std::endl << std::endl;
             }
             nX = dims[0];
             nY = dims[1];
