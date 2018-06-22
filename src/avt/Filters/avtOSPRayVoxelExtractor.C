@@ -279,28 +279,46 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         if (ncell_arrays > 0) {
             ospout << "[avtOSPRayVoxelExtractor] Cell Dataset " << std::endl;
             if (ncell_arrays != 1 || cell_size[0] != 1) {
-                ospray::Exception("Trying to plot more than one field, "
-                                  "which is not supported by OSPRay. "
-                                  "Use other render type instead.");
+		for (int i = 0; i < ncell_arrays; ++i) 
+		    ospout << rgrid->GetCellData()->GetArray(i)->GetName() << std::endl
+			   << "idx_cell_arrays: " << i << std::endl
+			   << "cell_index[" << i << "] "
+			   << cell_index[i] << std::endl
+			   << "cell_size[" << i << "] "
+			   << cell_size[i] << std::endl
+			   << "cell_vartypes[" << i << "] "
+			   << cell_vartypes[i] << std::endl << std::endl;		
+                // ospray::Exception("Trying to plot more than one field, "
+                //                   "which is not supported by OSPRay. "
+                //                   "Use other render type instead.");
             }
             nX = dims[0] - 1;
             nY = dims[1] - 1;
             nZ = dims[2] - 1;
-            volumePointer = cell_arrays[0];
-            volumeDataType = cell_vartypes[0];
+            volumePointer = cell_arrays[ncell_arrays-1];
+            volumeDataType = cell_vartypes[ncell_arrays-1];
         }
         else if (npt_arrays > 0) {
             ospout << "[avtOSPRayVoxelExtractor] Point Dataset " << std::endl;
             if (npt_arrays != 1 || pt_size[0] != 1) {
-                ospray::Exception("Trying to plot more than one field, "
-                                  "which is not supported by OSPRay. "
-                                  "Use other render type instead.");
+	    	for (int i = 0; i < npt_arrays; ++i) 
+	    	    ospout << rgrid->GetPointData()->GetArray(i)->GetName() << std::endl
+			   << "idx_pt_arrays: " << i << std::endl
+			   << "pt_index[" << i << "] "
+			   << pt_index[i] << std::endl
+			   << "pt_size[" << i << "] "
+			   << pt_size[i] << std::endl
+			   << "pt_vartypes[" << i << "] "
+			   << pt_vartypes[i] << std::endl << std::endl;
+                // ospray::Exception("Trying to plot more than one field, "
+                //                   "which is not supported by OSPRay. "
+                //                   "Use other render type instead.");
             }
             nX = dims[0];
             nY = dims[1];
             nZ = dims[2];
-            volumePointer = pt_arrays[0];
-            volumeDataType = pt_vartypes[0];	
+            volumePointer = pt_arrays[npt_arrays-1];
+            volumeDataType = pt_vartypes[npt_arrays-1];
         } else {
             osperr << "WARNING: Empty dataset." << std::endl;
         }
@@ -442,13 +460,13 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
                           "OSPRay bbox and clip (OSPRay preparation)");
-            if (!((npt_arrays == 1)^(ncell_arrays == 1))) {
-                std::cerr << "WARNING: Multiple data found within one "
-                          << "patch, We don't know what to do !! " 
-                          << std::endl
-                          << "         One of the dataset might be missing "
-                          << std::endl;
-            }
+            // if (!((npt_arrays == 1)^(ncell_arrays == 1))) {
+            //     std::cerr << "WARNING: Multiple data found within one "
+            //               << "patch, We don't know what to do !! " 
+            //               << std::endl
+            //               << "         One of the dataset might be missing "
+            //               << std::endl;
+            // }
             // shift grid and make it cel centered for cell data
             // for cell centered data, we put the voxel on its left boundary
             volumePBox[0] = X[0];
