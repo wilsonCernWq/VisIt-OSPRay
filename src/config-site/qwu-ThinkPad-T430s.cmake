@@ -1,7 +1,7 @@
 #/home/qwu/work/visit/3rdparty/installs/trunk/cmake/3.8.1/linux-x86_64_gcc-6.3/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Wed Jun 20 04:43:25 MDT 2018
+## created: Thu Jun 21 00:25:02 MDT 2018
 ## system: Linux qwu-ThinkPad-T430s 4.10.0-42-generic #46-Ubuntu SMP Mon Dec 4 14:38:01 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -85,7 +85,7 @@ VISIT_OPTION_DEFAULT(TBB_ROOT /home/qwu/software/tbb2017_20170604oss)
 ## OSPRay
 ##
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${VISITHOME}/ospray/1.6.1/${VISITARCH}/lib/cmake/ospray-1.6.1)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/qwu/work/ospray/install/master/lib/cmake/ospray-1.7.0)
 
 ##
 ## VTK
