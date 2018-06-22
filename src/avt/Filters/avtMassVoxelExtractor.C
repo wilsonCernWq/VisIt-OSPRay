@@ -2336,31 +2336,19 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     int nX = 0, nY = 0, nZ = 0;
     if (ncell_arrays > 0) {
 	ospout << "[avtMassVoxelExtractor] Cell Dataset " << std::endl;
-	if (ncell_arrays != 1 || cell_size[0] != 1) {
-	    EXCEPTION1(VisItException, 
-		       "Trying to plot more than one field, "
-		       "which is not supported by OSPRay SLIVR. "
-		       "Use other render type instead");
-	}
 	nX = dims[0] - 1;
 	nY = dims[1] - 1;
 	nZ = dims[2] - 1;
-	volumePointer = cell_arrays[0];
-	volumeDataType = cell_vartypes[0];
+	volumePointer = cell_arrays[ncell_arrays-1];
+	volumeDataType = cell_vartypes[ncell_arrays-1];
     }
     else if (npt_arrays > 0) {
 	ospout << "[avtMassVoxelExtractor] Point Dataset " << std::endl;
-	if (npt_arrays != 1 || pt_size[0] != 1) {
-	    EXCEPTION1(VisItException, 
-		       "Trying to plot more than one field, "
-		       "which is not supported by OSPRay SLIVR. "
-		       "Use other render type instead");
-	}
 	nX = dims[0];
 	nY = dims[1];
 	nZ = dims[2];
-	volumePointer = pt_arrays[0];
-	volumeDataType = pt_vartypes[0];	
+	volumePointer = pt_arrays[npt_arrays-1];
+	volumeDataType = pt_vartypes[npt_arrays-1];	
     } else {
 	std::cerr << "WARNING: Empty dataset " << std::endl;
     }
@@ -2520,14 +2508,6 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     int timing_using_ospray = visitTimer->StartTimer();
     if (avtCallback::UseOSPRay()) {
 	int timing_setup_ospray = visitTimer->StartTimer();
-	if (!((npt_arrays == 1)^(ncell_arrays == 1)))
-	{
-	    std::cerr << "WARNING: Multiple data found within one patch, " 
-		      << " We don't know what to do !! " 
-		      << std::endl
-		      << "         One of the dataset might be missing "
-		      << std::endl;
-	}
 	// shift grid and make it cel centered for cell data
 	double volumePBox[6] = {
 	    // for cell centered data, we put the voxel on its left boundary
