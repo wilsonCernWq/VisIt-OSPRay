@@ -187,13 +187,13 @@ class AVTFILTERS_API avtSamplePointExtractorBase
     } LoadingInfo;
 
     void                      GetLoadingInfoForArrays(vtkDataSet *,
-													  LoadingInfo &);
+						      LoadingInfo &);
 
     virtual bool              FilterUnderstandsTransformedRectMesh() = 0;
     virtual void              SetUpExtractors(void) = 0;
     virtual void              SendJittering(void) = 0;
     virtual void              DoSampling(vtkDataSet *ds, int idx) = 0;
-	virtual void              InitSampling(avtDataTree_p dt) {};
+    virtual void              InitSampling(avtDataTree_p dt) {};
 
 };
 

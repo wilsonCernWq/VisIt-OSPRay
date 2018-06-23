@@ -339,36 +339,36 @@ struct datatree_childindex
 void
 avtSamplePointExtractorBase::ExecuteTree(avtDataTree_p dt)
 {
-	/////////////////////////
-	// Check memory before //
-	/////////////////////////
-	if (DebugStream::Level5())
-	{ 
-		unsigned long m_size, m_rss;
-		avtMemory::GetMemorySize(m_size, m_rss);
-		debug5 << "RAR_Rank: " << PAR_Rank() << " "
-			   << GetType() << "::ExecuteTree " 
-			   << " Initial Memory Usage: "
-			   << m_size << " rss (MB): "
-			   << m_rss/(1024*1024) << endl;
-	}
+    /////////////////////////
+    // Check memory before //
+    /////////////////////////
+    if (DebugStream::Level5())
+    { 
+	unsigned long m_size, m_rss;
+	avtMemory::GetMemorySize(m_size, m_rss);
+	debug5 << "RAR_Rank: " << PAR_Rank() << " "
+	       << GetType() << "::ExecuteTree " 
+	       << " Initial Memory Usage: "
+	       << m_size << " rss (MB): "
+	       << m_rss/(1024*1024) << endl;
+    }
 
-	//
-	// Start timing
-	//
+    //
+    // Start timing
+    //
     StackTimer t0(std::string(GetType()) + std::string("::ExecuteTree"));
 
-	//
-	// Call this function for initialization if necessary by children classes
-	//
-	InitSampling(dt);	
+    //
+    // Call this function for initialization if necessary by children classes
+    //
+    InitSampling(dt);	
 
     if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
         return;
 
     //
     // Process tree
-	//
+    //
     std::stack<datatree_childindex*> nodes;    
     nodes.push(new datatree_childindex(dt,0)); //iterative depth-first sampling
     while (!nodes.empty())
@@ -384,7 +384,7 @@ avtSamplePointExtractorBase::ExecuteTree(avtDataTree_p dt)
                 if (ch->ChildIsPresent(i))
                 {
                     if (*ch == NULL || (ch->GetNChildren() <= 0 &&
-										(!(ch->HasData()))))
+					(!(ch->HasData()))))
                         continue;
                     nodes.push(new datatree_childindex(ch->GetChild(i),i));
                 }
@@ -408,19 +408,19 @@ avtSamplePointExtractorBase::ExecuteTree(avtDataTree_p dt)
         currentNode++;
     }
 
-	/////////////////////////
-	// Check memory before //
-	/////////////////////////
-	if (DebugStream::Level5())
-	{ 
-		unsigned long m_size, m_rss;
-		avtMemory::GetMemorySize(m_size, m_rss);
-		debug5 << "RAR_Rank: " << PAR_Rank() << " "
-			   << GetType() << "::ExecuteTree " 
-			   << " Final Memory Usage: "
-			   << m_size << " rss (MB): "
-			   << m_rss/(1024*1024) << endl;
-	}
+    /////////////////////////
+    // Check memory before //
+    /////////////////////////
+    if (DebugStream::Level5())
+    { 
+	unsigned long m_size, m_rss;
+	avtMemory::GetMemorySize(m_size, m_rss);
+	debug5 << "RAR_Rank: " << PAR_Rank() << " "
+	       << GetType() << "::ExecuteTree " 
+	       << " Final Memory Usage: "
+	       << m_size << " rss (MB): "
+	       << m_rss/(1024*1024) << endl;
+    }
 }
 
 
