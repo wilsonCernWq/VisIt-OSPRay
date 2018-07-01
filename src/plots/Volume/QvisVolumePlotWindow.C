@@ -1125,7 +1125,7 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
     case VolumeAttributes::RayCastingSLIVR:
         raycastingGroup->setVisible(true);
         UpdateLowGradientGroup(false);
-        materialProperties->setEnabled(volumeAtts->GetLightingFlag());
+        materialProperties->setEnabled(true);
         EnableSamplingMethods(false);
         samplesPerRayWidget->setEnabled(true);
         rendererSamplesWidget->setEnabled(true);
@@ -1141,7 +1141,7 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
     case VolumeAttributes::RayCastingOSPRay:
         raycastingGroup->setVisible(true);
         UpdateLowGradientGroup(false);
-        materialProperties->setEnabled(volumeAtts->GetLightingFlag());
+        materialProperties->setEnabled(true);
         EnableSamplingMethods(false);
         samplesPerRayWidget->setEnabled(true);
         rendererSamplesWidget->setEnabled(true);

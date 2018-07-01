@@ -460,9 +460,10 @@ avtOSPRayRayTracer::Execute()
     ospray::visit::Renderer ren(ospray->renderer);
     ren.Init();
     ren.ResetLights();
-    ren.AddLight().Set(false, 1.5, 1.0, viewDirection); // sun light
-    ren.AddLight().Set(true,  materialProperties[0], 1.0);  // ambient
-    ren.AddLight().Set(false, materialProperties[1], 1.0, viewDirection); // diffuse
+    double light_scale = lighting ? 0.5 : 1.0;
+    ren.AddLight().Set(true,  materialProperties[0], light_scale); // ambient 
+    ren.AddLight().Set(false, materialProperties[1], light_scale, viewDirection);
+    ren.AddLight().Set(false, 1.5, light_scale, viewDirection); 
     for (int i = 0; i < 8; ++i) { // in VisIt there are only 8 lights
         const LightAttributes& la = lightList.GetLight(i);
         if (la.GetEnabledFlag()) {
@@ -480,7 +481,7 @@ avtOSPRayRayTracer::Execute()
 
             }          
         }
-    }
+    }    
     ren.FinalizeLights();
     ren.Set(0, 1, false, false, false);
     
