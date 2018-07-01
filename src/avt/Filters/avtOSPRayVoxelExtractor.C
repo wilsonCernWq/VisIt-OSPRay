@@ -256,11 +256,13 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         h_min = restrictedMinHeight;
         h_max = restrictedMaxHeight + 1;
         imgWidth = imgHeight = 0;
+        /*
         // Let's find out if this range can even intersect the dataset.
         // If not, just skip it.
         if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max)) { return; }
+        */
     }
-
+    
     //=======================================================================//
     // obtain data pointers & ghost region information
     //=======================================================================//
