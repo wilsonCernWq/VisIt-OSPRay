@@ -173,7 +173,7 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     if (ptr != dataPtr) {
         ospout << "[ospray] update data" << std::endl;
     };
-    if (!finished) {
+    if (true/*!finished*/) {
         // Because we initialized the volume each frame
         // we need to removed the old volume from model first
         volumeType = OSP_INVALID;
@@ -182,7 +182,7 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
                   volumePBox, volumeBBox);
     }
     /* OSPRay Model */
-    if (!finished) {
+    if (true/*!finished*/) {
         worldType = OSP_INVALID; 
         InitWorld();
         SetWorld();
