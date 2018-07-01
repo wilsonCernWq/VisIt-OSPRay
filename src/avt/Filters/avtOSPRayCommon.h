@@ -72,7 +72,7 @@
 class OSPVisItContext;
 class OSPVisItVolume 
 {
- private:
+private:
     friend class OSPVisItContext;
 
     OSPVisItContext *parent;
@@ -114,38 +114,38 @@ class OSPVisItVolume
     osp::vec3f          regionLowerClip;
     osp::vec3f          regionScaling;
     
- public:
+public:
     // constructor
     OSPVisItVolume() {
-	// objects owned by the struct
-	world           = NULL;
-	worldType       = OSP_INVALID;
-	framebuffer     = NULL;
-	framebufferData = NULL;
-	framebufferBg   = NULL;
-	volume          = NULL;
-	volumeType      = OSP_INVALID;
-	voxelDataType   = OSP_VOID_PTR;
-	voxelData       = NULL;
-	voxelSize       = 0;
-	dataPtr         = NULL;
-	dataType        = "";
-	// metadata for volume
-	//patchId = id;    
-	finished      = false; 
-	enableShading = false;
-	enableDVR     = false;
-	specularKs    = 1.0f;
-	specularNs    = 15.0f;
-	samplingRate  = 3.0f;
-	// geometric parameters for volume
-	regionSize.x  = regionSize.y  = regionSize.z  = 0;
-	regionStart.x = regionStart.y = regionStart.z = 0.0f;
-	regionStop.x  = regionStop.y  = regionStop.z  = 0.0f;
-	regionSpacing.x   = regionSpacing.y   = regionSpacing.z   = 0.0f;
-	regionUpperClip.x = regionUpperClip.y = regionUpperClip.z = 0.0f;
-	regionLowerClip.x = regionLowerClip.y = regionLowerClip.z = 0.0f;
-	regionScaling.x   = regionScaling.y   = regionScaling.z   = 1.0f;
+        // objects owned by the struct
+        world           = NULL;
+        worldType       = OSP_INVALID;
+        framebuffer     = NULL;
+        framebufferData = NULL;
+        framebufferBg   = NULL;
+        volume          = NULL;
+        volumeType      = OSP_INVALID;
+        voxelDataType   = OSP_VOID_PTR;
+        voxelData       = NULL;
+        voxelSize       = 0;
+        dataPtr         = NULL;
+        dataType        = "";
+        // metadata for volume
+        //patchId = id;    
+        finished      = false; 
+        enableShading = false;
+        enableDVR     = false;
+        specularKs    = 1.0f;
+        specularNs    = 15.0f;
+        samplingRate  = 3.0f;
+        // geometric parameters for volume
+        regionSize.x  = regionSize.y  = regionSize.z  = 0;
+        regionStart.x = regionStart.y = regionStart.z = 0.0f;
+        regionStop.x  = regionStop.y  = regionStop.z  = 0.0f;
+        regionSpacing.x   = regionSpacing.y   = regionSpacing.z   = 0.0f;
+        regionUpperClip.x = regionUpperClip.y = regionUpperClip.z = 0.0f;
+        regionLowerClip.x = regionLowerClip.y = regionLowerClip.z = 0.0f;
+        regionScaling.x   = regionScaling.y   = regionScaling.z   = 1.0f;
     }
 
     // destructor
@@ -216,90 +216,6 @@ class OSPVisItVolume
     }
 };
 
-// ****************************************************************************
-//  Struct:  OSPVisItLight
-//
-//  Purpose:
-//
-//
-//  Programmer: Qi WU
-//  Creation:   
-//
-// ****************************************************************************
-/*
-struct OSPVisItLight
-{
-    OSPLight aLight;
-    OSPLight dLight;
-    OSPLight sLight; // constant sun light
-    OSPData  lightdata;
-    OSPVisItLight() {
-        aLight = NULL;
-        dLight = NULL;
-        sLight = NULL;
-        lightdata = NULL;
-    }
-    ~OSPVisItLight() { Clean(); }
-    void Init(const OSPRenderer& renderer);
-    void Set(double materialProperties[4], double viewDirection[3]);
-};
-*/
-// ****************************************************************************
-//  Struct:  OSPVisItRenderer
-//
-//  Purpose:
-//
-//
-//  Programmer: Qi WU
-//  Creation:   
-//
-// ****************************************************************************
-/*
-struct OSPVisItRenderer
-{
-public:
-    enum State {
-        INVALID, // TODO do we need this actually ? 
-        SCIVIS,
-    } rendererType;
-    OSPRenderer renderer;
-
-    OSPVisItLight lights;
-
-    // properties
-    int aoSamples;
-    int spp; //!< samples per pixel
-    bool flagOneSidedLighting;
-    bool flagShadowsEnabled;
-    bool flagAoTransparencyEnabled;
-    float       *maxDepthBuffer;  // depth buffer (shared, never delete)
-    osp::vec2i   maxDepthSize;    // buffer extents (minX, maxX, minY, max)  
-public:
-    OSPVisItRenderer() {
-        renderer = NULL;
-        rendererType = INVALID;
-        aoSamples = 0;
-        spp = 1;
-        flagOneSidedLighting = false;
-        flagShadowsEnabled = false;
-        flagAoTransparencyEnabled = false;
-    }
-    ~OSPVisItRenderer() { Clean(); }
-    void Clean() {
-        if (renderer != NULL) {
-            lights.Clean();
-            ospRelease(renderer);
-            renderer = NULL;
-            rendererType = INVALID;
-        }
-    }
-    void Init();
-    void Set(double materialProperties[4], double viewDirection[3], bool);
-    void SetCamera(const OSPCamera& camera);
-    void SetModel(const OSPModel& world);
-};
-
-*/
 // ****************************************************************************
 //  Struct:  OSPVisItContext
 //
@@ -424,13 +340,13 @@ private:
 #ifdef ospout
 #undef ospout
 #endif
-#define ospout \
+#define ospout                                                      \
     if (!ospray::visit::CheckVerbose() && !DebugStream::Level5()) ; \
     else (*ospray::osp_out)
 #ifdef osperr
 #undef osperr
 #endif
-#define osperr \
+#define osperr                                                      \
     if (!ospray::visit::CheckVerbose() && !DebugStream::Level1()) ; \
     else (*ospray::osp_err)
 namespace ospray {

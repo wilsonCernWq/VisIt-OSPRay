@@ -444,17 +444,17 @@ avtOSPRayRayTracer::Execute()
     // camera
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
     ((ospray::visit::Camera)ospray->camera)
-      .Set(view.orthographic, view.camera, view.focus, 
-           view.viewUp,view.viewAngle, view.imagePan,
-           view.imageZoom, sceneSize, screen, tileExtents);
+        .Set(view.orthographic, view.camera, view.focus, 
+             view.viewUp,view.viewAngle, view.imagePan,
+             view.imageZoom, sceneSize, screen, tileExtents);
     // transfer function
     ospout  << "[avrRayTracer] make ospray transfer function" 
             << std::endl;
     ((ospray::visit::TransferFunction)ospray->tfn)
-      .Set(transferFn1D->GetTableFloat(), 
-           transferFn1D->GetNumberOfTableEntries(),
-           transferFn1D->GetMin(),
-           transferFn1D->GetMax());
+        .Set(transferFn1D->GetTableFloat(), 
+             transferFn1D->GetNumberOfTableEntries(),
+             transferFn1D->GetMin(),
+             transferFn1D->GetMax());
     // renderer
     ospout << "[avrRayTracer] make ospray renderer" << std::endl;
     ospray::visit::Renderer ren(ospray->renderer);
@@ -465,22 +465,22 @@ avtOSPRayRayTracer::Execute()
     ren.AddLight().Set(true,  materialProperties[0], 1.0);  // ambient
     ren.AddLight().Set(false, materialProperties[1], 1.0, viewDirection); // diffuse
     for (int i = 0; i < 8; ++i) { // in VisIt there are only 8 lights
-      const LightAttributes& la = lightList.GetLight(i);
-      if (la.GetEnabledFlag()) {
-        if (la.GetType() == LightAttributes::Ambient) {
-          ren.AddLight().Set(true, la.GetBrightness(),
-                             (double)la.GetColor().Red() / 255.0,
-                             (double)la.GetColor().Green() / 255.0,
-                             (double)la.GetColor().Blue() / 255.0);
-        } else {
-          ren.AddLight().Set(false, la.GetBrightness(),
-                             (double)la.GetColor().Red() / 255.0,
-                             (double)la.GetColor().Green() / 255.0,
-                             (double)la.GetColor().Blue() / 255.0,
-                             la.GetDirection());        
+        const LightAttributes& la = lightList.GetLight(i);
+        if (la.GetEnabledFlag()) {
+            if (la.GetType() == LightAttributes::Ambient) {
+                ren.AddLight().Set(true, la.GetBrightness(),
+                                   (double)la.GetColor().Red() / 255.0,
+                                   (double)la.GetColor().Green() / 255.0,
+                                   (double)la.GetColor().Blue() / 255.0);
+            } else {
+                ren.AddLight().Set(false, la.GetBrightness(),
+                                   (double)la.GetColor().Red() / 255.0,
+                                   (double)la.GetColor().Green() / 255.0,
+                                   (double)la.GetColor().Blue() / 255.0,
+                                   la.GetDirection());        
 
-        }          
-      }
+            }          
+        }
     }
     
     // others

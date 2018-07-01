@@ -63,9 +63,9 @@ inline bool CheckThreadedBlend_MetaData() {
 static bool UseThreadedBlend_MetaData = CheckThreadedBlend_MetaData();
 
 std::ostream *ospray::osp_out = (ospray::visit::CheckVerbose()) ?
-        &std::cout : &DebugStream::Stream5();
+    &std::cout : &DebugStream::Stream5();
 std::ostream *ospray::osp_err = (ospray::visit::CheckVerbose()) ?
-        &std::cerr : &DebugStream::Stream1();
+    &std::cerr : &DebugStream::Stream1();
 
 // ****************************************************************************
 //
@@ -87,44 +87,45 @@ void OSPVisItContext::InitOSP(int numThreads)
 {     
     if (!OSPVisItContext::initialized) 
     {
-	// check hostname
 #ifdef __unix__
-	char hname[200];
-	gethostname(hname, 200);
-	ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
+        // check hostname
+        char hname[200];
+        gethostname(hname, 200);
+        ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
 #endif
-	// load ospray device
-	ospout << "[ospray] Initialize OSPRay" << std::endl;	
-	OSPDevice device = ospGetCurrentDevice();
-	if (!device) {
-		ospout << "[ospray] device not found, creating one" << std::endl;
-	    device = ospNewDevice("default"); 
-	    if (DebugStream::Level5()) { 
-		ospout << "[ospray] --> debug mode" << std::endl;
-		ospDeviceSet1i(device, "debug", 0);
-	    }	
-	    if (numThreads > 0) {
-		ospout << "[ospray] --> numThreads: " << numThreads << std::endl;
-		ospDeviceSet1i(device, "numThreads", numThreads);
-	    }
-	    ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
-	    ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
-	    ospDeviceCommit(device);
-	    ospSetCurrentDevice(device);
-	}
-	// load ospray module
-	OSPError err = ospLoadModule("visit");
-	if (err != OSP_NO_ERROR) {
-	    osperr << "[Error] can't load visit module" << std::endl;
-	}
-	OSPVisItContext::initialized = true;
+        // load ospray device
+        ospout << "[ospray] Initialize OSPRay" << std::endl;	
+        OSPDevice device = ospGetCurrentDevice();
+        if (!device) {
+		    ospout << "[ospray] device not found, creating one" << std::endl;
+            device = ospNewDevice("default"); 
+            if (DebugStream::Level5()) { 
+                ospout << "[ospray] --> debug mode" << std::endl;
+                ospDeviceSet1i(device, "debug", 0);
+            }	
+            if (numThreads > 0) {
+                ospout << "[ospray] --> numThreads: " << numThreads 
+                       << std::endl;
+                ospDeviceSet1i(device, "numThreads", numThreads);
+            }
+            ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
+            ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
+            ospDeviceCommit(device);
+            ospSetCurrentDevice(device);
+        }
+        // load ospray module
+        OSPError err = ospLoadModule("visit");
+        if (err != OSP_NO_ERROR) {
+	        osperr << "[Error] can't load visit module" << std::endl;
+        }
+        OSPVisItContext::initialized = true;
     }
 }
 
 // We use this function to minimize interface
 void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
-			     int imgWidth, int imgHeight,
-			     float*& dest, OSPVisItVolume* volume) 
+                             int imgWidth, int imgHeight,
+                             float*& dest, OSPVisItVolume* volume) 
 {
 
     ((ospray::visit::Camera)camera).SetScreen(xMin, xMax, yMin, yMax);
@@ -133,16 +134,16 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
     volume->InitFB(imgWidth, imgHeight);
     volume->RenderFB();
     std::copy(volume->GetFBData(), 
-	      volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
+              volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
 }
 
 void OSPVisItContext::InitPatch(int id) 
 {
     if (volumes.find(id) == volumes.end()) {
-	OSPVisItVolume v;
-	v.patchId = id;
-	v.parent = this;
-	volumes[id] = v;
+        OSPVisItVolume v;
+        v.patchId = id;
+        v.parent = this;
+        volumes[id] = v;
     }
 }
 
@@ -153,11 +154,11 @@ void OSPVisItContext::InitPatch(int id)
 // ****************************************************************************
 
 void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z, 
-			 int nX, int nY, int nZ,
-			 double volumePBox[6], 
-			 double volumeBBox[6], 
-			 double mtl[4], float sr,
-			 bool shading)
+                         int nX, int nY, int nZ,
+                         double volumePBox[6], 
+                         double volumeBBox[6], 
+                         double mtl[4], float sr,
+                         bool shading)
 {
     /* OSPRay Volume */
     specularKs    = (float)mtl[2];
@@ -173,18 +174,18 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
         ospout << "[ospray] update data" << std::endl;
     };
     if (true/*!finished*/) {
-	// Because we initialized the volume each frame
-	// we need to removed the old volume from model first
-	volumeType = OSP_INVALID;
-	InitVolume();
-	SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
-		  volumePBox, volumeBBox);
+        // Because we initialized the volume each frame
+        // we need to removed the old volume from model first
+        volumeType = OSP_INVALID;
+        InitVolume();
+        SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
+                  volumePBox, volumeBBox);
     }
     /* OSPRay Model */
     if (true/*!finished*/) {
-	worldType = OSP_INVALID; 
-	InitWorld();
-	SetWorld();
+        worldType = OSP_INVALID; 
+        InitWorld();
+        SetWorld();
     }
     /* update volume */
     finished = true;
@@ -193,65 +194,65 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
 // ospModel component
 void OSPVisItVolume::InitWorld() {
     if (worldType == OSP_INVALID) {
-	CleanWorld();
-	worldType = OSP_VALID;
-	world = ospNewModel();
+        CleanWorld();
+        worldType = OSP_VALID;
+        world = ospNewModel();
     }
 }
 void OSPVisItVolume::SetWorld() {
     if (world != NULL) { 
-	ospAddVolume(world, volume);
-	ospCommit(world);
+        ospAddVolume(world, volume);
+        ospCommit(world);
     }
 }
 
 // ospVolume component
 void OSPVisItVolume::InitVolume(unsigned char type) {
     if (volumeType != type) { // only initialize once
-	CleanVolume();
-	volumeType = type;
-	switch (type) {
-	case (OSP_BLOCK_BRICKED_VOLUME):
-	    volume = ospNewVolume("block_bricked_volume"); 
-	    break;
-	case (OSP_SHARED_STRUCTURED_VOLUME):
-	    volume = ospNewVolume("visit_shared_structured_volume"); 
-	    break;
-	default:
-	    debug1 << "ERROR: ospray volume not initialized"
-		   << std::endl;
-	    volumeType = OSP_INVALID;
-	    EXCEPTION1(VisItException, 
-		       "ERROR: ospray volume not initialized");
-	}
+        CleanVolume();
+        volumeType = type;
+        switch (type) {
+        case (OSP_BLOCK_BRICKED_VOLUME):
+            volume = ospNewVolume("block_bricked_volume"); 
+            break;
+        case (OSP_SHARED_STRUCTURED_VOLUME):
+            volume = ospNewVolume("visit_shared_structured_volume"); 
+            break;
+        default:
+            debug1 << "ERROR: ospray volume not initialized"
+                   << std::endl;
+            volumeType = OSP_INVALID;
+            EXCEPTION1(VisItException, 
+                       "ERROR: ospray volume not initialized");
+        }
     }
 }
 
 void 
 OSPVisItVolume::SetVolume(int type, void *ptr, 
-			  double *X, double *Y, double *Z, 
-			  int nX, int nY, int nZ,
-			  double volumePBox[6], double volumeBBox[6]) 
+                          double *X, double *Y, double *Z, 
+                          int nX, int nY, int nZ,
+                          double volumePBox[6], double volumeBBox[6]) 
 {
     // calculate volume data type
     if (type == VTK_UNSIGNED_CHAR) {
-	dataType = "uchar";
-	voxelDataType = OSP_UCHAR;
+        dataType = "uchar";
+        voxelDataType = OSP_UCHAR;
     } else if (type == VTK_SHORT) {
-	dataType = "short";
-	voxelDataType = OSP_SHORT;
+        dataType = "short";
+        voxelDataType = OSP_SHORT;
     } else if (type == VTK_UNSIGNED_SHORT) {
-	dataType = "ushort";
-	voxelDataType = OSP_USHORT;
+        dataType = "ushort";
+        voxelDataType = OSP_USHORT;
     } else if (type == VTK_FLOAT) {
-	dataType = "float";
-	voxelDataType = OSP_FLOAT;
+        dataType = "float";
+        voxelDataType = OSP_FLOAT;
     } else if (type == VTK_DOUBLE) {
-	dataType = "double";
-	voxelDataType = OSP_DOUBLE;
+        dataType = "double";
+        voxelDataType = OSP_DOUBLE;
     } else {
-	debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
-	EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
+        debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
+        EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
     }
     ospout << "[ospray] data type " << dataType << std::endl;
     // assign data pointer
@@ -282,15 +283,15 @@ OSPVisItVolume::SetVolume(int type, void *ptr,
 
     // commit voxel data
     if (voxelData != NULL) { 
-	debug1 << "ERROR: Found VoxelData to be non-empty "
-	       << "while creating new volume" << std::endl;
-	EXCEPTION1(VisItException, 
-		   "ERROR: Found VoxelData to be non-empty "
-		   "while creating new volume");
+        debug1 << "ERROR: Found VoxelData to be non-empty "
+               << "while creating new volume" << std::endl;
+        EXCEPTION1(VisItException, 
+                   "ERROR: Found VoxelData to be non-empty "
+                   "while creating new volume");
     }
     voxelSize = nX * nY * nZ;
     voxelData = ospNewData(voxelSize, voxelDataType,
-			   dataPtr, OSP_DATA_SHARED_BUFFER);
+                           dataPtr, OSP_DATA_SHARED_BUFFER);
     ospSetData(volume, "voxelData", voxelData);
 
     // commit volume
@@ -382,12 +383,12 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     for (int i = 0; i < width; ++i) {
     	for (int j = 0; j < height; ++j) {
     	    maxDepth[i + j * width] = parent->renderer.bgDepthBuffer
-              [Xs + i + (Ys + j) * parent->renderer.bgSize[0]];
+                [Xs + i + (Ys + j) * parent->renderer.bgSize[0]];
     	}
     }
     framebufferBg = ospNewTexture2D(imageSize, OSP_TEXTURE_R32F, 
-				    maxDepth.data(),
-				    OSP_TEXTURE_FILTER_NEAREST);
+                                    maxDepth.data(),
+                                    OSP_TEXTURE_FILTER_NEAREST);
     ospCommit(framebufferBg);
     ospSetObject(*(parent->renderer), "maxDepthTexture", framebufferBg);
     ospCommit(*(parent->renderer));
@@ -396,8 +397,8 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     // create framebuffer
     CleanFB();
     framebuffer = ospNewFrameBuffer(imageSize, 
-				    OSP_FB_RGBA32F,
-				    OSP_FB_COLOR);
+                                    OSP_FB_RGBA32F,
+                                    OSP_FB_COLOR);
 }
 void OSPVisItVolume::RenderFB() {
     static int i = 0;
@@ -408,100 +409,6 @@ float* OSPVisItVolume::GetFBData() {
     return framebufferData;
 }
 
-// ****************************************************************************
-//
-// OSPLight
-//
-// ****************************************************************************
-/*void OSPVisItLight::Init(const OSPRenderer& renderer)
-{
-    Clean();
-    aLight = ospNewLight(renderer, "ambient");
-    dLight = ospNewLight(renderer, "distant");
-    sLight = ospNewLight(renderer, "distant");
-    ospCommit(aLight);
-    ospCommit(dLight);
-    ospCommit(sLight);
-    OSPLight lights[3] = { aLight, dLight, sLight };
-    lightdata = ospNewData(3, OSP_OBJECT, lights);
-    ospCommit(lightdata);
-}
-*/
-/*
-void OSPVisItLight::Set(double materialProperties[4], double viewDirection[3])
-{
-    // light direction
-    osp::vec3f lightDir;
-    lightDir.x = (float)viewDirection[0];
-    lightDir.y = (float)viewDirection[1];
-    lightDir.z = (float)viewDirection[2];
-    // ambient light
-    ospSet1f(aLight, "intensity", (float)materialProperties[0]);
-    ospSet1i(aLight, "isVisible", 0);
-    ospCommit(aLight);
-    // directional light
-    ospSet1f(dLight, "intensity", (float)materialProperties[1]);
-    ospSet1f(dLight, "angularDiameter", 0.53f);
-    ospSet1i(dLight, "isVisible", 0);
-    ospSetVec3f(dLight, "direction", lightDir);
-    ospCommit(dLight);
-    // sun light
-    ospSet1f(sLight, "intensity", 1.5f );
-    ospSet1f(sLight, "angularDiameter", 0.53f);
-    ospSet1i(sLight, "isVisible", 0);
-    ospSetVec3f(sLight, "direction", lightDir);
-    ospCommit(sLight);
-}
-*/
-// ****************************************************************************
-//
-// OSPRenderer
-//
-// ****************************************************************************
-/*
-void OSPVisItRenderer::Init() 
-{
-    if (rendererType == INVALID) {
-	Clean();
-	rendererType = SCIVIS;
-	renderer = ospNewRenderer("scivis");
-	lights.Init(renderer);
-    }
-}
-void OSPVisItRenderer::Set(double materialProperties[4],
-			   double viewDirection[3],
-			   bool flagUseShading) 
-{    
-    ospSet1f(renderer, "bgColor",   0.f);
-    ospSet1i(renderer, "aoSamples", aoSamples);
-    ospSet1i(renderer, "spp",       spp);
-    ospSet1i(renderer, "oneSidedLighting",      flagOneSidedLighting);
-    ospSet1i(renderer, "shadowsEnabled",        flagShadowsEnabled);
-    ospSet1i(renderer, "aoTransparencyEnabled", flagAoTransparencyEnabled);
-    if (flagUseShading)
-    {
-	ospout << "[ospray] use lighting w/ material " 
-	    << "ambient "    << materialProperties[0] << " "
-	    << "diffuse "    << materialProperties[1] << " "
-	    << "specular "   << materialProperties[2] << " "
-	    << "glossiness " << materialProperties[3] << std::endl;
-	lights.Set(materialProperties, viewDirection);
-	ospSetData(renderer, "lights", lights.lightdata);
-	ospCommit(renderer);	
-    }
-    ospCommit(renderer);
-}
-void OSPVisItRenderer::SetCamera(const OSPCamera& camera)
-{
-    ospSetObject(renderer, "camera", camera);
-    ospCommit(renderer);
-}
-void OSPVisItRenderer::SetModel(const OSPModel& world)
-{
-    ospSetObject(renderer, "model",  world);
-    ospCommit(renderer);
-}
-*/
 // ****************************************************************************
 //
 //
@@ -515,32 +422,32 @@ void OSPVisItRenderer::SetModel(const OSPModel& world)
 void ospray::CheckMemoryHere(const std::string& message, std::string debugN)
 {
     if (debugN.compare("ospout") == 0) {	
-	ospray::CheckMemoryHere(message, *osp_out);
+        ospray::CheckMemoryHere(message, *osp_out);
     }
     else if (debugN.compare("debug5") == 0) {
-	if (DebugStream::Level5()) {
-	    ospray::CheckMemoryHere(message, DebugStream::Stream5());
-	}       
+        if (DebugStream::Level5()) {
+            ospray::CheckMemoryHere(message, DebugStream::Stream5());
+        }       
     }
     else if (debugN.compare("debug4") == 0) {
-	if (DebugStream::Level4()) {
-	    ospray::CheckMemoryHere(message, DebugStream::Stream4());
-	}       
+        if (DebugStream::Level4()) {
+            ospray::CheckMemoryHere(message, DebugStream::Stream4());
+        }       
     }
     else if (debugN.compare("debug3") == 0) {
-	if (DebugStream::Level3()) {
-	    ospray::CheckMemoryHere(message, DebugStream::Stream3());
-	}       
+        if (DebugStream::Level3()) {
+            ospray::CheckMemoryHere(message, DebugStream::Stream3());
+        }       
     }
     else if (debugN.compare("debug2") == 0) {
-	if (DebugStream::Level2()) {
-	    ospray::CheckMemoryHere(message, DebugStream::Stream2());
-	}       
+        if (DebugStream::Level2()) {
+            ospray::CheckMemoryHere(message, DebugStream::Stream2());
+        }       
     }
     else if (debugN.compare("debug1") == 0) {
-	if (DebugStream::Level1()) {
-	    ospray::CheckMemoryHere(message, DebugStream::Stream1());
-	}       
+        if (DebugStream::Level1()) {
+            ospray::CheckMemoryHere(message, DebugStream::Stream1());
+        }       
     }
 }
 
@@ -549,10 +456,10 @@ void ospray::CheckMemoryHere(const std::string& message, std::ostream& out)
     unsigned long m_size, m_rss;
     avtMemory::GetMemorySize(m_size, m_rss);
     out << message << std::endl << "\t"
-	<< " Rank " << PAR_Rank()
-	<< " Memory use begin " << m_size 
-	<< " rss " << m_rss/(1024*1024) << " (MB)"
-	<< std::endl;
+        << " Rank " << PAR_Rank()
+        << " Memory use begin " << m_size 
+        << " rss " << m_rss/(1024*1024) << " (MB)"
+        << std::endl;
 }
 
 double ospray::ProjectWorldToScreen(const double worldCoord[3], 
@@ -564,10 +471,10 @@ double ospray::ProjectWorldToScreen(const double worldCoord[3],
 {
     // world space coordinate in homogeneous coordinate
     double worldHCoord[4] = {
-	worldCoord[0],
-	worldCoord[1],
-	worldCoord[2],
-	1.0
+        worldCoord[0],
+        worldCoord[1],
+        worldCoord[2],
+        1.0
     };
 
     // world to clip space (-1 ~ 1)
@@ -575,28 +482,28 @@ double ospray::ProjectWorldToScreen(const double worldCoord[3],
     mvp->MultiplyPoint(worldHCoord, clipHCoord);
     if (clipHCoord[3] == 0.0)
     {
-	std::cerr << "ProjectWorldToScreen "
-		  << "Zero Division During Projection" 
-		  << std::endl;
-	std::cerr << "world coordinates: (" 
-		  << worldHCoord[0] << ", " 
-		  << worldHCoord[1] << ", " 
-		  << worldHCoord[2] << ", " 
-		  << worldHCoord[3] << ")" << std::endl
-		  << "clip space coordinate: ("
-		  << clipHCoord[0] << ", " 
-		  << clipHCoord[1] << ", " 
-		  << clipHCoord[2] << ", "
-		  << clipHCoord[3] << std::endl;
-	std::cerr << "Matrix: " << *mvp << std::endl;
-	EXCEPTION1(VisItException, "Zero Division During Projection");
+        std::cerr << "ProjectWorldToScreen "
+                  << "Zero Division During Projection" 
+                  << std::endl;
+        std::cerr << "world coordinates: (" 
+                  << worldHCoord[0] << ", " 
+                  << worldHCoord[1] << ", " 
+                  << worldHCoord[2] << ", " 
+                  << worldHCoord[3] << ")" << std::endl
+                  << "clip space coordinate: ("
+                  << clipHCoord[0] << ", " 
+                  << clipHCoord[1] << ", " 
+                  << clipHCoord[2] << ", "
+                  << clipHCoord[3] << std::endl;
+        std::cerr << "Matrix: " << *mvp << std::endl;
+        EXCEPTION1(VisItException, "Zero Division During Projection");
     }
 
     // normalize clip space coordinate
     double clipCoord[3] = {
-	clipHCoord[0]/clipHCoord[3],
-	clipHCoord[1]/clipHCoord[3],
-	clipHCoord[2]/clipHCoord[3]
+        clipHCoord[0]/clipHCoord[3],
+        clipHCoord[1]/clipHCoord[3],
+        clipHCoord[2]/clipHCoord[3]
     };
 
     // screen coordinates (int integer)
@@ -613,40 +520,40 @@ double ospray::ProjectWorldToScreen(const double worldCoord[3],
 
 void
 ospray::ProjectScreenToWorld(const int screenCoord[2], const double z,
-                            const int screenWidth, const int screenHeight, 
-                            const double panPercentage[2], 
-                            const double imageZoom,
-                            vtkMatrix4x4 *imvp, double worldCoord[3])
+                             const int screenWidth, const int screenHeight, 
+                             const double panPercentage[2], 
+                             const double imageZoom,
+                             vtkMatrix4x4 *imvp, double worldCoord[3])
 {
     // remove panning
     const int x = 
-	screenCoord[0] - round(screenWidth*panPercentage[0]*imageZoom);
+        screenCoord[0] - round(screenWidth*panPercentage[0]*imageZoom);
     const int y = 
-	screenCoord[1] - round(screenHeight*panPercentage[1]*imageZoom);
+        screenCoord[1] - round(screenHeight*panPercentage[1]*imageZoom);
     
     // do projection
     double worldHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
-	(x - screenWidth/2.0) /(screenWidth/2.0),
-	(y - screenHeight/2.0)/(screenHeight/2.0),
-	z, 1.0};
+        (x - screenWidth/2.0) /(screenWidth/2.0),
+        (y - screenHeight/2.0)/(screenHeight/2.0),
+        z, 1.0};
     imvp->MultiplyPoint(clipHCoord, worldHCoord);
     if (worldHCoord[3] == 0) {
-	debug5 << "ProjectScreenToWorld "
-	       << "Zero Division During Projection" 
-	       << std::endl;
-	std::cerr << "world coordinates: (" 
-		  << worldHCoord[0] << ", " 
-		  << worldHCoord[1] << ", " 
-		  << worldHCoord[2] << ", " 
-		  << worldHCoord[3] << ")" << std::endl
-		  << "clip space coordinate: ("
-		  << clipHCoord[0] << ", " 
-		  << clipHCoord[1] << ", " 
-		  << clipHCoord[2] << ", "
-		  << clipHCoord[3] << std::endl;
-	std::cerr << "Matrix: " << *imvp << std::endl;
-	EXCEPTION1(VisItException, "Zero Division During Projection");
+        debug5 << "ProjectScreenToWorld "
+               << "Zero Division During Projection" 
+               << std::endl;
+        std::cerr << "world coordinates: (" 
+                  << worldHCoord[0] << ", " 
+                  << worldHCoord[1] << ", " 
+                  << worldHCoord[2] << ", " 
+                  << worldHCoord[3] << ")" << std::endl
+                  << "clip space coordinate: ("
+                  << clipHCoord[0] << ", " 
+                  << clipHCoord[1] << ", " 
+                  << clipHCoord[2] << ", "
+                  << clipHCoord[3] << std::endl;
+        std::cerr << "Matrix: " << *imvp << std::endl;
+        EXCEPTION1(VisItException, "Zero Division During Projection");
     }
     
     // normalize world space coordinate	
@@ -657,8 +564,8 @@ ospray::ProjectScreenToWorld(const int screenCoord[2], const double z,
 
 void
 ospray::ProjectScreenToCamera(const int screenCoord[2], const double z,
-                             const int screenWidth, const int screenHeight, 
-                             vtkMatrix4x4 *imvp, double cameraCoord[3])
+                              const int screenWidth, const int screenHeight, 
+                              vtkMatrix4x4 *imvp, double cameraCoord[3])
 {
     // remove panning
     const int x = screenCoord[0];
@@ -667,27 +574,27 @@ ospray::ProjectScreenToCamera(const int screenCoord[2], const double z,
     // do projection
     double cameraHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
-	(x - screenWidth /2.0)/(screenWidth /2.0),
-	(y - screenHeight/2.0)/(screenHeight/2.0),
-	z,
-	1.0};
+        (x - screenWidth /2.0)/(screenWidth /2.0),
+        (y - screenHeight/2.0)/(screenHeight/2.0),
+        z,
+        1.0};
     imvp->MultiplyPoint(clipHCoord, cameraHCoord);
     if (cameraHCoord[3] == 0) {
-	debug5 << "ProjectScreenToWorld "
-	       << "Zero Division During Projection" 
-	       << std::endl;
-	std::cerr << "world coordinates: (" 
-		  << cameraHCoord[0] << ", " 
-		  << cameraHCoord[1] << ", " 
-		  << cameraHCoord[2] << ", " 
-		  << cameraHCoord[3] << ")" << std::endl
-		  << "clip space coordinate: ("
-		  << clipHCoord[0] << ", " 
-		  << clipHCoord[1] << ", " 
-		  << clipHCoord[2] << ", "
-		  << clipHCoord[3] << std::endl;
-	std::cerr << "Matrix: " << *imvp << std::endl;
-	EXCEPTION1(VisItException, "Zero Division During Projection");
+        debug5 << "ProjectScreenToWorld "
+               << "Zero Division During Projection" 
+               << std::endl;
+        std::cerr << "world coordinates: (" 
+                  << cameraHCoord[0] << ", " 
+                  << cameraHCoord[1] << ", " 
+                  << cameraHCoord[2] << ", " 
+                  << cameraHCoord[3] << ")" << std::endl
+                  << "clip space coordinate: ("
+                  << clipHCoord[0] << ", " 
+                  << clipHCoord[1] << ", " 
+                  << clipHCoord[2] << ", "
+                  << clipHCoord[3] << std::endl;
+        std::cerr << "Matrix: " << *imvp << std::endl;
+        EXCEPTION1(VisItException, "Zero Division During Projection");
     }
     
     // normalize world space coordinate	
@@ -750,115 +657,115 @@ ospray::ProjectWorldToScreenCube(const double cube[6],
     int screenCoord[2]; double depth;
     for (int i=0; i<8; i++)
     {
-	worldCoord[0] = coordinates[i][0];
-	worldCoord[1] = coordinates[i][1];
-	worldCoord[2] = coordinates[i][2];
-	depth = ospray::ProjectWorldToScreen
-	    (worldCoord, screenWidth, screenHeight, 
-	     panPercentage, imageZoom, mvp, screenCoord);
-	// clamp values
-	screenCoord[0] = CLAMP(screenCoord[0], 0, screenWidth);
-	screenCoord[1] = CLAMP(screenCoord[1], 0, screenHeight);
-	screenExtents[0] = xMin = std::min(xMin, screenCoord[0]);
-	screenExtents[1] = xMax = std::max(xMax, screenCoord[0]);
-	screenExtents[2] = yMin = std::min(yMin, screenCoord[1]);
-	screenExtents[3] = yMax = std::max(yMax, screenCoord[1]);
-	depthExtents[0] = zMin = std::min(zMin, depth);
-	depthExtents[1] = zMax = std::max(zMax, depth);
+        worldCoord[0] = coordinates[i][0];
+        worldCoord[1] = coordinates[i][1];
+        worldCoord[2] = coordinates[i][2];
+        depth = ospray::ProjectWorldToScreen
+            (worldCoord, screenWidth, screenHeight, 
+             panPercentage, imageZoom, mvp, screenCoord);
+        // clamp values
+        screenCoord[0] = CLAMP(screenCoord[0], 0, screenWidth);
+        screenCoord[1] = CLAMP(screenCoord[1], 0, screenHeight);
+        screenExtents[0] = xMin = std::min(xMin, screenCoord[0]);
+        screenExtents[1] = xMax = std::max(xMax, screenCoord[0]);
+        screenExtents[2] = yMin = std::min(yMin, screenCoord[1]);
+        screenExtents[3] = yMax = std::max(yMax, screenCoord[1]);
+        depthExtents[0] = zMin = std::min(zMin, depth);
+        depthExtents[1] = zMax = std::max(zMax, depth);
     }
 }
 
 void
 ospray::CompositeBackground(int screen[2],
-			 int compositedImageExtents[4],
-			 int compositedImageWidth,
-			 int compositedImageHeight,
-			 float *compositedImageBuffer,
-			 unsigned char *opaqueImageColor,
-			 float         *opaqueImageDepth,
-			 unsigned char *&imgFinal)
+                            int compositedImageExtents[4],
+                            int compositedImageWidth,
+                            int compositedImageHeight,
+                            float *compositedImageBuffer,
+                            unsigned char *opaqueImageColor,
+                            float         *opaqueImageDepth,
+                            unsigned char *&imgFinal)
 {
     if (UseThreadedBlend_MetaData) {
-      ospray::visit::CompositeBackground(screen,
-			       compositedImageExtents,
-			       compositedImageWidth,
-			       compositedImageHeight,
-			       compositedImageBuffer,
-			       opaqueImageColor,
-			       opaqueImageDepth,
-			       imgFinal);
+        ospray::visit::CompositeBackground(screen,
+                                           compositedImageExtents,
+                                           compositedImageWidth,
+                                           compositedImageHeight,
+                                           compositedImageBuffer,
+                                           opaqueImageColor,
+                                           opaqueImageDepth,
+                                           imgFinal);
     } else {
-    for (int y = 0; y < screen[1]; y++)
-    {
-	for (int x = 0; x < screen[0]; x++)
-	{
-	    int indexScreen     = y * screen[0] + x;
-	    int indexComposited =
-		(y - compositedImageExtents[2]) * compositedImageWidth +
-		(x - compositedImageExtents[0]);
+        for (int y = 0; y < screen[1]; y++)
+        {
+            for (int x = 0; x < screen[0]; x++)
+            {
+                int indexScreen     = y * screen[0] + x;
+                int indexComposited =
+                    (y - compositedImageExtents[2]) * compositedImageWidth +
+                    (x - compositedImageExtents[0]);
 
-	    bool insideComposited = 
-		((x >= compositedImageExtents[0] && 
-		  x < compositedImageExtents[1]) &&
-		 (y >= compositedImageExtents[2] && 
-		  y < compositedImageExtents[3]));
+                bool insideComposited = 
+                    ((x >= compositedImageExtents[0] && 
+                      x < compositedImageExtents[1]) &&
+                     (y >= compositedImageExtents[2] && 
+                      y < compositedImageExtents[3]));
 
-	    if (insideComposited)
-	    {
-		if (compositedImageBuffer[indexComposited*4 + 3] == 0)
-		{
-		    // No data from rendering here! - Good
-		    imgFinal[indexScreen * 3 + 0] = 
-			opaqueImageColor[indexScreen * 3 + 0];
-		    imgFinal[indexScreen * 3 + 1] = 
-			opaqueImageColor[indexScreen * 3 + 1];
-		    imgFinal[indexScreen * 3 + 2] = 
-			opaqueImageColor[indexScreen * 3 + 2];
-		}
-		else
-		{
-		    // Volume in front
-		    float alpha = 
-			(1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
-		    imgFinal[indexScreen * 3 + 0] = 
-			CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 0] *
-			      255.f,
-			      0.f, 255.f);
-		    imgFinal[indexScreen * 3 + 1] = 
-			CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 1] *
-			      255.f,
-			      0.f, 255.f);
-		    imgFinal[indexScreen * 3 + 2] =
-			CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 2] *
-			      255.f,
-			      0.f, 255.f);
-		}
-	    }
-	    else
-	    {
-		// Outside bounding box: Use the background : Good
-		imgFinal[indexScreen * 3 + 0] = 
-		    opaqueImageColor[indexScreen * 3 + 0];
-		imgFinal[indexScreen * 3 + 1] =
-		    opaqueImageColor[indexScreen * 3 + 1];
-		imgFinal[indexScreen * 3 + 2] =
-		    opaqueImageColor[indexScreen * 3 + 2];
-	    }
-	}
-    }
+                if (insideComposited)
+                {
+                    if (compositedImageBuffer[indexComposited*4 + 3] == 0)
+                    {
+                        // No data from rendering here! - Good
+                        imgFinal[indexScreen * 3 + 0] = 
+                            opaqueImageColor[indexScreen * 3 + 0];
+                        imgFinal[indexScreen * 3 + 1] = 
+                            opaqueImageColor[indexScreen * 3 + 1];
+                        imgFinal[indexScreen * 3 + 2] = 
+                            opaqueImageColor[indexScreen * 3 + 2];
+                    }
+                    else
+                    {
+                        // Volume in front
+                        float alpha = 
+                            (1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
+                        imgFinal[indexScreen * 3 + 0] = 
+                            CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
+                                  compositedImageBuffer[indexComposited * 4 + 0] *
+                                  255.f,
+                                  0.f, 255.f);
+                        imgFinal[indexScreen * 3 + 1] = 
+                            CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
+                                  compositedImageBuffer[indexComposited * 4 + 1] *
+                                  255.f,
+                                  0.f, 255.f);
+                        imgFinal[indexScreen * 3 + 2] =
+                            CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
+                                  compositedImageBuffer[indexComposited * 4 + 2] *
+                                  255.f,
+                                  0.f, 255.f);
+                    }
+                }
+                else
+                {
+                    // Outside bounding box: Use the background : Good
+                    imgFinal[indexScreen * 3 + 0] = 
+                        opaqueImageColor[indexScreen * 3 + 0];
+                    imgFinal[indexScreen * 3 + 1] =
+                        opaqueImageColor[indexScreen * 3 + 1];
+                    imgFinal[indexScreen * 3 + 2] =
+                        opaqueImageColor[indexScreen * 3 + 2];
+                }
+            }
+        }
     }
 }
 
 
 void
 ospray::WriteArrayToPPM(std::string filename, const float * image,
-			int dimX, int dimY)
+                        int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
-			     std::ios::out | std::ios::binary);
+                             std::ios::out | std::ios::binary);
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
@@ -878,32 +785,32 @@ ospray::WriteArrayToPPM(std::string filename, const float * image,
 
 void
 ospray::WriteArrayToPPM(std::string filename,  const unsigned char *image, 
-			int dimX, int dimY)
+                        int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
-			     std::ios::out | std::ios::binary);
+                             std::ios::out | std::ios::binary);
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
-	outputFile.write(reinterpret_cast<const char*>(&image[y * dimX * 3]), 
-			 dimX * 3);
+        outputFile.write(reinterpret_cast<const char*>(&image[y * dimX * 3]), 
+                         dimX * 3);
     } 
     outputFile.close();
 }
 
 void
 ospray::WriteArrayGrayToPPM(std::string filename, const float* image, 
-			    int dimX, int dimY)
+                            int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
-			     std::ios::out | std::ios::binary);
+                             std::ios::out | std::ios::binary);
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
         for (int x=0; x<dimX; ++x)
         {
             int index = (y * dimX + x);
-	    char var = CLAMP(image[index], 0.f, 1.f) * 255;
+            char var = CLAMP(image[index], 0.f, 1.f) * 255;
             char color[3];
             color[0] = var;
             color[1] = var;
