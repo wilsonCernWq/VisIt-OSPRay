@@ -459,7 +459,6 @@ avtOSPRayRayTracer::Execute()
     ospout << "[avrRayTracer] make ospray renderer" << std::endl;
     ospray::visit::Renderer ren(ospray->renderer);
     ren.Init();
-    ren.Set(0, 1, false, false, false);
     ren.ResetLights();
     ren.AddLight().Set(false, 1.5, 1.0, viewDirection); // sun light
     ren.AddLight().Set(true,  materialProperties[0], 1.0);  // ambient
@@ -482,6 +481,8 @@ avtOSPRayRayTracer::Execute()
             }          
         }
     }
+    ren.FinalizeLights();
+    ren.Set(0, 1, false, false, false);
     
     // others
     ospray->SetDataBounds(dbounds);
