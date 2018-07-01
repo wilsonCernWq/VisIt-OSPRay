@@ -103,21 +103,21 @@ public:
     avtOSPRayRayTracer();
     virtual              ~avtOSPRayRayTracer();
 
-    virtual const char   *GetType(void) { return "avtOSPRayRayTracer"; };
+    virtual const char   *GetType(void)      { return "avtOSPRayRayTracer"; };
     virtual const char   *GetDescription(void) 
-    { return "OSPRay Ray tracing"; };
+                                             { return "OSPRay Ray tracing"; };
 
     void                  SetLighting(bool l) { lighting = l; };
     void                  SetLightInfo(const LightList& l) { lightList = l; };
     void                  SetMatProperties(double mp[4]) 
-    { for (int i=0; i<4; i++) materialProperties[i] = mp[i]; };
+                   { for (int i=0; i<4; i++) materialProperties[i] = mp[i]; };
     void                  SetViewDirection(double *vd)
-    { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; };
+                        { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; };
     void                  SetRendererSampleRate(double r)
-    { rendererSampleRate = r; };
-    void                  SetOSPRay(OSPVisItContext *ptr) { ospray = ptr; };
+                                                  { rendererSampleRate = r; };
+    void                  SetOSPRay(OSPVisItContext *ptr)   { ospray = ptr; };
     void                  SetActiveVariable(const char* s)
-    { activeVariable = s; };
+                                                      { activeVariable = s; };
 	
 protected:
     OSPVisItContext *ospray;
