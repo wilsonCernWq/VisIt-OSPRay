@@ -93,8 +93,6 @@ bool OSPRaySortImgMetaDataByEyeSpaceDepth(ospray::ImgMetaData const& before,
 
 avtOSPRayRayTracer::avtOSPRayRayTracer() : avtRayTracerBase()
 {
-    panPercentage[0] = 0;
-    panPercentage[1] = 0;
     lighting = false;
 
     materialProperties[0] = 0.4;
@@ -265,7 +263,7 @@ avtOSPRayRayTracer::Execute()
 
     avtWorldSpaceToImageSpaceTransform trans(view, aspect);
     trans.SetInput(GetInput());
-
+    
     //
     // Extract all of the samples from the dataset.
     //
@@ -289,6 +287,13 @@ avtOSPRayRayTracer::Execute()
     int            tileExtents[4];
 
     //
+    // Hack
+    //
+    // view.imagePan[0] *= 2;
+    // view.imagePan[1] *= 2;
+    // view.imageZoom *= 1;
+    
+    //
     // Camera Settings
     //
     vtkCamera *sceneCam = vtkCamera::New();
@@ -302,8 +307,6 @@ avtOSPRayRayTracer::Execute()
     sceneCam->SetParallelScale(view.parallelScale);	
     // Clip planes
     double oldclip[2] = {oldNearPlane, oldFarPlane};
-    panPercentage[0] = view.imagePan[0];
-    panPercentage[1] = view.imagePan[1];
     // Scaling
     vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
     matScale->Identity(); 
@@ -366,7 +369,7 @@ avtOSPRayRayTracer::Execute()
     double depthExtents[2];
     GetSpatialExtents(dbounds);
     ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
-                                     panPercentage, view.imageZoom,
+                                     view.imagePan, view.imageZoom,
                                      model_to_screen_transform,
                                      tileExtents, depthExtents);
     tileExtents[0] = std::max(tileExtents[0], 0);
@@ -444,9 +447,9 @@ avtOSPRayRayTracer::Execute()
     // camera
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
     ((ospray::visit::Camera)ospray->camera)
-        .Set(view.orthographic, view.camera, view.focus, 
-             view.viewUp,view.viewAngle, view.imagePan,
-             view.imageZoom, sceneSize, screen, tileExtents);
+        .Set(view.orthographic, view.camera, view.focus, view.viewUp,
+	     view.viewAngle, view.imagePan, view.imageZoom,
+	     sceneSize, screen, tileExtents);
     // transfer function
     ospout  << "[avrRayTracer] make ospray transfer function" 
             << std::endl;
@@ -498,7 +501,6 @@ avtOSPRayRayTracer::Execute()
     //
     extractor.SetJittering(false);
     extractor.SetLighting(lighting);
-    //extractor.SetLightDirection(lightDirection);
     extractor.SetMatProperties(materialProperties);
     extractor.SetViewDirection(viewDirection);
     extractor.SetTransferFn(transferFn1D);

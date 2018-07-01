@@ -180,10 +180,11 @@ public:
     }
 	
     // ospVolume component
-    void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME); 
+    void InitVolume(int type, void *ptr,
+		    int nX, int nY, int nZ,
+		    unsigned char volumeType); 
     OSPVolume GetVolume() { return volume; }
-    void SetVolume(int type, void *ptr,
-                   double *X, double *Y, double *Z, 
+    void SetVolume(double *X, double *Y, double *Z, 
                    int nX, int nY, int nZ,
                    double volumePBox[6], 
                    double volumeBBox[6]);

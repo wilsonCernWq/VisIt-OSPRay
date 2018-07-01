@@ -134,7 +134,6 @@ protected:
     double                materialProperties[4];
     double                viewDirection[3];
 
-    double                panPercentage[2];
     double                rendererSampleRate;
 };
 

@@ -160,7 +160,6 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
                          double mtl[4], float sr,
                          bool shading)
 {
-    /* OSPRay Volume */
     specularKs    = (float)mtl[2];
     specularNs    = (float)mtl[3];
     enableShading = shading;
@@ -170,24 +169,25 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     // So we refresh volume everytime to fix the bug
     // which means we need to disable grid accelerator
     // to speed things up. Until I found the reason of crashing
+    
+    // finished = false;
     if (ptr != dataPtr) {
+	finished = false;
         ospout << "[ospray] update data" << std::endl;
     };
-    if (true/*!finished*/) {
+    if (!finished) {
         // Because we initialized the volume each frame
         // we need to removed the old volume from model first
         volumeType = OSP_INVALID;
-        InitVolume();
-        SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
-                  volumePBox, volumeBBox);
+        InitVolume(type, ptr, nX, nY, nZ, OSP_SHARED_STRUCTURED_VOLUME);
     }
-    /* OSPRay Model */
-    if (true/*!finished*/) {
+    SetVolume(X, Y, Z, nX, nY, nZ,
+	      volumePBox, volumeBBox);    
+    if (!finished) {
         worldType = OSP_INVALID; 
         InitWorld();
         SetWorld();
     }
-    /* update volume */
     finished = true;
 }
 
@@ -207,7 +207,9 @@ void OSPVisItVolume::SetWorld() {
 }
 
 // ospVolume component
-void OSPVisItVolume::InitVolume(unsigned char type) {
+void OSPVisItVolume::InitVolume(int dt, void *ptr,
+				int nX, int nY, int nZ,
+				unsigned char type) {
     if (volumeType != type) { // only initialize once
         CleanVolume();
         volumeType = type;
@@ -225,38 +227,50 @@ void OSPVisItVolume::InitVolume(unsigned char type) {
             EXCEPTION1(VisItException, 
                        "ERROR: ospray volume not initialized");
         }
+	// calculate volume data type
+	if (dt == VTK_UNSIGNED_CHAR) {
+	    dataType = "uchar";
+	    voxelDataType = OSP_UCHAR;
+	} else if (dt ==VTK_SHORT) {
+	    dataType = "short";
+	    voxelDataType = OSP_SHORT;
+	} else if (dt ==VTK_UNSIGNED_SHORT) {
+	    dataType = "ushort";
+	    voxelDataType = OSP_USHORT;
+	} else if (dt ==VTK_FLOAT) {
+	    dataType = "float";
+	    voxelDataType = OSP_FLOAT;
+	} else if (dt ==VTK_DOUBLE) {
+	    dataType = "double";
+	    voxelDataType = OSP_DOUBLE;
+	} else {
+	    debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
+	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
+	}
+	ospout << "[ospray] data type " << dataType << std::endl;
+	// assign data pointer
+	dataPtr = ptr;
+	// commit voxel data
+	if (voxelData != NULL) { 
+	    debug1 << "ERROR: Found VoxelData to be non-empty "
+		   << "while creating new volume" << std::endl;
+	    EXCEPTION1(VisItException, 
+		       "ERROR: Found VoxelData to be non-empty "
+		       "while creating new volume");
+	}
+	voxelSize = nX * nY * nZ;
+	voxelData = ospNewData(voxelSize, voxelDataType,
+			       dataPtr, OSP_DATA_SHARED_BUFFER);
+	ospSetString(volume, "voxelType", dataType.c_str());	
+	ospSetData(volume, "voxelData", voxelData);
     }
 }
 
 void 
-OSPVisItVolume::SetVolume(int type, void *ptr, 
-                          double *X, double *Y, double *Z, 
+OSPVisItVolume::SetVolume(double *X, double *Y, double *Z, 
                           int nX, int nY, int nZ,
                           double volumePBox[6], double volumeBBox[6]) 
 {
-    // calculate volume data type
-    if (type == VTK_UNSIGNED_CHAR) {
-        dataType = "uchar";
-        voxelDataType = OSP_UCHAR;
-    } else if (type == VTK_SHORT) {
-        dataType = "short";
-        voxelDataType = OSP_SHORT;
-    } else if (type == VTK_UNSIGNED_SHORT) {
-        dataType = "ushort";
-        voxelDataType = OSP_USHORT;
-    } else if (type == VTK_FLOAT) {
-        dataType = "float";
-        voxelDataType = OSP_FLOAT;
-    } else if (type == VTK_DOUBLE) {
-        dataType = "double";
-        voxelDataType = OSP_DOUBLE;
-    } else {
-        debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
-        EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
-    }
-    ospout << "[ospray] data type " << dataType << std::endl;
-    // assign data pointer
-    dataPtr = ptr;
     // assign structure
     regionStart.x   = volumePBox[0];
     regionStart.y   = volumePBox[1];
@@ -278,21 +292,7 @@ OSPVisItVolume::SetVolume(int type, void *ptr,
     regionUpperClip.z = volumeBBox[5];
 
     // other objects
-    ospSetString(volume, "voxelType", dataType.c_str());
     ospSetObject(volume, "transferFunction", *(parent->tfn));
-
-    // commit voxel data
-    if (voxelData != NULL) { 
-        debug1 << "ERROR: Found VoxelData to be non-empty "
-               << "while creating new volume" << std::endl;
-        EXCEPTION1(VisItException, 
-                   "ERROR: Found VoxelData to be non-empty "
-                   "while creating new volume");
-    }
-    voxelSize = nX * nY * nZ;
-    voxelData = ospNewData(voxelSize, voxelDataType,
-                           dataPtr, OSP_DATA_SHARED_BUFFER);
-    ospSetData(volume, "voxelData", voxelData);
 
     // commit volume
     // -- no lighting by default
