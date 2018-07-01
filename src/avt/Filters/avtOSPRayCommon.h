@@ -36,27 +36,16 @@
 *
 *****************************************************************************/
 
-#ifndef AVT_OSPRAY_COMMON_H
-#define AVT_OSPRAY_COMMON_H
-
 #ifndef VISIT_OSPRAY /* make sure VISIT_OSPRAY is defined */
 # error "VISIT_OSPRAY is not defined but ospray is used"
 #endif
 
-#include <avtParallel.h>
+#ifndef AVT_OSPRAY_COMMON_H
+#define AVT_OSPRAY_COMMON_H
 
-#include <vtkType.h>
-#include <vtkMatrix4x4.h>
-
-#include <ospray/ospray.h>
-#include <ospray/visit/VisItModuleCommon.h>
+#include <ospray/visit/VisItWrapperCore.h>
 #include <ospray/visit/VisItWrapper.h>
 
-#include <cmath>
-#include <cstdlib>
-#include <iostream>
-#include <limits>
-#include <stdio.h>
 #include <string>
 #include <vector>
 #include <map>
@@ -68,31 +57,6 @@
 #define OSP_SHARED_STRUCTURED_VOLUME 4
 #define OSP_INVALID                  5
 #define OSP_VALID                    6
-
-// ostreams customized for ospray
-#ifdef ospout
-#undef ospout
-#endif
-#define ospout \
-    if (!ospray::visit::CheckVerbose() && !DebugStream::Level5()) ; \
-    else (*ospray::osp_out)
-#ifdef osperr
-#undef osperr
-#endif
-#define osperr \
-    if (!ospray::visit::CheckVerbose() && !DebugStream::Level1()) ; \
-    else (*ospray::osp_err)
-namespace ospray {
-    extern std::ostream *osp_out;
-    extern std::ostream *osp_err;
-    //////////////////////////////////////////////////////
-    //                                                  //
-    // Those function has to be inline, otherwise we    //
-    // need to link this library to other components    //
-    // manually                                         //
-    //                                                  //
-    //////////////////////////////////////////////////////
-};
 
 // ****************************************************************************
 //  Struct:  OSPVisItVolume
@@ -262,7 +226,7 @@ class OSPVisItVolume
 //  Creation:   
 //
 // ****************************************************************************
-
+/*
 struct OSPVisItLight
 {
     OSPLight aLight;
@@ -276,11 +240,10 @@ struct OSPVisItLight
         lightdata = NULL;
     }
     ~OSPVisItLight() { Clean(); }
-    void Clean() {/* TODO should we delete them? */}
     void Init(const OSPRenderer& renderer);
     void Set(double materialProperties[4], double viewDirection[3]);
 };
-
+*/
 // ****************************************************************************
 //  Struct:  OSPVisItRenderer
 //
@@ -291,16 +254,18 @@ struct OSPVisItLight
 //  Creation:   
 //
 // ****************************************************************************
-
+/*
 struct OSPVisItRenderer
 {
 public:
     enum State {
-        INVALID, /* TODO do we need this actually ? */
+        INVALID, // TODO do we need this actually ? 
         SCIVIS,
     } rendererType;
     OSPRenderer renderer;
+
     OSPVisItLight lights;
+
     // properties
     int aoSamples;
     int spp; //!< samples per pixel
@@ -334,120 +299,7 @@ public:
     void SetModel(const OSPModel& world);
 };
 
-// ****************************************************************************
-//  Struct:  OSPVisItCamera
-//
-//  Purpose:
-//
-//
-//  Programmer: Qi WU
-//  Creation:   
-//
-// ****************************************************************************
-/*
-struct OSPVisItCamera
-{
-public:
-    enum State {
-        INVALID,
-        PERSPECTIVE,
-        ORTHOGRAPHIC,
-    } cameraType;
-    OSPCamera camera;
-    float panx; // this is a ratio [0, 1]
-    float pany; // this is a ratio [0, 1]
-    float r_xl; 
-    float r_yl;
-    float r_xu;
-    float r_yu;
-    float zoom; 
-    int   size[2];
-    osp::vec2f imgS, imgE;
-public:
-    OSPVisItCamera() {
-        camera = NULL;
-        cameraType = INVALID;
-        panx = 0.0f;
-        pany = 0.0f;
-        zoom = 1.0f;
-        size[0] = size[1] = 0.0f;
-        imgS.x = 0.f;
-        imgS.y = 0.f;
-        imgE.x = 0.f;
-        imgE.y = 0.f;
-    }
-    ~OSPVisItCamera() { Clean(); }
-    void Clean() {
-        if (camera != NULL) {
-            ospRelease(camera);
-            camera = NULL;
-            cameraType = INVALID;
-        }
-    }
-    void Init(State type);
-    void Set(const double camp[3], 
-             const double camf[3], 
-             const double camu[3], 
-             const double camd[3],
-             const double sceneSize[2],
-             const double aspect, 
-             const double fovy, 
-             const double zoom_ratio, 
-             const double pan_ratio[2],
-             const int bufferExtents[4],
-             const int screenExtents[2]);
-    void SetScreen(float xMin, float xMax, float yMin, float yMax);
-};
 */
-// ****************************************************************************
-//  Struct:  OSPVisItColor
-//
-//  Purpose:
-//
-//
-//  Programmer: Qi WU
-//  Creation:   
-//
-// ****************************************************************************
-
-//struct OSPVisItColor { float R,G,B, A; };
-
-// ****************************************************************************
-//  Struct:  OSPVisItTransferFunction
-//
-//  Purpose:
-//
-//
-//  Programmer: Qi WU
-//  Creation:   
-//
-// ****************************************************************************
-/*
-struct OSPVisItTransferFunction
-{
-public:
-    enum State { INVALID, PIECEWISE_LINEAR, } transferfcnType;
-    OSPTransferFunction  transferfcn;
-public:
-    OSPVisItTransferFunction() {
-        transferfcn = NULL;
-        transferfcnType = INVALID;
-    }
-    void Clean() {
-        if (transferfcn != NULL) {
-            ospRelease(transferfcn);
-            transferfcn = NULL;
-            transferfcnType = INVALID;
-        }
-    }
-    void Init();
-    void Set(const OSPVisItColor* table,
-             const unsigned int size, 
-             const float datamin,
-             const float datamax);
-};
-*/
-
 // ****************************************************************************
 //  Struct:  OSPVisItContext
 //
@@ -472,9 +324,9 @@ public:
     }
     ~OSPVisItContext() {	
         volumes.clear();
-        renderer.Clean();
-        camera.Delete();
-        tfn.Delete();
+        //renderer.Clean();
+        //camera.Delete();
+        //tfn.Delete();
     }
 
     // helper
@@ -490,20 +342,23 @@ public:
     void SetDataBounds(double dbounds[6]) {
         for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
     }
-    void SetBgBuffer(float* depth, int extents[4]) {
-        renderer.maxDepthBuffer = depth;
-        renderer.maxDepthSize.x = extents[1] - extents[0];
-        renderer.maxDepthSize.y = extents[3] - extents[2];
-    }
     void SetScaling(double s[3]) { 
         regionScaling.x = (float)s[0];
         regionScaling.y = (float)s[1];
         regionScaling.z = (float)s[2]; 
     }
 
-    OSPVisItRenderer renderer;
-    ospray::visit::Camera   camera;
-    ospray::visit:: TransferFunction tfn;
+
+    ospray::visit::CameraCore           camera;
+    ospray::visit::RendererCore         renderer;
+    ospray::visit::TransferFunctionCore tfn;
+    void SetBgBuffer(unsigned char* color, float* depth, int size[2]) 
+    {
+        ((ospray::visit::Renderer)renderer)
+            .SetBackgroundBuffer(color, depth, size);
+    }
+
+
     std::map<int, OSPVisItVolume> volumes;
 
     void SetActiveVariable(const char* str) { varname = str; }
@@ -535,11 +390,25 @@ private:
 #ifndef AVT_OSPRAY_COMMON_EXTRA_H
 #define AVT_OSPRAY_COMMON_EXTRA_H
 
+#include <avtParallel.h>
 #include <DebugStream.h>
 #include <StackTimer.h>
 #include <TimingsManager.h>
 #include <ImproperUseException.h>
+
+#include <vtkType.h>
+#include <vtkMatrix4x4.h>
+
+#include <ospray/ospray.h>
+#include <ospray/visit/VisItModuleCommon.h>
+#include <ospray/visit/VisItWrapper.h>
 #include <ospray/visit/VisItImageComposite.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <iostream>
+#include <limits>
+#include <stdio.h>
 
 #ifndef CLAMP
 # define CLAMP(x, l, h) (x > l ? x < h ? x : h : l)
@@ -550,6 +419,31 @@ private:
 #ifndef M_MAX
 # define M_MAX(x, r) (x > r ? x : r)
 #endif
+
+// ostreams customized for ospray
+#ifdef ospout
+#undef ospout
+#endif
+#define ospout \
+    if (!ospray::visit::CheckVerbose() && !DebugStream::Level5()) ; \
+    else (*ospray::osp_out)
+#ifdef osperr
+#undef osperr
+#endif
+#define osperr \
+    if (!ospray::visit::CheckVerbose() && !DebugStream::Level1()) ; \
+    else (*ospray::osp_err)
+namespace ospray {
+    extern std::ostream *osp_out;
+    extern std::ostream *osp_err;
+    //////////////////////////////////////////////////////
+    //                                                  //
+    // Those function has to be inline, otherwise we    //
+    // need to link this library to other components    //
+    // manually                                         //
+    //                                                  //
+    //////////////////////////////////////////////////////
+};
 
 // ****************************************************************************
 //  Namespace:  ospray

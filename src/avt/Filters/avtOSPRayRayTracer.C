@@ -96,8 +96,7 @@ avtOSPRayRayTracer::avtOSPRayRayTracer() : avtRayTracerBase()
     panPercentage[0] = 0;
     panPercentage[1] = 0;
     lighting = false;
-    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
-    lightPosition[3] = 1.0;
+
     materialProperties[0] = 0.4;
     materialProperties[1] = 0.75;
     materialProperties[2] = 0.0;
@@ -444,33 +443,47 @@ avtOSPRayRayTracer::Execute()
     ospray->InitOSP();
     // camera
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
-    // if (!view.orthographic) {
-    //     ospray->camera.Init(OSPVisItCamera::PERSPECTIVE);
-    // }
-    // else {
-    //     ospray->camera.Init(OSPVisItCamera::ORTHOGRAPHIC);
-    // }
-    ospray->camera.Set(view.orthographic, view.camera, view.focus, 
-                       view.viewUp,view.viewAngle, view.imagePan,
-                       view.imageZoom, sceneSize, screen, tileExtents);
+    ((ospray::visit::Camera)ospray->camera)
+      .Set(view.orthographic, view.camera, view.focus, 
+           view.viewUp,view.viewAngle, view.imagePan,
+           view.imageZoom, sceneSize, screen, tileExtents);
     // transfer function
     ospout  << "[avrRayTracer] make ospray transfer function" 
             << std::endl;
-    // ospray->transferfcn.Init();
-    // ospray->transferfcn.Set
-    //     ((OSPVisItColor*)transferFn1D->GetTableFloat(), 
-    //      transferFn1D->GetNumberOfTableEntries(),
-    //      (float)transferFn1D->GetMin(),
-    //      (float)transferFn1D->GetMax());
-    ospray->tfn.Set(transferFn1D->GetTableFloat(), 
-                    transferFn1D->GetNumberOfTableEntries(),
-                    transferFn1D->GetMin(),
-                    transferFn1D->GetMax());
-    
+    ((ospray::visit::TransferFunction)ospray->tfn)
+      .Set(transferFn1D->GetTableFloat(), 
+           transferFn1D->GetNumberOfTableEntries(),
+           transferFn1D->GetMin(),
+           transferFn1D->GetMax());
     // renderer
     ospout << "[avrRayTracer] make ospray renderer" << std::endl;
-    ospray->renderer.Init();
-    ospray->renderer.Set(materialProperties, viewDirection, lighting);
+    ospray::visit::Renderer ren(ospray->renderer);
+    ren.Init();
+    ren.Set(0, 1, false, false, false);
+    ren.ResetLights();
+    ren.AddLight().Set(false, 1.5, 1.0, viewDirection); // sun light
+    ren.AddLight().Set(true,  materialProperties[0], 1.0);  // ambient
+    ren.AddLight().Set(false, materialProperties[1], 1.0, viewDirection); // diffuse
+    for (int i = 0; i < 8; ++i) { // in VisIt there are only 8 lights
+      const LightAttributes& la = lightList.GetLight(i);
+      if (la.GetEnabledFlag()) {
+        if (la.GetType() == LightAttributes::Ambient) {
+          ren.AddLight().Set(true, la.GetBrightness(),
+                             (double)la.GetColor().Red() / 255.0,
+                             (double)la.GetColor().Green() / 255.0,
+                             (double)la.GetColor().Blue() / 255.0);
+        } else {
+          ren.AddLight().Set(false, la.GetBrightness(),
+                             (double)la.GetColor().Red() / 255.0,
+                             (double)la.GetColor().Green() / 255.0,
+                             (double)la.GetColor().Blue() / 255.0,
+                             la.GetDirection());        
+
+        }          
+      }
+    }
+    
+    // others
     ospray->SetDataBounds(dbounds);
     ospray->SetScaling(scale);
     ospray->SetActiveVariable(activeVariable);
@@ -483,7 +496,7 @@ avtOSPRayRayTracer::Execute()
     //
     extractor.SetJittering(false);
     extractor.SetLighting(lighting);
-    extractor.SetLightDirection(lightDirection);
+    //extractor.SetLightDirection(lightDirection);
     extractor.SetMatProperties(materialProperties);
     extractor.SetViewDirection(viewDirection);
     extractor.SetTransferFn(transferFn1D);
@@ -522,8 +535,7 @@ avtOSPRayRayTracer::Execute()
             opaqueImageDepth[index] = -worldCoord[2];
         }
     }
-    ospray->SetBgBuffer(opaqueImageDepth.data(), 
-                        bufferScreenExtents);
+    ospray->SetBgBuffer(opaqueImageData, opaqueImageDepth.data(), screen);
     
     // TODO We cannot delete camera here, why ?
     //sceneCam->Delete();

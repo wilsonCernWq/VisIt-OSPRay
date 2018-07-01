@@ -587,27 +587,22 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     }
     software->SetView(vi);
 
-    double view_dir[3];
-    view_dir[0] = vi.focus[0] - vi.camera[0];
-    view_dir[1] = vi.focus[1] - vi.camera[1];
-    view_dir[2] = vi.focus[2] - vi.camera[2];
-    double mag = sqrt(view_dir[0]*view_dir[0] + view_dir[1]*view_dir[1]
-                      + view_dir[2]*view_dir[2]);
+    double viewDirection[3];
+    viewDirection[0] = vi.focus[0] - vi.camera[0];
+    viewDirection[1] = vi.focus[1] - vi.camera[1];
+    viewDirection[2] = vi.focus[2] - vi.camera[2];
+    double mag = sqrt(viewDirection[0]*viewDirection[0] + viewDirection[1]*viewDirection[1]
+                      + viewDirection[2]*viewDirection[2]);
     if (mag != 0.) // only 0 if focus and camera are the same
     {
-        view_dir[0] /= mag;
-        view_dir[1] /= mag;
-        view_dir[2] /= mag;
+        viewDirection[0] /= mag;
+        viewDirection[1] /= mag;
+        viewDirection[2] /= mag;
     }
 
     //
     // Set up lighting and material properties
     //
-    double tempLightDir[3];
-    tempLightDir[0] = ((window.GetLights()).GetLight(0)).GetDirection()[0];
-    tempLightDir[1] = ((window.GetLights()).GetLight(0)).GetDirection()[1];
-    tempLightDir[2] = ((window.GetLights()).GetLight(0)).GetDirection()[2];
-
     double *matProp = atts.GetMaterialProperties();
     double materialPropArray[4];
     materialPropArray[0] = matProp[0];
@@ -617,23 +612,27 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     
 #ifdef VISIT_SLIVR
     if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR) {
-	avtSLIVRRayTracer* s = (avtSLIVRRayTracer*)software;
-	s->SetViewDirection(view_dir);
-	s->SetLighting(atts.GetLightingFlag());
-	s->SetLightDirection(tempLightDir);
-	s->SetMatProperties(materialPropArray);
+      double tempLightDir[3];
+      tempLightDir[0] = ((window.GetLights()).GetLight(0)).GetDirection()[0];
+      tempLightDir[1] = ((window.GetLights()).GetLight(0)).GetDirection()[1];
+      tempLightDir[2] = ((window.GetLights()).GetLight(0)).GetDirection()[2];      
+      avtSLIVRRayTracer* s = (avtSLIVRRayTracer*)software;
+      s->SetViewDirection(viewDirection);
+      s->SetLighting(atts.GetLightingFlag());
+      s->SetLightDirection(tempLightDir);
+      s->SetMatProperties(materialPropArray);
     } else
 #endif
     {
 #ifdef VISIT_OSPRAY
     if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
-	avtOSPRayRayTracer* s = (avtOSPRayRayTracer*)software;
-	s->SetActiveVariable(primaryVariable);
-	s->SetViewDirection(view_dir);
-	s->SetLighting(atts.GetLightingFlag());
-        s->SetLightDirection(tempLightDir);
-	s->SetMatProperties(materialPropArray);
-	s->SetRendererSampleRate(atts.GetRendererSamples());
+      avtOSPRayRayTracer* s = (avtOSPRayRayTracer*)software;
+      s->SetActiveVariable(primaryVariable);
+      s->SetViewDirection(viewDirection);
+      s->SetLighting(atts.GetLightingFlag());
+      s->SetLightInfo(window.GetLights());
+      s->SetMatProperties(materialPropArray);
+      s->SetRendererSampleRate(atts.GetRendererSamples());
     }
 #endif
     }

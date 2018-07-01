@@ -127,11 +127,11 @@ avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h,
     osprayVoxelExtractor = NULL;
     modelViewProj = vtkMatrix4x4::New();
     lighting = false;
-    lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
-    lightPosition[3] = 1.0;
-    lightDirection[0] = 0;
-    lightDirection[1] = 0;
-    lightDirection[2] = -1;
+    // lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
+    // lightPosition[3] = 1.0;
+    // lightDirection[0] = 0;
+    // lightDirection[1] = 0;
+    // lightDirection[2] = -1;
     materialProperties[0] = 0.4;
     materialProperties[1] = 0.75;
     materialProperties[2] = 0.0;
@@ -379,6 +379,8 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         //-----------------------------
         // Compositing Setup
         //-----------------------------	
+        osprayVoxelExtractor->SetProcIdPatchID(PAR_Rank(), num);
+
         osprayVoxelExtractor->SetGridsAreInWorldSpace
             (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
 
@@ -394,10 +396,8 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         osprayVoxelExtractor->SetPanPercentages(panPercentage);
         osprayVoxelExtractor->SetDepthExtents(depthExtents);
 
-        osprayVoxelExtractor->SetProcIdPatchID(PAR_Rank(), num);
-
         osprayVoxelExtractor->SetLighting(lighting);
-        osprayVoxelExtractor->SetLightDirection(lightDirection);
+
         osprayVoxelExtractor->SetMatProperties(materialProperties);
         osprayVoxelExtractor->SetTransferFn(transferFn1D);
 

@@ -127,9 +127,9 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
 			     float*& dest, OSPVisItVolume* volume) 
 {
 
-    camera.SetScreen(xMin, xMax, yMin, yMax);
-    renderer.SetModel(volume->GetWorld());
-    renderer.SetCamera(*camera);
+    ((ospray::visit::Camera)camera).SetScreen(xMin, xMax, yMin, yMax);
+    ((ospray::visit::Renderer)renderer).Set(volume->GetWorld());
+    ((ospray::visit::Renderer)renderer).Set(*camera);
     volume->InitFB(imgWidth, imgHeight);
     volume->RenderFB();
     std::copy(volume->GetFBData(), 
@@ -371,27 +371,26 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     //
     // It seems we need to also fix pan and zoom also
     //
-    const int Xs = parent->camera.GetWindowExts(0);
+    const int Xs = ((ospray::visit::Camera)parent->camera).GetWindowExts(0);
     // std::min((int)round((parent->camera.r_xl + parent->camera.panx) * 
     // 	    parent->camera.size[0]),
     //  parent->camera.size[0]-1);
-    const int Ys = parent->camera.GetWindowExts(2);
+    const int Ys = ((ospray::visit::Camera)parent->camera).GetWindowExts(2);
 	// std::min((int)round((parent->camera.r_yl + parent->camera.pany) * 
 	// 		    parent->camera.size[1]),
 	// 	 parent->camera.size[1]-1);
     for (int i = 0; i < width; ++i) {
     	for (int j = 0; j < height; ++j) {
-    	    maxDepth[i + j * width] = 
-    		parent->renderer.maxDepthBuffer
-              [Xs + i + (Ys + j) * parent->renderer.maxDepthSize.x];
+    	    maxDepth[i + j * width] = parent->renderer.bgDepthBuffer
+              [Xs + i + (Ys + j) * parent->renderer.bgSize[0]];
     	}
     }
     framebufferBg = ospNewTexture2D(imageSize, OSP_TEXTURE_R32F, 
 				    maxDepth.data(),
 				    OSP_TEXTURE_FILTER_NEAREST);
     ospCommit(framebufferBg);
-    ospSetObject(parent->renderer.renderer, "maxDepthTexture", framebufferBg);
-    ospCommit(parent->renderer.renderer);
+    ospSetObject(*(parent->renderer), "maxDepthTexture", framebufferBg);
+    ospCommit(*(parent->renderer));
     ospRelease(framebufferBg);
     framebufferBg = NULL;
     // create framebuffer
@@ -402,7 +401,7 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
 }
 void OSPVisItVolume::RenderFB() {
     static int i = 0;
-    ospRenderFrame(framebuffer, parent->renderer.renderer, OSP_FB_COLOR);
+    ospRenderFrame(framebuffer, *(parent->renderer), OSP_FB_COLOR);
     framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
 }
 float* OSPVisItVolume::GetFBData() {
@@ -414,9 +413,8 @@ float* OSPVisItVolume::GetFBData() {
 // OSPLight
 //
 // ****************************************************************************
-void OSPVisItLight::Init(const OSPRenderer& renderer)
+/*void OSPVisItLight::Init(const OSPRenderer& renderer)
 {
-    /* TODO check repeated initialization ? */
     Clean();
     aLight = ospNewLight(renderer, "ambient");
     dLight = ospNewLight(renderer, "distant");
@@ -428,6 +426,8 @@ void OSPVisItLight::Init(const OSPRenderer& renderer)
     lightdata = ospNewData(3, OSP_OBJECT, lights);
     ospCommit(lightdata);
 }
+*/
+/*
 void OSPVisItLight::Set(double materialProperties[4], double viewDirection[3])
 {
     // light direction
@@ -446,19 +446,19 @@ void OSPVisItLight::Set(double materialProperties[4], double viewDirection[3])
     ospSetVec3f(dLight, "direction", lightDir);
     ospCommit(dLight);
     // sun light
-    ospSet1f(sLight, "intensity", 1.5f /*TODO hard code it for now*/);
+    ospSet1f(sLight, "intensity", 1.5f );
     ospSet1f(sLight, "angularDiameter", 0.53f);
     ospSet1i(sLight, "isVisible", 0);
     ospSetVec3f(sLight, "direction", lightDir);
     ospCommit(sLight);
 }
-
+*/
 // ****************************************************************************
 //
 // OSPRenderer
 //
 // ****************************************************************************
-
+/*
 void OSPVisItRenderer::Init() 
 {
     if (rendererType == INVALID) {
@@ -501,124 +501,7 @@ void OSPVisItRenderer::SetModel(const OSPModel& world)
     ospSetObject(renderer, "model",  world);
     ospCommit(renderer);
 }
-
-// ****************************************************************************
-//
-// OSPCamera
-//
-// ****************************************************************************
-/*
-void OSPVisItCamera::Init(State type) 
-{
-    if (cameraType != type) {
-	Clean();
-	cameraType = type;
-	switch (cameraType) {
-	case (PERSPECTIVE):
-	    camera = ospNewCamera("perspective");
-	    break;
-	case (ORTHOGRAPHIC):
-	    camera = ospNewCamera("orthographic");
-	    break;
-	default:
-	    cameraType = INVALID;
-	    EXCEPTION1(VisItException, "ERROR: wrong ospray camera type"); 
-	}
-    }
-}
-void OSPVisItCamera::Set(const double camp[3], 
-			 const double camf[3], 
-			 const double camu[3], 
-			 const double camd[3],
-			 const double sceneSize[2],
-			 const double aspect, 
-			 const double fovy, 
-			 const double zoom_ratio, 
-			 const double pan_ratio[2],
-			 const int bufferExtents[4],
-			 const int screenExtents[2]) 
-{
-    osp::vec3f camP, camD, camU;
-    camP.x = camp[0]; camP.y = camp[1]; camP.z = camp[2];    
-    camD.x = camd[0]; camD.y = camd[1]; camD.z = camd[2];
-    camU.x = camu[0]; camU.y = camu[1]; camU.z = camu[2];
-    panx = pan_ratio[0] * zoom_ratio;
-    pany = pan_ratio[1] * zoom_ratio;
-    size[0] = screenExtents[0];
-    size[1] = screenExtents[1];
-    zoom = zoom_ratio;
-    ospSetVec3f(camera, "pos", camP);
-    ospSetVec3f(camera, "dir", camD);
-    ospSetVec3f(camera, "up",  camU);
-    ospSet1f(camera, "aspect", aspect);
-    if      (cameraType == PERSPECTIVE)  { ospSet1f(camera, "fovy", fovy); }
-    else if (cameraType == ORTHOGRAPHIC) { 
-	ospSet1f(camera, "height", sceneSize[1]); 
-    }
-    ospCommit(camera);
-    this->SetScreen(bufferExtents[0], bufferExtents[1],
-		    bufferExtents[2], bufferExtents[3]);
-}
-void OSPVisItCamera::SetScreen(float xMin, float xMax, float yMin, float yMax) 
-{
-    r_xl = xMin/size[0] - panx; 
-    r_yl = yMin/size[1] - pany; 
-    r_xu = xMax/size[0] - panx;
-    r_yu = yMax/size[1] - pany;	
-    imgS.x = (r_xl - 0.5f) / zoom + 0.5f;
-    imgS.y = (r_yl - 0.5f) / zoom + 0.5f;
-    imgE.x = (r_xu - 0.5f) / zoom + 0.5f;
-    imgE.y = (r_yu - 0.5f) / zoom + 0.5f;
-    ospSetVec2f(camera, "imageStart", imgS);
-    ospSetVec2f(camera, "imageEnd",   imgE);
-    ospCommit(camera);
-}
 */
-// ****************************************************************************
-//
-// OSPTransferFunction
-//
-// ****************************************************************************
-/*
-void OSPVisItTransferFunction::Init() 
-{
-    if (transferfcnType == INVALID) {
-	Clean();
-	transferfcnType = PIECEWISE_LINEAR;
-	transferfcn = ospNewTransferFunction("piecewise_linear");
-    }
-}
-void OSPVisItTransferFunction::Set(const OSPVisItColor *table,
-				   const unsigned int size, 
-				   const float datamin, 
-				   const float datamax) 
-{
-    std::vector<osp::vec3f> colors;
-    std::vector<float>      opacities;
-    for (int i = 0; i < size; ++i) {
-	osp::vec3f color;
-	color.x = table[i].R;
-	color.y = table[i].G;
-	color.z = table[i].B;
-	colors.push_back(color);
-	opacities.push_back(table[i].A);
-    }
-    OSPData colorData   = 
-	ospNewData(colors.size(), OSP_FLOAT3, colors.data());
-    OSPData opacityData = 
-	ospNewData(opacities.size(), OSP_FLOAT, opacities.data());
-    osp::vec2f range;
-    range.x = datamin;
-    range.y = datamax;
-    ospSetData(transferfcn, "colors",      colorData);
-    ospSetData(transferfcn, "opacities",   opacityData);
-    ospSetVec2f(transferfcn, "valueRange", range);
-    ospCommit(transferfcn);
-    ospRelease(colorData);
-    ospRelease(opacityData);
-}
-*/
-
 // ****************************************************************************
 //
 //

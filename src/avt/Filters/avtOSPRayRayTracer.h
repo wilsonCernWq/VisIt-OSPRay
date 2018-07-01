@@ -46,9 +46,9 @@
 #include <filters_exports.h>
 
 #include <avtRayTracerBase.h>
-
 #include <avtOSPRayCommon.h>
 #include <avtOSPRayImageCompositor.h>
+#include <LightList.h>
 
 class   vtkMatrix4x4;
 
@@ -108,12 +108,9 @@ class AVTFILTERS_API avtOSPRayRayTracer : public avtRayTracerBase
                                         { return "OSPRay Ray tracing"; };
 
     void                  SetLighting(bool l) { lighting = l; };
-    void                  SetLightPosition(double lp[4])
-                          { for (int i=0;i<4;i++) lightPosition[i] = lp[i]; };
-    void                  SetLightDirection(double ld[3]) 
-                         { for (int i=0;i<3;i++) lightDirection[i] = ld[i]; };
+    void                  SetLightInfo(const LightList& l) { lightList = l; };
     void                  SetMatProperties(double mp[4]) 
-                      { for (int i=0;i<4;i++) materialProperties[i] = mp[i]; };
+                    { for (int i=0; i<4; i++) materialProperties[i] = mp[i]; };
     void                  SetViewDirection(double *vd)
                          { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; };
     void                  SetRendererSampleRate(double r)
@@ -130,12 +127,13 @@ class AVTFILTERS_API avtOSPRayRayTracer : public avtRayTracerBase
     avtOSPRayImageCompositor imgComm;
 
     const char*           activeVariable;
-    
+
     bool                  lighting;
-    double                lightPosition[4];
-    double                lightDirection[3];
+    LightList             lightList;
+
     double                materialProperties[4];
     double                viewDirection[3];
+
     double                panPercentage[2];
     double                rendererSampleRate;
 };

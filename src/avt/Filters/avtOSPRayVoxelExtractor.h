@@ -118,10 +118,10 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     // RC OSPRay Specific
     //void             SetRayCastingSLIVR(bool s) { rayCastingSLIVR = s; };
     void             SetLighting(bool l) { lighting = l; };
-    void             SetLightDirection(double ld[3])
-                    { for (int i=0;i <3; i++) { lightDirection[i] = ld[i]; } };
-    void             SetLightPosition(double lp[4]) 
-                     { for (int i=0; i<4; i++) { lightPosition[i] = lp[i]; } };
+    /* void             SetLightDirection(double ld[3]) */
+    /*                 { for (int i=0;i <3; i++) { lightDirection[i] = ld[i]; } }; */
+    /* void             SetLightPosition(double lp[4])  */
+    /*                  { for (int i=0; i<4; i++) { lightPosition[i] = lp[i]; } }; */
     void             SetMatProperties(double matProp[4]) 
            { for (int i=0; i<4; i++) { materialProperties[i] = matProp[i]; } };
     void             SetScalarRange(double range[2])
@@ -194,8 +194,8 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
 
     // Color computation
     bool             lighting;
-    double           lightPosition[4];
-    float            lightDirection[3];
+    //double           lightPosition[4];
+    //float            lightDirection[3];
     double           materialProperties[4];
     avtOpacityMap   *transferFn1D;
     float            gradient[3];

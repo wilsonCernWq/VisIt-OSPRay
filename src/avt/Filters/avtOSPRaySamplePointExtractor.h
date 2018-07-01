@@ -129,10 +129,6 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
 
 
     void                      SetLighting(bool l) {lighting = l; };
-    void                      SetLightPosition(double lp[4])
-                     { for (int i = 0; i < 4; ++i) lightPosition[i] = lp[i]; };
-    void                      SetLightDirection(double ld[3]) 
-                    { for (int i = 0; i < 3; ++i) lightDirection[i] = ld[i]; };
     void                      SetMatProperties(double _matProp[4]) 
                   { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; };
     void                      SetTransferFn(avtOpacityMap *tfn1D) 
@@ -222,8 +218,6 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
 
     // lighting & material
     bool                      lighting;
-    double                    lightPosition[4];
-    double                    lightDirection[3];
     double                    materialProperties[4];
 
     // OSPRay
