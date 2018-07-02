@@ -308,6 +308,8 @@ private:
 #define AVT_OSPRAY_COMMON_EXTRA_H
 
 #include <avtParallel.h>
+#include <avtViewInfo.h>
+
 #include <DebugStream.h>
 #include <StackTimer.h>
 #include <TimingsManager.h>
@@ -375,6 +377,18 @@ namespace ospray {
 
 namespace ospray
 {
+    void ComputeProjections(const avtViewInfo &view, 
+			    const double &aspect,
+			    const int screen[2],
+			    const double scale[3],
+			    const double &oldNearPlane, const double &oldFarPlane,
+			    vtkMatrix4x4  *model_to_screen_transform, 
+			    vtkMatrix4x4  *screen_to_model_transform, 
+			    vtkMatrix4x4  *screen_to_camera_transform,
+			    int            renderingExtents[4],
+			    double         sceneSize[2],
+			    double         dbounds[6]);
+    
     // ************************************************************************
     //  Struct:  ImgMetaData
     //

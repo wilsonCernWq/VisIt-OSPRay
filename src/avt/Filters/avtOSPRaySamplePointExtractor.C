@@ -399,11 +399,11 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         osprayVoxelExtractor->SetLighting(lighting);
 
         osprayVoxelExtractor->SetMatProperties(materialProperties);
-        osprayVoxelExtractor->SetTransferFn(transferFn1D);
+        //osprayVoxelExtractor->SetTransferFn(transferFn1D);
 
         osprayVoxelExtractor->SetImageZoom(imageZoom);
         osprayVoxelExtractor->SetRendererSampleRate(rendererSampleRate);       
-        osprayVoxelExtractor->SetFullImageExtents(fullImageExtents);
+        osprayVoxelExtractor->SetRenderingExtents(renderingExtents);
 
         osprayVoxelExtractor->SetOSPRay(ospray);
 

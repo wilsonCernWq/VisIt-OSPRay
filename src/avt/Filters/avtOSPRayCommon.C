@@ -46,6 +46,9 @@
 #include <TimingsManager.h>
 #include <ImproperUseException.h>
 
+#include <vtkCamera.h>
+#include <vtkMatrix4x4.h>
+
 #include <ospray/ospray.h>
 #include <ospray/visit/VisItModuleCommon.h>
 #include <ospray/visit/VisItImageComposite.h>
@@ -418,6 +421,160 @@ float* OSPVisItVolume::GetFBData() {
 //
 //
 // ****************************************************************************
+
+void ospray::ComputeProjections(const avtViewInfo &view, 
+				const double &aspect,
+				const int screen[2],
+				const double scale[3],
+				const double &oldNearPlane, const double &oldFarPlane,
+				vtkMatrix4x4  *model_to_screen_transform, 
+				vtkMatrix4x4  *screen_to_model_transform, 
+				vtkMatrix4x4  *screen_to_camera_transform,
+				int            renderingExtents[4],
+				double         sceneSize[2],
+				double         dbounds[6])       
+{
+    vtkCamera *sceneCam = vtkCamera::New();
+    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
+    sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
+    sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
+    sceneCam->SetViewAngle(view.viewAngle);
+    sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
+    if (view.orthographic) { sceneCam->ParallelProjectionOn(); }
+    else { sceneCam->ParallelProjectionOff(); }
+    sceneCam->SetParallelScale(view.parallelScale);	
+    // Scaling
+    vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
+    matScale->Identity(); 
+    // Scale + Model + View Matrix
+    vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
+    vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
+    vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
+    // Zooming
+    vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
+    vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
+    matZoom->Identity(); 
+    matZoom->SetElement(0, 0, view.imageZoom); 
+    matZoom->SetElement(1, 1, view.imageZoom);
+    vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, 
+			      matZoomViewModelScale);
+    // Projection:
+    //
+    // https://www.vtk.org/doc/release/6.1/html/classvtkCamera.html
+    // HASH: #a4d9a509bf60f1555a70ecdee758c2753
+    //
+    // The Z buffer that is passed from visit is in clip scape with z 
+    // limits of -1 and 1. However, using VTK 6.1.0, the z limits are 
+    // wired. So, the projection matrix from VTK is hijacked here and
+    // adjusted to be within -1 and 1 too
+    //
+    // Actually the correct way of using VTK GetProjectionTransformMatrix 
+    // is to set near and far plane as -1 and 1
+    //
+    vtkMatrix4x4 *matProj = 
+	sceneCam->GetProjectionTransformMatrix(aspect, -1, 1);
+    if (!view.orthographic) {
+	sceneSize[0] = 2.0 * oldNearPlane / matProj->GetElement(0, 0);
+	sceneSize[1] = 2.0 * oldNearPlane / matProj->GetElement(1, 1);
+    }
+    else {
+	sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
+	sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
+    }
+    // Compute model_to_screen_transform matrix
+    vtkMatrix4x4::Multiply4x4(matProj,matZoomViewModelScale,
+			      model_to_screen_transform);
+    vtkMatrix4x4::Invert(model_to_screen_transform,
+			 screen_to_model_transform);
+    vtkMatrix4x4::Invert(matProj,
+			 screen_to_camera_transform);
+    // Debug
+    ospout << "[avrRayTracer] matZoom " << *matZoom << std::endl;
+    ospout << "[avrRayTracer] matViewModel " << *matViewModel << std::endl;
+    ospout << "[avrRayTracer] matScale " << *matScale << std::endl;
+    ospout << "[avrRayTracer] matProj " << *matProj << std::endl;
+    // Cleanup
+    matScale->Delete();
+    matViewModel->Delete();
+    matViewModelScale->Delete();
+    matZoom->Delete();
+    matZoomViewModelScale->Delete();
+    matProj->Delete();
+    //sceneCam->Delete();
+    
+    // Get the full image extents of the volume
+    double depthExtents[2];
+    ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
+				     view.imagePan, view.imageZoom,
+				     model_to_screen_transform,
+				     renderingExtents, depthExtents);
+    ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
+				     view.imagePan, view.imageZoom,
+				     model_to_screen_transform,
+				     renderingExtents, depthExtents);
+    renderingExtents[0] = std::max(renderingExtents[0], 0);
+    renderingExtents[2] = std::max(renderingExtents[2], 0);
+    renderingExtents[1] = std::min(1+renderingExtents[1], screen[0]);
+    renderingExtents[3] = std::min(1+renderingExtents[3], screen[1]);
+    // Debug
+    ospout << "[avrRayTracer] View settings: " << endl
+	   << "  camera: "       
+	   << view.camera[0] << ", " 
+	   << view.camera[1] << ", " 
+	   << view.camera[2] << std::endl
+	   << "  focus: "    
+	   << view.focus[0] << ", " 
+	   << view.focus[1] << ", " 
+	   << view.focus[2] << std::endl
+	   << "  viewUp: "    
+	   << view.viewUp[0] << ", " 
+	   << view.viewUp[1] << ", " 
+	   << view.viewUp[2] << std::endl
+	   << "  viewAngle: " << view.viewAngle << std::endl
+	   << "  eyeAngle:  " << view.eyeAngle  << std::endl
+	   << "  parallelScale: " << view.parallelScale  << std::endl
+	   << "  setScale: " << view.setScale << std::endl
+	   << "  scale:    " 
+	   << scale[0] << " " 
+	   << scale[1] << " " 
+	   << scale[2] << " " 
+	   << std::endl
+	   << "  nearPlane: " << view.nearPlane << std::endl
+	   << "  farPlane:  " << view.farPlane  << std::endl
+	   << "  imagePan[0]: " << view.imagePan[0] << std::endl 
+	   << "  imagePan[1]: " << view.imagePan[1] << std::endl
+	   << "  imageZoom:   " << view.imageZoom   << std::endl
+	   << "  orthographic: " << view.orthographic << std::endl
+	   << "  shear[0]: " << view.shear[0] << std::endl
+	   << "  shear[1]: " << view.shear[1] << std::endl
+	   << "  shear[2]: " << view.shear[2] << std::endl
+	   << "  oldNearPlane: " << oldNearPlane << std::endl
+	   << "  oldFarPlane:  " << oldFarPlane  << std::endl
+	   << "  aspect: " << aspect << std::endl
+	   << "[avrRayTracer] sceneSize: " 
+	   << sceneSize[0] << " " 
+	   << sceneSize[1] << std::endl
+	   << "[avrRayTracer] screen: " 
+	   << screen[0] << " " << screen[1] << std::endl
+	   << "[avrRayTracer] data bounds: "
+	   << dbounds[0] << " " << dbounds[1] << std::endl
+	   << "               data bounds  "
+	   << dbounds[2] << " " << dbounds[3] << std::endl
+	   << "               data bounds  "
+	   << dbounds[4] << " " << dbounds[5] << std::endl
+	   << "[avrRayTracer] full image extents: " 
+	   << renderingExtents[0] << " " << renderingExtents[1] << std::endl
+	   << "               full image extents: "
+	   << renderingExtents[2] << " " << renderingExtents[3] << std::endl;
+    
+    ospout << "[avrRayTracer] model_to_screen_transform: " 
+	   << *model_to_screen_transform << std::endl;
+    ospout << "[avrRayTracer] screen_to_model_transform: " 
+	   << *screen_to_model_transform << std::endl;
+    ospout << "[avrRayTracer] screen_to_camera_transform: " 
+	   << *screen_to_camera_transform << std::endl;
+
+}
 
 void ospray::CheckMemoryHere(const std::string& message, std::string debugN)
 {

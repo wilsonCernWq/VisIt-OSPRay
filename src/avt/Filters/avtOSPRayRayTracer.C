@@ -270,10 +270,6 @@ avtOSPRayRayTracer::Execute()
     //
     // Before Rendering
     //
-    double dbounds[6];  // Extents of the volume in world coordinates
-    vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
-    vtkMatrix4x4  *screen_to_model_transform = vtkMatrix4x4::New();
-    vtkMatrix4x4  *screen_to_camera_transform = vtkMatrix4x4::New();
     vtkImageData  *opaqueImageVTK =
 	opaqueImage->GetImage().GetImageVTK();
     unsigned char *opaqueImageData =
@@ -281,157 +277,23 @@ avtOSPRayRayTracer::Execute()
     float         *opaqueImageZB =
 	opaqueImage->GetImage().GetZBuffer();
     std::vector<float> opaqueImageDepth(screen[0] * screen[1], oldFarPlane);
-    int            tileExtents[4];
-    
-    //
-    // Camera Settings
-    //
-    vtkCamera *sceneCam = vtkCamera::New();
-    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
-    sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
-    sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
-    sceneCam->SetViewAngle(view.viewAngle);
-    sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
-    if (view.orthographic) { sceneCam->ParallelProjectionOn(); }
-    else { sceneCam->ParallelProjectionOff(); }
-    sceneCam->SetParallelScale(view.parallelScale);	
-    // Scaling
-    vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
-    matScale->Identity(); 
-    // Scale + Model + View Matrix
-    vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
-    vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
-    vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
-    // Zooming
-    vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
-    vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
-    matZoom->Identity(); 
-    matZoom->SetElement(0, 0, view.imageZoom); 
-    matZoom->SetElement(1, 1, view.imageZoom);
-    vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, 
-                              matZoomViewModelScale);
-    // Projection:
-    //
-    // https://www.vtk.org/doc/release/6.1/html/classvtkCamera.html
-    // HASH: #a4d9a509bf60f1555a70ecdee758c2753
-    //
-    // The Z buffer that is passed from visit is in clip scape with z 
-    // limits of -1 and 1. However, using VTK 6.1.0, the z limits are 
-    // wired. So, the projection matrix from VTK is hijacked here and
-    // adjusted to be within -1 and 1 too
-    //
-    // Actually the correct way of using VTK GetProjectionTransformMatrix 
-    // is to set near and far plane as -1 and 1
-    //
-    vtkMatrix4x4 *matProj = 
-        sceneCam->GetProjectionTransformMatrix(aspect, -1, 1);
-    double sceneSize[2];
-    if (!view.orthographic) {
-        sceneSize[0] = 2.0 * oldNearPlane / matProj->GetElement(0, 0);
-        sceneSize[1] = 2.0 * oldNearPlane / matProj->GetElement(1, 1);
+    vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
+    vtkMatrix4x4  *screen_to_model_transform = vtkMatrix4x4::New();
+    vtkMatrix4x4  *screen_to_camera_transform = vtkMatrix4x4::New();
+    int            renderingExtents[4];
+    double         sceneSize[2];
+    double         dbounds[6];  // Extents of the volume in world coordinates
+    {
+	GetSpatialExtents(dbounds);		
+	ospray::ComputeProjections(view, aspect, screen, scale,
+				   oldNearPlane, oldFarPlane,
+				   model_to_screen_transform, 
+				   screen_to_model_transform, 
+				   screen_to_camera_transform,
+				   renderingExtents, sceneSize,
+				   dbounds);
     }
-    else {
-        sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
-	    sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
-    }
-    // Compute model_to_screen_transform matrix
-    vtkMatrix4x4::Multiply4x4(matProj,matZoomViewModelScale,
-                              model_to_screen_transform);
-    vtkMatrix4x4::Invert(model_to_screen_transform,
-                         screen_to_model_transform);
-    vtkMatrix4x4::Invert(matProj,
-                         screen_to_camera_transform);
-    // Debug
-    ospout << "[avrRayTracer] matZoom " << *matZoom << std::endl;
-    ospout << "[avrRayTracer] matViewModel " << *matViewModel << std::endl;
-    ospout << "[avrRayTracer] matScale " << *matScale << std::endl;
-    ospout << "[avrRayTracer] matProj " << *matProj << std::endl;
-    // Cleanup
-    matScale->Delete();
-    matViewModel->Delete();
-    matViewModelScale->Delete();
-    matZoom->Delete();
-    matZoomViewModelScale->Delete();
-    matProj->Delete();
-    //sceneCam->Delete();
     
-    // Get the full image extents of the volume
-    double depthExtents[2];
-    GetSpatialExtents(dbounds);
-    ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
-                                     view.imagePan, view.imageZoom,
-                                     model_to_screen_transform,
-                                     tileExtents, depthExtents);
-    ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
-                                     view.imagePan, view.imageZoom,
-                                     model_to_screen_transform,
-                                     tileExtents, depthExtents);
-    tileExtents[0] = std::max(tileExtents[0], 0);
-    tileExtents[2] = std::max(tileExtents[2], 0);
-    tileExtents[1] = std::min(1+tileExtents[1], screen[0]);
-    tileExtents[3] = std::min(1+tileExtents[3], screen[1]);
-    // Debug
-    ospout << "[avrRayTracer] View settings: " << endl
-           << "  inheriant view direction: "
-           << viewDirection[0] << " "
-           << viewDirection[1] << " "
-           << viewDirection[2] << std::endl
-           << "  camera: "       
-           << view.camera[0] << ", " 
-           << view.camera[1] << ", " 
-           << view.camera[2] << std::endl
-           << "  focus: "    
-           << view.focus[0] << ", " 
-           << view.focus[1] << ", " 
-           << view.focus[2] << std::endl
-           << "  viewUp: "    
-           << view.viewUp[0] << ", " 
-           << view.viewUp[1] << ", " 
-           << view.viewUp[2] << std::endl
-           << "  viewAngle: " << view.viewAngle << std::endl
-           << "  eyeAngle:  " << view.eyeAngle  << std::endl
-           << "  parallelScale: " << view.parallelScale  << std::endl
-           << "  setScale: " << view.setScale << std::endl
-           << "  scale:    " 
-           << scale[0] << " " 
-           << scale[1] << " " 
-           << scale[2] << " " 
-           << std::endl
-           << "  nearPlane: " << view.nearPlane << std::endl
-           << "  farPlane:  " << view.farPlane  << std::endl
-           << "  imagePan[0]: " << view.imagePan[0] << std::endl 
-           << "  imagePan[1]: " << view.imagePan[1] << std::endl
-           << "  imageZoom:   " << view.imageZoom   << std::endl
-           << "  orthographic: " << view.orthographic << std::endl
-           << "  shear[0]: " << view.shear[0] << std::endl
-           << "  shear[1]: " << view.shear[1] << std::endl
-           << "  shear[2]: " << view.shear[2] << std::endl
-           << "  oldNearPlane: " << oldNearPlane << std::endl
-           << "  oldFarPlane:  " << oldFarPlane  << std::endl
-           << "  aspect: " << aspect << std::endl
-           << "[avrRayTracer] sceneSize: " 
-           << sceneSize[0] << " " 
-           << sceneSize[1] << std::endl
-           << "[avrRayTracer] screen: " 
-           << screen[0] << " " << screen[1] << std::endl
-           << "[avrRayTracer] data bounds: "
-	   << dbounds[0] << " " << dbounds[1] << std::endl
-	   << "               data bounds  "
-           << dbounds[2] << " " << dbounds[3] << std::endl
-	   << "               data bounds  "
-           << dbounds[4] << " " << dbounds[5] << std::endl
-           << "[avrRayTracer] full image extents: " 
-	   << tileExtents[0] << " " << tileExtents[1] << std::endl
-	   << "               full image extents: "
-	   << tileExtents[2] << " " << tileExtents[3] << std::endl;
-    
-    ospout << "[avrRayTracer] model_to_screen_transform: " 
-           << *model_to_screen_transform << std::endl;
-    ospout << "[avrRayTracer] screen_to_model_transform: " 
-           << *screen_to_model_transform << std::endl;
-    ospout << "[avrRayTracer] screen_to_camera_transform: " 
-           << *screen_to_camera_transform << std::endl;
-
     //===================================================================//
     // ospray stuffs
     //===================================================================//
@@ -445,7 +307,7 @@ avtOSPRayRayTracer::Execute()
     ((ospray::visit::Camera)ospray->camera)
         .Set(view.orthographic, view.camera, view.focus, view.viewUp,
 	     view.viewAngle, view.imagePan, view.imageZoom, oldNearPlane,
-	     sceneSize, screen, tileExtents);
+	     sceneSize, screen, renderingExtents);
     // transfer function
     ospout  << "[avrRayTracer] make ospray transfer function" 
             << std::endl;
@@ -509,6 +371,7 @@ avtOSPRayRayTracer::Execute()
         }
     }
     ospray->SetBgBuffer(opaqueImageData, opaqueImageDepth.data(), screen);
+
     // check memory
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    
@@ -530,7 +393,6 @@ avtOSPRayRayTracer::Execute()
     extractor.SetLighting(lighting);
     extractor.SetMatProperties(materialProperties);
     extractor.SetViewDirection(viewDirection);
-    extractor.SetTransferFn(transferFn1D);
 
     
     extractor.SetPanPercentages(view.imagePan);
@@ -539,7 +401,7 @@ avtOSPRayRayTracer::Execute()
 
 
     extractor.SetMVPMatrix(model_to_screen_transform);
-    extractor.SetFullImageExtents(tileExtents);
+    extractor.SetRenderingExtents(renderingExtents);
     extractor.SetOSPRay(ospray); // sending ospray
     
     //extractor.SetDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
@@ -623,22 +485,22 @@ avtOSPRayRayTracer::Execute()
         //---------------------------------------------------------------//
         // First Composition
         if (PAR_Size() > 1) { 
-            compositedW = tileExtents[1] - tileExtents[0];
-            compositedH = tileExtents[3] - tileExtents[2];
-            compositedExtents[0] = tileExtents[0];
-            compositedExtents[1] = tileExtents[1];
-            compositedExtents[2] = tileExtents[2];
-            compositedExtents[3] = tileExtents[3];
+            compositedW = renderingExtents[1] - renderingExtents[0];
+            compositedH = renderingExtents[3] - renderingExtents[2];
+            compositedExtents[0] = renderingExtents[0];
+            compositedExtents[1] = renderingExtents[1];
+            compositedExtents[2] = renderingExtents[2];
+            compositedExtents[3] = renderingExtents[3];
             if (PAR_Rank() == 0) {
                 compositedData = 
                     new float[4 * compositedW * compositedH]();
             }
             int currExtents[4] = 
-                {std::max(currMeta.screen_ll[0]-tileExtents[0], 0), 
-                 std::min(currMeta.screen_ur[0]-tileExtents[0], 
+                {std::max(currMeta.screen_ll[0]-renderingExtents[0], 0), 
+                 std::min(currMeta.screen_ur[0]-renderingExtents[0], 
                           compositedW), 
-                 std::max(currMeta.screen_ll[1]-tileExtents[2], 0),
-                 std::min(currMeta.screen_ur[1]-tileExtents[2],
+                 std::max(currMeta.screen_ll[1]-renderingExtents[2], 0),
+                 std::min(currMeta.screen_ur[1]-renderingExtents[2],
                           compositedH)};
             imgComm.IceTInit(compositedW, compositedH);
             imgComm.IceTSetTile(currData.imagePatch, 
@@ -652,10 +514,10 @@ avtOSPRayRayTracer::Execute()
         } else {
             compositedW = currMeta.dims[0];
             compositedH = currMeta.dims[1];
-            compositedExtents[0] = tileExtents[0];
-            compositedExtents[1] = tileExtents[0] + compositedW;
-            compositedExtents[2] = tileExtents[2];
-            compositedExtents[3] = tileExtents[2] + compositedH;
+            compositedExtents[0] = renderingExtents[0];
+            compositedExtents[1] = renderingExtents[0] + compositedW;
+            compositedExtents[2] = renderingExtents[2];
+            compositedExtents[3] = renderingExtents[2] + compositedH;
             compositedData = currData.imagePatch;
             currData.imagePatch = NULL;
         }
@@ -704,12 +566,12 @@ avtOSPRayRayTracer::Execute()
         // Blend Images
         ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
                                   "Serial-Composite: Blend Images");
-        compositedW = tileExtents[1] - tileExtents[0];
-        compositedH = tileExtents[3] - tileExtents[2];
-        compositedExtents[0] = tileExtents[0];
-        compositedExtents[1] = tileExtents[0] + compositedW;
-        compositedExtents[2] = tileExtents[2];
-        compositedExtents[3] = tileExtents[2] + compositedH;	    
+        compositedW = renderingExtents[1] - renderingExtents[0];
+        compositedH = renderingExtents[3] - renderingExtents[2];
+        compositedExtents[0] = renderingExtents[0];
+        compositedExtents[1] = renderingExtents[0] + compositedW;
+        compositedExtents[2] = renderingExtents[2];
+        compositedExtents[3] = renderingExtents[2] + compositedH;	    
         if (PAR_Rank() == 0) {
             compositedData = new float[compositedW * compositedH * 4]();
         }
@@ -768,12 +630,12 @@ avtOSPRayRayTracer::Execute()
             imgComm.ParallelDirectSendManyPatches
             (extractor.imgDataHashMap, extractor.imageMetaPatchVector,
              numPatches, regions, imgComm.GetParSize(), tags, 
-             tileExtents);
+             renderingExtents);
         imgComm.gatherImages(regions, imgComm.GetParSize(), 
                              imgComm.intermediateImage, 
                              imgComm.intermediateImageExtents, 
                              imgComm.intermediateImageExtents, 
-                             tagGather, tileExtents, myRegionHeight);
+                             tagGather, renderingExtents, myRegionHeight);
 
         ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
                                  "Parallel-Composite: "

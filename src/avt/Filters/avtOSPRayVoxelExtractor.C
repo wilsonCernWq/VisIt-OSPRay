@@ -466,10 +466,10 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         ospout << "[avtOSPRayVoxelExtractor] patch extents " 
                << xMin << " " << xMax << " "
                << yMin << " " << yMax << std::endl;
-        if (xMin < fullImageExtents[0]) { xMin = fullImageExtents[0]; }
-        if (yMin < fullImageExtents[2]) { yMin = fullImageExtents[2]; }    
-        if (xMax > fullImageExtents[1]) { xMax = fullImageExtents[1]; }
-        if (yMax > fullImageExtents[3]) { yMax = fullImageExtents[3]; }
+        if (xMin < renderingExtents[0]) { xMin = renderingExtents[0]; }
+        if (yMin < renderingExtents[2]) { yMin = renderingExtents[2]; }    
+        if (xMax > renderingExtents[1]) { xMax = renderingExtents[1]; }
+        if (yMax > renderingExtents[3]) { yMax = renderingExtents[3]; }
         imgWidth  = xMax-xMin;
         imgHeight = yMax-yMin;
 

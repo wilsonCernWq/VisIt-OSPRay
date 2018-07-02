@@ -128,8 +128,8 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
                      { scalarRange[0] = range[0]; scalarRange[1] = range[1]; };
     void             SetTFVisibleRange(double tfRange[2])
            { tFVisibleRange[0] = tfRange[0]; tFVisibleRange[1] = tfRange[1]; };
-    void             SetTransferFn(avtOpacityMap *tf1D) 
-                                                      { transferFn1D = tf1D; };
+    //void             SetTransferFn(avtOpacityMap *tf1D) 
+    //                                                  { transferFn1D = tf1D; };
     void             SetViewDirection(double *vD)
                      { for (int i=0; i<3; i++) { viewDirection[i] = vD[i]; } };
     void             SetCameraPosition(double *cp) 
@@ -166,19 +166,17 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     void             SetRendererSampleRate(double r) 
                                                    { rendererSampleRate = r; };
     void             SetOSPRay(OSPVisItContext* o) { ospray = o; };
-    void             SetFullImageExtents(int extents[4]) 
+    void             SetRenderingExtents(int extents[4]) 
     {
-	fullImageExtents[0] = extents[0];
-	fullImageExtents[1] = extents[1];
-	fullImageExtents[2] = extents[2];	
-	fullImageExtents[3] = extents[3];
+	renderingExtents[0] = extents[0];
+	renderingExtents[1] = extents[1];
+	renderingExtents[2] = extents[2];	
+	renderingExtents[3] = extents[3];
     }
 
   protected:
     bool            rayCastingOSPRay;
 
-    //vtkMatrix4x4    *modelViewProj;
-    //vtkMatrix4x4    *invModelViewProj;
     vtkMatrix4x4    *model_to_screen_transform;
     vtkMatrix4x4    *screen_to_model_transform;
 
@@ -190,25 +188,16 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     double           cameraPosition[3]; // (Qi) camera location in world space
     double           cameraUpVector[3]; // (Qi) camera up vector direction
     double           cameraAspect;
-    int              fullImageExtents[4];
+    int              renderingExtents[4];
 
     // Color computation
     bool             lighting;
-    //double           lightPosition[4];
-    //float            lightDirection[3];
     double           materialProperties[4];
-    avtOpacityMap   *transferFn1D;
     float            gradient[3];
     double           scalarRange[2];
     double           tFVisibleRange[2];
 
-    // Background + other plots
-    //float           *depthBuffer; // depth for the background and other plots
-    //unsigned char   *rgbColorBuffer;   // bounding box + pseudo color + ...
-    //int              bufferExtents[4]; // (minX, maxX, minY, maxY)
-
     // Rendering
-    //int            renderingAreaExtents[4];
     double           renderingDepthsExtents[2];
 
 

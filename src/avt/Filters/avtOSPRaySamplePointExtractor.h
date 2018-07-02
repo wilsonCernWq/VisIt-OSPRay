@@ -131,16 +131,10 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     void                      SetLighting(bool l) {lighting = l; };
     void                      SetMatProperties(double _matProp[4]) 
                   { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; };
-    void                      SetTransferFn(avtOpacityMap *tfn1D) 
-                                                     { transferFn1D = tfn1D; };
     void                      SetViewDirection(double *vD)
                          { for (int i=0; i<3; i++) viewDirection[i] = vD[i]; };
-    //void                      SetClipPlanes(double cp[2])
-    //                         { clipPlanes[0] = cp[0]; clipPlanes[1] = cp[1]; };
     void                      SetPanPercentages(double p[2])
                          { panPercentage[0] = p[0]; panPercentage[1] = p[1]; };
-    //void                      SetDepthExtents(double de[2])
-    //                     { depthExtents[0] = de[0]; depthExtents[1] = de[1]; };
     void                      SetMVPMatrix(vtkMatrix4x4 *mvp)
                                              { modelViewProj->DeepCopy(mvp); };
 
@@ -170,12 +164,12 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     // Added by Qi (March 2018) for RayCasting:OSPRay  
     void SetOSPRay(OSPVisItContext* o) { ospray = o; }
     void SetRendererSampleRate(double r) { rendererSampleRate = r; }
-    void SetFullImageExtents(int extents[4]) 
+    void SetRenderingExtents(int extents[4]) 
     {
-        fullImageExtents[0] = extents[0];
-        fullImageExtents[1] = extents[1];
-        fullImageExtents[2] = extents[2];
-        fullImageExtents[3] = extents[3];
+        renderingExtents[0] = extents[0];
+        renderingExtents[1] = extents[1];
+        renderingExtents[2] = extents[2];
+        renderingExtents[3] = extents[3];
     }
 
     // Output data for RayCasting OSPRay
@@ -219,7 +213,7 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     double                    materialProperties[4];
 
     // OSPRay
-    int                       fullImageExtents[4];    
+    int                       renderingExtents[4];    
     OSPVisItContext          *ospray;
     double                    rendererSampleRate;
 
