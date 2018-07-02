@@ -120,27 +120,23 @@
 //    Initialize lightDirection.
 // ****************************************************************************
 
-avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h,
+avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w,
+							     int h,
                                                              int d)
     : avtSamplePointExtractorBase(w, h, d)
 {
     osprayVoxelExtractor = NULL;
+
+    ospray = NULL;
+    
     modelViewProj = vtkMatrix4x4::New();
+
     lighting = false;
-    // lightPosition[0] = lightPosition[1] = lightPosition[2] = 0.0;
-    // lightPosition[3] = 1.0;
-    // lightDirection[0] = 0;
-    // lightDirection[1] = 0;
-    // lightDirection[2] = -1;
+
     materialProperties[0] = 0.4;
     materialProperties[1] = 0.75;
     materialProperties[2] = 0.0;
     materialProperties[3] = 15.0;
-
-    //depthBuffer = NULL;
-    //rgbColorBuffer = NULL;
-
-    ospray = NULL;    
 
     patchCount = 0;
     imageMetaPatchVector.clear();
@@ -384,25 +380,23 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         osprayVoxelExtractor->SetGridsAreInWorldSpace
             (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
 
-        //osprayVoxelExtractor->SetDepthBuffer(depthBuffer,
-	//                                 bufferExtents[1] * bufferExtents[3]);
-        //osprayVoxelExtractor->SetRGBBuffer(rgbColorBuffer,
-        //                                   bufferExtents[1], bufferExtents[3]);
-        //osprayVoxelExtractor->SetBufferExtents(bufferExtents);
+	osprayVoxelExtractor->SetMVPMatrix(modelViewProj);
+	
+        //osprayVoxelExtractor->SetViewDirection(viewDirection);
 
-        osprayVoxelExtractor->SetViewDirection(viewDirection);
-        osprayVoxelExtractor->SetMVPMatrix(modelViewProj);
-        //osprayVoxelExtractor->SetClipPlanes(clipPlanes);
-        osprayVoxelExtractor->SetPanPercentages(panPercentage);
-        //osprayVoxelExtractor->SetDepthExtents(depthExtents);
+
+        //osprayVoxelExtractor->SetPanPercentages(panPercentage);
+
 
         osprayVoxelExtractor->SetLighting(lighting);
 
         osprayVoxelExtractor->SetMatProperties(materialProperties);
         //osprayVoxelExtractor->SetTransferFn(transferFn1D);
 
-        osprayVoxelExtractor->SetImageZoom(imageZoom);
-        osprayVoxelExtractor->SetRendererSampleRate(rendererSampleRate);       
+        //osprayVoxelExtractor->SetImageZoom(imageZoom);
+
+        osprayVoxelExtractor->SetSamplingRate(samplingRate);
+	
         osprayVoxelExtractor->SetRenderingExtents(renderingExtents);
 
         osprayVoxelExtractor->SetOSPRay(ospray);

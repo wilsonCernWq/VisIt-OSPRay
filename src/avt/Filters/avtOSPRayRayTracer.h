@@ -95,6 +95,9 @@ class   vtkMatrix4x4;
 //    Pascal Grosset, Fri Sep 20 2013
 //    Added ray casting slivr & trilinear interpolation
 //
+//    Qi Wu, Sun Jul 1 2018
+//    Added support for ospray volume rendering.
+//
 // ****************************************************************************
 
 class AVTFILTERS_API avtOSPRayRayTracer : public avtRayTracerBase
@@ -114,7 +117,7 @@ public:
     void                  SetViewDirection(double *vd)
                         { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; };
     void                  SetRendererSampleRate(double r)
-                                                  { rendererSampleRate = r; };
+                                                  { samplingRate = r; };
     void                  SetOSPRay(OSPVisItContext *ptr)   { ospray = ptr; };
     void                  SetActiveVariable(const char* s)
                                                       { activeVariable = s; };
@@ -134,7 +137,7 @@ protected:
     double                materialProperties[4];
     double                viewDirection[3];
 
-    double                rendererSampleRate;
+    double                samplingRate;
 };
 
 #endif

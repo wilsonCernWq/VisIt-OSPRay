@@ -235,11 +235,13 @@ avtOSPRayRayTracer::Execute()
     // Start of original pipeline
     //======================================================================//
     bool parallelOn = (imgComm.GetParSize() == 1) ? false : true;
+    /*
     if (rayfoo == NULL)
     {
         debug1 << "Never set ray function for ray tracer." << endl;
         EXCEPTION0(ImproperUseException);
     }
+    */
 
     //
     // First we need to transform all of domains into camera space.
@@ -270,11 +272,10 @@ avtOSPRayRayTracer::Execute()
     //
     // Before Rendering
     //
-    vtkImageData  *opaqueImageVTK =
-	opaqueImage->GetImage().GetImageVTK();
+    vtkImageData  *opaqueImageVTK  = opaqueImage->GetImage().GetImageVTK();
     unsigned char *opaqueImageData =
-	(unsigned char *)opaqueImageVTK->GetScalarPointer(0, 0, 0);;
-    float         *opaqueImageZB =
+	(unsigned char*)opaqueImageVTK->GetScalarPointer(0,0,0);
+    float         *opaqueImageZB   =
 	opaqueImage->GetImage().GetZBuffer();
     std::vector<float> opaqueImageDepth(screen[0] * screen[1], oldFarPlane);
     vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
@@ -323,7 +324,8 @@ avtOSPRayRayTracer::Execute()
     ren.ResetLights();
     double light_scale = lighting ? 0.9 : 1.0;
     ren.AddLight().Set(true,  materialProperties[0], light_scale); // ambient 
-    ren.AddLight().Set(false, materialProperties[1], light_scale, viewDirection);
+    ren.AddLight().Set(false, materialProperties[1], light_scale,
+		       viewDirection);
     ren.AddLight().Set(false, 1.5, light_scale, viewDirection); 
     for (int i = 0; i < 8; ++i) { // in VisIt there are only 8 lights
         const LightAttributes& la = lightList.GetLight(i);
@@ -344,17 +346,11 @@ avtOSPRayRayTracer::Execute()
         }
     }    
     ren.FinalizeLights();
-    ren.Set(0, 1, false, false, false);
-    
+    ren.Set(0, 1, false, false, false);    
     // others
     ospray->SetDataBounds(dbounds);
     ospray->SetScaling(scale);
     ospray->SetActiveVariable(activeVariable);
-
-    //
-    // Capture background
-    //
-    // int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
     // Set the background to OSPRay
     for (int y = 0; y < screen[1]; ++y) {
         for (int x = 0; x < screen[0]; ++x) {
@@ -372,14 +368,12 @@ avtOSPRayRayTracer::Execute()
     }
     ospray->SetBgBuffer(opaqueImageData, opaqueImageDepth.data(), screen);
 
-    // check memory
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    
 
-    // 
-    // Continuation of previous pipeline
-    //
-
+    //===================================================================//
+    // continuation of previous pipeline
+    //===================================================================//
     //
     // Extract all of the samples from the dataset.
     //
@@ -390,23 +384,13 @@ avtOSPRayRayTracer::Execute()
     extractor.SetTransferFn(transferFn1D);
     extractor.SetInput(trans.GetOutput());
 
+    extractor.SetMVPMatrix(model_to_screen_transform);    
     extractor.SetLighting(lighting);
     extractor.SetMatProperties(materialProperties);
-    extractor.SetViewDirection(viewDirection);
-
-    
-    extractor.SetPanPercentages(view.imagePan);
-    extractor.SetImageZoom(view.imageZoom);
-    extractor.SetRendererSampleRate(rendererSampleRate); 
-
-
-    extractor.SetMVPMatrix(model_to_screen_transform);
+    extractor.SetSamplingRate(samplingRate);
     extractor.SetRenderingExtents(renderingExtents);
-    extractor.SetOSPRay(ospray); // sending ospray
     
-    //extractor.SetDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
-    //extractor.SetRGBBuffer  (opaqueImageData, screen[0],screen[1]);
-    //extractor.SetBufferExtents(bufferScreenExtents);
+    extractor.SetOSPRay(ospray); // sending ospray
 
     //
     // For curvilinear and unstructured meshes, it makes sense to convert the
@@ -419,15 +403,14 @@ avtOSPRayRayTracer::Execute()
         extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
     }
 
-    // Qi debug
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute "
                             "raytracing setup done",
                             "ospout");
 
     
-    //
-    // Execute rendering
-    //
+    //===================================================================//
+    // execute rendering
+    //===================================================================//
     {
         StackTimer t1("AllPatchRendering");
 	extractor.Update(GetGeneralContract());
@@ -443,32 +426,35 @@ avtOSPRayRayTracer::Execute()
     image->Update(GetGeneralContract());     
     */
 
-    //
-    // Image Compositing
-    //
-    // Initialization
+    //===================================================================//
+    // image compositing
+    //===================================================================//
+    // initialization
     int timingIdx;
     float *compositedData = NULL;
     int compositedW, compositedH;
     int compositedExtents[4];
-    // Debug
-    int numPatches = extractor.GetImgPatchSize();
-    ospout << "[avtOSPRayRayTracer] Total num of patches " 
-           << numPatches << std::endl;
-    for (int i=0; i<numPatches; i++) {
-        ospray::ImgMetaData currImgMeta = extractor.GetImgMetaPatch(i);
-        ospout << "[avtOSPRayRayTracer] Rank " << PAR_Rank() << " "
-               << "Idx " << i << " (" << currImgMeta.patchNumber << ") " 
-               << " depth " << currImgMeta.eye_z << std::endl
-               << "current patch size = " 
-               << currImgMeta.dims[0] << ", " 
-               << currImgMeta.dims[1] << std::endl
-               << "current patch starting" 
-               << " X = " << currImgMeta.screen_ll[0] 
-               << " Y = " << currImgMeta.screen_ll[1] << std::endl
-               << "current patch ending" 
-               << " X = " << currImgMeta.screen_ur[0] 
-               << " Y = " << currImgMeta.screen_ur[1] << std::endl;
+    // debug
+    if (ospray::visit::CheckVerbose() || DebugStream::Level5())
+    {
+	int numPatches = extractor.GetImgPatchSize();
+	ospout << "[avtOSPRayRayTracer] Total num of patches " 
+	       << numPatches << std::endl;
+	for (int i=0; i<numPatches; i++) {
+	    ospray::ImgMetaData currImgMeta = extractor.GetImgMetaPatch(i);
+	    ospout << "[avtOSPRayRayTracer] Rank " << PAR_Rank() << " "
+		   << "Idx " << i << " (" << currImgMeta.patchNumber << ") " 
+		   << " depth " << currImgMeta.eye_z << std::endl
+		   << "current patch size = " 
+		   << currImgMeta.dims[0] << ", " 
+		   << currImgMeta.dims[1] << std::endl
+		   << "current patch starting" 
+		   << " X = " << currImgMeta.screen_ll[0] 
+		   << " Y = " << currImgMeta.screen_ll[1] << std::endl
+		   << "current patch ending" 
+		   << " X = " << currImgMeta.screen_ur[0] 
+		   << " Y = " << currImgMeta.screen_ur[1] << std::endl;
+	}
     }
     //-------------------------------------------------------------------//
     // IceT: If each rank has only one patch, we use IceT to composite
@@ -492,8 +478,7 @@ avtOSPRayRayTracer::Execute()
             compositedExtents[2] = renderingExtents[2];
             compositedExtents[3] = renderingExtents[3];
             if (PAR_Rank() == 0) {
-                compositedData = 
-                    new float[4 * compositedW * compositedH]();
+                compositedData = new float[4 * compositedW * compositedH]();
             }
             int currExtents[4] = 
                 {std::max(currMeta.screen_ll[0]-renderingExtents[0], 0), 
@@ -532,7 +517,8 @@ avtOSPRayRayTracer::Execute()
     //-------------------------------------------------------------------//
     // SERIAL: Image Composition
     //-------------------------------------------------------------------//
-    else if (parallelOn == false) {
+    else if (parallelOn == false)
+    {
         //---------------------------------------------------------------//
         // Get the Metadata for All Patches
         ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
@@ -575,7 +561,7 @@ avtOSPRayRayTracer::Execute()
         if (PAR_Rank() == 0) {
             compositedData = new float[compositedW * compositedH * 4]();
         }
-        for (int i=0; i<numPatches; i++)
+        for (int i = 0; i < numPatches; i++)
         {
             ospray::ImgMetaData currImgMeta = allPatchMeta[i];
             ospray::ImgData     currImgData;
@@ -613,10 +599,11 @@ avtOSPRayRayTracer::Execute()
                                 "ospout");
         //---------------------------------------------------------------//
     } 
-    //
-    // PARALLEL: Image Composition
-    //
-    else { 
+    //-------------------------------------------------------------------//
+    // PARALLEL: Parallel Direct Send
+    //-------------------------------------------------------------------//
+    else
+    { 
         //---------------------------------------------------------------//
         // Parallel Direct Send
         ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
@@ -624,12 +611,12 @@ avtOSPRayRayTracer::Execute()
                                   "Parallel Direct Send");
         int tags[2] = {1081, 1681};
         int tagGather = 2681;
-        int *regions = NULL;
-        imgComm.RegionAllocation(regions);
+        int *regions = NULL; imgComm.RegionAllocation(regions);
         int myRegionHeight =
             imgComm.ParallelDirectSendManyPatches
             (extractor.imgDataHashMap, extractor.imageMetaPatchVector,
-             numPatches, regions, imgComm.GetParSize(), tags, 
+             extractor.GetImgPatchSize(),
+	     regions, imgComm.GetParSize(), tags, 
              renderingExtents);
         imgComm.gatherImages(regions, imgComm.GetParSize(), 
                              imgComm.intermediateImage, 

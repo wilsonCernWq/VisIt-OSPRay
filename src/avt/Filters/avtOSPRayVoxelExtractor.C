@@ -113,12 +113,6 @@ avtOSPRayVoxelExtractor::avtOSPRayVoxelExtractor(int w, int h, int d,
                                              avtVolume *vol, avtCellList *cl)
     : avtVoxelExtractor(w, h, d, vol, cl)
 {
-    fullImgWidth = w;
-    fullImgHeight = h;
-
-    debug5 << "fullImgWidth: "  << fullImgWidth << " "
-           << "fullImgHeight: " << fullImgHeight << std::endl;
-
     rayCastingOSPRay = true;
 
     model_to_screen_transform = vtkMatrix4x4::New();
@@ -138,8 +132,6 @@ avtOSPRayVoxelExtractor::avtOSPRayVoxelExtractor(int w, int h, int d,
     clipSpaceDepth = -1;
     imgArray = NULL;                         // the image data
 
-    //depthBuffer = NULL;
-    //rgbColorBuffer = NULL;
 
     ospray = NULL;
 }
@@ -426,7 +418,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         StackTimer t1("avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay "
                       "Get screen size of the patch (Pre-OSPRay preparation)");
         ospray::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
-                                         panPercentage, imageZoom,
+                                         view.imagePan, view.imageZoom,
                                          model_to_screen_transform, 
                                          patchScreenExtents, 
                                          renderingDepthsExtents);
@@ -553,7 +545,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                                          X, Y, Z, nX, nY, nZ,
                                          volumePBox, volumeBBox, 
                                          materialProperties, 
-                                         (float)rendererSampleRate,
+                                         (float)samplingRate,
                                          lighting);
         }
 
