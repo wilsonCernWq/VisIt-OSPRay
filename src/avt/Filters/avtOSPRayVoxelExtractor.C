@@ -138,9 +138,6 @@ avtOSPRayVoxelExtractor::avtOSPRayVoxelExtractor(int w, int h, int d,
     clipSpaceDepth = -1;
     imgArray = NULL;                         // the image data
 
-    //depthBuffer = NULL;
-    //rgbColorBuffer = NULL;
-
     ospray = NULL;
 }
 
@@ -461,8 +458,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     {
         StackTimer t1("avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay "
                       "Create ImgArray (Pre-OSPRay preparation)");
-        // assign data to the class
-        //xMax+=1; yMax+=1;
         ospout << "[avtOSPRayVoxelExtractor] patch extents " 
                << xMin << " " << xMax << " "
                << yMin << " " << yMax << std::endl;
@@ -472,8 +467,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         if (yMax > renderingExtents[3]) { yMax = renderingExtents[3]; }
         imgWidth  = xMax-xMin;
         imgHeight = yMax-yMin;
-
-        // Initialize memory (framebuffer) no initialization
         imgArray = new float[((imgWidth)*4) * imgHeight];
     }
 
@@ -489,13 +482,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
                           "OSPRay bbox and clip (OSPRay preparation)");
-            // if (!((npt_arrays == 1)^(ncell_arrays == 1))) {
-            //     std::cerr << "WARNING: Multiple data found within one "
-            //               << "patch, We don't know what to do !! " 
-            //               << std::endl
-            //               << "         One of the dataset might be missing "
-            //               << std::endl;
-            // }
             // shift grid and make it cel centered for cell data
             // for cell centered data, we put the voxel on its left boundary
             volumePBox[0] = X[0];
@@ -588,16 +574,11 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     //=======================================================================//
     if (patchDrawn == 0)
     { 
-	if (imgArray != NULL) 
-	{ 
-	    delete []imgArray; imgArray = NULL; 
-	} 
+        if (imgArray != NULL) 
+        { 
+            delete []imgArray; imgArray = NULL; 
+        } 
     }
-    // else {
-    // 	WriteArrayToPPM("patch-after-render"+
-    // 			std::to_string(proc), imgArray, 
-    // 			imgWidth, imgHeight);
-    // }
 }
 
 
@@ -615,7 +596,11 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
 // ****************************************************************************
 
 void
-avtOSPRayVoxelExtractor::GetImageDimensions(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth)
+avtOSPRayVoxelExtractor::GetImageDimensions(int &inUse, int dims[2],
+                                            int screen_ll[2],
+                                            int screen_ur[2],
+                                            float &eyeDepth,
+                                            float &clipDepth)
 {
     inUse = patchDrawn;
 

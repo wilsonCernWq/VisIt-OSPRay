@@ -235,11 +235,14 @@ avtOSPRayRayTracer::Execute()
     // Start of original pipeline
     //======================================================================//
     bool parallelOn = (imgComm.GetParSize() == 1) ? false : true;
+    /* dont need rayfoo for ospray */
+    /*
     if (rayfoo == NULL)
     {
         debug1 << "Never set ray function for ray tracer." << endl;
         EXCEPTION0(ImproperUseException);
     }
+    */
 
     //
     // First we need to transform all of domains into camera space.
@@ -267,9 +270,6 @@ avtOSPRayRayTracer::Execute()
     //======================================================================//
     // Compute Projection
     //======================================================================//
-    //
-    // Before Rendering
-    //
     vtkImageData  *opaqueImageVTK =
 	opaqueImage->GetImage().GetImageVTK();
     unsigned char *opaqueImageData =
@@ -376,10 +376,9 @@ avtOSPRayRayTracer::Execute()
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    
 
-    // 
-    // Continuation of previous pipeline
-    //
-
+    //===================================================================//
+    // continuation of previous pipeline
+    //===================================================================//
     //
     // Extract all of the samples from the dataset.
     //
@@ -399,15 +398,10 @@ avtOSPRayRayTracer::Execute()
     extractor.SetImageZoom(view.imageZoom);
     extractor.SetRendererSampleRate(rendererSampleRate); 
 
-
     extractor.SetMVPMatrix(model_to_screen_transform);
     extractor.SetRenderingExtents(renderingExtents);
     extractor.SetOSPRay(ospray); // sending ospray
     
-    //extractor.SetDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
-    //extractor.SetRGBBuffer  (opaqueImageData, screen[0],screen[1]);
-    //extractor.SetBufferExtents(bufferScreenExtents);
-
     //
     // For curvilinear and unstructured meshes, it makes sense to convert the
     // cells to image space.  But for rectilinear meshes, it is not the
@@ -419,18 +413,20 @@ avtOSPRayRayTracer::Execute()
         extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
     }
 
+    //===================================================================//
     // Qi debug
+    //===================================================================//
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute "
                             "raytracing setup done",
                             "ospout");
 
     
-    //
+    //===================================================================//
     // Execute rendering
-    //
+    //===================================================================//
     {
         StackTimer t1("AllPatchRendering");
-	extractor.Update(GetGeneralContract());
+        extractor.Update(GetGeneralContract());
     }
     
     /*
@@ -443,9 +439,9 @@ avtOSPRayRayTracer::Execute()
     image->Update(GetGeneralContract());     
     */
 
-    //
+    //===================================================================//
     // Image Compositing
-    //
+    //===================================================================//
     // Initialization
     int timingIdx;
     float *compositedData = NULL;

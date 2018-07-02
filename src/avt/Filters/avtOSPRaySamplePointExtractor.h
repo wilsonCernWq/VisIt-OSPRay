@@ -113,6 +113,9 @@ class     avtOSPRayVoxelExtractor;
 //    Kevin Griffin, Fri Apr 22 16:31:57 PDT 2016
 //    Added support for polygons.
 //
+//    Qi Wu, Sun Jul 1 2018
+//    Added support for ospray volume rendering.
+//
 // ****************************************************************************
 
 class AVTFILTERS_API avtOSPRaySamplePointExtractor 
@@ -154,12 +157,6 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
 
 
     void                      SetImageZoom(double z) { imageZoom = z; }
-    //void                      SetDepthBuffer(float *zBuffer, int size)
-    //                                                 { depthBuffer= zBuffer; };
-    //void                      SetRGBBuffer(unsigned char *cb, int w, int h)
-    //                                                  { rgbColorBuffer = cb; };
-    //void                      SetBufferExtents(int e[4])
-    //                      { for (int i=0; i<4; i++) bufferExtents[i] = e[i]; };
 
     // Added by Qi (March 2018) for RayCasting:OSPRay  
     void SetOSPRay(OSPVisItContext* o) { ospray = o; }
@@ -194,25 +191,14 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     double                    cellDimension[3];
     int                       patchCount;
     
-    // Background + other plots
-    //   depthBuffer    : depth buffer for the background and other plots
-    //   rgbColorBuffer : bounding box + pseudo color + ...
-    //   bufferExtents  : extents of the buffer (minX, maxX, minY, maxY)
-    //float                    *depthBuffer; 
-    //unsigned char            *rgbColorBuffer; 
-    //int                       bufferExtents[4];
-
-    // Camera stuff
     double                    viewDirection[3];
     double                    panPercentage[2];
     double                    imageZoom;
     vtkMatrix4x4             *modelViewProj;
 
-    // lighting & material
     bool                      lighting;
     double                    materialProperties[4];
 
-    // OSPRay
     int                       renderingExtents[4];    
     OSPVisItContext          *ospray;
     double                    rendererSampleRate;
