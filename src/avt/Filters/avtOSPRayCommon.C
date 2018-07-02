@@ -482,9 +482,6 @@ double ospray::ProjectWorldToScreen(const double worldCoord[3],
     mvp->MultiplyPoint(worldHCoord, clipHCoord);
     if (clipHCoord[3] == 0.0)
     {
-        std::cerr << "ProjectWorldToScreen "
-                  << "Zero Division During Projection" 
-                  << std::endl;
         std::cerr << "world coordinates: (" 
                   << worldHCoord[0] << ", " 
                   << worldHCoord[1] << ", " 
@@ -494,28 +491,21 @@ double ospray::ProjectWorldToScreen(const double worldCoord[3],
                   << clipHCoord[0] << ", " 
                   << clipHCoord[1] << ", " 
                   << clipHCoord[2] << ", "
-                  << clipHCoord[3] << std::endl;
-        std::cerr << "Matrix: " << *mvp << std::endl;
-        EXCEPTION1(VisItException, "Zero Division During Projection");
+                  << clipHCoord[3] << std::endl
+		  << "Matrix: " << *mvp << std::endl;
+	ospray::Exception("Zero Division During Projection");
     }
 
-    // normalize clip space coordinate
-    double clipCoord[3] = {
-        clipHCoord[0]/clipHCoord[3],
-        clipHCoord[1]/clipHCoord[3],
-        clipHCoord[2]/clipHCoord[3]
-    };
-
     // screen coordinates (int integer)
-    screenCoord[0] = round(clipCoord[0]*(screenWidth /2.0)+(screenWidth /2.0));
-    screenCoord[1] = round(clipCoord[1]*(screenHeight/2.0)+(screenHeight/2.0));
-
-    // add panning
-    screenCoord[0] += round(screenWidth  * panPercentage[0] * imageZoom);
-    screenCoord[1] += round(screenHeight * panPercentage[1] * imageZoom); 
+    screenCoord[0] =
+	round((clipHCoord[0] / clipHCoord[3] + 1) * screenWidth  * 0.5) +
+	round(screenWidth  * panPercentage[0]);
+    screenCoord[1] =
+	round((clipHCoord[1] / clipHCoord[3] + 1) * screenHeight * 0.5) +
+	round(screenHeight * panPercentage[1]); 
 
     // return point depth
-    return clipCoord[2];
+    return clipHCoord[2]/clipHCoord[3];
 }
 
 void
@@ -527,21 +517,18 @@ ospray::ProjectScreenToWorld(const int screenCoord[2], const double z,
 {
     // remove panning
     const int x = 
-        screenCoord[0] - round(screenWidth*panPercentage[0]*imageZoom);
+        screenCoord[0] - round(screenWidth*panPercentage[0]);
     const int y = 
-        screenCoord[1] - round(screenHeight*panPercentage[1]*imageZoom);
+        screenCoord[1] - round(screenHeight*panPercentage[1]);
     
     // do projection
     double worldHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
-        (x - screenWidth/2.0) /(screenWidth/2.0),
-        (y - screenHeight/2.0)/(screenHeight/2.0),
+        (x - screenWidth  / 2.0) / (screenWidth  / 2.0),
+        (y - screenHeight / 2.0) / (screenHeight / 2.0),
         z, 1.0};
     imvp->MultiplyPoint(clipHCoord, worldHCoord);
     if (worldHCoord[3] == 0) {
-        debug5 << "ProjectScreenToWorld "
-               << "Zero Division During Projection" 
-               << std::endl;
         std::cerr << "world coordinates: (" 
                   << worldHCoord[0] << ", " 
                   << worldHCoord[1] << ", " 
@@ -551,11 +538,11 @@ ospray::ProjectScreenToWorld(const int screenCoord[2], const double z,
                   << clipHCoord[0] << ", " 
                   << clipHCoord[1] << ", " 
                   << clipHCoord[2] << ", "
-                  << clipHCoord[3] << std::endl;
-        std::cerr << "Matrix: " << *imvp << std::endl;
-        EXCEPTION1(VisItException, "Zero Division During Projection");
-    }
-    
+                  << clipHCoord[3] << std::endl
+		  << "Matrix: " << *imvp << std::endl;
+	ospray::Exception("Zero Division During Projection");
+    }    
+
     // normalize world space coordinate	
     worldCoord[0] = worldHCoord[0]/worldHCoord[3];
     worldCoord[1] = worldHCoord[1]/worldHCoord[3];

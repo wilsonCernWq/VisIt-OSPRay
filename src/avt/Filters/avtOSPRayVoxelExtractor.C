@@ -138,8 +138,8 @@ avtOSPRayVoxelExtractor::avtOSPRayVoxelExtractor(int w, int h, int d,
     clipSpaceDepth = -1;
     imgArray = NULL;                         // the image data
 
-    depthBuffer = NULL;
-    rgbColorBuffer = NULL;
+    //depthBuffer = NULL;
+    //rgbColorBuffer = NULL;
 
     ospray = NULL;
 }

@@ -158,11 +158,11 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     void             SetProcIdPatchID(int c, int p){ proc = c; patch = p; };
 
     // Set the background information
-    void             SetDepthBuffer(float *z, int size){ depthBuffer = z; };
-    void             SetRGBBuffer(unsigned char *cb, int width, int height)
-                                                      { rgbColorBuffer = cb; };
-    void             SetBufferExtents(int e[4])
-                           { for (int i=0;i<4; i++) bufferExtents[i] = e[i]; };
+    //void             SetDepthBuffer(float *z, int size){ depthBuffer = z; };
+    //void             SetRGBBuffer(unsigned char *cb, int width, int height)
+    //                                                  { rgbColorBuffer = cb; };
+    //void             SetBufferExtents(int e[4])
+    //                       { for (int i=0;i<4; i++) bufferExtents[i] = e[i]; };
     void             SetRendererSampleRate(double r) 
                                                    { rendererSampleRate = r; };
     void             SetOSPRay(OSPVisItContext* o) { ospray = o; };
@@ -203,9 +203,9 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     double           tFVisibleRange[2];
 
     // Background + other plots
-    float           *depthBuffer; // depth for the background and other plots
-    unsigned char   *rgbColorBuffer;   // bounding box + pseudo color + ...
-    int              bufferExtents[4]; // (minX, maxX, minY, maxY)
+    //float           *depthBuffer; // depth for the background and other plots
+    //unsigned char   *rgbColorBuffer;   // bounding box + pseudo color + ...
+    //int              bufferExtents[4]; // (minX, maxX, minY, maxY)
 
     // Rendering
     //int            renderingAreaExtents[4];

@@ -135,12 +135,12 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
                                                      { transferFn1D = tfn1D; };
     void                      SetViewDirection(double *vD)
                          { for (int i=0; i<3; i++) viewDirection[i] = vD[i]; };
-    void                      SetClipPlanes(double cp[2])
-                             { clipPlanes[0] = cp[0]; clipPlanes[1] = cp[1]; };
+    //void                      SetClipPlanes(double cp[2])
+    //                         { clipPlanes[0] = cp[0]; clipPlanes[1] = cp[1]; };
     void                      SetPanPercentages(double p[2])
                          { panPercentage[0] = p[0]; panPercentage[1] = p[1]; };
-    void                      SetDepthExtents(double de[2])
-                         { depthExtents[0] = de[0]; depthExtents[1] = de[1]; };
+    //void                      SetDepthExtents(double de[2])
+    //                     { depthExtents[0] = de[0]; depthExtents[1] = de[1]; };
     void                      SetMVPMatrix(vtkMatrix4x4 *mvp)
                                              { modelViewProj->DeepCopy(mvp); };
 
@@ -160,12 +160,12 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
 
 
     void                      SetImageZoom(double z) { imageZoom = z; }
-    void                      SetDepthBuffer(float *zBuffer, int size)
-                                                     { depthBuffer= zBuffer; };
-    void                      SetRGBBuffer(unsigned char *cb, int w, int h)
-                                                      { rgbColorBuffer = cb; };
-    void                      SetBufferExtents(int e[4])
-                          { for (int i=0; i<4; i++) bufferExtents[i] = e[i]; };
+    //void                      SetDepthBuffer(float *zBuffer, int size)
+    //                                                 { depthBuffer= zBuffer; };
+    //void                      SetRGBBuffer(unsigned char *cb, int w, int h)
+    //                                                  { rgbColorBuffer = cb; };
+    //void                      SetBufferExtents(int e[4])
+    //                      { for (int i=0; i<4; i++) bufferExtents[i] = e[i]; };
 
     // Added by Qi (March 2018) for RayCasting:OSPRay  
     void SetOSPRay(OSPVisItContext* o) { ospray = o; }
@@ -204,14 +204,12 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     //   depthBuffer    : depth buffer for the background and other plots
     //   rgbColorBuffer : bounding box + pseudo color + ...
     //   bufferExtents  : extents of the buffer (minX, maxX, minY, maxY)
-    float                    *depthBuffer; 
-    unsigned char            *rgbColorBuffer; 
-    int                       bufferExtents[4];
+    //float                    *depthBuffer; 
+    //unsigned char            *rgbColorBuffer; 
+    //int                       bufferExtents[4];
 
     // Camera stuff
     double                    viewDirection[3];
-    double                    depthExtents[2];
-    double                    clipPlanes[2];
     double                    panPercentage[2];
     double                    imageZoom;
     vtkMatrix4x4             *modelViewProj;
@@ -221,7 +219,7 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     double                    materialProperties[4];
 
     // OSPRay
-    int                       fullImageExtents[4];
+    int                       fullImageExtents[4];    
     OSPVisItContext          *ospray;
     double                    rendererSampleRate;
 

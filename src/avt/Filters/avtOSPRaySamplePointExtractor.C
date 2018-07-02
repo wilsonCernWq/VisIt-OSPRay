@@ -137,8 +137,8 @@ avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h,
     materialProperties[2] = 0.0;
     materialProperties[3] = 15.0;
 
-    depthBuffer = NULL;
-    rgbColorBuffer = NULL;
+    //depthBuffer = NULL;
+    //rgbColorBuffer = NULL;
 
     ospray = NULL;    
 
@@ -384,17 +384,17 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         osprayVoxelExtractor->SetGridsAreInWorldSpace
             (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
 
-        osprayVoxelExtractor->SetDepthBuffer(depthBuffer,
-                                          bufferExtents[1] * bufferExtents[3]);
-        osprayVoxelExtractor->SetRGBBuffer(rgbColorBuffer,
-                                           bufferExtents[1], bufferExtents[3]);
-        osprayVoxelExtractor->SetBufferExtents(bufferExtents);
+        //osprayVoxelExtractor->SetDepthBuffer(depthBuffer,
+	//                                 bufferExtents[1] * bufferExtents[3]);
+        //osprayVoxelExtractor->SetRGBBuffer(rgbColorBuffer,
+        //                                   bufferExtents[1], bufferExtents[3]);
+        //osprayVoxelExtractor->SetBufferExtents(bufferExtents);
 
         osprayVoxelExtractor->SetViewDirection(viewDirection);
         osprayVoxelExtractor->SetMVPMatrix(modelViewProj);
-        osprayVoxelExtractor->SetClipPlanes(clipPlanes);
+        //osprayVoxelExtractor->SetClipPlanes(clipPlanes);
         osprayVoxelExtractor->SetPanPercentages(panPercentage);
-        osprayVoxelExtractor->SetDepthExtents(depthExtents);
+        //osprayVoxelExtractor->SetDepthExtents(depthExtents);
 
         osprayVoxelExtractor->SetLighting(lighting);
 

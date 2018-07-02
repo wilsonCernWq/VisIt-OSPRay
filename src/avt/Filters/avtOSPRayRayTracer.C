@@ -244,7 +244,6 @@ avtOSPRayRayTracer::Execute()
     //
     // First we need to transform all of domains into camera space.
     //
-    ospout << "[avrRayTracer] compute camera" << std::endl;
     double aspect = 1.;
     if (screen[1] > 0)
     {
@@ -263,16 +262,11 @@ avtOSPRayRayTracer::Execute()
 
     avtWorldSpaceToImageSpaceTransform trans(view, aspect);
     trans.SetInput(GetInput());
-    
-    //
-    // Extract all of the samples from the dataset.
-    //
-    avtOSPRaySamplePointExtractor extractor(screen[0], screen[1],
-                                            samplesPerRay);
-    extractor.SetJittering(true);
-    extractor.SetTransferFn(transferFn1D);
-    extractor.SetInput(trans.GetOutput());
-	
+    trans.SetPassThruRectilinearGrids(true);
+
+    //======================================================================//
+    // Compute Projection
+    //======================================================================//
     //
     // Before Rendering
     //
@@ -280,18 +274,14 @@ avtOSPRayRayTracer::Execute()
     vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
     vtkMatrix4x4  *screen_to_model_transform = vtkMatrix4x4::New();
     vtkMatrix4x4  *screen_to_camera_transform = vtkMatrix4x4::New();
-    vtkImageData  *opaqueImageVTK = NULL;
-    unsigned char *opaqueImageData = NULL;
-    float         *opaqueImageZB = NULL;
+    vtkImageData  *opaqueImageVTK =
+	opaqueImage->GetImage().GetImageVTK();
+    unsigned char *opaqueImageData =
+	(unsigned char *)opaqueImageVTK->GetScalarPointer(0, 0, 0);;
+    float         *opaqueImageZB =
+	opaqueImage->GetImage().GetZBuffer();
     std::vector<float> opaqueImageDepth(screen[0] * screen[1], oldFarPlane);
     int            tileExtents[4];
-
-    //
-    // Hack
-    //
-    // view.imagePan[0] *= 2;
-    // view.imagePan[1] *= 2;
-    // view.imageZoom *= 1;
     
     //
     // Camera Settings
@@ -305,8 +295,6 @@ avtOSPRayRayTracer::Execute()
     if (view.orthographic) { sceneCam->ParallelProjectionOn(); }
     else { sceneCam->ParallelProjectionOff(); }
     sceneCam->SetParallelScale(view.parallelScale);	
-    // Clip planes
-    double oldclip[2] = {oldNearPlane, oldFarPlane};
     // Scaling
     vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
     matScale->Identity(); 
@@ -365,9 +353,15 @@ avtOSPRayRayTracer::Execute()
     matZoom->Delete();
     matZoomViewModelScale->Delete();
     matProj->Delete();
+    //sceneCam->Delete();
+    
     // Get the full image extents of the volume
     double depthExtents[2];
     GetSpatialExtents(dbounds);
+    ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
+                                     view.imagePan, view.imageZoom,
+                                     model_to_screen_transform,
+                                     tileExtents, depthExtents);
     ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
                                      view.imagePan, view.imageZoom,
                                      model_to_screen_transform,
@@ -420,15 +414,17 @@ avtOSPRayRayTracer::Execute()
            << sceneSize[1] << std::endl
            << "[avrRayTracer] screen: " 
            << screen[0] << " " << screen[1] << std::endl
-           << "[avrRayTracer] data bounds: " << std::endl
-           << "\t" << dbounds[0] << " " << dbounds[1] << std::endl
-           << "\t" << dbounds[2] << " " << dbounds[3] << std::endl
-           << "\t" << dbounds[4] << " " << dbounds[5] << std::endl
-           << "[avrRayTracer] full image extents: " << std::endl
-           << "\t" << tileExtents[0] << " "
-           << "\t" << tileExtents[1] << std::endl
-           << "\t" << tileExtents[2] << " "
-           << "\t" << tileExtents[3] << std::endl;
+           << "[avrRayTracer] data bounds: "
+	   << dbounds[0] << " " << dbounds[1] << std::endl
+	   << "               data bounds  "
+           << dbounds[2] << " " << dbounds[3] << std::endl
+	   << "               data bounds  "
+           << dbounds[4] << " " << dbounds[5] << std::endl
+           << "[avrRayTracer] full image extents: " 
+	   << tileExtents[0] << " " << tileExtents[1] << std::endl
+	   << "               full image extents: "
+	   << tileExtents[2] << " " << tileExtents[3] << std::endl;
+    
     ospout << "[avrRayTracer] model_to_screen_transform: " 
            << *model_to_screen_transform << std::endl;
     ospout << "[avrRayTracer] screen_to_model_transform: " 
@@ -448,7 +444,7 @@ avtOSPRayRayTracer::Execute()
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
     ((ospray::visit::Camera)ospray->camera)
         .Set(view.orthographic, view.camera, view.focus, view.viewUp,
-	     view.viewAngle, view.imagePan, view.imageZoom,
+	     view.viewAngle, view.imagePan, view.imageZoom, oldNearPlane,
 	     sceneSize, screen, tileExtents);
     // transfer function
     ospout  << "[avrRayTracer] make ospray transfer function" 
@@ -463,7 +459,7 @@ avtOSPRayRayTracer::Execute()
     ospray::visit::Renderer ren(ospray->renderer);
     ren.Init();
     ren.ResetLights();
-    double light_scale = lighting ? 0.5 : 1.0;
+    double light_scale = lighting ? 0.9 : 1.0;
     ren.AddLight().Set(true,  materialProperties[0], light_scale); // ambient 
     ren.AddLight().Set(false, materialProperties[1], light_scale, viewDirection);
     ren.AddLight().Set(false, 1.5, light_scale, viewDirection); 
@@ -492,38 +488,11 @@ avtOSPRayRayTracer::Execute()
     ospray->SetDataBounds(dbounds);
     ospray->SetScaling(scale);
     ospray->SetActiveVariable(activeVariable);
-    // check memory
-    ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
-                            "ospout");    
-
-    // 
-    // Continuation of previous pipeline
-    //
-    extractor.SetJittering(false);
-    extractor.SetLighting(lighting);
-    extractor.SetMatProperties(materialProperties);
-    extractor.SetViewDirection(viewDirection);
-    extractor.SetTransferFn(transferFn1D);
-    extractor.SetClipPlanes(oldclip);
-    extractor.SetPanPercentages(view.imagePan);
-    extractor.SetImageZoom(view.imageZoom);
-    extractor.SetRendererSampleRate(rendererSampleRate); 
-    extractor.SetDepthExtents(depthExtents);
-    extractor.SetMVPMatrix(model_to_screen_transform);
-    extractor.SetFullImageExtents(tileExtents);
-    extractor.SetOSPRay(ospray); // sending ospray
 
     //
     // Capture background
     //
-    opaqueImageVTK  = opaqueImage->GetImage().GetImageVTK();
-    opaqueImageData = 
-        (unsigned char *)opaqueImageVTK->GetScalarPointer(0, 0, 0);
-    opaqueImageZB   = opaqueImage->GetImage().GetZBuffer();
-    int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
-    extractor.SetDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
-    extractor.SetRGBBuffer  (opaqueImageData, screen[0],screen[1]);
-    extractor.SetBufferExtents(bufferScreenExtents);
+    // int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
     // Set the background to OSPRay
     for (int y = 0; y < screen[1]; ++y) {
         for (int x = 0; x < screen[0]; ++x) {
@@ -540,42 +509,77 @@ avtOSPRayRayTracer::Execute()
         }
     }
     ospray->SetBgBuffer(opaqueImageData, opaqueImageDepth.data(), screen);
+    // check memory
+    ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
+                            "ospout");    
+
+    // 
+    // Continuation of previous pipeline
+    //
+
+    //
+    // Extract all of the samples from the dataset.
+    //
+    avtOSPRaySamplePointExtractor extractor(screen[0], screen[1],
+					    samplesPerRay);
+
+    extractor.SetJittering(true);
+    extractor.SetTransferFn(transferFn1D);
+    extractor.SetInput(trans.GetOutput());
+
+    extractor.SetLighting(lighting);
+    extractor.SetMatProperties(materialProperties);
+    extractor.SetViewDirection(viewDirection);
+    extractor.SetTransferFn(transferFn1D);
+
     
-    // TODO We cannot delete camera here, why ?
-    //sceneCam->Delete();
+    extractor.SetPanPercentages(view.imagePan);
+    extractor.SetImageZoom(view.imageZoom);
+    extractor.SetRendererSampleRate(rendererSampleRate); 
+
+
+    extractor.SetMVPMatrix(model_to_screen_transform);
+    extractor.SetFullImageExtents(tileExtents);
+    extractor.SetOSPRay(ospray); // sending ospray
     
+    //extractor.SetDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
+    //extractor.SetRGBBuffer  (opaqueImageData, screen[0],screen[1]);
+    //extractor.SetBufferExtents(bufferScreenExtents);
+
     //
     // For curvilinear and unstructured meshes, it makes sense to convert the
     // cells to image space.  But for rectilinear meshes, it is not the
     // most efficient strategy.  So set some flags here that allow the
     // extractor to do the extraction in world space.
     //
-    trans.SetPassThruRectilinearGrids(true);
-    extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
+    {
+        trans.SetPassThruRectilinearGrids(true);
+        extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
+    }
 
     // Qi debug
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute "
                             "raytracing setup done",
                             "ospout");
 
-    // Execute raytracer
+    
+    //
+    // Execute rendering
+    //
+    {
+        StackTimer t1("AllPatchRendering");
+	extractor.Update(GetGeneralContract());
+    }
+    
+    /*
     avtDataObject_p samples = extractor.GetOutput();
-
-    //
-    // Ray casting: SLIVR ~ After Rendering
-    //
     // Only required to force an update 
     // Need to find a way to get rid of that!!!!
     avtRayCompositer rc(rayfoo);
     rc.SetInput(samples);
     avtImage_p image  = rc.GetTypedOutput();
-    
-    // Execute rendering
-    // This will call the execute function
-    {
-        StackTimer t1("AllPatchRendering");
-        image->Update(GetGeneralContract()); 
-    }
+    image->Update(GetGeneralContract());     
+    */
 
     //
     // Image Compositing
