@@ -132,7 +132,7 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
 {
 
     ((ospray::visit::Camera)camera).SetScreen(xMin, xMax, yMin, yMax);
-    ((ospray::visit::Renderer)renderer).Set(volume->GetWorld());
+    ((ospray::visit::Renderer)renderer).Set(*(volume->patch.model));
     ((ospray::visit::Renderer)renderer).Set(*camera);
     volume->InitFB(imgWidth, imgHeight);
     volume->RenderFB();
@@ -186,28 +186,34 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     }
     SetVolume(X, Y, Z, nX, nY, nZ,
 	      volumePBox, volumeBBox);    
-    if (!finished) {
-        worldType = OSP_INVALID; 
-        InitWorld();
-        SetWorld();
-    }
+    //if (!finished) {
+        //worldType = OSP_INVALID; 
+        //InitWorld();
+        //SetWorld();
+    //}
+
+    ospray::visit::Model model(patch.model);
+    model.Reset();
+    model.Init();
+    model.Set(volume);
+    
     finished = true;
 }
 
 // ospModel component
-void OSPVisItVolume::InitWorld() {
-    if (worldType == OSP_INVALID) {
-        CleanWorld();
-        worldType = OSP_VALID;
-        world = ospNewModel();
-    }
-}
-void OSPVisItVolume::SetWorld() {
-    if (world != NULL) { 
-        ospAddVolume(world, volume);
-        ospCommit(world);
-    }
-}
+// void OSPVisItVolume::InitWorld() {
+//     if (worldType == OSP_INVALID) {
+//         CleanWorld();
+//         worldType = OSP_VALID;
+//         world = ospNewModel();
+//     }
+// }
+// void OSPVisItVolume::SetWorld() {
+//     if (world != NULL) { 
+//         ospAddVolume(world, volume);
+//         ospCommit(world);
+//     }
+// }
 
 // ospVolume component
 void OSPVisItVolume::InitVolume(int dt, void *ptr,

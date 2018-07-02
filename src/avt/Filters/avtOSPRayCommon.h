@@ -72,15 +72,19 @@
 class OSPVisItContext;
 class OSPVisItVolume 
 {
+public:
+    ospray::visit::PatchCore patch;
 private:
     friend class OSPVisItContext;
 
     OSPVisItContext *parent;
 
+
+    
     // objects owned by the struct
     // -- ospray model ---
-    OSPModel            world;
-    unsigned char       worldType;
+    //OSPModel            world;
+    //unsigned char       worldType;
     // --- ospray framebuffer ---
     OSPFrameBuffer      framebuffer;
     float              *framebufferData;
@@ -118,8 +122,8 @@ public:
     // constructor
     OSPVisItVolume() {
         // objects owned by the struct
-        world           = NULL;
-        worldType       = OSP_INVALID;
+        //world           = NULL;
+        //worldType       = OSP_INVALID;
         framebuffer     = NULL;
         framebufferData = NULL;
         framebufferBg   = NULL;
@@ -131,7 +135,6 @@ public:
         dataPtr         = NULL;
         dataType        = "";
         // metadata for volume
-        //patchId = id;    
         finished      = false; 
         enableShading = false;
         enableDVR     = false;
@@ -153,7 +156,7 @@ public:
     void Clean() {
         CleanFB();
         CleanVolume();	
-        CleanWorld();
+        //CleanWorld();
     }
     
     // other function
@@ -168,16 +171,16 @@ public:
     void SetFinishedFlag(bool f) { finished = f; } 
 
     // ospModel component
-    OSPModel GetWorld() { return world; }
-    void InitWorld();
-    void SetWorld();
-    void CleanWorld() {
-        if (world != NULL) {	    
-            ospRelease(world);
-            world = NULL;
-        }
-        worldType = OSP_INVALID;
-    }
+    /* OSPModel GetWorld() { return world; } */
+    /* void InitWorld(); */
+    /* void SetWorld(); */
+    /* void CleanWorld() { */
+    /*     if (world != NULL) {	     */
+    /*         ospRelease(world); */
+    /*         world = NULL; */
+    /*     } */
+    /*     worldType = OSP_INVALID; */
+    /* } */
 	
     // ospVolume component
     void InitVolume(int type, void *ptr,
@@ -241,9 +244,6 @@ public:
     }
     ~OSPVisItContext() {	
         volumes.clear();
-        //renderer.Clean();
-        //camera.Delete();
-        //tfn.Delete();
     }
 
     // helper
@@ -269,6 +269,8 @@ public:
     ospray::visit::CameraCore           camera;
     ospray::visit::RendererCore         renderer;
     ospray::visit::TransferFunctionCore tfn;
+
+
     void SetBgBuffer(unsigned char* color, float* depth, int size[2]) 
     {
         ((ospray::visit::Renderer)renderer)
