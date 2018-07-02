@@ -118,6 +118,9 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     // void             SetVariableInformation(std::vector<std::string> &names,
     //                                         std::vector<int> varsize);
 
+    void                      SetViewInfo(const avtViewInfo & v)
+                                                             { viewInfo = v; };
+
     void             SetLighting(bool l) { lighting = l; };
     void             SetMatProperties(double matProp[4]) 
            { for (int i=0; i<4; i++) { materialProperties[i] = matProp[i]; } };
@@ -151,8 +154,8 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     void             GetComputedImage(float *image);
     void             SetProcIdPatchID(int c, int p){ proc = c; patch = p; };
 
-    void             SetRendererSampleRate(double r) 
-                                                   { rendererSampleRate = r; };
+    void             SetSamplingRate(double r) 
+                                                   { samplingRate = r; };
     void             SetOSPRay(OSPVisItContext* o) { ospray = o; };
     void             SetRenderingExtents(int extents[4]) 
     {
@@ -168,6 +171,8 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     vtkMatrix4x4    *model_to_screen_transform;
     vtkMatrix4x4    *screen_to_model_transform;
 
+    avtViewInfo      viewInfo;
+    
     double           clipPlanes[2];
     double           panPercentage[2];
     double           imageZoom;
@@ -208,7 +213,7 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
 
     // OSPRay stuffs
     OSPVisItContext *ospray;
-    double           rendererSampleRate;
+    double           samplingRate;
 
     // Added for RayCasting OSPRay
     void             ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *,  

@@ -166,7 +166,7 @@ class AVTFILTERS_API avtSamplePointExtractorBase
     bool                      jitter;
 
     bool                      rectilinearGridsAreInWorldSpace;
-    avtViewInfo               viewInfo;
+    avtViewInfo               view; // controlled by SetRectilinearGridsAreInWorldSpace
     double                    aspect;
 
     avtOpacityMap             *transferFn1D;

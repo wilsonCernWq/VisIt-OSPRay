@@ -47,6 +47,7 @@
 
 #include <avtSamplePointExtractorBase.h>
 #include <avtOSPRayCommon.h> // this ensures VISIT_OSPRAY is defined
+
 class     avtOSPRayVoxelExtractor;
 
 #include <vtkMatrix4x4.h>
@@ -130,6 +131,8 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     virtual const char       *GetDescription(void)
                                          { return "Extracting sample points";};
 
+    void                      SetViewInfo(const avtViewInfo & v)
+                                                             { viewInfo = v; };
 
     void                      SetLighting(bool l) {lighting = l; };
     void                      SetMatProperties(double _matProp[4]) 
@@ -160,7 +163,7 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
 
     // Added by Qi (March 2018) for RayCasting:OSPRay  
     void SetOSPRay(OSPVisItContext* o) { ospray = o; }
-    void SetRendererSampleRate(double r) { rendererSampleRate = r; }
+    void SetSamplingRate(double r) { samplingRate = r; }
     void SetRenderingExtents(int extents[4]) 
     {
         renderingExtents[0] = extents[0];
@@ -185,7 +188,9 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     ospray::ImgMetaData       InitMetaPatch(int id); // initialize a patch
     
     avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
-    
+
+    avtViewInfo               viewInfo;
+	
     double                    minMaxSpatialBounds[6];
     double                    avgPatchExtents[3];
     double                    cellDimension[3];
@@ -201,7 +206,7 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
 
     int                       renderingExtents[4];    
     OSPVisItContext          *ospray;
-    double                    rendererSampleRate;
+    double                    samplingRate;
 
 };
 

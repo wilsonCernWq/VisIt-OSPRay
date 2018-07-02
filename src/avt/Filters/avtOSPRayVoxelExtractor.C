@@ -423,7 +423,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         StackTimer t1("avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay "
                       "Get screen size of the patch (Pre-OSPRay preparation)");
         ospray::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
-                                         panPercentage, imageZoom,
+					 viewInfo.imagePan, viewInfo.imageZoom,
                                          model_to_screen_transform, 
                                          patchScreenExtents, 
                                          renderingDepthsExtents);
@@ -436,18 +436,16 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                << " | " << ghost_bound[1] << " " << ghost_bound[4] 
                << " | " << ghost_bound[2] << " " << ghost_bound[5]
                << std::endl;   
-    
-        // calculate patch depth
         patch_center[0] = (volumeCube[0] + volumeCube[1])/2.0;
         patch_center[1] = (volumeCube[2] + volumeCube[3])/2.0;
         patch_center[2] = (volumeCube[4] + volumeCube[5])/2.0;        
         patch_depth = // use the norm of patch center as patch depth
-            std::sqrt((patch_center[0]-view.camera[0])*
-                      (patch_center[0]-view.camera[0])+
-                      (patch_center[1]-view.camera[1])*
-                      (patch_center[1]-view.camera[1])+
-                      (patch_center[2]-view.camera[2])*
-                      (patch_center[2]-view.camera[2]));
+            std::sqrt((patch_center[0]-viewInfo.camera[0])*
+                      (patch_center[0]-viewInfo.camera[0])+
+                      (patch_center[1]-viewInfo.camera[1])*
+                      (patch_center[1]-viewInfo.camera[1])+
+                      (patch_center[2]-viewInfo.camera[2])*
+                      (patch_center[2]-viewInfo.camera[2]));
         eyeSpaceDepth = patch_depth;
         clipSpaceDepth = renderingDepthsExtents[0];
     }
@@ -539,7 +537,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                                          X, Y, Z, nX, nY, nZ,
                                          volumePBox, volumeBBox, 
                                          materialProperties, 
-                                         (float)rendererSampleRate,
+                                         (float)samplingRate,
                                          lighting);
         }
 

@@ -632,7 +632,7 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
       s->SetLighting(atts.GetLightingFlag());
       s->SetLightInfo(window.GetLights());
       s->SetMatProperties(materialPropArray);
-      s->SetRendererSampleRate(atts.GetRendererSamples());
+      s->SetSamplingRate(atts.GetRendererSamples());
     }
 #endif
     }

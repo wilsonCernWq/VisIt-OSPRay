@@ -389,18 +389,22 @@ avtOSPRayRayTracer::Execute()
     extractor.SetTransferFn(transferFn1D);
     extractor.SetInput(trans.GetOutput());
 
-    extractor.SetLighting(lighting);
+
     extractor.SetMatProperties(materialProperties);
-    extractor.SetViewDirection(viewDirection);
 
-    
-    extractor.SetPanPercentages(view.imagePan);
-    extractor.SetImageZoom(view.imageZoom);
-    extractor.SetRendererSampleRate(rendererSampleRate); 
+    extractor.SetLighting(lighting);
+    //extractor.SetViewDirection(viewDirection);
+    //extractor.SetPanPercentages(view.imagePan);
+    //extractor.SetImageZoom(view.imageZoom);
 
+
+    extractor.SetOSPRay(ospray);
+    extractor.SetRenderingExtents(renderingExtents); // rendered region
+    extractor.SetViewInfo(view);
     extractor.SetMVPMatrix(model_to_screen_transform);
-    extractor.SetRenderingExtents(renderingExtents);
-    extractor.SetOSPRay(ospray); // sending ospray
+    extractor.SetSamplingRate(samplingRate); 
+
+
     
     //
     // For curvilinear and unstructured meshes, it makes sense to convert the
