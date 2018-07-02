@@ -285,16 +285,16 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                            << "  cell_vartypes[" << i << "] "
                            << cell_vartypes[i]   << std::endl << std::endl;
             if (rgrid->GetCellData()->GetArray(ncell_arrays-1)->GetName() !=
-                ospray->GetActiveVariable())
+                ospray::GetActiveVariable(ospray))
             {
                 ospray::Exception("Error: primary variable " +
-                                  ospray->GetActiveVariable() +
+                                  ospray::GetActiveVariable(ospray) +
                                   " not found.");		
             }
             if (cell_size[ncell_arrays-1] != 1)
             {
                 ospray::Exception("Error: non-scalar variable " +
-                                  ospray->GetActiveVariable() +
+                                  ospray::GetActiveVariable(ospray) +
                                   " of length " +
                                   std::to_string(cell_size[ncell_arrays-1]) +
                                   " found.");
@@ -321,16 +321,16 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                            << "  pt_vartypes[" << i << "] "
                            << pt_vartypes[i]   << std::endl << std::endl;
             if (rgrid->GetPointData()->GetArray(npt_arrays-1)->GetName() !=
-                ospray->GetActiveVariable())
+                ospray::GetActiveVariable(ospray))
             {
                 ospray::Exception("Error: primary variable " +
-                                  ospray->GetActiveVariable() +
+                                  ospray::GetActiveVariable(ospray) +
                                   " not found.");		
             }
             if (pt_size[npt_arrays-1] != 1)
             {
                 ospray::Exception("Error: non-scalar variable " +
-                                  ospray->GetActiveVariable() +
+                                  ospray::GetActiveVariable(ospray) +
                                   " of length " +
                                   std::to_string(pt_size[npt_arrays-1]) +
                                   " found.");
@@ -355,10 +355,16 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         // debug5 << "VAR: ghost value " << (int)ghosts[0] << std::endl;
         //
         if (ghosts != NULL) {
+            ospray::visit::Volume::ComputeGhostBounds(ghost_bound,
+                                                      ghosts,
+                                                      dims[0]-1,
+                                                      dims[1]-1,
+                                                      dims[2]-1);
+            /*
             int gnX = 0, gnY = 0, gnZ = 0;
             gnX = dims[0] - 1;
             gnY = dims[1] - 1;
-            gnZ = dims[2] - 1;	
+            gnZ = dims[2] - 1;
             for (int y = 1; y < (gnY-1); ++y) {
                 for (int z = 1; z < (gnZ-1); ++z) {
                     if (!ghost_bound[0]) {
@@ -398,6 +404,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                     if (ghost_bound[2] && ghost_bound[5]) { break; }
                 }
             }
+            */
         }
         // Data bounding box
         volumeCube[0] = X[0];
@@ -481,13 +488,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
                           "OSPRay bbox and clip (OSPRay preparation)");
-            // if (!((npt_arrays == 1)^(ncell_arrays == 1))) {
-            //     std::cerr << "WARNING: Multiple data found within one "
-            //               << "patch, We don't know what to do !! " 
-            //               << std::endl
-            //               << "         One of the dataset might be missing "
-            //               << std::endl;
-            // }
             // shift grid and make it cel centered for cell data
             // for cell centered data, we put the voxel on its left boundary
             volumePBox[0] = X[0];
@@ -541,12 +541,15 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
                           "OSPRay Create Volume");
-            ospray->GetPatch(patch)->Set(volumeDataType, volumePointer,
-                                         X, Y, Z, nX, nY, nZ,
-                                         volumePBox, volumeBBox, 
-                                         materialProperties, 
-                                         (float)samplingRate,
-                                         lighting);
+            std::string ospChar;
+            OSPDataType ospType;
+            ospray::CheckVolumeFormat(volumeDataType, ospChar, ospType);
+            ((ospray::visit::Context)*ospray)
+                .SetupPatch(patch, ospType, ospChar,
+                            (size_t)nX * (size_t)nY * (size_t)nZ,
+                            volumePointer,
+                            X, Y, Z, nX, nY, nZ,
+                            volumePBox, volumeBBox);
         }
 
         // Render Volume
@@ -556,11 +559,10 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                           "OSPRay Render Volume");	
             if ((scalarRange[1] >= tFVisibleRange[0]) &&
                 (scalarRange[0] <= tFVisibleRange[1])) {
-                ospray->Render(xMin, xMax, yMin, yMax,
-                               imgWidth, imgHeight, imgArray,
-                               ospray->GetPatch(patch));
-                patchDrawn = 1;
-                
+                ((ospray::visit::Context)*ospray)
+                    .RenderPatch(patch, xMin, xMax, yMin, yMax,
+                                 imgWidth, imgHeight, imgArray);
+                patchDrawn = 1;                
             }
         }
     }
@@ -580,10 +582,10 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     //=======================================================================//
     if (patchDrawn == 0)
     { 
-	if (imgArray != NULL) 
-	{ 
-	    delete []imgArray; imgArray = NULL; 
-	} 
+        if (imgArray != NULL) 
+        { 
+            delete []imgArray; imgArray = NULL; 
+        } 
     }
     // else {
     // 	WriteArrayToPPM("patch-after-render"+

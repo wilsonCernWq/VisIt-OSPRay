@@ -84,11 +84,10 @@ void OSPContext_StatusFunc(const char* msg) {
     osperr << "#osp: (rank " << PAR_Rank() << ")" 
            << msg; 
 }
-bool OSPVisItContext::initialized = false;
-void OSPVisItContext::Finalize() {}
-void OSPVisItContext::InitOSP(int numThreads) 
+static bool ospray_initialized = false;
+void ospray::Initialize(int numThreads) 
 {     
-    if (!OSPVisItContext::initialized) 
+    if (!ospray_initialized) 
     {
 #ifdef __unix__
         // check hostname
@@ -121,10 +120,48 @@ void OSPVisItContext::InitOSP(int numThreads)
         if (err != OSP_NO_ERROR) {
 	        osperr << "[Error] can't load visit module" << std::endl;
         }
-        OSPVisItContext::initialized = true;
+        ospray_initialized = true;
     }
 }
+void ospray::SetLightingFlag(visit::ContextCore* core, bool lighting)
+{
+  core->gradientShadingEnabled = lighting;
+}
+void ospray::SetSpecular(visit::ContextCore* core, double Ks, double Ns)
+{
+  core->specularKs = Ks;
+  core->specularNs = Ns;
+}
+void ospray::SetSamplingRate(visit::ContextCore* core, double r)
+{
+  core->samplingRate = r;
+}
+void ospray::SetBgBuffer(visit::ContextCore* core,
+                 unsigned char* color, float* depth, int size[2]) 
+{
+  ((visit::Renderer)(core->renderer))
+    .SetBackgroundBuffer(color, depth, size);
+}
+void ospray::SetScalingAndDataBounds(visit::ContextCore* core,
+                             double scale[3], double dbounds[6]) 
+{
+  core->scale.x = scale[0];
+  core->scale.y = scale[1];
+  core->scale.z = scale[2];
+  core->bbox.lower.x = dbounds[0] * core->scale.x;
+  core->bbox.upper.x = dbounds[1] * core->scale.x;
+  core->bbox.lower.y = dbounds[2] * core->scale.y;
+  core->bbox.upper.y = dbounds[3] * core->scale.y;
+  core->bbox.lower.z = dbounds[4] * core->scale.z;
+  core->bbox.upper.z = dbounds[5] * core->scale.z;
+}
+void ospray::SetActiveVariable(visit::ContextCore* core,
+                               const char* str) 
+{ core->varname = str; }
+const std::string& ospray::GetActiveVariable(const visit::ContextCore* core)
+{ return core->varname; }
 
+/*
 // We use this function to minimize interface
 void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
                              int imgWidth, int imgHeight,
@@ -149,13 +186,13 @@ void OSPVisItContext::InitPatch(int id)
         volumes[id] = v;
     }
 }
-
+*/
 // ****************************************************************************
 //
 // OSPVolume
 //
 // ****************************************************************************
-
+/*
 void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z, 
                          int nX, int nY, int nZ,
                          double volumePBox[6], 
@@ -211,8 +248,8 @@ void OSPVisItVolume::SetWorld() {
 
 // ospVolume component
 void OSPVisItVolume::InitVolume(int dt, void *ptr,
-				int nX, int nY, int nZ,
-				unsigned char type) {
+                                int nX, int nY, int nZ,
+                                unsigned char type) {
     if (volumeType != type) { // only initialize once
         CleanVolume();
         volumeType = type;
@@ -230,42 +267,23 @@ void OSPVisItVolume::InitVolume(int dt, void *ptr,
             EXCEPTION1(VisItException, 
                        "ERROR: ospray volume not initialized");
         }
-	// calculate volume data type
-	if (dt == VTK_UNSIGNED_CHAR) {
-	    dataType = "uchar";
-	    voxelDataType = OSP_UCHAR;
-	} else if (dt ==VTK_SHORT) {
-	    dataType = "short";
-	    voxelDataType = OSP_SHORT;
-	} else if (dt ==VTK_UNSIGNED_SHORT) {
-	    dataType = "ushort";
-	    voxelDataType = OSP_USHORT;
-	} else if (dt ==VTK_FLOAT) {
-	    dataType = "float";
-	    voxelDataType = OSP_FLOAT;
-	} else if (dt ==VTK_DOUBLE) {
-	    dataType = "double";
-	    voxelDataType = OSP_DOUBLE;
-	} else {
-	    debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
-	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
-	}
-	ospout << "[ospray] data type " << dataType << std::endl;
-	// assign data pointer
-	dataPtr = ptr;
-	// commit voxel data
-	if (voxelData != NULL) { 
-	    debug1 << "ERROR: Found VoxelData to be non-empty "
-		   << "while creating new volume" << std::endl;
-	    EXCEPTION1(VisItException, 
-		       "ERROR: Found VoxelData to be non-empty "
-		       "while creating new volume");
-	}
-	voxelSize = nX * nY * nZ;
-	voxelData = ospNewData(voxelSize, voxelDataType,
-			       dataPtr, OSP_DATA_SHARED_BUFFER);
-	ospSetString(volume, "voxelType", dataType.c_str());	
-	ospSetData(volume, "voxelData", voxelData);
+        ospray::CheckVolumeFormat(dt, dataType, voxelDataType);
+        ospout << "[ospray] data type " << dataType << std::endl;
+        // assign data pointer
+        dataPtr = ptr;
+        // commit voxel data
+        if (voxelData != NULL) { 
+          debug1 << "ERROR: Found VoxelData to be non-empty "
+                 << "while creating new volume" << std::endl;
+          EXCEPTION1(VisItException, 
+                     "ERROR: Found VoxelData to be non-empty "
+                     "while creating new volume");
+        }
+        voxelSize = nX * nY * nZ;
+        voxelData = ospNewData(voxelSize, voxelDataType,
+                               dataPtr, OSP_DATA_SHARED_BUFFER);
+        ospSetString(volume, "voxelType", dataType.c_str());	
+        ospSetData(volume, "voxelData", voxelData);
     }
 }
 
@@ -411,7 +429,7 @@ void OSPVisItVolume::RenderFB() {
 float* OSPVisItVolume::GetFBData() {
     return framebufferData;
 }
-
+*/
 // ****************************************************************************
 //
 //
