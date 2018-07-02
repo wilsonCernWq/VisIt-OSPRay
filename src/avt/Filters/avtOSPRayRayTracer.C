@@ -235,7 +235,8 @@ avtOSPRayRayTracer::Execute()
     // Start of original pipeline
     //======================================================================//
     bool parallelOn = (imgComm.GetParSize() == 1) ? false : true;
-    /*
+    /* we dont need rayfoo for ospray */
+    /* 
     if (rayfoo == NULL)
     {
         debug1 << "Never set ray function for ray tracer." << endl;
@@ -273,10 +274,9 @@ avtOSPRayRayTracer::Execute()
     // Before Rendering
     //
     vtkImageData  *opaqueImageVTK  = opaqueImage->GetImage().GetImageVTK();
+    float         *opaqueImageZB   = opaqueImage->GetImage().GetZBuffer();
     unsigned char *opaqueImageData =
 	(unsigned char*)opaqueImageVTK->GetScalarPointer(0,0,0);
-    float         *opaqueImageZB   =
-	opaqueImage->GetImage().GetZBuffer();
     std::vector<float> opaqueImageDepth(screen[0] * screen[1], oldFarPlane);
     vtkMatrix4x4  *model_to_screen_transform = vtkMatrix4x4::New();
     vtkMatrix4x4  *screen_to_model_transform = vtkMatrix4x4::New();
@@ -293,20 +293,20 @@ avtOSPRayRayTracer::Execute()
                                    screen_to_camera_transform,
                                    renderingExtents, sceneSize,
                                    dbounds);
-        for (int y = 0; y < screen[1]; ++y) {
-            for (int x = 0; x < screen[0]; ++x) {
-                int index = x + y * screen[0];
-                int    screenCoord[2] = {x, y};
-                double screenDepth = opaqueImageZB[index] * 2 - 1;
-                double worldCoord[3];
-                ospray::ProjectScreenToCamera
-                    (screenCoord, screenDepth, 
-                     screen[0], screen[1],
-                     screen_to_camera_transform, 
-                     worldCoord);
-                opaqueImageDepth[index] = -worldCoord[2];
-            }
-        }        
+	for (int y = 0; y < screen[1]; ++y) {
+	    for (int x = 0; x < screen[0]; ++x) {
+		int index = x + y * screen[0];
+		int    screenCoord[2] = {x, y};
+		double screenDepth = opaqueImageZB[index] * 2 - 1;
+		double worldCoord[3];
+		ospray::ProjectScreenToCamera
+		    (screenCoord, screenDepth, 
+		     screen[0], screen[1],
+		     screen_to_camera_transform, 
+		     worldCoord);
+		opaqueImageDepth[index] = -worldCoord[2];
+	    }
+	}
     }
     
     //===================================================================//
@@ -367,7 +367,8 @@ avtOSPRayRayTracer::Execute()
     ospray::SetSamplingRate(ospray, samplingRate);
     ospray::SetScalingAndDataBounds(ospray, scale, dbounds);
     ospray::SetActiveVariable(ospray, activeVariable);
-    ospray::SetBgBuffer(ospray, opaqueImageData, opaqueImageDepth.data(), screen);
+    ospray::SetBgBuffer(ospray, opaqueImageData, opaqueImageDepth.data(),
+			screen);
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    
 
