@@ -46,17 +46,17 @@
 #include <ospray/visit/VisItWrapperCore.h>
 #include <ospray/visit/VisItWrapper.h>
 
-//#include <string>
-//#include <vector>
-//#include <map>
+#include <string>
+#include <vector>
+#include <map>
 
 // some constants
-/* #define OSP_PERSPECTIVE              1 */
-/* #define OSP_ORTHOGRAPHIC             2 */
-/* #define OSP_BLOCK_BRICKED_VOLUME     3 */
-/* #define OSP_SHARED_STRUCTURED_VOLUME 4 */
-/* #define OSP_INVALID                  5 */
-/* #define OSP_VALID                    6 */
+#define OSP_PERSPECTIVE              1
+#define OSP_ORTHOGRAPHIC             2
+#define OSP_BLOCK_BRICKED_VOLUME     3
+#define OSP_SHARED_STRUCTURED_VOLUME 4
+#define OSP_INVALID                  5
+#define OSP_VALID                    6
 
 // ****************************************************************************
 //  Struct:  OSPVisItVolume
@@ -68,7 +68,7 @@
 //  Creation:   
 //
 // ****************************************************************************
-/*
+
 class OSPVisItContext;
 class OSPVisItVolume 
 {
@@ -154,9 +154,8 @@ public:
         CleanFB();
         CleanVolume();	
         CleanWorld();
-  //  }
-*/
-/*  
+    }
+    
     // other function
     void Set(int type, void *ptr, 
              double *X, double *Y, double *Z, 
@@ -217,7 +216,7 @@ public:
         }
     }
 };
-*/
+
 // ****************************************************************************
 //  Struct:  OSPVisItContext
 //
@@ -229,27 +228,9 @@ public:
 //
 // ****************************************************************************
 
-typedef ospray::visit::ContextCore OSPVisItContext;
-namespace ospray {
-    void Initialize(int numThreads = 0);
-    void Finalize();
-    void SetLightingFlag(OSPVisItContext* core,
-                         bool lighting);
-    void SetSpecular(OSPVisItContext* core, 
-                     double Ks, double Ns);
-    void SetSamplingRate(OSPVisItContext* core, double r);
-    void SetBgBuffer(OSPVisItContext* core,
-                     unsigned char* color, 
-                     float* depth, int size[2]);
-    void SetScalingAndDataBounds(OSPVisItContext* core,
-                                 double scale[3],
-                                 double dbounds[6]);
-    void SetActiveVariable(OSPVisItContext* core,const char* str);
-    const std::string& GetActiveVariable(const OSPVisItContext* core);
-
-};
-
-/*
+class OSPVisItContext
+{
+public:
     // ************************************************************************
     // We expose this in header because iy will be called in other components
     // where we dont have direct library linkage
@@ -308,7 +289,7 @@ private:
     static bool initialized;
     std::string varname;
 };
-*/
+
 #endif//AVT_OSPRAY_COMMON_H
 
 // ****************************************************************************
@@ -396,6 +377,18 @@ namespace ospray {
 
 namespace ospray
 {
+    void ComputeProjections(const avtViewInfo &view, 
+			    const double &aspect,
+			    const int screen[2],
+			    const double scale[3],
+			    const double &oldNearPlane, const double &oldFarPlane,
+			    vtkMatrix4x4  *model_to_screen_transform, 
+			    vtkMatrix4x4  *screen_to_model_transform, 
+			    vtkMatrix4x4  *screen_to_camera_transform,
+			    int            renderingExtents[4],
+			    double         sceneSize[2],
+			    double         dbounds[6]);
+    
     // ************************************************************************
     //  Struct:  ImgMetaData
     //
@@ -449,38 +442,7 @@ namespace ospray
     //  Helper Functions
     //
     // ************************************************************************
-
-    inline void Exception(const std::string str)
-    {
-        std::cerr << str << std::endl;
-        debug1    << str << std::endl;
-        EXCEPTION1(VisItException, str.c_str()); 
-    }
-    
-    inline void CheckVolumeFormat(const int dt, std::string& ospChar, 
-                                  OSPDataType& ospType)
-    {
-        if (dt == VTK_UNSIGNED_CHAR) {
-            ospChar = "uchar";
-            ospType = OSP_UCHAR;
-        } else if (dt == VTK_SHORT) {
-            ospChar = "short";
-            ospType = OSP_SHORT;
-        } else if (dt == VTK_UNSIGNED_SHORT) {
-            ospChar = "ushort";
-            ospType = OSP_USHORT;
-        } else if (dt == VTK_FLOAT) {
-            ospChar = "float";
-            ospType = OSP_FLOAT;
-        } else if (dt == VTK_DOUBLE) {
-            ospChar = "double";
-            ospType = OSP_DOUBLE;
-        } else {
-            ospray::Exception("ERROR: Unsupported ospray volume type " + 
-                              std::to_string(dt));
-        }
-    }
-
+        
     void CheckMemoryHere(const std::string& message, 
                          std::string debugN = "debug5");
     void CheckMemoryHere(const std::string& message, 
@@ -506,6 +468,13 @@ namespace ospray
         ospray::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(),
                                 "debug5");
         debug5 << c << "::" << f << " " << str << " Done" << std::endl;
+    }
+
+    inline void Exception(const std::string str)
+    {
+        std::cerr << str << std::endl;
+        debug1    << str << std::endl;
+        EXCEPTION1(VisItException, str.c_str()); 
     }
 
     double ProjectWorldToScreen
@@ -549,19 +518,7 @@ namespace ospray
                              unsigned char *opaqueImageColor,
                              float         *opaqueImageDepth,
                              unsigned char *&imgFinal);
-
-    void ComputeProjections(const avtViewInfo &view, 
-			    const double &aspect,
-			    const int screen[2],
-			    const double scale[3],
-			    const double &oldNearPlane, const double &oldFarPlane,
-			    vtkMatrix4x4  *model_to_screen_transform, 
-			    vtkMatrix4x4  *screen_to_model_transform, 
-			    vtkMatrix4x4  *screen_to_camera_transform,
-			    int            renderingExtents[4],
-			    double         sceneSize[2],
-			    double         dbounds[6]);
-        
+    
     void WriteArrayToPPM
         (std::string filename, const float *image, int dimX, int dimY);
 

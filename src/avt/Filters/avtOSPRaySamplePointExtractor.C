@@ -271,7 +271,7 @@ void
 avtOSPRaySamplePointExtractor::InitSampling(avtDataTree_p dt)
 {
     for (int i = 0; i < dt->GetNChildren(); ++i)
-    { ((ospray::visit::Context)(*ospray)).InitPatch(i); }
+    { ospray->InitPatch(i); }
     
     patchCount = 0;
     imageMetaPatchVector.clear();

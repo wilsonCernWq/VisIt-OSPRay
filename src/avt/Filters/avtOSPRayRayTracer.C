@@ -285,28 +285,14 @@ avtOSPRayRayTracer::Execute()
     double         sceneSize[2];
     double         dbounds[6];  // Extents of the volume in world coordinates
     {
-        GetSpatialExtents(dbounds);		
-        ospray::ComputeProjections(view, aspect, screen, scale,
-                                   oldNearPlane, oldFarPlane,
-                                   model_to_screen_transform, 
-                                   screen_to_model_transform, 
-                                   screen_to_camera_transform,
-                                   renderingExtents, sceneSize,
-                                   dbounds);
-        for (int y = 0; y < screen[1]; ++y) {
-            for (int x = 0; x < screen[0]; ++x) {
-                int index = x + y * screen[0];
-                int    screenCoord[2] = {x, y};
-                double screenDepth = opaqueImageZB[index] * 2 - 1;
-                double worldCoord[3];
-                ospray::ProjectScreenToCamera
-                    (screenCoord, screenDepth, 
-                     screen[0], screen[1],
-                     screen_to_camera_transform, 
-                     worldCoord);
-                opaqueImageDepth[index] = -worldCoord[2];
-            }
-        }        
+	GetSpatialExtents(dbounds);		
+	ospray::ComputeProjections(view, aspect, screen, scale,
+				   oldNearPlane, oldFarPlane,
+				   model_to_screen_transform, 
+				   screen_to_model_transform, 
+				   screen_to_camera_transform,
+				   renderingExtents, sceneSize,
+				   dbounds);
     }
     
     //===================================================================//
@@ -316,7 +302,7 @@ avtOSPRayRayTracer::Execute()
                             "ospout");
     // initialize ospray
     // -- multi-threading enabled
-    ospray::Initialize();
+    ospray->InitOSP();
     // camera
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
     ((ospray::visit::Camera)ospray->camera)
@@ -324,8 +310,8 @@ avtOSPRayRayTracer::Execute()
 	     view.viewAngle, view.imagePan, view.imageZoom, oldNearPlane,
 	     sceneSize, screen, renderingExtents);
     // transfer function
-    ospout << "[avrRayTracer] make ospray transfer function" 
-           << std::endl;
+    ospout  << "[avrRayTracer] make ospray transfer function" 
+            << std::endl;
     ((ospray::visit::TransferFunction)ospray->tfn)
         .Set(transferFn1D->GetTableFloat(), 
              transferFn1D->GetNumberOfTableEntries(),
@@ -362,12 +348,26 @@ avtOSPRayRayTracer::Execute()
     ren.FinalizeLights();
     ren.Set(0, 1, false, false, false);    
     // others
-    ospray::SetLightingFlag(ospray, lighting);
-    ospray::SetSpecular(ospray, materialProperties[2], materialProperties[3]);
-    ospray::SetSamplingRate(ospray, samplingRate);
-    ospray::SetScalingAndDataBounds(ospray, scale, dbounds);
-    ospray::SetActiveVariable(ospray, activeVariable);
-    ospray::SetBgBuffer(ospray, opaqueImageData, opaqueImageDepth.data(), screen);
+    ospray->SetDataBounds(dbounds);
+    ospray->SetScaling(scale);
+    ospray->SetActiveVariable(activeVariable);
+    // Set the background to OSPRay
+    for (int y = 0; y < screen[1]; ++y) {
+        for (int x = 0; x < screen[0]; ++x) {
+            int index = x + y * screen[0];
+            int    screenCoord[2] = {x, y};
+            double screenDepth = opaqueImageZB[index] * 2 - 1;
+            double worldCoord[3];
+            ospray::ProjectScreenToCamera
+                (screenCoord, screenDepth, 
+                 screen[0], screen[1],
+                 screen_to_camera_transform, 
+                 worldCoord);
+            opaqueImageDepth[index] = -worldCoord[2];
+        }
+    }
+    ospray->SetBgBuffer(opaqueImageData, opaqueImageDepth.data(), screen);
+
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    
 
@@ -701,5 +701,5 @@ avtOSPRayRayTracer::Execute()
     screen_to_model_transform->Delete();
     model_to_screen_transform->Delete();
     screen_to_camera_transform->Delete();
-    ospray::Finalize();
+    ospray->Finalize();
 }
