@@ -123,7 +123,6 @@ void ospray::Initialize(int numThreads)
         ospray_initialized = true;
     }
 }
-void ospray::Finalize(){}
 void ospray::SetLightingFlag(visit::ContextCore* core, bool lighting)
 {
   core->gradientShadingEnabled = lighting;
