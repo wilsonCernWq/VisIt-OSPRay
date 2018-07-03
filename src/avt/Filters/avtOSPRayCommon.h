@@ -50,70 +50,6 @@
 #include <vector>
 #include <map>
 
-// some constants
-#define OSP_INVALID                  5
-#define OSP_VALID                    6
-
-// ****************************************************************************
-//  Struct:  OSPVisItVolume
-//
-//  Purpose:
-//    
-//
-//  Programmer: Qi WU
-//  Creation:   
-//
-// ****************************************************************************
-
-class OSPVisItContext;
-class OSPVisItVolume 
-{
-public:
-    ospray::visit::PatchCore patch;
-
-private:
-    friend class OSPVisItContext;
-
-    OSPVisItContext *parent;
-    
-    bool                finished;      // check if this volume is initialized
-    bool                enableShading;
-    bool                enableDVR;     // Distributed Volume Renderer
-    float               specularKs;
-    float               specularNs;
-    float               samplingRate;
-    
-
-public:
-
-    OSPVisItVolume() {
-        finished      = false; 
-        enableShading = false;
-        enableDVR     = false;
-        specularKs    = 1.0f;
-        specularNs    = 15.0f;
-        samplingRate  = 3.0f;
-    }
-
-    // destructor
-    ~OSPVisItVolume() { Clean(); }    
-    void Clean() {
-        //CleanFB();
-    }
-    
-    // other function
-    void Set(int type, void *ptr, 
-             double *X, double *Y, double *Z, 
-             int nX, int nY, int nZ, 
-             double volumePBox[6], double volumeBBox[6],
-             double mtl[4], float sr, bool shading);
-    bool GetDVRFlag() { return enableDVR; }
-    void SetDVRFlag(bool mode) { enableDVR = mode; }
-    bool GetFinishedFlag() { return finished; }
-    void SetFinishedFlag(bool f) { finished = f; } 
-
-};
-
 // ****************************************************************************
 //  Struct:  OSPVisItContext
 //
@@ -140,6 +76,13 @@ public:
     OSPVisItContext() 
     {
         regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
+	finished      = false; 
+        enableShading = false;
+        enableDVR     = false;
+        specularKs    = 1.0f;
+        specularNs    = 15.0f;
+        samplingRate  = 3.0f;
+
     }
     ~OSPVisItContext() {	
         volumes.clear();
@@ -147,11 +90,9 @@ public:
 
     void Render(float xMin, float xMax, float yMin, float yMax,
                 int imgWidth, int imgHeight, 
-                float*& dest, OSPVisItVolume* volume);
+                float*& dest, int patchID);
     void InitPatch(int id);
-    OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
 
-    // parameters
     void SetScaleAndDataBounds(double s[3], double d[6]) {
 	
 	regionScaling.x = (float)s[0];
@@ -169,11 +110,6 @@ public:
     }
     
 
-    ospray::visit::CameraCore           camera;
-    ospray::visit::RendererCore         renderer;
-    ospray::visit::TransferFunctionCore tfn;
-
-
     void SetBgBuffer(unsigned char* color, float* depth, int size[2]) 
     {
         ((ospray::visit::Renderer)renderer)
@@ -181,13 +117,37 @@ public:
     }
 
 
-    std::map<int, OSPVisItVolume> volumes;
+
 
     void SetActiveVariable(const char* str) { varname = str; }
     const std::string& GetActiveVariable() const { return varname; }
+
+
+    void Set(int patchID, int type, void *ptr, 
+             double *X, double *Y, double *Z, 
+             int nX, int nY, int nZ, 
+             double volumePBox[6], double volumeBBox[6],
+             double mtl[4], float sr, bool shading);
+    bool GetDVRFlag() { return enableDVR; }
+    void SetDVRFlag(bool mode) { enableDVR = mode; }
+    bool GetFinishedFlag() { return finished; }
+    void SetFinishedFlag(bool f) { finished = f; } 
+
     
-private:
-    
+    std::map<int,         ospray::visit::PatchCore> volumes;
+    ospray::visit::CameraCore           camera;
+    ospray::visit::RendererCore         renderer;
+    ospray::visit::TransferFunctionCore tfn;
+
+
+
+    bool                finished;      // check if this volume is initialized
+    bool                enableShading;
+    bool                enableDVR;     // Distributed Volume Renderer
+    float               specularKs;
+    float               specularNs;
+    float               samplingRate;
+
     friend class OSPVisItVolume;
 
     osp::vec3f     regionScaling;
@@ -195,7 +155,7 @@ private:
     osp::box3f     bbox;
     
     double bounds[6];
-    //static bool initialized;
+
     std::string varname;
 };
 

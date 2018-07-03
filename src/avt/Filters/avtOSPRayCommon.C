@@ -135,20 +135,10 @@ void ospray::InitOSP(int numThreads)
 //
 // ****************************************************************************
 
-
-
-
-
-
-
-
-
-
-
 // We use this function to minimize interface
 void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
                              int imgWidth, int imgHeight,
-                             float*& dest, OSPVisItVolume* volume) 
+                             float*& dest, int id) 
 {
 
     ospray::visit::Camera   cam(camera);
@@ -156,10 +146,10 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
     
     cam.SetScreen(xMin, xMax, yMin, yMax);
     
-    ren.Set(*(volume->patch.model));
+    ren.Set(*(volumes[id].model));
     ren.Set(*camera);
         
-    ospray::visit::FrameBuffer fb(volume->patch.fb);
+    ospray::visit::FrameBuffer fb(volumes[id].fb);
     fb.Render(imgWidth, imgHeight,
 	      cam.GetWindowExts(0),
 	      cam.GetWindowExts(2),
@@ -172,19 +162,12 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
 void OSPVisItContext::InitPatch(int id) 
 {
     if (volumes.find(id) == volumes.end()) {
-        OSPVisItVolume v;
-        v.parent = this;
-        volumes[id] = v;
+	volumes[id] = ospray::visit::PatchCore();
     }
 }
 
-// ****************************************************************************
-//
-// OSPVolume
-//
-// ****************************************************************************
-
-void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z, 
+void OSPVisItContext::Set(int id, int type, void *ptr,
+			  double *X, double *Y, double *Z, 
                          int nX, int nY, int nZ,
                          double volumePBox[6], 
                          double volumeBBox[6], 
@@ -200,18 +183,19 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     OSPDataType osp_type;
     ospray::CheckVolumeFormat(type, str_type, osp_type);
     
-    ospray::visit::Volume volume(patch.volume);
+    ospray::visit::Volume volume(volumes[id].volume);
+
     volume.Init("visit_shared_structured_volume", osp_type, str_type,
 		(size_t)nX * (size_t)nY * (size_t)nZ, ptr);
     volume.Set(false, false, false, false, shading, samplingRate,
 	       specularKs, specularNs, X, Y, Z, nX, nY, nZ,
 	       volumePBox, volumeBBox,
-	       parent->bbox.upper,
-	       parent->bbox.lower,
-	       parent->regionScaling,
-	       *(parent->tfn));
+	       bbox.upper,
+	       bbox.lower,
+	       regionScaling,
+	       *(tfn));
     
-    ospray::visit::Model model(patch.model);
+    ospray::visit::Model model(volumes[id].model);
     model.Reset();
     model.Init();
     model.Set(*volume);
@@ -219,56 +203,6 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     finished = true;
 }
 
-/*
-// ospFrameBuffer component     
-void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
-{
-    // preparation
-    imageSize.x = width;
-    imageSize.y = height;
-
-    std::vector<float> maxDepth(width * height);
-    //
-    // The reason I use round(r * (N-1)) instead of floor(r * N) is that 
-    // during the composition phase, there will be a wired offset between
-    // rendered image and the background, which is about one pixel in size.
-    // Using round(r * (N - 1)) can remove the problem
-    //
-    // It seems this is the correct way of doing it
-    //
-    // It seems we need to also fix pan and zoom also
-    //
-    const int Xs = ((ospray::visit::Camera)parent->camera).GetWindowExts(0);
-    const int Ys = ((ospray::visit::Camera)parent->camera).GetWindowExts(2);
-    for (int i = 0; i < width; ++i) {
-    	for (int j = 0; j < height; ++j) {
-    	    maxDepth[i + j * width] = parent->renderer.bgDepthBuffer
-                [Xs + i + (Ys + j) * parent->renderer.bgSize[0]];
-    	}
-    }
-    framebufferBg = ospNewTexture2D(imageSize, OSP_TEXTURE_R32F, 
-                                    maxDepth.data(),
-                                    OSP_TEXTURE_FILTER_NEAREST);
-    ospCommit(framebufferBg);
-    ospSetObject(*(parent->renderer), "maxDepthTexture", framebufferBg);
-    ospCommit(*(parent->renderer));
-    ospRelease(framebufferBg);
-    framebufferBg = NULL;
-
-    CleanFB();
-    framebuffer = ospNewFrameBuffer(imageSize, 
-                                    OSP_FB_RGBA32F,
-                                    OSP_FB_COLOR);
-}
-void OSPVisItVolume::RenderFB() {
-    static int i = 0;
-    ospRenderFrame(framebuffer, *(parent->renderer), OSP_FB_COLOR);
-    framebufferData = (float*) ospMapFrameBuffer(framebuffer, OSP_FB_COLOR);
-}
-float* OSPVisItVolume::GetFBData() {
-    return framebufferData;
-}
-*/
 // ****************************************************************************
 //
 //

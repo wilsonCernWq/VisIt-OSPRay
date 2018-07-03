@@ -533,24 +533,24 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
                           "OSPRay Create Volume");
-            ospray->GetPatch(patch)->Set(volumeDataType, volumePointer,
-                                         X, Y, Z, nX, nY, nZ,
-                                         volumePBox, volumeBBox, 
-                                         materialProperties, 
-                                         (float)samplingRate,
-                                         lighting);
+            ospray->Set(patch, volumeDataType, volumePointer,
+			X, Y, Z, nX, nY, nZ,
+			volumePBox, volumeBBox, 
+			materialProperties, 
+			(float)samplingRate,
+			lighting);
         }
 
         // Render Volume
         {
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
-                          "OSPRay Render Volume");	
+                          "OSPRay Render Volume");
             if ((scalarRange[1] >= tFVisibleRange[0]) &&
                 (scalarRange[0] <= tFVisibleRange[1])) {
                 ospray->Render(xMin, xMax, yMin, yMax,
                                imgWidth, imgHeight, imgArray,
-                               ospray->GetPatch(patch));
+                               patch);
                 patchDrawn = 1;
                 
             }
