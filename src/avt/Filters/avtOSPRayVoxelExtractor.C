@@ -138,7 +138,7 @@ avtOSPRayVoxelExtractor::avtOSPRayVoxelExtractor(int w, int h, int d,
     clipSpaceDepth = -1;
     imgArray = NULL;                         // the image data
 
-    ospray = NULL;
+    ospray_core = NULL;
 }
 
 
@@ -229,6 +229,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     // Initialization
     //=======================================================================//
     // Flag to indicate if the patch is drawn
+    ospray::Context* ospray = (ospray::Context*)ospray_core;
     patchDrawn = 0;
     
     //=======================================================================//
@@ -290,16 +291,16 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                            << "  cell_vartypes[" << i << "] "
                            << cell_vartypes[i]   << std::endl << std::endl;
             if (rgrid->GetCellData()->GetArray(ncell_arrays-1)->GetName() !=
-                ospray->GetActiveVariable())
+                ospray->GetVariableName())
             {
                 ospray::Exception("Error: primary variable " +
-                                  ospray->GetActiveVariable() +
+                                  ospray->GetVariableName() +
                                   " not found.");		
             }
             if (cell_size[ncell_arrays-1] != 1)
             {
                 ospray::Exception("Error: non-scalar variable " +
-                                  ospray->GetActiveVariable() +
+                                  ospray->GetVariableName() +
                                   " of length " +
                                   std::to_string(cell_size[ncell_arrays-1]) +
                                   " found.");
@@ -326,16 +327,16 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                            << "  pt_vartypes[" << i << "] "
                            << pt_vartypes[i]   << std::endl << std::endl;
             if (rgrid->GetPointData()->GetArray(npt_arrays-1)->GetName() !=
-                ospray->GetActiveVariable())
+                ospray->GetVariableName())
             {
                 ospray::Exception("Error: primary variable " +
-                                  ospray->GetActiveVariable() +
+                                  ospray->GetVariableName() +
                                   " not found.");		
             }
             if (pt_size[npt_arrays-1] != 1)
             {
                 ospray::Exception("Error: non-scalar variable " +
-                                  ospray->GetActiveVariable() +
+                                  ospray->GetVariableName() +
                                   " of length " +
                                   std::to_string(pt_size[npt_arrays-1]) +
                                   " found.");
@@ -527,20 +528,16 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                    << " " << volumeBBox[5]
                    << std::endl; 
         }
-        
         // Create volume and model
         {
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
                           "OSPRay Create Volume");
-            ospray->Set(patch, volumeDataType, volumePointer,
-			X, Y, Z, nX, nY, nZ,
-			volumePBox, volumeBBox, 
-			materialProperties, 
-			(float)samplingRate,
-			lighting);
+            ospray->SetupPatch(patch, volumeDataType,
+			       (size_t)nX * (size_t)nY * (size_t)nZ,
+			       volumePointer, X, Y, Z, nX, nY, nZ,
+			       volumePBox, volumeBBox);
         }
-
         // Render Volume
         {
             StackTimer t2("avtOSPRayVoxelExtractor::"
@@ -548,9 +545,8 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                           "OSPRay Render Volume");
             if ((scalarRange[1] >= tFVisibleRange[0]) &&
                 (scalarRange[0] <= tFVisibleRange[1])) {
-                ospray->Render(xMin, xMax, yMin, yMax,
-                               imgWidth, imgHeight, imgArray,
-                               patch);
+                ospray->RenderPatch(patch, xMin, xMax, yMin, yMax,
+				    imgWidth, imgHeight, imgArray);
                 patchDrawn = 1;
                 
             }

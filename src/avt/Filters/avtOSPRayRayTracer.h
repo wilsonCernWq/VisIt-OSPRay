@@ -110,7 +110,7 @@ public:
     virtual const char   *GetDescription(void) 
                                              { return "OSPRay Ray tracing"; };
 
-    void SetOSPRay(OSPVisItContext *ptr)                    { ospray = ptr; };
+    void SetOSPRay(OSPVisItContext *ptr)               { ospray_core = ptr; };
     void SetActiveVariable(const char* s)             { activeVariable = s; };
     void SetSamplingRate(double r)                    { samplingRate = r; };
     void SetLighting(bool l)                                { lighting = l; };
@@ -124,7 +124,7 @@ public:
 protected:
     virtual void          Execute(void);
 
-    OSPVisItContext         *ospray;
+    OSPVisItContext         *ospray_core;
 
     const char*              activeVariable;
 

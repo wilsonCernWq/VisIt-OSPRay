@@ -58,12 +58,13 @@
 # include <unistd.h>
 #endif
 
-inline bool CheckThreadedBlend_MetaData() {
+static bool CheckThreadedBlend_MetaData() {
     bool use = true;
     const char* env_use = std::getenv("OSPRAY_SERIAL_BLEND");
     if (env_use) { use = atoi(env_use) <= 0; }
     return use;
 }
+
 static bool UseThreadedBlend_MetaData = CheckThreadedBlend_MetaData();
 
 std::ostream *ospray::osp_out = (ospray::visit::CheckVerbose()) ?
@@ -77,18 +78,17 @@ std::ostream *ospray::osp_err = (ospray::visit::CheckVerbose()) ?
 //
 // ****************************************************************************
 
-void OSPContext_ErrorFunc(OSPError, const char* msg)
+static void OSPContext_ErrorFunc(OSPError, const char* msg)
 { 
     osperr << "#osp: (rank " << PAR_Rank() << ")" << msg; 
 }
-void OSPContext_StatusFunc(const char* msg)
+static void OSPContext_StatusFunc(const char* msg)
 { 
     osperr << "#osp: (rank " << PAR_Rank() << ")" << msg; 
 }
+
 static bool ospray_initialized = false;
-void ospray::Finalize()
-{
-}
+
 void ospray::InitOSP(int numThreads) 
 {   
     if (!ospray_initialized) 
@@ -129,87 +129,89 @@ void ospray::InitOSP(int numThreads)
     }
 }
 
-// ****************************************************************************
-//
-// OSPRay
-//
-// ****************************************************************************
-
-// We use this function to minimize interface
-void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
-                             int imgWidth, int imgHeight,
-                             float*& dest, int id) 
+void ospray::Finalize()
 {
-
-    ospray::visit::Camera   cam(camera);
-    ospray::visit::Renderer ren(renderer);
-    
-    cam.SetScreen(xMin, xMax, yMin, yMax);
-    
-    ren.Set(*(volumes[id].model));
-    ren.Set(*camera);
-        
-    ospray::visit::FrameBuffer fb(volumes[id].fb);
-    fb.Render(imgWidth, imgHeight,
-	      cam.GetWindowExts(0),
-	      cam.GetWindowExts(2),
-	      ren->bgSize[0],
-	      ren->bgDepthBuffer,
-	      *ren,
-	      dest);
 }
 
-void OSPVisItContext::InitPatch(int id) 
+// ****************************************************************************
+//
+// OSPRay::Context
+//
+// ****************************************************************************
+
+void ospray::Context::InitPatch(const int patchID)
 {
-    if (volumes.find(id) == volumes.end()) {
-	volumes[id] = ospray::visit::PatchCore();
+    if (patches.find(patchID) == patches.end()) {
+        patches[patchID] = ospray::visit::Patch();
     }
 }
-
-void OSPVisItContext::Set(int id, int type, void *ptr,
-			  double *X, double *Y, double *Z, 
-                         int nX, int nY, int nZ,
-                         double volumePBox[6], 
-                         double volumeBBox[6], 
-                         double mtl[4], float sr,
-                         bool shading)
+void ospray::Context::SetBackgroundBuffer(const unsigned char* color, 
+					  const float* depth, 
+					  const int size[2])
 {
-    specularKs    = (float)mtl[2];
-    specularNs    = (float)mtl[3];
-    enableShading = shading;
-    samplingRate  = sr;
-
+    bgColorBuffer = color;
+    bgDepthBuffer = depth;
+    bgSize[0] = size[0];
+    bgSize[1] = size[1];
+}
+void ospray::Context::SetupPatch(const int patchID,
+				 const int vtk_type,
+				 const size_t data_size, 
+				 const void* data_ptr,
+				 const double *X,
+				 const double *Y,
+				 const double *Z, 
+				 const int nX, const int nY, const int nZ,
+				 const double dbox[6], const double cbox[6])
+    
+{
     std::string str_type;
     OSPDataType osp_type;
-    ospray::CheckVolumeFormat(type, str_type, osp_type);
-    
-    ospray::visit::Volume volume(volumes[id].volume);
-
-    volume.Init("visit_shared_structured_volume", osp_type, str_type,
-		(size_t)nX * (size_t)nY * (size_t)nZ, ptr);
-    volume.Set(false, false, false, false, shading, samplingRate,
-	       specularKs, specularNs, X, Y, Z, nX, nY, nZ,
-	       volumePBox, volumeBBox,
-	       bbox.upper,
-	       bbox.lower,
-	       regionScaling,
-	       *(tfn));
-    
-    ospray::visit::Model model(volumes[id].model);
+    ospray::CheckVolumeFormat(vtk_type, str_type, osp_type);
+    ospray::visit::Volume volume(patches[patchID].volume);
+    volume.Init("visit_shared_structured_volume",
+		osp_type, str_type, data_size, data_ptr);
+    volume.Set(useGridAccelerator,
+               adaptiveSampling,
+               preIntegration,
+               singleShade,
+               gradientShadingEnabled,
+               samplingRate, 
+               Ks, Ns,
+               X, Y, Z, nX, nY, nZ,
+               dbox, cbox,
+               osp::vec3f{(float)gbbox[0],(float)gbbox[1],(float)gbbox[2]},
+               osp::vec3f{(float)gbbox[3],(float)gbbox[4],(float)gbbox[5]},
+               osp::vec3f{(float)scale[0],(float)scale[1],(float)scale[2]},
+               tfn);    
+    ospray::visit::Model model(patches[patchID].model);
     model.Reset();
     model.Init();
-    model.Set(*volume);
-    
-    finished = true;
+    model.Set(patches[patchID].volume);
+}
+void ospray::Context::RenderPatch(const int patchID,
+				  const float xMin, const float xMax, 
+				  const float yMin, const float yMax,
+				  const int tile_w, const int tile_h,
+				  float*& dest)
+{
+    ospray::visit::Camera      cam(camera);
+    ospray::visit::Renderer    ren(renderer);
+    ospray::visit::FrameBuffer fb(patches[patchID].fb);
+    cam.SetScreen(xMin, xMax, yMin, yMax);
+    ren.Set(patches[patchID].model);
+    ren.Set(camera);
+    fb.Render(tile_w, tile_h,
+              cam.GetWindowExts(0),
+              cam.GetWindowExts(2),
+              bgSize[0],
+              bgDepthBuffer,
+              renderer, dest);
 }
 
 // ****************************************************************************
 //
-//
-//
 //  Extra Functions Defined here
-//
-//
 //
 // ****************************************************************************
 

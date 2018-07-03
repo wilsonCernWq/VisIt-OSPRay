@@ -162,7 +162,7 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     void                      SetImageZoom(double z) { imageZoom = z; }
 
     // Added by Qi (March 2018) for RayCasting:OSPRay  
-    void SetOSPRay(OSPVisItContext* o) { ospray = o; }
+    void SetOSPRay(OSPVisItContext* o) { ospray_core = o; }
     void SetSamplingRate(double r) { samplingRate = r; }
     void SetRenderingExtents(int extents[4]) 
     {
@@ -205,7 +205,7 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     double                    materialProperties[4];
 
     int                       renderingExtents[4];    
-    OSPVisItContext          *ospray;
+    OSPVisItContext          *ospray_core;
     double                    samplingRate;
 
 };

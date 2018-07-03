@@ -152,11 +152,10 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     void             GetImageDimensions
     (int &, int dims[2], int screen_ll[2], int screen_ur[2], float &, float &);
     void             GetComputedImage(float *image);
-    void             SetProcIdPatchID(int c, int p){ proc = c; patch = p; };
+    void             SetProcIdPatchID(int c, int p)   { proc = c; patch = p; };
 
-    void             SetSamplingRate(double r) 
-                                                   { samplingRate = r; };
-    void             SetOSPRay(OSPVisItContext* o) { ospray = o; };
+    void             SetSamplingRate(double r)           { samplingRate = r; };
+    void             SetOSPRay(OSPVisItContext* o)        { ospray_core = o; };
     void             SetRenderingExtents(int extents[4]) 
     {
 	renderingExtents[0] = extents[0];
@@ -212,7 +211,7 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     int              xMin, xMax, yMin, yMax;
 
     // OSPRay stuffs
-    OSPVisItContext *ospray;
+    OSPVisItContext *ospray_core;
     double           samplingRate;
 
     // Added for RayCasting OSPRay

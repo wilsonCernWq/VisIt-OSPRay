@@ -61,11 +61,75 @@
 //
 // ****************************************************************************
 
+typedef ospray::visit::ContextCore OSPVisItContext;
 namespace ospray {
     void InitOSP(int numThreads = 0);
     void Finalize();
+    struct Context : public ospray::visit::ContextCore {
+    public:
+	void SetBackgroundBuffer(const unsigned char* color,
+				 const float* depth, const int size[2]);
+	void SetSpecular(const double& k, const double& n) { Ks = k; Ns = n; }
+	void SetScaleAndDataBounds(const double v[3], const double d[6])
+	{
+	    scale[0] = v[0]; scale[1] = v[1]; scale[2] = v[2];
+	    gbbox[0] = d[0] * scale[0];
+	    gbbox[3] = d[1] * scale[0];
+	    gbbox[1] = d[2] * scale[1];
+	    gbbox[4] = d[3] * scale[1];
+	    gbbox[2] = d[4] * scale[2];
+	    gbbox[5] = d[5] * scale[2];
+	}
+	void SetVariableName(const std::string& str) { varname = str; }
+	
+	void SetSamplingRate(const double& v) { samplingRate = v; }
+	void SetAoSamples(const int v) { aoSamples = v; } 
+	void SetSpp(const int v) { spp = v; }
+
+	void SetOneSidedLighting(bool v) { oneSidedLighting = v; }
+	void SetShadowsEnabled(bool v) { shadowsEnabled = v; }
+	void SetAoTransparencyEnabled(bool v) { aoTransparencyEnabled = v; }
+	void SetUseGridAccelerator(bool v) { useGridAccelerator = v; }
+	void SetAdaptiveSampling(bool v) { adaptiveSampling = v; }
+	void SetPreIntegration(bool v) { preIntegration = v; }
+	void SetSingleShade(bool v) { singleShade = v; }
+	void SetGradientShadingEnabled(bool v) { gradientShadingEnabled = v; }
+
+	const std::string& GetVariableName() const { return varname; }
+    
+	void InitPatch(const int patchID);
+	void SetupPatch(const int patchID, const int vtk_type,
+			const size_t data_size, const void* data_ptr,
+			const double *X, const double *Y, const double *Z, 
+			const int nX, const int nY, const int nZ,
+			const double dbox[6], const double cbox[6]);
+	void RenderPatch(const int patchID,
+			 const float xMin, const float xMax, 
+			 const float yMin, const float yMax,
+			 const int tile_w, const int tile_h,
+			 float*& dest); 
+    };
+
+
+
+    
+    /*  
+    void SetScaleAndDataBounds(OSPContext _core, double s[3], double d[6])
+    {
+	visit::Context* core = (visit::Context*)_core;
+	core->SetScaleAndBounds(s, d);
+    }
+    
+
+    void SetBgBuffer(unsigned char* color, float* depth, int size[2]) 
+    {
+        ((ospray::visit::Renderer)renderer)
+            .SetBackgroundBuffer(color, depth, size);
+    }
+    */
 };
 
+/*
 class OSPVisItContext
 {
 public:
@@ -91,6 +155,15 @@ public:
     void Render(float xMin, float xMax, float yMin, float yMax,
                 int imgWidth, int imgHeight, 
                 float*& dest, int patchID);
+
+    void Set(int patchID, int type, void *ptr, 
+             double *X, double *Y, double *Z, 
+             int nX, int nY, int nZ, 
+             double volumePBox[6], double volumeBBox[6],
+             double mtl[4], float sr, bool shading);
+
+    
+
     void InitPatch(int id);
 
     void SetScaleAndDataBounds(double s[3], double d[6]) {
@@ -123,18 +196,13 @@ public:
     const std::string& GetActiveVariable() const { return varname; }
 
 
-    void Set(int patchID, int type, void *ptr, 
-             double *X, double *Y, double *Z, 
-             int nX, int nY, int nZ, 
-             double volumePBox[6], double volumeBBox[6],
-             double mtl[4], float sr, bool shading);
     bool GetDVRFlag() { return enableDVR; }
     void SetDVRFlag(bool mode) { enableDVR = mode; }
     bool GetFinishedFlag() { return finished; }
     void SetFinishedFlag(bool f) { finished = f; } 
 
     
-    std::map<int,         ospray::visit::PatchCore> volumes;
+    std::map<int,         ospray::visit::Patch> volumes;
     ospray::visit::CameraCore           camera;
     ospray::visit::RendererCore         renderer;
     ospray::visit::TransferFunctionCore tfn;
@@ -157,8 +225,9 @@ public:
     double bounds[6];
 
     std::string varname;
+    
 };
-
+*/
 #endif//AVT_OSPRAY_COMMON_H
 
 // ****************************************************************************

@@ -100,7 +100,7 @@ avtOSPRayRayTracer::avtOSPRayRayTracer() : avtRayTracerBase()
     materialProperties[2] = 0.0;
     materialProperties[3] = 15.0;
 
-    ospray = NULL;
+    ospray_core = NULL;
 }
 
 
@@ -292,31 +292,51 @@ avtOSPRayRayTracer::Execute()
 				   screen_to_camera_transform,
 				   renderingExtents, sceneSize,
 				   dbounds);
+	for (int y = 0; y < screen[1]; ++y) {
+	    for (int x = 0; x < screen[0]; ++x) {
+		int index = x + y * screen[0];
+		int    screenCoord[2] = {x, y};
+		double screenDepth = opaqueImageZB[index] * 2 - 1;
+		double worldCoord[3];
+		ospray::ProjectScreenToCamera
+		    (screenCoord, screenDepth, 
+		     screen[0], screen[1],
+		     screen_to_camera_transform, 
+		     worldCoord);
+		opaqueImageDepth[index] = -worldCoord[2];
+	    }
+	}
     }
     
     //===================================================================//
     // ospray stuffs
     //===================================================================//
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute before ospray", 
-                            "ospout");
-    // initialize ospray
-    // -- multi-threading enabled
-    ospray::InitOSP();
-    // camera
+                            "ospout");    
+
+    ospray::InitOSP(); // initialize ospray
+    ospray::Context* ospray = (ospray::Context*)ospray_core;
+
+    ospray->SetVariableName(activeVariable);    
+    ospray->SetBackgroundBuffer(opaqueImageData, opaqueImageDepth.data(), screen);
+    ospray->SetGradientShadingEnabled(lighting);
+    ospray->SetSamplingRate(samplingRate);
+    ospray->SetScaleAndDataBounds(scale, dbounds);
+    ospray->SetSpecular(materialProperties[2], materialProperties[3]);    
+    
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
-    ((ospray::visit::Camera)ospray->camera)
-        .Set(view.orthographic, view.camera, view.focus, view.viewUp,
-	     view.viewAngle, view.imagePan, view.imageZoom, oldNearPlane,
-	     sceneSize, screen, renderingExtents);
-    // transfer function
-    ospout  << "[avrRayTracer] make ospray transfer function" 
-            << std::endl;
-    ((ospray::visit::TransferFunction)ospray->tfn)
-        .Set(transferFn1D->GetTableFloat(), 
-             transferFn1D->GetNumberOfTableEntries(),
-             transferFn1D->GetMin(),
-             transferFn1D->GetMax());
-    // renderer
+    ospray::visit::Camera cam(ospray->camera);
+    cam.Set(view.orthographic, view.camera, view.focus, view.viewUp,
+	    view.viewAngle, view.imagePan, view.imageZoom, oldNearPlane,
+	    sceneSize, screen, renderingExtents);
+
+    ospout << "[avrRayTracer] make ospray transfer function" << std::endl;
+    ospray::visit::TransferFunction tfn(ospray->tfn);
+    tfn.Set(transferFn1D->GetTableFloat(),
+	    transferFn1D->GetNumberOfTableEntries(),
+	    transferFn1D->GetMin(),
+	    transferFn1D->GetMax());
+    
     ospout << "[avrRayTracer] make ospray renderer" << std::endl;
     ospray::visit::Renderer ren(ospray->renderer);
     ren.Init();
@@ -347,33 +367,6 @@ avtOSPRayRayTracer::Execute()
     }    
     ren.FinalizeLights();
     ren.Set(0, 1, false, false, false);
-    
-    // others
-    ospray->SetScaleAndDataBounds(scale, dbounds);
-    ospray->SetActiveVariable(activeVariable);
-
-    //
-    // Capture background
-    //
-    // int bufferScreenExtents[4] = {0,screen[0],0,screen[1]};
-    // Set the background to OSPRay
-    for (int y = 0; y < screen[1]; ++y) {
-        for (int x = 0; x < screen[0]; ++x) {
-            int index = x + y * screen[0];
-            int    screenCoord[2] = {x, y};
-            double screenDepth = opaqueImageZB[index] * 2 - 1;
-            double worldCoord[3];
-            ospray::ProjectScreenToCamera
-                (screenCoord, screenDepth, 
-                 screen[0], screen[1],
-                 screen_to_camera_transform, 
-                 worldCoord);
-            opaqueImageDepth[index] = -worldCoord[2];
-        }
-    }
-    ospray->SetBgBuffer(opaqueImageData, opaqueImageDepth.data(), screen);
-
-    // check memory
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    
 
@@ -399,7 +392,7 @@ avtOSPRayRayTracer::Execute()
     //extractor.SetImageZoom(view.imageZoom);
 
 
-    extractor.SetOSPRay(ospray);
+    extractor.SetOSPRay(ospray_core);
     extractor.SetRenderingExtents(renderingExtents); // rendered region
     extractor.SetViewInfo(view);
     extractor.SetMVPMatrix(model_to_screen_transform);
