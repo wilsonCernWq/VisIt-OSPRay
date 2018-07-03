@@ -361,14 +361,14 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 
         //
         // Compositing Setup
-		//
+	//
         slivrVoxelExtractor->SetGridsAreInWorldSpace(
-            rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
+            rectilinearGridsAreInWorldSpace, view, aspect, xform);
 
         slivrVoxelExtractor->setDepthBuffer(depthBuffer,
-									 bufferExtents[1]*bufferExtents[3]);
+					    bufferExtents[1]*bufferExtents[3]);
         slivrVoxelExtractor->setRGBBuffer(rgbColorBuffer,
-									 bufferExtents[1],bufferExtents[3]);
+					  bufferExtents[1],bufferExtents[3]);
         slivrVoxelExtractor->setBufferExtents(bufferExtents);
 
         slivrVoxelExtractor->SetViewDirection(view_direction);

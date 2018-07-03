@@ -377,36 +377,31 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         }
 
         //-----------------------------
-        // Compositing Setup
+        // Extractor Setup
         //-----------------------------	
         osprayVoxelExtractor->SetProcIdPatchID(PAR_Rank(), num);
 
-        osprayVoxelExtractor->SetGridsAreInWorldSpace
-            (rectilinearGridsAreInWorldSpace, viewInfo, aspect, xform);
-
-        //osprayVoxelExtractor->SetDepthBuffer(depthBuffer,
-	//                                 bufferExtents[1] * bufferExtents[3]);
-        //osprayVoxelExtractor->SetRGBBuffer(rgbColorBuffer,
-        //                                   bufferExtents[1], bufferExtents[3]);
-        //osprayVoxelExtractor->SetBufferExtents(bufferExtents);
-
-        osprayVoxelExtractor->SetViewDirection(viewDirection);
+        osprayVoxelExtractor->SetOSPRay(ospray);
+	osprayVoxelExtractor->SetViewInfo(viewInfo);
+        osprayVoxelExtractor->SetSamplingRate(samplingRate);       
+        osprayVoxelExtractor->SetRenderingExtents(renderingExtents);
+		
+        //osprayVoxelExtractor->SetViewDirection(viewDirection);
         osprayVoxelExtractor->SetMVPMatrix(modelViewProj);
-        //osprayVoxelExtractor->SetClipPlanes(clipPlanes);
-        osprayVoxelExtractor->SetPanPercentages(panPercentage);
-        //osprayVoxelExtractor->SetDepthExtents(depthExtents);
+        //osprayVoxelExtractor->SetPanPercentages(panPercentage);
 
         osprayVoxelExtractor->SetLighting(lighting);
 
         osprayVoxelExtractor->SetMatProperties(materialProperties);
-        //osprayVoxelExtractor->SetTransferFn(transferFn1D);
 
-        osprayVoxelExtractor->SetImageZoom(imageZoom);
-        osprayVoxelExtractor->SetRendererSampleRate(rendererSampleRate);       
-        osprayVoxelExtractor->SetRenderingExtents(renderingExtents);
+        //osprayVoxelExtractor->SetImageZoom(imageZoom);
 
-        osprayVoxelExtractor->SetOSPRay(ospray);
 
+	// Note (Qi): probably not necessary
+        osprayVoxelExtractor->SetGridsAreInWorldSpace
+            (rectilinearGridsAreInWorldSpace, view, aspect, xform);
+
+	
         //-----------------------------
         // Extract
         //-----------------------------

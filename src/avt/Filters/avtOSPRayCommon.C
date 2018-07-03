@@ -132,7 +132,7 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
 {
 
     ((ospray::visit::Camera)camera).SetScreen(xMin, xMax, yMin, yMax);
-    ((ospray::visit::Renderer)renderer).Set(volume->GetWorld());
+    ((ospray::visit::Renderer)renderer).Set(*(volume->patch.model));
     ((ospray::visit::Renderer)renderer).Set(*camera);
     volume->InitFB(imgWidth, imgHeight);
     volume->RenderFB();
@@ -174,179 +174,200 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     // to speed things up. Until I found the reason of crashing
     
     // finished = false;
-    if (ptr != dataPtr) {
-	finished = false;
-        ospout << "[ospray] update data" << std::endl;
-    };
-    if (!finished) {
-        // Because we initialized the volume each frame
-        // we need to removed the old volume from model first
-        volumeType = OSP_INVALID;
-        InitVolume(type, ptr, nX, nY, nZ, OSP_SHARED_STRUCTURED_VOLUME);
-    }
-    SetVolume(X, Y, Z, nX, nY, nZ,
-	      volumePBox, volumeBBox);    
-    if (!finished) {
-        worldType = OSP_INVALID; 
-        InitWorld();
-        SetWorld();
-    }
+    // if (ptr != dataPtr) {
+    // 	finished = false;
+    //     ospout << "[ospray] update data" << std::endl;
+    // };
+    // if (!finished) {
+    //     // Because we initialized the volume each frame
+    //     // we need to removed the old volume from model first
+    //     volumeType = OSP_INVALID;
+    //     InitVolume(type, ptr, nX, nY, nZ, OSP_SHARED_STRUCTURED_VOLUME);
+    // }
+    // SetVolume(X, Y, Z, nX, nY, nZ,
+    // 	      volumePBox, volumeBBox);    
+    //if (!finished) {
+        //worldType = OSP_INVALID; 
+        //InitWorld();
+        //SetWorld();
+    //}
+
+    std::string str_type;
+    OSPDataType osp_type;
+    ospray::CheckVolumeFormat(type, str_type, osp_type);
+    
+    ospray::visit::Volume volume(patch.volume);
+    volume.Init("visit_shared_structured_volume", osp_type, str_type,
+		(size_t)nX * (size_t)nY * (size_t)nZ, ptr);
+    volume.Set(false, false, false, false, shading, samplingRate,
+	       specularKs, specularNs, X, Y, Z, nX, nY, nZ,
+	       volumePBox, volumeBBox,
+	       parent->bbox.upper,
+	       parent->bbox.lower,
+	       parent->regionScaling,
+	       *(parent->tfn));
+    
+    ospray::visit::Model model(patch.model);
+    model.Reset();
+    model.Init();
+    model.Set(*volume);
+    
     finished = true;
 }
 
 // ospModel component
-void OSPVisItVolume::InitWorld() {
-    if (worldType == OSP_INVALID) {
-        CleanWorld();
-        worldType = OSP_VALID;
-        world = ospNewModel();
-    }
-}
-void OSPVisItVolume::SetWorld() {
-    if (world != NULL) { 
-        ospAddVolume(world, volume);
-        ospCommit(world);
-    }
-}
+// void OSPVisItVolume::InitWorld() {
+//     if (worldType == OSP_INVALID) {
+//         CleanWorld();
+//         worldType = OSP_VALID;
+//         world = ospNewModel();
+//     }
+// }
+// void OSPVisItVolume::SetWorld() {
+//     if (world != NULL) { 
+//         ospAddVolume(world, volume);
+//         ospCommit(world);
+//     }
+// }
 
-// ospVolume component
-void OSPVisItVolume::InitVolume(int dt, void *ptr,
-				int nX, int nY, int nZ,
-				unsigned char type) {
-    if (volumeType != type) { // only initialize once
-        CleanVolume();
-        volumeType = type;
-        switch (type) {
-        case (OSP_BLOCK_BRICKED_VOLUME):
-            volume = ospNewVolume("block_bricked_volume"); 
-            break;
-        case (OSP_SHARED_STRUCTURED_VOLUME):
-            volume = ospNewVolume("visit_shared_structured_volume"); 
-            break;
-        default:
-            debug1 << "ERROR: ospray volume not initialized"
-                   << std::endl;
-            volumeType = OSP_INVALID;
-            EXCEPTION1(VisItException, 
-                       "ERROR: ospray volume not initialized");
-        }
-	// calculate volume data type
-	if (dt == VTK_UNSIGNED_CHAR) {
-	    dataType = "uchar";
-	    voxelDataType = OSP_UCHAR;
-	} else if (dt ==VTK_SHORT) {
-	    dataType = "short";
-	    voxelDataType = OSP_SHORT;
-	} else if (dt ==VTK_UNSIGNED_SHORT) {
-	    dataType = "ushort";
-	    voxelDataType = OSP_USHORT;
-	} else if (dt ==VTK_FLOAT) {
-	    dataType = "float";
-	    voxelDataType = OSP_FLOAT;
-	} else if (dt ==VTK_DOUBLE) {
-	    dataType = "double";
-	    voxelDataType = OSP_DOUBLE;
-	} else {
-	    debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
-	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
-	}
-	ospout << "[ospray] data type " << dataType << std::endl;
-	// assign data pointer
-	dataPtr = ptr;
-	// commit voxel data
-	if (voxelData != NULL) { 
-	    debug1 << "ERROR: Found VoxelData to be non-empty "
-		   << "while creating new volume" << std::endl;
-	    EXCEPTION1(VisItException, 
-		       "ERROR: Found VoxelData to be non-empty "
-		       "while creating new volume");
-	}
-	voxelSize = nX * nY * nZ;
-	voxelData = ospNewData(voxelSize, voxelDataType,
-			       dataPtr, OSP_DATA_SHARED_BUFFER);
-	ospSetString(volume, "voxelType", dataType.c_str());	
-	ospSetData(volume, "voxelData", voxelData);
-    }
-}
+// // ospVolume component
+// void OSPVisItVolume::InitVolume(int dt, void *ptr,
+// 				int nX, int nY, int nZ,
+// 				unsigned char type) {
+//     if (volumeType != type) { // only initialize once
+//         CleanVolume();
+//         volumeType = type;
+//         switch (type) {
+//         case (OSP_BLOCK_BRICKED_VOLUME):
+//             volume = ospNewVolume("block_bricked_volume"); 
+//             break;
+//         case (OSP_SHARED_STRUCTURED_VOLUME):
+//             volume = ospNewVolume("visit_shared_structured_volume"); 
+//             break;
+//         default:
+//             debug1 << "ERROR: ospray volume not initialized"
+//                    << std::endl;
+//             volumeType = OSP_INVALID;
+//             EXCEPTION1(VisItException, 
+//                        "ERROR: ospray volume not initialized");
+//         }
+// 	// calculate volume data type
+// 	if (dt == VTK_UNSIGNED_CHAR) {
+// 	    dataType = "uchar";
+// 	    voxelDataType = OSP_UCHAR;
+// 	} else if (dt ==VTK_SHORT) {
+// 	    dataType = "short";
+// 	    voxelDataType = OSP_SHORT;
+// 	} else if (dt ==VTK_UNSIGNED_SHORT) {
+// 	    dataType = "ushort";
+// 	    voxelDataType = OSP_USHORT;
+// 	} else if (dt ==VTK_FLOAT) {
+// 	    dataType = "float";
+// 	    voxelDataType = OSP_FLOAT;
+// 	} else if (dt ==VTK_DOUBLE) {
+// 	    dataType = "double";
+// 	    voxelDataType = OSP_DOUBLE;
+// 	} else {
+// 	    debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
+// 	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
+// 	}
+// 	ospout << "[ospray] data type " << dataType << std::endl;
+// 	// assign data pointer
+// 	dataPtr = ptr;
+// 	// commit voxel data
+// 	if (voxelData != NULL) { 
+// 	    debug1 << "ERROR: Found VoxelData to be non-empty "
+// 		   << "while creating new volume" << std::endl;
+// 	    EXCEPTION1(VisItException, 
+// 		       "ERROR: Found VoxelData to be non-empty "
+// 		       "while creating new volume");
+// 	}
+// 	voxelSize = nX * nY * nZ;
+// 	voxelData = ospNewData(voxelSize, voxelDataType,
+// 			       dataPtr, OSP_DATA_SHARED_BUFFER);
+// 	ospSetString(volume, "voxelType", dataType.c_str());	
+// 	ospSetData(volume, "voxelData", voxelData);
+//     }
+// }
 
-void 
-OSPVisItVolume::SetVolume(double *X, double *Y, double *Z, 
-                          int nX, int nY, int nZ,
-                          double volumePBox[6], double volumeBBox[6]) 
-{
-    // assign structure
-    regionStart.x   = volumePBox[0];
-    regionStart.y   = volumePBox[1];
-    regionStart.z   = volumePBox[2];
-    regionStop.x    = volumePBox[3];
-    regionStop.y    = volumePBox[4];
-    regionStop.z    = volumePBox[5];
-    regionSize.x    = nX;
-    regionSize.y    = nY;
-    regionSize.z    = nZ;
-    regionSpacing.x = (regionStop.x-regionStart.x)/((float)regionSize.x-1.0f);
-    regionSpacing.y = (regionStop.y-regionStart.y)/((float)regionSize.y-1.0f);
-    regionSpacing.z = (regionStop.z-regionStart.z)/((float)regionSize.z-1.0f);
-    regionLowerClip.x = volumeBBox[0];
-    regionLowerClip.y = volumeBBox[1];
-    regionLowerClip.z = volumeBBox[2];
-    regionUpperClip.x = volumeBBox[3];
-    regionUpperClip.y = volumeBBox[4];
-    regionUpperClip.z = volumeBBox[5];
+// void 
+// OSPVisItVolume::SetVolume(double *X, double *Y, double *Z, 
+//                           int nX, int nY, int nZ,
+//                           double volumePBox[6], double volumeBBox[6]) 
+// {
+//     // assign structure
+//     regionStart.x   = volumePBox[0];
+//     regionStart.y   = volumePBox[1];
+//     regionStart.z   = volumePBox[2];
+//     regionStop.x    = volumePBox[3];
+//     regionStop.y    = volumePBox[4];
+//     regionStop.z    = volumePBox[5];
+//     regionSize.x    = nX;
+//     regionSize.y    = nY;
+//     regionSize.z    = nZ;
+//     regionSpacing.x = (regionStop.x-regionStart.x)/((float)regionSize.x-1.0f);
+//     regionSpacing.y = (regionStop.y-regionStart.y)/((float)regionSize.y-1.0f);
+//     regionSpacing.z = (regionStop.z-regionStart.z)/((float)regionSize.z-1.0f);
+//     regionLowerClip.x = volumeBBox[0];
+//     regionLowerClip.y = volumeBBox[1];
+//     regionLowerClip.z = volumeBBox[2];
+//     regionUpperClip.x = volumeBBox[3];
+//     regionUpperClip.y = volumeBBox[4];
+//     regionUpperClip.z = volumeBBox[5];
 
-    // other objects
-    ospSetObject(volume, "transferFunction", *(parent->tfn));
+//     // other objects
+//     ospSetObject(volume, "transferFunction", *(parent->tfn));
 
-    // commit volume
-    // -- no lighting by default
-    ospout << "[ospray] setting specular value to " << specularKs << std::endl;
-    osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularKs;
-    ospSetVec3f(volume, "specular", Ks);
-    ospSet1f(volume, "Ns", specularNs);
-    ospSet1i(volume, "gradientShadingEnabled", (int)enableShading);
-    // -- other properties
-    osp::vec3f scaledBBoxLower;
-    osp::vec3f scaledBBoxUpper;
-    osp::vec3f scaledSpacing;
-    osp::vec3f scaledOrigin;
-    osp::vec3f scaledGlobalBBoxLower;
-    osp::vec3f scaledGlobalBBoxUpper;
-    scaledGlobalBBoxLower.x = parent->bounds[0] * regionScaling.x;
-    scaledGlobalBBoxUpper.x = parent->bounds[1] * regionScaling.x;
-    scaledGlobalBBoxLower.y = parent->bounds[2] * regionScaling.y;
-    scaledGlobalBBoxUpper.y = parent->bounds[3] * regionScaling.y;
-    scaledGlobalBBoxLower.z = parent->bounds[4] * regionScaling.z;
-    scaledGlobalBBoxUpper.z = parent->bounds[5] * regionScaling.z;
-    // -- x
-    scaledBBoxLower.x = regionLowerClip.x * parent->regionScaling.x;
-    scaledBBoxUpper.x = regionUpperClip.x * parent->regionScaling.x;
-    scaledSpacing.x   = regionSpacing.x   * parent->regionScaling.x;
-    scaledOrigin.x    = regionStart.x     * parent->regionScaling.x;
-    // -- y
-    scaledBBoxLower.y = regionLowerClip.y * parent->regionScaling.y;
-    scaledBBoxUpper.y = regionUpperClip.y * parent->regionScaling.y;
-    scaledSpacing.y   = regionSpacing.y   * parent->regionScaling.y;
-    scaledOrigin.y    = regionStart.y     * parent->regionScaling.y;
-    // -- z
-    scaledBBoxLower.z = regionLowerClip.z * parent->regionScaling.z;
-    scaledBBoxUpper.z = regionUpperClip.z * parent->regionScaling.z;
-    scaledSpacing.z   = regionSpacing.z   * parent->regionScaling.z;
-    scaledOrigin.z    = regionStart.z     * parent->regionScaling.z;
-    // -- commit ospray
-    ospSet1i(volume, "useGridAccelerator", 0);
-    ospSetVec3f(volume, "volumeClippingBoxLower", scaledBBoxLower);
-    ospSetVec3f(volume, "volumeClippingBoxUpper", scaledBBoxUpper);
-    ospSetVec3f(volume, "gridSpacing", scaledSpacing);
-    ospSetVec3f(volume, "gridOrigin",  scaledOrigin);
-    ospSetVec3i(volume, "dimensions",  regionSize);
-    ospSet1f(volume, "samplingRate", samplingRate); 
-    ospSet1i(volume, "adaptiveSampling", 0);
-    ospSet1i(volume, "preIntegration", 0);
-    ospSet1i(volume, "singleShade", 0);
-    ospSetVec3f(volume, "volumeGlobalBoundingBoxLower", scaledGlobalBBoxLower);
-    ospSetVec3f(volume, "volumeGlobalBoundingBoxUpper", scaledGlobalBBoxUpper);
-    ospCommit(volume);
-}
+//     // commit volume
+//     // -- no lighting by default
+//     ospout << "[ospray] setting specular value to " << specularKs << std::endl;
+//     osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularKs;
+//     ospSetVec3f(volume, "specular", Ks);
+//     ospSet1f(volume, "Ns", specularNs);
+//     ospSet1i(volume, "gradientShadingEnabled", (int)enableShading);
+//     // -- other properties
+//     osp::vec3f scaledBBoxLower;
+//     osp::vec3f scaledBBoxUpper;
+//     osp::vec3f scaledSpacing;
+//     osp::vec3f scaledOrigin;
+//     osp::vec3f scaledGlobalBBoxLower;
+//     osp::vec3f scaledGlobalBBoxUpper;
+//     scaledGlobalBBoxLower.x = parent->bounds[0] * regionScaling.x;
+//     scaledGlobalBBoxUpper.x = parent->bounds[1] * regionScaling.x;
+//     scaledGlobalBBoxLower.y = parent->bounds[2] * regionScaling.y;
+//     scaledGlobalBBoxUpper.y = parent->bounds[3] * regionScaling.y;
+//     scaledGlobalBBoxLower.z = parent->bounds[4] * regionScaling.z;
+//     scaledGlobalBBoxUpper.z = parent->bounds[5] * regionScaling.z;
+//     // -- x
+//     scaledBBoxLower.x = regionLowerClip.x * parent->regionScaling.x;
+//     scaledBBoxUpper.x = regionUpperClip.x * parent->regionScaling.x;
+//     scaledSpacing.x   = regionSpacing.x   * parent->regionScaling.x;
+//     scaledOrigin.x    = regionStart.x     * parent->regionScaling.x;
+//     // -- y
+//     scaledBBoxLower.y = regionLowerClip.y * parent->regionScaling.y;
+//     scaledBBoxUpper.y = regionUpperClip.y * parent->regionScaling.y;
+//     scaledSpacing.y   = regionSpacing.y   * parent->regionScaling.y;
+//     scaledOrigin.y    = regionStart.y     * parent->regionScaling.y;
+//     // -- z
+//     scaledBBoxLower.z = regionLowerClip.z * parent->regionScaling.z;
+//     scaledBBoxUpper.z = regionUpperClip.z * parent->regionScaling.z;
+//     scaledSpacing.z   = regionSpacing.z   * parent->regionScaling.z;
+//     scaledOrigin.z    = regionStart.z     * parent->regionScaling.z;
+//     // -- commit ospray
+//     ospSet1i(volume, "useGridAccelerator", 0);
+//     ospSetVec3f(volume, "volumeClippingBoxLower", scaledBBoxLower);
+//     ospSetVec3f(volume, "volumeClippingBoxUpper", scaledBBoxUpper);
+//     ospSetVec3f(volume, "gridSpacing", scaledSpacing);
+//     ospSetVec3f(volume, "gridOrigin",  scaledOrigin);
+//     ospSetVec3i(volume, "dimensions",  regionSize);
+//     ospSet1f(volume, "samplingRate", samplingRate); 
+//     ospSet1i(volume, "adaptiveSampling", 0);
+//     ospSet1i(volume, "preIntegration", 0);
+//     ospSet1i(volume, "singleShade", 0);
+//     ospSetVec3f(volume, "volumeGlobalBoundingBoxLower", scaledGlobalBBoxLower);
+//     ospSetVec3f(volume, "volumeGlobalBoundingBoxUpper", scaledGlobalBBoxUpper);
+//     ospCommit(volume);
+// }
 
 // ospFrameBuffer component     
 void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
@@ -421,6 +442,31 @@ float* OSPVisItVolume::GetFBData() {
 //
 //
 // ****************************************************************************
+
+void ospray::CheckVolumeFormat(const int dt,
+			       std::string& str_type,
+			       OSPDataType& osp_type)
+{
+    if (dt == VTK_UNSIGNED_CHAR) {
+	str_type = "uchar";
+	osp_type = OSP_UCHAR;
+    } else if (dt == VTK_SHORT) {
+	str_type = "short";
+	osp_type = OSP_SHORT;
+    } else if (dt == VTK_UNSIGNED_SHORT) {
+	str_type = "ushort";
+	osp_type = OSP_USHORT;
+    } else if (dt == VTK_FLOAT) {
+	str_type = "float";
+	osp_type = OSP_FLOAT;
+    } else if (dt == VTK_DOUBLE) {
+	str_type = "double";
+	osp_type = OSP_DOUBLE;
+    } else {
+	ospray::Exception("ERROR: Unsupported ospray volume type");
+    }
+    ospout << "[ospray] data type " << str_type << std::endl;
+}
 
 void ospray::ComputeProjections(const avtViewInfo &view, 
 				const double &aspect,
@@ -724,9 +770,6 @@ ospray::ProjectScreenToCamera(const int screenCoord[2], const double z,
         1.0};
     imvp->MultiplyPoint(clipHCoord, cameraHCoord);
     if (cameraHCoord[3] == 0) {
-        debug5 << "ProjectScreenToWorld "
-               << "Zero Division During Projection" 
-               << std::endl;
         std::cerr << "world coordinates: (" 
                   << cameraHCoord[0] << ", " 
                   << cameraHCoord[1] << ", " 
@@ -736,9 +779,9 @@ ospray::ProjectScreenToCamera(const int screenCoord[2], const double z,
                   << clipHCoord[0] << ", " 
                   << clipHCoord[1] << ", " 
                   << clipHCoord[2] << ", "
-                  << clipHCoord[3] << std::endl;
-        std::cerr << "Matrix: " << *imvp << std::endl;
-        EXCEPTION1(VisItException, "Zero Division During Projection");
+                  << clipHCoord[3] << std::endl
+		  << "Matrix: " << *imvp << std::endl;
+	ospray::Exception("Zero Division During Projection");
     }
     
     // normalize world space coordinate	
@@ -838,68 +881,68 @@ ospray::CompositeBackground(int screen[2],
                                            opaqueImageColor,
                                            opaqueImageDepth,
                                            imgFinal);
-    } else {
-        for (int y = 0; y < screen[1]; y++)
-        {
-            for (int x = 0; x < screen[0]; x++)
-            {
-                int indexScreen     = y * screen[0] + x;
-                int indexComposited =
-                    (y - compositedImageExtents[2]) * compositedImageWidth +
-                    (x - compositedImageExtents[0]);
+	return;
+    } 
+    for (int y = 0; y < screen[1]; y++)
+    {
+	for (int x = 0; x < screen[0]; x++)
+	{
+	    int indexScreen     = y * screen[0] + x;
+	    int indexComposited =
+		(y - compositedImageExtents[2]) * compositedImageWidth +
+		(x - compositedImageExtents[0]);
 
-                bool insideComposited = 
-                    ((x >= compositedImageExtents[0] && 
-                      x < compositedImageExtents[1]) &&
-                     (y >= compositedImageExtents[2] && 
-                      y < compositedImageExtents[3]));
+	    bool insideComposited = 
+		((x >= compositedImageExtents[0] && 
+		  x < compositedImageExtents[1]) &&
+		 (y >= compositedImageExtents[2] && 
+		  y < compositedImageExtents[3]));
 
-                if (insideComposited)
-                {
-                    if (compositedImageBuffer[indexComposited*4 + 3] == 0)
-                    {
-                        // No data from rendering here! - Good
-                        imgFinal[indexScreen * 3 + 0] = 
-                            opaqueImageColor[indexScreen * 3 + 0];
-                        imgFinal[indexScreen * 3 + 1] = 
-                            opaqueImageColor[indexScreen * 3 + 1];
-                        imgFinal[indexScreen * 3 + 2] = 
-                            opaqueImageColor[indexScreen * 3 + 2];
-                    }
-                    else
-                    {
-                        // Volume in front
-                        float alpha = 
-                            (1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
-                        imgFinal[indexScreen * 3 + 0] = 
-                            CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
-                                  compositedImageBuffer[indexComposited * 4 + 0] *
-                                  255.f,
-                                  0.f, 255.f);
-                        imgFinal[indexScreen * 3 + 1] = 
-                            CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
-                                  compositedImageBuffer[indexComposited * 4 + 1] *
-                                  255.f,
-                                  0.f, 255.f);
-                        imgFinal[indexScreen * 3 + 2] =
-                            CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
-                                  compositedImageBuffer[indexComposited * 4 + 2] *
-                                  255.f,
-                                  0.f, 255.f);
-                    }
-                }
-                else
-                {
-                    // Outside bounding box: Use the background : Good
-                    imgFinal[indexScreen * 3 + 0] = 
-                        opaqueImageColor[indexScreen * 3 + 0];
-                    imgFinal[indexScreen * 3 + 1] =
-                        opaqueImageColor[indexScreen * 3 + 1];
-                    imgFinal[indexScreen * 3 + 2] =
-                        opaqueImageColor[indexScreen * 3 + 2];
-                }
-            }
-        }
+	    if (insideComposited)
+	    {
+		if (compositedImageBuffer[indexComposited*4 + 3] == 0)
+		{
+		    // No data from rendering here! - Good
+		    imgFinal[indexScreen * 3 + 0] = 
+			opaqueImageColor[indexScreen * 3 + 0];
+		    imgFinal[indexScreen * 3 + 1] = 
+			opaqueImageColor[indexScreen * 3 + 1];
+		    imgFinal[indexScreen * 3 + 2] = 
+			opaqueImageColor[indexScreen * 3 + 2];
+		}
+		else
+		{
+		    // Volume in front
+		    float alpha = 
+			(1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
+		    imgFinal[indexScreen * 3 + 0] = 
+			CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
+			      compositedImageBuffer[indexComposited * 4 + 0] *
+			      255.f,
+			      0.f, 255.f);
+		    imgFinal[indexScreen * 3 + 1] = 
+			CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
+			      compositedImageBuffer[indexComposited * 4 + 1] *
+			      255.f,
+			      0.f, 255.f);
+		    imgFinal[indexScreen * 3 + 2] =
+			CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
+			      compositedImageBuffer[indexComposited * 4 + 2] *
+			      255.f,
+			      0.f, 255.f);
+		}
+	    }
+	    else
+	    {
+		// Outside bounding box: Use the background : Good
+		imgFinal[indexScreen * 3 + 0] = 
+		    opaqueImageColor[indexScreen * 3 + 0];
+		imgFinal[indexScreen * 3 + 1] =
+		    opaqueImageColor[indexScreen * 3 + 1];
+		imgFinal[indexScreen * 3 + 2] =
+		    opaqueImageColor[indexScreen * 3 + 2];
+	    }
+	}
     }
 }
 

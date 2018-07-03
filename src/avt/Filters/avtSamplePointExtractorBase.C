@@ -190,7 +190,7 @@ avtSamplePointExtractorBase::SetRectilinearGridsAreInWorldSpace(bool val,
                  const avtViewInfo &v, double a)
 {
     rectilinearGridsAreInWorldSpace = val;
-    viewInfo = v;
+    view = v;
     aspect = a;
 }
 

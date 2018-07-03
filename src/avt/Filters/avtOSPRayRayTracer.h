@@ -95,6 +95,9 @@ class   vtkMatrix4x4;
 //    Pascal Grosset, Fri Sep 20 2013
 //    Added ray casting slivr & trilinear interpolation
 //
+//    Qi Wu, Sun Jul 1 2018
+//    Added support for ospray volume rendering.
+//
 // ****************************************************************************
 
 class AVTFILTERS_API avtOSPRayRayTracer : public avtRayTracerBase
@@ -107,26 +110,23 @@ public:
     virtual const char   *GetDescription(void) 
                                              { return "OSPRay Ray tracing"; };
 
-    void                  SetLighting(bool l) { lighting = l; };
-    void                  SetLightInfo(const LightList& l) { lightList = l; };
+    void SetOSPRay(OSPVisItContext *ptr)                    { ospray = ptr; };
+    void SetActiveVariable(const char* s)             { activeVariable = s; };
+    void SetSamplingRate(double r)                    { samplingRate = r; };
+    void SetLighting(bool l)                                { lighting = l; };
+    void SetLightInfo(const LightList& l)                  { lightList = l; };
+
     void                  SetMatProperties(double mp[4]) 
                    { for (int i=0; i<4; i++) materialProperties[i] = mp[i]; };
     void                  SetViewDirection(double *vd)
                         { for (int i=0; i<3; i++) viewDirection[i] = vd[i]; };
-    void                  SetRendererSampleRate(double r)
-                                                  { rendererSampleRate = r; };
-    void                  SetOSPRay(OSPVisItContext *ptr)   { ospray = ptr; };
-    void                  SetActiveVariable(const char* s)
-                                                      { activeVariable = s; };
-	
-protected:
-    OSPVisItContext *ospray;
 
+protected:
     virtual void          Execute(void);
 
-    avtOSPRayImageCompositor imgComm;
+    OSPVisItContext         *ospray;
 
-    const char*           activeVariable;
+    const char*              activeVariable;
 
     bool                  lighting;
     LightList             lightList;
@@ -134,7 +134,9 @@ protected:
     double                materialProperties[4];
     double                viewDirection[3];
 
-    double                rendererSampleRate;
+    double                samplingRate;
+
+    avtOSPRayImageCompositor imgComm;
 };
 
 #endif

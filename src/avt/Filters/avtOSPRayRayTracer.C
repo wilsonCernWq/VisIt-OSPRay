@@ -235,11 +235,14 @@ avtOSPRayRayTracer::Execute()
     // Start of original pipeline
     //======================================================================//
     bool parallelOn = (imgComm.GetParSize() == 1) ? false : true;
+    /* dont need rayfoo for ospray */
+    /*
     if (rayfoo == NULL)
     {
         debug1 << "Never set ray function for ray tracer." << endl;
         EXCEPTION0(ImproperUseException);
     }
+    */
 
     //
     // First we need to transform all of domains into camera space.
@@ -267,9 +270,6 @@ avtOSPRayRayTracer::Execute()
     //======================================================================//
     // Compute Projection
     //======================================================================//
-    //
-    // Before Rendering
-    //
     vtkImageData  *opaqueImageVTK =
 	opaqueImage->GetImage().GetImageVTK();
     unsigned char *opaqueImageData =
@@ -347,8 +347,7 @@ avtOSPRayRayTracer::Execute()
     ren.Set(0, 1, false, false, false);
     
     // others
-    ospray->SetDataBounds(dbounds);
-    ospray->SetScaling(scale);
+    ospray->SetScaleAndDataBounds(scale, dbounds);
     ospray->SetActiveVariable(activeVariable);
 
     //
@@ -376,10 +375,9 @@ avtOSPRayRayTracer::Execute()
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
                             "ospout");    
 
-    // 
-    // Continuation of previous pipeline
-    //
-
+    //===================================================================//
+    // continuation of previous pipeline
+    //===================================================================//
     //
     // Extract all of the samples from the dataset.
     //
@@ -390,24 +388,23 @@ avtOSPRayRayTracer::Execute()
     extractor.SetTransferFn(transferFn1D);
     extractor.SetInput(trans.GetOutput());
 
-    extractor.SetLighting(lighting);
+
     extractor.SetMatProperties(materialProperties);
-    extractor.SetViewDirection(viewDirection);
 
-    
-    extractor.SetPanPercentages(view.imagePan);
-    extractor.SetImageZoom(view.imageZoom);
-    extractor.SetRendererSampleRate(rendererSampleRate); 
+    extractor.SetLighting(lighting);
+    //extractor.SetViewDirection(viewDirection);
+    //extractor.SetPanPercentages(view.imagePan);
+    //extractor.SetImageZoom(view.imageZoom);
 
 
+    extractor.SetOSPRay(ospray);
+    extractor.SetRenderingExtents(renderingExtents); // rendered region
+    extractor.SetViewInfo(view);
     extractor.SetMVPMatrix(model_to_screen_transform);
-    extractor.SetRenderingExtents(renderingExtents);
-    extractor.SetOSPRay(ospray); // sending ospray
-    
-    //extractor.SetDepthBuffer(opaqueImageZB,   screen[0]*screen[1]);
-    //extractor.SetRGBBuffer  (opaqueImageData, screen[0],screen[1]);
-    //extractor.SetBufferExtents(bufferScreenExtents);
+    extractor.SetSamplingRate(samplingRate); 
 
+
+    
     //
     // For curvilinear and unstructured meshes, it makes sense to convert the
     // cells to image space.  But for rectilinear meshes, it is not the
@@ -419,18 +416,20 @@ avtOSPRayRayTracer::Execute()
         extractor.SetRectilinearGridsAreInWorldSpace(true, view, aspect);
     }
 
+    //===================================================================//
     // Qi debug
+    //===================================================================//
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute "
                             "raytracing setup done",
                             "ospout");
 
     
-    //
+    //===================================================================//
     // Execute rendering
-    //
+    //===================================================================//
     {
         StackTimer t1("AllPatchRendering");
-	extractor.Update(GetGeneralContract());
+        extractor.Update(GetGeneralContract());
     }
     
     /*
@@ -443,9 +442,9 @@ avtOSPRayRayTracer::Execute()
     image->Update(GetGeneralContract());     
     */
 
-    //
+    //===================================================================//
     // Image Compositing
-    //
+    //===================================================================//
     // Initialization
     int timingIdx;
     float *compositedData = NULL;

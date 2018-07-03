@@ -138,9 +138,6 @@ avtOSPRayVoxelExtractor::avtOSPRayVoxelExtractor(int w, int h, int d,
     clipSpaceDepth = -1;
     imgArray = NULL;                         // the image data
 
-    //depthBuffer = NULL;
-    //rgbColorBuffer = NULL;
-
     ospray = NULL;
 }
 
@@ -426,7 +423,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         StackTimer t1("avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay "
                       "Get screen size of the patch (Pre-OSPRay preparation)");
         ospray::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
-                                         panPercentage, imageZoom,
+					 viewInfo.imagePan, viewInfo.imageZoom,
                                          model_to_screen_transform, 
                                          patchScreenExtents, 
                                          renderingDepthsExtents);
@@ -439,18 +436,16 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                << " | " << ghost_bound[1] << " " << ghost_bound[4] 
                << " | " << ghost_bound[2] << " " << ghost_bound[5]
                << std::endl;   
-    
-        // calculate patch depth
         patch_center[0] = (volumeCube[0] + volumeCube[1])/2.0;
         patch_center[1] = (volumeCube[2] + volumeCube[3])/2.0;
         patch_center[2] = (volumeCube[4] + volumeCube[5])/2.0;        
         patch_depth = // use the norm of patch center as patch depth
-            std::sqrt((patch_center[0]-view.camera[0])*
-                      (patch_center[0]-view.camera[0])+
-                      (patch_center[1]-view.camera[1])*
-                      (patch_center[1]-view.camera[1])+
-                      (patch_center[2]-view.camera[2])*
-                      (patch_center[2]-view.camera[2]));
+            std::sqrt((patch_center[0]-viewInfo.camera[0])*
+                      (patch_center[0]-viewInfo.camera[0])+
+                      (patch_center[1]-viewInfo.camera[1])*
+                      (patch_center[1]-viewInfo.camera[1])+
+                      (patch_center[2]-viewInfo.camera[2])*
+                      (patch_center[2]-viewInfo.camera[2]));
         eyeSpaceDepth = patch_depth;
         clipSpaceDepth = renderingDepthsExtents[0];
     }
@@ -461,8 +456,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     {
         StackTimer t1("avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay "
                       "Create ImgArray (Pre-OSPRay preparation)");
-        // assign data to the class
-        //xMax+=1; yMax+=1;
         ospout << "[avtOSPRayVoxelExtractor] patch extents " 
                << xMin << " " << xMax << " "
                << yMin << " " << yMax << std::endl;
@@ -472,8 +465,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         if (yMax > renderingExtents[3]) { yMax = renderingExtents[3]; }
         imgWidth  = xMax-xMin;
         imgHeight = yMax-yMin;
-
-        // Initialize memory (framebuffer) no initialization
         imgArray = new float[((imgWidth)*4) * imgHeight];
     }
 
@@ -489,13 +480,6 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             StackTimer t2("avtOSPRayVoxelExtractor::"
                           "ExtractWorldSpaceGridOSPRay "
                           "OSPRay bbox and clip (OSPRay preparation)");
-            // if (!((npt_arrays == 1)^(ncell_arrays == 1))) {
-            //     std::cerr << "WARNING: Multiple data found within one "
-            //               << "patch, We don't know what to do !! " 
-            //               << std::endl
-            //               << "         One of the dataset might be missing "
-            //               << std::endl;
-            // }
             // shift grid and make it cel centered for cell data
             // for cell centered data, we put the voxel on its left boundary
             volumePBox[0] = X[0];
@@ -553,7 +537,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                                          X, Y, Z, nX, nY, nZ,
                                          volumePBox, volumeBBox, 
                                          materialProperties, 
-                                         (float)rendererSampleRate,
+                                         (float)samplingRate,
                                          lighting);
         }
 
@@ -588,16 +572,11 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     //=======================================================================//
     if (patchDrawn == 0)
     { 
-	if (imgArray != NULL) 
-	{ 
-	    delete []imgArray; imgArray = NULL; 
-	} 
+        if (imgArray != NULL) 
+        { 
+            delete []imgArray; imgArray = NULL; 
+        } 
     }
-    // else {
-    // 	WriteArrayToPPM("patch-after-render"+
-    // 			std::to_string(proc), imgArray, 
-    // 			imgWidth, imgHeight);
-    // }
 }
 
 
@@ -615,7 +594,11 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
 // ****************************************************************************
 
 void
-avtOSPRayVoxelExtractor::GetImageDimensions(int &inUse, int dims[2], int screen_ll[2], int screen_ur[2], float &eyeDepth, float &clipDepth)
+avtOSPRayVoxelExtractor::GetImageDimensions(int &inUse, int dims[2],
+                                            int screen_ll[2],
+                                            int screen_ur[2],
+                                            float &eyeDepth,
+                                            float &clipDepth)
 {
     inUse = patchDrawn;
 

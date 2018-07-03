@@ -99,6 +99,9 @@ class     vtkMatrix4x4;
 //    Kathleen Biagas, Fri Jul 13 09:44:45 PDT 2012
 //    Use double internally instead of float.
 //
+//    Qi Wu, Sun Jul 1 2018
+//    Added support for ospray volume rendering.
+//
 // ****************************************************************************
 using namespace ospray;
 class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
@@ -115,21 +118,16 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     // void             SetVariableInformation(std::vector<std::string> &names,
     //                                         std::vector<int> varsize);
 
-    // RC OSPRay Specific
-    //void             SetRayCastingSLIVR(bool s) { rayCastingSLIVR = s; };
+    void                      SetViewInfo(const avtViewInfo & v)
+                                                             { viewInfo = v; };
+
     void             SetLighting(bool l) { lighting = l; };
-    /* void             SetLightDirection(double ld[3]) */
-    /*                 { for (int i=0;i <3; i++) { lightDirection[i] = ld[i]; } }; */
-    /* void             SetLightPosition(double lp[4])  */
-    /*                  { for (int i=0; i<4; i++) { lightPosition[i] = lp[i]; } }; */
     void             SetMatProperties(double matProp[4]) 
            { for (int i=0; i<4; i++) { materialProperties[i] = matProp[i]; } };
     void             SetScalarRange(double range[2])
                      { scalarRange[0] = range[0]; scalarRange[1] = range[1]; };
     void             SetTFVisibleRange(double tfRange[2])
            { tFVisibleRange[0] = tfRange[0]; tFVisibleRange[1] = tfRange[1]; };
-    //void             SetTransferFn(avtOpacityMap *tf1D) 
-    //                                                  { transferFn1D = tf1D; };
     void             SetViewDirection(double *vD)
                      { for (int i=0; i<3; i++) { viewDirection[i] = vD[i]; } };
     void             SetCameraPosition(double *cp) 
@@ -151,20 +149,13 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
 			     screen_to_model_transform); 
     }
 
-    // Getting the image
     void             GetImageDimensions
     (int &, int dims[2], int screen_ll[2], int screen_ur[2], float &, float &);
     void             GetComputedImage(float *image);
     void             SetProcIdPatchID(int c, int p){ proc = c; patch = p; };
 
-    // Set the background information
-    //void             SetDepthBuffer(float *z, int size){ depthBuffer = z; };
-    //void             SetRGBBuffer(unsigned char *cb, int width, int height)
-    //                                                  { rgbColorBuffer = cb; };
-    //void             SetBufferExtents(int e[4])
-    //                       { for (int i=0;i<4; i++) bufferExtents[i] = e[i]; };
-    void             SetRendererSampleRate(double r) 
-                                                   { rendererSampleRate = r; };
+    void             SetSamplingRate(double r) 
+                                                   { samplingRate = r; };
     void             SetOSPRay(OSPVisItContext* o) { ospray = o; };
     void             SetRenderingExtents(int extents[4]) 
     {
@@ -180,6 +171,8 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     vtkMatrix4x4    *model_to_screen_transform;
     vtkMatrix4x4    *screen_to_model_transform;
 
+    avtViewInfo      viewInfo;
+    
     double           clipPlanes[2];
     double           panPercentage[2];
     double           imageZoom;
@@ -220,7 +213,7 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
 
     // OSPRay stuffs
     OSPVisItContext *ospray;
-    double           rendererSampleRate;
+    double           samplingRate;
 
     // Added for RayCasting OSPRay
     void             ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *,  
