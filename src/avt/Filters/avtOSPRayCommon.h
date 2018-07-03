@@ -51,10 +51,6 @@
 #include <map>
 
 // some constants
-#define OSP_PERSPECTIVE              1
-#define OSP_ORTHOGRAPHIC             2
-#define OSP_BLOCK_BRICKED_VOLUME     3
-#define OSP_SHARED_STRUCTURED_VOLUME 4
 #define OSP_INVALID                  5
 #define OSP_VALID                    6
 
@@ -79,24 +75,10 @@ private:
 
     OSPVisItContext *parent;
     
-    // objects owned by the struct
-    // -- ospray model ---
-    //OSPModel            world;
-    //unsigned char       worldType;
-    // --- ospray framebuffer ---
     OSPFrameBuffer      framebuffer;
     float              *framebufferData;
     OSPTexture2D        framebufferBg;
     osp::vec2i imageSize;
-    /* // --- ospray volume --- */
-    /* OSPVolume           volume; */
-    /* unsigned char       volumeType; */
-    /* // --- ospray data --- */
-    /* OSPDataType         voxelDataType; */
-    /* OSPData             voxelData; */
-    /* size_t              voxelSize; */
-    /* void*               dataPtr; */
-    /* std::string         dataType; */
 
     // metadata for volume
     int                 patchId;       // volume patch id
@@ -106,56 +88,26 @@ private:
     float               specularKs;
     float               specularNs;
     float               samplingRate;
-
-    /* // geometric parameters for volume */
-    /* osp::vec3i          regionSize; */
-    /* osp::vec3f          regionStart; */
-    /* osp::vec3f          regionStop; */
-    /* osp::vec3f          regionSpacing; */
-    /* osp::vec3f          regionUpperClip; */
-    /* osp::vec3f          regionLowerClip; */
-    /* osp::vec3f          regionScaling; */
     
 
 public:
     // constructor
     OSPVisItVolume() {
-        // objects owned by the struct
-        //world           = NULL;
-        //worldType       = OSP_INVALID;
         framebuffer     = NULL;
         framebufferData = NULL;
         framebufferBg   = NULL;
-        /* volume          = NULL; */
-        /* volumeType      = OSP_INVALID; */
-        /* voxelDataType   = OSP_VOID_PTR; */
-        /* voxelData       = NULL; */
-        /* voxelSize       = 0; */
-        /* dataPtr         = NULL; */
-        /* dataType        = ""; */
-        // metadata for volume
         finished      = false; 
         enableShading = false;
         enableDVR     = false;
         specularKs    = 1.0f;
         specularNs    = 15.0f;
         samplingRate  = 3.0f;
-        /* // geometric parameters for volume */
-        /* regionSize.x  = regionSize.y  = regionSize.z  = 0; */
-        /* regionStart.x = regionStart.y = regionStart.z = 0.0f; */
-        /* regionStop.x  = regionStop.y  = regionStop.z  = 0.0f; */
-        /* regionSpacing.x   = regionSpacing.y   = regionSpacing.z   = 0.0f; */
-        /* regionUpperClip.x = regionUpperClip.y = regionUpperClip.z = 0.0f; */
-        /* regionLowerClip.x = regionLowerClip.y = regionLowerClip.z = 0.0f; */
-        /* regionScaling.x   = regionScaling.y   = regionScaling.z   = 1.0f; */
     }
 
     // destructor
     ~OSPVisItVolume() { Clean(); }    
     void Clean() {
         CleanFB();
-        //CleanVolume();	
-        //CleanWorld();
     }
     
     // other function
@@ -169,35 +121,6 @@ public:
     bool GetFinishedFlag() { return finished; }
     void SetFinishedFlag(bool f) { finished = f; } 
 
-    // ospModel component
-    /* OSPModel GetWorld() { return world; } */
-    /* void InitWorld(); */
-    /* void SetWorld(); */
-    /* void CleanWorld() { */
-    /*     if (world != NULL) {	     */
-    /*         ospRelease(world); */
-    /*         world = NULL; */
-    /*     } */
-    /*     worldType = OSP_INVALID; */
-    /* } */
-	
-    /* // ospVolume component */
-    /* void InitVolume(int type, void *ptr, */
-    /* 		    int nX, int nY, int nZ, */
-    /* 		    unsigned char volumeType);  */
-    /* OSPVolume GetVolume() { return volume; } */
-    /* void SetVolume(double *X, double *Y, double *Z,  */
-    /*                int nX, int nY, int nZ, */
-    /*                double volumePBox[6],  */
-    /*                double volumeBBox[6]); */
-    /* void CleanVolume() {	 */
-    /*     if (volume != NULL) { ospRelease(volume); volume = NULL; } */
-    /*     if (voxelData != NULL) {  */
-    /*         ospRelease(voxelData); */
-    /*         voxelData = NULL;  */
-    /*     } */
-    /*     volumeType = OSP_INVALID; */
-    /* } */
 
     // framebuffer component     
     void InitFB(unsigned int width, unsigned int height);
@@ -331,8 +254,8 @@ private:
 #include <vtkMatrix4x4.h>
 
 #include <ospray/ospray.h>
-#include <ospray/visit/VisItModuleCommon.h>
 #include <ospray/visit/VisItWrapper.h>
+#include <ospray/visit/VisItModuleCommon.h>
 #include <ospray/visit/VisItImageComposite.h>
 
 #include <cmath>

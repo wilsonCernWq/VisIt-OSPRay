@@ -50,6 +50,7 @@
 #include <vtkMatrix4x4.h>
 
 #include <ospray/ospray.h>
+#include <ospray/visit/VisItWrapper.h>
 #include <ospray/visit/VisItModuleCommon.h>
 #include <ospray/visit/VisItImageComposite.h>
 
@@ -100,7 +101,7 @@ void OSPVisItContext::InitOSP(int numThreads)
         ospout << "[ospray] Initialize OSPRay" << std::endl;	
         OSPDevice device = ospGetCurrentDevice();
         if (!device) {
-		    ospout << "[ospray] device not found, creating one" << std::endl;
+	    ospout << "[ospray] device not found, creating one" << std::endl;
             device = ospNewDevice("default"); 
             if (DebugStream::Level5()) { 
                 ospout << "[ospray] --> debug mode" << std::endl;
@@ -167,30 +168,6 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     specularNs    = (float)mtl[3];
     enableShading = shading;
     samplingRate  = sr;
-    // TODO: It seems if a volume is recovered from a session
-    // ospray will crash during zooming ...
-    // So we refresh volume everytime to fix the bug
-    // which means we need to disable grid accelerator
-    // to speed things up. Until I found the reason of crashing
-    
-    // finished = false;
-    // if (ptr != dataPtr) {
-    // 	finished = false;
-    //     ospout << "[ospray] update data" << std::endl;
-    // };
-    // if (!finished) {
-    //     // Because we initialized the volume each frame
-    //     // we need to removed the old volume from model first
-    //     volumeType = OSP_INVALID;
-    //     InitVolume(type, ptr, nX, nY, nZ, OSP_SHARED_STRUCTURED_VOLUME);
-    // }
-    // SetVolume(X, Y, Z, nX, nY, nZ,
-    // 	      volumePBox, volumeBBox);    
-    //if (!finished) {
-        //worldType = OSP_INVALID; 
-        //InitWorld();
-        //SetWorld();
-    //}
 
     std::string str_type;
     OSPDataType osp_type;
@@ -215,159 +192,6 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     finished = true;
 }
 
-// ospModel component
-// void OSPVisItVolume::InitWorld() {
-//     if (worldType == OSP_INVALID) {
-//         CleanWorld();
-//         worldType = OSP_VALID;
-//         world = ospNewModel();
-//     }
-// }
-// void OSPVisItVolume::SetWorld() {
-//     if (world != NULL) { 
-//         ospAddVolume(world, volume);
-//         ospCommit(world);
-//     }
-// }
-
-// // ospVolume component
-// void OSPVisItVolume::InitVolume(int dt, void *ptr,
-// 				int nX, int nY, int nZ,
-// 				unsigned char type) {
-//     if (volumeType != type) { // only initialize once
-//         CleanVolume();
-//         volumeType = type;
-//         switch (type) {
-//         case (OSP_BLOCK_BRICKED_VOLUME):
-//             volume = ospNewVolume("block_bricked_volume"); 
-//             break;
-//         case (OSP_SHARED_STRUCTURED_VOLUME):
-//             volume = ospNewVolume("visit_shared_structured_volume"); 
-//             break;
-//         default:
-//             debug1 << "ERROR: ospray volume not initialized"
-//                    << std::endl;
-//             volumeType = OSP_INVALID;
-//             EXCEPTION1(VisItException, 
-//                        "ERROR: ospray volume not initialized");
-//         }
-// 	// calculate volume data type
-// 	if (dt == VTK_UNSIGNED_CHAR) {
-// 	    dataType = "uchar";
-// 	    voxelDataType = OSP_UCHAR;
-// 	} else if (dt ==VTK_SHORT) {
-// 	    dataType = "short";
-// 	    voxelDataType = OSP_SHORT;
-// 	} else if (dt ==VTK_UNSIGNED_SHORT) {
-// 	    dataType = "ushort";
-// 	    voxelDataType = OSP_USHORT;
-// 	} else if (dt ==VTK_FLOAT) {
-// 	    dataType = "float";
-// 	    voxelDataType = OSP_FLOAT;
-// 	} else if (dt ==VTK_DOUBLE) {
-// 	    dataType = "double";
-// 	    voxelDataType = OSP_DOUBLE;
-// 	} else {
-// 	    debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
-// 	    EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
-// 	}
-// 	ospout << "[ospray] data type " << dataType << std::endl;
-// 	// assign data pointer
-// 	dataPtr = ptr;
-// 	// commit voxel data
-// 	if (voxelData != NULL) { 
-// 	    debug1 << "ERROR: Found VoxelData to be non-empty "
-// 		   << "while creating new volume" << std::endl;
-// 	    EXCEPTION1(VisItException, 
-// 		       "ERROR: Found VoxelData to be non-empty "
-// 		       "while creating new volume");
-// 	}
-// 	voxelSize = nX * nY * nZ;
-// 	voxelData = ospNewData(voxelSize, voxelDataType,
-// 			       dataPtr, OSP_DATA_SHARED_BUFFER);
-// 	ospSetString(volume, "voxelType", dataType.c_str());	
-// 	ospSetData(volume, "voxelData", voxelData);
-//     }
-// }
-
-// void 
-// OSPVisItVolume::SetVolume(double *X, double *Y, double *Z, 
-//                           int nX, int nY, int nZ,
-//                           double volumePBox[6], double volumeBBox[6]) 
-// {
-//     // assign structure
-//     regionStart.x   = volumePBox[0];
-//     regionStart.y   = volumePBox[1];
-//     regionStart.z   = volumePBox[2];
-//     regionStop.x    = volumePBox[3];
-//     regionStop.y    = volumePBox[4];
-//     regionStop.z    = volumePBox[5];
-//     regionSize.x    = nX;
-//     regionSize.y    = nY;
-//     regionSize.z    = nZ;
-//     regionSpacing.x = (regionStop.x-regionStart.x)/((float)regionSize.x-1.0f);
-//     regionSpacing.y = (regionStop.y-regionStart.y)/((float)regionSize.y-1.0f);
-//     regionSpacing.z = (regionStop.z-regionStart.z)/((float)regionSize.z-1.0f);
-//     regionLowerClip.x = volumeBBox[0];
-//     regionLowerClip.y = volumeBBox[1];
-//     regionLowerClip.z = volumeBBox[2];
-//     regionUpperClip.x = volumeBBox[3];
-//     regionUpperClip.y = volumeBBox[4];
-//     regionUpperClip.z = volumeBBox[5];
-
-//     // other objects
-//     ospSetObject(volume, "transferFunction", *(parent->tfn));
-
-//     // commit volume
-//     // -- no lighting by default
-//     ospout << "[ospray] setting specular value to " << specularKs << std::endl;
-//     osp::vec3f Ks; Ks.x = Ks.y = Ks.z = specularKs;
-//     ospSetVec3f(volume, "specular", Ks);
-//     ospSet1f(volume, "Ns", specularNs);
-//     ospSet1i(volume, "gradientShadingEnabled", (int)enableShading);
-//     // -- other properties
-//     osp::vec3f scaledBBoxLower;
-//     osp::vec3f scaledBBoxUpper;
-//     osp::vec3f scaledSpacing;
-//     osp::vec3f scaledOrigin;
-//     osp::vec3f scaledGlobalBBoxLower;
-//     osp::vec3f scaledGlobalBBoxUpper;
-//     scaledGlobalBBoxLower.x = parent->bounds[0] * regionScaling.x;
-//     scaledGlobalBBoxUpper.x = parent->bounds[1] * regionScaling.x;
-//     scaledGlobalBBoxLower.y = parent->bounds[2] * regionScaling.y;
-//     scaledGlobalBBoxUpper.y = parent->bounds[3] * regionScaling.y;
-//     scaledGlobalBBoxLower.z = parent->bounds[4] * regionScaling.z;
-//     scaledGlobalBBoxUpper.z = parent->bounds[5] * regionScaling.z;
-//     // -- x
-//     scaledBBoxLower.x = regionLowerClip.x * parent->regionScaling.x;
-//     scaledBBoxUpper.x = regionUpperClip.x * parent->regionScaling.x;
-//     scaledSpacing.x   = regionSpacing.x   * parent->regionScaling.x;
-//     scaledOrigin.x    = regionStart.x     * parent->regionScaling.x;
-//     // -- y
-//     scaledBBoxLower.y = regionLowerClip.y * parent->regionScaling.y;
-//     scaledBBoxUpper.y = regionUpperClip.y * parent->regionScaling.y;
-//     scaledSpacing.y   = regionSpacing.y   * parent->regionScaling.y;
-//     scaledOrigin.y    = regionStart.y     * parent->regionScaling.y;
-//     // -- z
-//     scaledBBoxLower.z = regionLowerClip.z * parent->regionScaling.z;
-//     scaledBBoxUpper.z = regionUpperClip.z * parent->regionScaling.z;
-//     scaledSpacing.z   = regionSpacing.z   * parent->regionScaling.z;
-//     scaledOrigin.z    = regionStart.z     * parent->regionScaling.z;
-//     // -- commit ospray
-//     ospSet1i(volume, "useGridAccelerator", 0);
-//     ospSetVec3f(volume, "volumeClippingBoxLower", scaledBBoxLower);
-//     ospSetVec3f(volume, "volumeClippingBoxUpper", scaledBBoxUpper);
-//     ospSetVec3f(volume, "gridSpacing", scaledSpacing);
-//     ospSetVec3f(volume, "gridOrigin",  scaledOrigin);
-//     ospSetVec3i(volume, "dimensions",  regionSize);
-//     ospSet1f(volume, "samplingRate", samplingRate); 
-//     ospSet1i(volume, "adaptiveSampling", 0);
-//     ospSet1i(volume, "preIntegration", 0);
-//     ospSet1i(volume, "singleShade", 0);
-//     ospSetVec3f(volume, "volumeGlobalBoundingBoxLower", scaledGlobalBBoxLower);
-//     ospSetVec3f(volume, "volumeGlobalBoundingBoxUpper", scaledGlobalBBoxUpper);
-//     ospCommit(volume);
-// }
 
 // ospFrameBuffer component     
 void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
@@ -375,7 +199,7 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     // preparation
     imageSize.x = width;
     imageSize.y = height;
-    // create max depth texture
+
     std::vector<float> maxDepth(width * height);
     //
     // The reason I use round(r * (N-1)) instead of floor(r * N) is that 
@@ -383,27 +207,12 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     // rendered image and the background, which is about one pixel in size.
     // Using round(r * (N - 1)) can remove the problem
     //
-    // const int Xs = 
-    // 	floor(parent->camera.imgS.x * parent->camera.size[0]);
-    // const int Ys = 
-    // 	floor(parent->camera.imgS.y * parent->camera.size[1]);
-    // const int Xs = 
-    // 	round(parent->camera.imgS.x * (parent->camera.size[0]-1));
-    // const int Ys = 
-    // 	round(parent->camera.imgS.y * (parent->camera.size[1]-1));
-    //
     // It seems this is the correct way of doing it
     //
     // It seems we need to also fix pan and zoom also
     //
     const int Xs = ((ospray::visit::Camera)parent->camera).GetWindowExts(0);
-    // std::min((int)round((parent->camera.r_xl + parent->camera.panx) * 
-    // 	    parent->camera.size[0]),
-    //  parent->camera.size[0]-1);
     const int Ys = ((ospray::visit::Camera)parent->camera).GetWindowExts(2);
-	// std::min((int)round((parent->camera.r_yl + parent->camera.pany) * 
-	// 		    parent->camera.size[1]),
-	// 	 parent->camera.size[1]-1);
     for (int i = 0; i < width; ++i) {
     	for (int j = 0; j < height; ++j) {
     	    maxDepth[i + j * width] = parent->renderer.bgDepthBuffer
@@ -418,7 +227,7 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     ospCommit(*(parent->renderer));
     ospRelease(framebufferBg);
     framebufferBg = NULL;
-    // create framebuffer
+
     CleanFB();
     framebuffer = ospNewFrameBuffer(imageSize, 
                                     OSP_FB_RGBA32F,
@@ -443,9 +252,10 @@ float* OSPVisItVolume::GetFBData() {
 //
 // ****************************************************************************
 
-void ospray::CheckVolumeFormat(const int dt,
-			       std::string& str_type,
-			       OSPDataType& osp_type)
+void
+ospray::CheckVolumeFormat(const int dt,
+			  std::string& str_type,
+			  OSPDataType& osp_type)
 {
     if (dt == VTK_UNSIGNED_CHAR) {
 	str_type = "uchar";
@@ -468,17 +278,19 @@ void ospray::CheckVolumeFormat(const int dt,
     ospout << "[ospray] data type " << str_type << std::endl;
 }
 
-void ospray::ComputeProjections(const avtViewInfo &view, 
-				const double &aspect,
-				const int screen[2],
-				const double scale[3],
-				const double &oldNearPlane, const double &oldFarPlane,
-				vtkMatrix4x4  *model_to_screen_transform, 
-				vtkMatrix4x4  *screen_to_model_transform, 
-				vtkMatrix4x4  *screen_to_camera_transform,
-				int            renderingExtents[4],
-				double         sceneSize[2],
-				double         dbounds[6])       
+void
+ospray::ComputeProjections(const avtViewInfo &view, 
+			   const double &aspect,
+			   const int     screen[2],
+			   const double  scale[3],
+			   const double &oldNearPlane,
+			   const double &oldFarPlane,
+			   vtkMatrix4x4 *model_to_screen_transform, 
+			   vtkMatrix4x4 *screen_to_model_transform, 
+			   vtkMatrix4x4 *screen_to_camera_transform,
+			   int           renderingExtents[4],
+			   double        sceneSize[2],
+			   double        dbounds[6])       
 {
     vtkCamera *sceneCam = vtkCamera::New();
     sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
@@ -622,7 +434,8 @@ void ospray::ComputeProjections(const avtViewInfo &view,
 
 }
 
-void ospray::CheckMemoryHere(const std::string& message, std::string debugN)
+void
+ospray::CheckMemoryHere(const std::string& message, std::string debugN)
 {
     if (debugN.compare("ospout") == 0) {	
         ospray::CheckMemoryHere(message, *osp_out);
@@ -654,7 +467,8 @@ void ospray::CheckMemoryHere(const std::string& message, std::string debugN)
     }
 }
 
-void ospray::CheckMemoryHere(const std::string& message, std::ostream& out)
+void
+ospray::CheckMemoryHere(const std::string& message, std::ostream& out)
 {
     unsigned long m_size, m_rss;
     avtMemory::GetMemorySize(m_size, m_rss);
@@ -665,24 +479,20 @@ void ospray::CheckMemoryHere(const std::string& message, std::ostream& out)
         << std::endl;
 }
 
-double ospray::ProjectWorldToScreen(const double worldCoord[3], 
-                                    const int screenWidth, 
-                                    const int screenHeight,
-                                    const double panPercentage[2], 
-                                    const double imageZoom,
-                                    vtkMatrix4x4 *mvp, int screenCoord[2])
+double
+ospray::ProjectWorldToScreen(const double worldCoord[3], 
+			     const int screenWidth, 
+			     const int screenHeight,
+			     const double panPercentage[2], 
+			     const double imageZoom,
+			     vtkMatrix4x4 *mvp, int screenCoord[2])
 {
     // world space coordinate in homogeneous coordinate
-    double worldHCoord[4] = {
-        worldCoord[0],
-        worldCoord[1],
-        worldCoord[2],
-        1.0
-    };
-
+    double worldHCoord[4] = {worldCoord[0],worldCoord[1],worldCoord[2],1.0};
     // world to clip space (-1 ~ 1)
     double clipHCoord[4];
     mvp->MultiplyPoint(worldHCoord, clipHCoord);
+    // check error
     if (clipHCoord[3] == 0.0)
     {
         std::cerr << "world coordinates: (" 
@@ -698,7 +508,6 @@ double ospray::ProjectWorldToScreen(const double worldCoord[3],
 		  << "Matrix: " << *mvp << std::endl;
 	ospray::Exception("Zero Division During Projection");
     }
-
     // screen coordinates (int integer)
     screenCoord[0] =
 	round((clipHCoord[0] / clipHCoord[3] + 1) * screenWidth  * 0.5) +
@@ -706,7 +515,6 @@ double ospray::ProjectWorldToScreen(const double worldCoord[3],
     screenCoord[1] =
 	round((clipHCoord[1] / clipHCoord[3] + 1) * screenHeight * 0.5) +
 	round(screenHeight * panPercentage[1]); 
-
     // return point depth
     return clipHCoord[2]/clipHCoord[3];
 }
@@ -719,18 +527,15 @@ ospray::ProjectScreenToWorld(const int screenCoord[2], const double z,
                              vtkMatrix4x4 *imvp, double worldCoord[3])
 {
     // remove panning
-    const int x = 
-        screenCoord[0] - round(screenWidth*panPercentage[0]);
-    const int y = 
-        screenCoord[1] - round(screenHeight*panPercentage[1]);
-    
+    const int x = screenCoord[0] - round(screenWidth*panPercentage[0]);
+    const int y = screenCoord[1] - round(screenHeight*panPercentage[1]);   
     // do projection
     double worldHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
         (x - screenWidth  / 2.0) / (screenWidth  / 2.0),
-        (y - screenHeight / 2.0) / (screenHeight / 2.0),
-        z, 1.0};
+        (y - screenHeight / 2.0) / (screenHeight / 2.0), z, 1.0};
     imvp->MultiplyPoint(clipHCoord, worldHCoord);
+    // check error
     if (worldHCoord[3] == 0) {
         std::cerr << "world coordinates: (" 
                   << worldHCoord[0] << ", " 
@@ -745,7 +550,6 @@ ospray::ProjectScreenToWorld(const int screenCoord[2], const double z,
 		  << "Matrix: " << *imvp << std::endl;
 	ospray::Exception("Zero Division During Projection");
     }    
-
     // normalize world space coordinate	
     worldCoord[0] = worldHCoord[0]/worldHCoord[3];
     worldCoord[1] = worldHCoord[1]/worldHCoord[3];
@@ -760,15 +564,13 @@ ospray::ProjectScreenToCamera(const int screenCoord[2], const double z,
     // remove panning
     const int x = screenCoord[0];
     const int y = screenCoord[1];
-    
     // do projection
     double cameraHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
         (x - screenWidth /2.0)/(screenWidth /2.0),
-        (y - screenHeight/2.0)/(screenHeight/2.0),
-        z,
-        1.0};
+        (y - screenHeight/2.0)/(screenHeight/2.0), z, 1.0};
     imvp->MultiplyPoint(clipHCoord, cameraHCoord);
+    // check error
     if (cameraHCoord[3] == 0) {
         std::cerr << "world coordinates: (" 
                   << cameraHCoord[0] << ", " 
@@ -783,7 +585,6 @@ ospray::ProjectScreenToCamera(const int screenCoord[2], const double z,
 		  << "Matrix: " << *imvp << std::endl;
 	ospray::Exception("Zero Division During Projection");
     }
-    
     // normalize world space coordinate	
     cameraCoord[0] = cameraHCoord[0]/cameraHCoord[3];
     cameraCoord[1] = cameraHCoord[1]/cameraHCoord[3];
@@ -945,7 +746,6 @@ ospray::CompositeBackground(int screen[2],
 	}
     }
 }
-
 
 void
 ospray::WriteArrayToPPM(std::string filename, const float * image,
