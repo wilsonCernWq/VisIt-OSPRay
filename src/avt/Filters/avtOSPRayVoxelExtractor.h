@@ -118,30 +118,12 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     // void             SetVariableInformation(std::vector<std::string> &names,
     //                                         std::vector<int> varsize);
 
-    void                      SetViewInfo(const avtViewInfo & v)
-                                                             { viewInfo = v; };
-
+    void              SetViewInfo(const avtViewInfo & v)     { viewInfo = v; };
     void             SetLighting(bool l) { lighting = l; };
-    void             SetMatProperties(double matProp[4]) 
-           { for (int i=0; i<4; i++) { materialProperties[i] = matProp[i]; } };
-    void             SetScalarRange(double range[2])
-                     { scalarRange[0] = range[0]; scalarRange[1] = range[1]; };
-    void             SetTFVisibleRange(double tfRange[2])
-           { tFVisibleRange[0] = tfRange[0]; tFVisibleRange[1] = tfRange[1]; };
-    void             SetViewDirection(double *vD)
-                     { for (int i=0; i<3; i++) { viewDirection[i] = vD[i]; } };
-    void             SetCameraPosition(double *cp) 
-                                    { std::copy(cp, cp + 3, cameraPosition); };
-    void             SetCameraUpVector(double *cu)
-                                    { std::copy(cu, cu + 3, cameraUpVector); };
-    void             SetCameraAspect(double a) { cameraAspect = a; };
-    void             SetClipPlanes(double cc[2])
-                             { clipPlanes[0] = cc[0]; clipPlanes[1] = cc[1]; };
-    void             SetPanPercentages(double p[2])
-                         { panPercentage[0] = p[0]; panPercentage[1] = p[1]; };
-    void             SetImageZoom(double z) { imageZoom = z; };
-    void             SetDepthExtents(double d[2])
-       { fullVolumeDepthExtents[0] = d[0]; fullVolumeDepthExtents[1] = d[1]; };
+    void             SetScalarRange(double r[2])
+                             { scalarRange[0] = r[0]; scalarRange[1] = r[1]; };
+    void             SetTFVisibleRange(double r[2])
+                       { tFVisibleRange[0] = r[0]; tFVisibleRange[1] = r[1]; };
     void             SetMVPMatrix(vtkMatrix4x4 *mvp)
     {
 	model_to_screen_transform->DeepCopy(mvp); 
@@ -149,11 +131,13 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
 			     screen_to_model_transform); 
     }
 
-    void             GetImageDimensions
-    (int &, int dims[2], int screen_ll[2], int screen_ur[2], float &, float &);
+    void             GetImageDimensions(int&,int dims[2],
+					int screen_ll[2],
+					int screen_ur[2],
+					float &, float &);
     void             GetComputedImage(float *image);
     void             SetProcIdPatchID(int c, int p)   { proc = c; patch = p; };
-
+    
     void             SetSamplingRate(double r)           { samplingRate = r; };
     void             SetOSPRay(OSPVisItContext* o)        { ospray_core = o; };
     void             SetRenderingExtents(int extents[4]) 
@@ -165,27 +149,17 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     }
 
   protected:
-    bool            rayCastingOSPRay;
 
     vtkMatrix4x4    *model_to_screen_transform;
     vtkMatrix4x4    *screen_to_model_transform;
 
     avtViewInfo      viewInfo;
     
-    double           clipPlanes[2];
-    double           panPercentage[2];
-    double           imageZoom;
-    double           fullVolumeDepthExtents[2];
-    double           viewDirection[3];
-    double           cameraPosition[3]; // (Qi) camera location in world space
-    double           cameraUpVector[3]; // (Qi) camera up vector direction
-    double           cameraAspect;
     int              renderingExtents[4];
 
     // Color computation
     bool             lighting;
-    double           materialProperties[4];
-    float            gradient[3];
+
     double           scalarRange[2];
     double           tFVisibleRange[2];
 
@@ -207,7 +181,6 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     int              proc;             // id of the processor
     int              patch;            // id of the patch
 
-    int              fullImgWidth, fullImgHeight;
     int              xMin, xMax, yMin, yMax;
 
     // OSPRay stuffs

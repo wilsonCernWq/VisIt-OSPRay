@@ -135,21 +135,8 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
                                                              { viewInfo = v; };
 
     void                      SetLighting(bool l) {lighting = l; };
-    void                      SetMatProperties(double _matProp[4]) 
-                  { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; };
-    void                      SetViewDirection(double *vD)
-                         { for (int i=0; i<3; i++) viewDirection[i] = vD[i]; };
-    void                      SetPanPercentages(double p[2])
-                         { panPercentage[0] = p[0]; panPercentage[1] = p[1]; };
     void                      SetMVPMatrix(vtkMatrix4x4 *mvp)
                                              { modelViewProj->DeepCopy(mvp); };
-
-    void                      GetSpatialExtents(double se[6])
-                   { for (int i=0; i<6; i++) se[i] = minMaxSpatialBounds[i]; };
-    void                      GetAvgPatchExtents(double ae[6])
-                       { for (int i=0; i<3; i++) ae[i] = avgPatchExtents[i]; };
-    void                      GetCellDimension(double cd[6])
-                         { for (int i=0; i<3; i++) cd[i] = cellDimension[i]; };
 
     int                       GetImgPatchSize() { return patchCount; };
     ospray::ImgMetaData       GetImgMetaPatch(int patchId)
@@ -158,10 +145,6 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
                                                ospray::ImgData &tempImgData);
     void                      DelImgPatches();
 
-
-    void                      SetImageZoom(double z) { imageZoom = z; }
-
-    // Added by Qi (March 2018) for RayCasting:OSPRay  
     void SetOSPRay(OSPVisItContext* o) { ospray_core = o; }
     void SetSamplingRate(double r) { samplingRate = r; }
     void SetRenderingExtents(int extents[4]) 
@@ -186,26 +169,19 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     virtual bool              FilterUnderstandsTransformedRectMesh(void);
     void                      RasterBasedSample(vtkDataSet *, int num = 0);
     ospray::ImgMetaData       InitMetaPatch(int id); // initialize a patch
-    
-    avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
 
+    avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
     avtViewInfo               viewInfo;
-	
-    double                    minMaxSpatialBounds[6];
-    double                    avgPatchExtents[3];
-    double                    cellDimension[3];
+
+    OSPVisItContext          *ospray_core;
+    
     int                       patchCount;
     
-    double                    viewDirection[3];
-    double                    panPercentage[2];
-    double                    imageZoom;
     vtkMatrix4x4             *modelViewProj;
 
     bool                      lighting;
-    double                    materialProperties[4];
 
-    int                       renderingExtents[4];    
-    OSPVisItContext          *ospray_core;
+    int                       renderingExtents[4];
     double                    samplingRate;
 
 };

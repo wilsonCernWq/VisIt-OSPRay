@@ -37,7 +37,7 @@
 *****************************************************************************/
 
 // ************************************************************************* //
-//                     avtOSPRaySamplePointExtractor.C                        //
+//                    avtOSPRaySamplePointExtractor.C                        //
 // ************************************************************************* //
 
 #include <avtOSPRaySamplePointExtractor.h>
@@ -120,7 +120,8 @@
 //    Initialize lightDirection.
 // ****************************************************************************
 
-avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h,
+avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w,
+							     int h,
                                                              int d)
     : avtSamplePointExtractorBase(w, h, d)
 {
@@ -129,11 +130,6 @@ avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w, int h,
     modelViewProj = vtkMatrix4x4::New();
 
     lighting = false;
-
-    materialProperties[0] = 0.4;
-    materialProperties[1] = 0.75;
-    materialProperties[2] = 0.0;
-    materialProperties[3] = 15.0;
 
     ospray_core = NULL;    
 
@@ -382,15 +378,9 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         osprayVoxelExtractor->SetSamplingRate(samplingRate);       
         osprayVoxelExtractor->SetRenderingExtents(renderingExtents);
 		
-        //osprayVoxelExtractor->SetViewDirection(viewDirection);
         osprayVoxelExtractor->SetMVPMatrix(modelViewProj);
-        //osprayVoxelExtractor->SetPanPercentages(panPercentage);
 
         osprayVoxelExtractor->SetLighting(lighting);
-
-        osprayVoxelExtractor->SetMatProperties(materialProperties);
-
-        //osprayVoxelExtractor->SetImageZoom(imageZoom);
 
 
 	// Note (Qi): probably not necessary

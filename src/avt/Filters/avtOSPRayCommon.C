@@ -142,7 +142,7 @@ void ospray::Finalize()
 void ospray::Context::InitPatch(const int patchID)
 {
     if (patches.find(patchID) == patches.end()) {
-        patches[patchID] = ospray::visit::Patch();
+        patches[patchID] = ospray::Patch();
     }
 }
 void ospray::Context::SetBackgroundBuffer(const unsigned char* color, 
@@ -167,8 +167,8 @@ void ospray::Context::SetupPatch(const int patchID,
 {
     std::string str_type;
     OSPDataType osp_type;
-    ospray::CheckVolumeFormat(vtk_type, str_type, osp_type);
-    ospray::visit::Volume volume(patches[patchID].volume);
+    CheckVolumeFormat(vtk_type, str_type, osp_type);
+    Volume volume(patches[patchID].volume);
     volume.Init("visit_shared_structured_volume",
 		osp_type, str_type, data_size, data_ptr);
     volume.Set(useGridAccelerator,
@@ -184,7 +184,7 @@ void ospray::Context::SetupPatch(const int patchID,
                osp::vec3f{(float)gbbox[3],(float)gbbox[4],(float)gbbox[5]},
                osp::vec3f{(float)scale[0],(float)scale[1],(float)scale[2]},
                tfn);    
-    ospray::visit::Model model(patches[patchID].model);
+    Model model(patches[patchID].model);
     model.Reset();
     model.Init();
     model.Set(patches[patchID].volume);
@@ -195,9 +195,9 @@ void ospray::Context::RenderPatch(const int patchID,
 				  const int tile_w, const int tile_h,
 				  float*& dest)
 {
-    ospray::visit::Camera      cam(camera);
-    ospray::visit::Renderer    ren(renderer);
-    ospray::visit::FrameBuffer fb(patches[patchID].fb);
+    Camera      cam(camera);
+    Renderer    ren(renderer);
+    FrameBuffer fb(patches[patchID].fb);
     cam.SetScreen(xMin, xMax, yMin, yMax);
     ren.Set(patches[patchID].model);
     ren.Set(camera);
@@ -611,9 +611,9 @@ ospray::ProjectWorldToScreenCube(const double cube[6],
         worldCoord[0] = coordinates[i][0];
         worldCoord[1] = coordinates[i][1];
         worldCoord[2] = coordinates[i][2];
-        depth = ospray::ProjectWorldToScreen
-            (worldCoord, screenWidth, screenHeight, 
-             panPercentage, imageZoom, mvp, screenCoord);
+        depth = ProjectWorldToScreen(worldCoord, screenWidth, screenHeight, 
+				     panPercentage, imageZoom, mvp,
+				     screenCoord);
         // clamp values
         screenCoord[0] = CLAMP(screenCoord[0], 0, screenWidth);
         screenCoord[1] = CLAMP(screenCoord[1], 0, screenHeight);
@@ -637,14 +637,14 @@ ospray::CompositeBackground(int screen[2],
                             unsigned char *&imgFinal)
 {
     if (UseThreadedBlend_MetaData) {
-        ospray::visit::CompositeBackground(screen,
-                                           compositedImageExtents,
-                                           compositedImageWidth,
-                                           compositedImageHeight,
-                                           compositedImageBuffer,
-                                           opaqueImageColor,
-                                           opaqueImageDepth,
-                                           imgFinal);
+        visit::CompositeBackground(screen,
+				   compositedImageExtents,
+				   compositedImageWidth,
+				   compositedImageHeight,
+				   compositedImageBuffer,
+				   opaqueImageColor,
+				   opaqueImageDepth,
+				   imgFinal);
 	return;
     } 
     for (int y = 0; y < screen[1]; y++)

@@ -325,20 +325,20 @@ avtOSPRayRayTracer::Execute()
     ospray->SetSpecular(materialProperties[2], materialProperties[3]);    
     
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
-    ospray::visit::Camera cam(ospray->camera);
+    ospray::Camera cam(ospray->camera);
     cam.Set(view.orthographic, view.camera, view.focus, view.viewUp,
 	    view.viewAngle, view.imagePan, view.imageZoom, oldNearPlane,
 	    sceneSize, screen, renderingExtents);
 
     ospout << "[avrRayTracer] make ospray transfer function" << std::endl;
-    ospray::visit::TransferFunction tfn(ospray->tfn);
+    ospray::TransferFunction tfn(ospray->tfn);
     tfn.Set(transferFn1D->GetTableFloat(),
 	    transferFn1D->GetNumberOfTableEntries(),
 	    transferFn1D->GetMin(),
 	    transferFn1D->GetMax());
     
     ospout << "[avrRayTracer] make ospray renderer" << std::endl;
-    ospray::visit::Renderer ren(ospray->renderer);
+    ospray::Renderer ren(ospray->renderer);
     ren.Init();
     ren.ResetLights();
     double light_scale = lighting ? 0.9 : 1.0;
@@ -383,22 +383,13 @@ avtOSPRayRayTracer::Execute()
     extractor.SetTransferFn(transferFn1D);
     extractor.SetInput(trans.GetOutput());
 
-
-    extractor.SetMatProperties(materialProperties);
-
     extractor.SetLighting(lighting);
-    //extractor.SetViewDirection(viewDirection);
-    //extractor.SetPanPercentages(view.imagePan);
-    //extractor.SetImageZoom(view.imageZoom);
-
-
-    extractor.SetOSPRay(ospray_core);
-    extractor.SetRenderingExtents(renderingExtents); // rendered region
     extractor.SetViewInfo(view);
     extractor.SetMVPMatrix(model_to_screen_transform);
     extractor.SetSamplingRate(samplingRate); 
-
-
+    extractor.SetRenderingExtents(renderingExtents); // rendered region
+    
+    extractor.SetOSPRay(ospray_core);
     
     //
     // For curvilinear and unstructured meshes, it makes sense to convert the

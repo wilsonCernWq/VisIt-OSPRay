@@ -44,7 +44,6 @@
 #define AVT_OSPRAY_COMMON_H
 
 #include <ospray/visit/VisItWrapperCore.h>
-#include <ospray/visit/VisItWrapper.h>
 
 #include <string>
 #include <vector>
@@ -79,13 +78,10 @@ namespace ospray {
 	    gbbox[4] = d[3] * scale[1];
 	    gbbox[2] = d[4] * scale[2];
 	    gbbox[5] = d[5] * scale[2];
-	}
-	void SetVariableName(const std::string& str) { varname = str; }
-	
+	}	
 	void SetSamplingRate(const double& v) { samplingRate = v; }
 	void SetAoSamples(const int v) { aoSamples = v; } 
 	void SetSpp(const int v) { spp = v; }
-
 	void SetOneSidedLighting(bool v) { oneSidedLighting = v; }
 	void SetShadowsEnabled(bool v) { shadowsEnabled = v; }
 	void SetAoTransparencyEnabled(bool v) { aoTransparencyEnabled = v; }
@@ -94,9 +90,8 @@ namespace ospray {
 	void SetPreIntegration(bool v) { preIntegration = v; }
 	void SetSingleShade(bool v) { singleShade = v; }
 	void SetGradientShadingEnabled(bool v) { gradientShadingEnabled = v; }
-
+	void SetVariableName(const std::string& str) { varname = str; }
 	const std::string& GetVariableName() const { return varname; }
-    
 	void InitPatch(const int patchID);
 	void SetupPatch(const int patchID, const int vtk_type,
 			const size_t data_size, const void* data_ptr,
@@ -109,125 +104,8 @@ namespace ospray {
 			 const int tile_w, const int tile_h,
 			 float*& dest); 
     };
-
-
-
-    
-    /*  
-    void SetScaleAndDataBounds(OSPContext _core, double s[3], double d[6])
-    {
-	visit::Context* core = (visit::Context*)_core;
-	core->SetScaleAndBounds(s, d);
-    }
-    
-
-    void SetBgBuffer(unsigned char* color, float* depth, int size[2]) 
-    {
-        ((ospray::visit::Renderer)renderer)
-            .SetBackgroundBuffer(color, depth, size);
-    }
-    */
 };
 
-/*
-class OSPVisItContext
-{
-public:
-    // ************************************************************************
-    // We expose this in header because iy will be called in other components
-    // where we dont have direct library linkage
-    // ************************************************************************
-    OSPVisItContext() 
-    {
-        regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
-	finished      = false; 
-        enableShading = false;
-        enableDVR     = false;
-        specularKs    = 1.0f;
-        specularNs    = 15.0f;
-        samplingRate  = 3.0f;
-
-    }
-    ~OSPVisItContext() {	
-        volumes.clear();
-    }
-
-    void Render(float xMin, float xMax, float yMin, float yMax,
-                int imgWidth, int imgHeight, 
-                float*& dest, int patchID);
-
-    void Set(int patchID, int type, void *ptr, 
-             double *X, double *Y, double *Z, 
-             int nX, int nY, int nZ, 
-             double volumePBox[6], double volumeBBox[6],
-             double mtl[4], float sr, bool shading);
-
-    
-
-    void InitPatch(int id);
-
-    void SetScaleAndDataBounds(double s[3], double d[6]) {
-	
-	regionScaling.x = (float)s[0];
-        regionScaling.y = (float)s[1];
-        regionScaling.z = (float)s[2];
-	
-	bbox.lower.x = d[0] * regionScaling.x;
-	bbox.upper.x = d[1] * regionScaling.x;
-	bbox.lower.y = d[2] * regionScaling.y;
-	bbox.upper.y = d[3] * regionScaling.y;
-	bbox.lower.z = d[4] * regionScaling.z;
-	bbox.upper.z = d[5] * regionScaling.z;
-
-        for (int i = 0; i < 6; ++i) { bounds[i] = d[i]; }
-    }
-    
-
-    void SetBgBuffer(unsigned char* color, float* depth, int size[2]) 
-    {
-        ((ospray::visit::Renderer)renderer)
-            .SetBackgroundBuffer(color, depth, size);
-    }
-
-
-
-
-    void SetActiveVariable(const char* str) { varname = str; }
-    const std::string& GetActiveVariable() const { return varname; }
-
-
-    bool GetDVRFlag() { return enableDVR; }
-    void SetDVRFlag(bool mode) { enableDVR = mode; }
-    bool GetFinishedFlag() { return finished; }
-    void SetFinishedFlag(bool f) { finished = f; } 
-
-    
-    std::map<int,         ospray::visit::Patch> volumes;
-    ospray::visit::CameraCore           camera;
-    ospray::visit::RendererCore         renderer;
-    ospray::visit::TransferFunctionCore tfn;
-
-
-
-    bool                finished;      // check if this volume is initialized
-    bool                enableShading;
-    bool                enableDVR;     // Distributed Volume Renderer
-    float               specularKs;
-    float               specularNs;
-    float               samplingRate;
-
-    friend class OSPVisItVolume;
-
-    osp::vec3f     regionScaling;
-    
-    osp::box3f     bbox;
-    
-    double bounds[6];
-
-    std::string varname;
-    
-};
-*/
 #endif//AVT_OSPRAY_COMMON_H
 
 // ****************************************************************************
@@ -315,7 +193,13 @@ namespace ospray {
 
 namespace ospray
 {
-    
+    typedef ospray::visit::TransferFunction TransferFunction;
+    typedef ospray::visit::Camera Camera;
+    typedef ospray::visit::Renderer Renderer;
+    typedef ospray::visit::Volume Volume;
+    typedef ospray::visit::Model Model;
+    typedef ospray::visit::FrameBuffer FrameBuffer;
+    typedef ospray::visit::Patch Patch;
     void CheckVolumeFormat(const int dt,
 			   std::string& str_type,
 			   OSPDataType& osp_type);

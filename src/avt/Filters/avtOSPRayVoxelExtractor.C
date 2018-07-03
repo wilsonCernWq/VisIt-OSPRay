@@ -113,29 +113,21 @@ avtOSPRayVoxelExtractor::avtOSPRayVoxelExtractor(int w, int h, int d,
                                              avtVolume *vol, avtCellList *cl)
     : avtVoxelExtractor(w, h, d, vol, cl)
 {
-    fullImgWidth = w;
-    fullImgHeight = h;
-
-    debug5 << "fullImgWidth: "  << fullImgWidth << " "
-           << "fullImgHeight: " << fullImgHeight << std::endl;
-
-    rayCastingOSPRay = true;
-
     model_to_screen_transform = vtkMatrix4x4::New();
     screen_to_model_transform = vtkMatrix4x4::New();
 
     lighting = false;
-    materialProperties[0] = 0.4; materialProperties[1] = 0.75;
-    materialProperties[3] = 0.0; materialProperties[3] = 15.0;
-    gradient[0] = gradient[1] = gradient[2] = 0;
 
     proc = patch = 0;
     patchDrawn = 0;
+
     imgDims[0] = imgDims[1] = 0;             // size of the patch
     imgLowerLeft[0] = imgLowerLeft[1] = 0;   // coordinates in the whole image
     imgUpperRight[0] = imgUpperRight[1] = 0; // coordinates in the whole image
+
     eyeSpaceDepth = -1;
     clipSpaceDepth = -1;
+
     imgArray = NULL;                         // the image data
 
     ospray_core = NULL;
@@ -611,7 +603,8 @@ avtOSPRayVoxelExtractor::GetImageDimensions(int &inUse, int dims[2],
 //  Method: avtSLIVRVoxelExtractor::getComputedImage
 //
 //  Purpose:
-//      Allocates space to the pointer address and copy the image generated to it
+//      Allocates space to the pointer address and copy the image generated
+//      to it
 //
 //  Programmer: Pascal Grosset
 //  Creation:   August 14, 2016
