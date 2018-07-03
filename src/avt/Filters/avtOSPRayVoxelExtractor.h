@@ -99,9 +99,6 @@ class     vtkMatrix4x4;
 //    Kathleen Biagas, Fri Jul 13 09:44:45 PDT 2012
 //    Use double internally instead of float.
 //
-//    Qi Wu, Sun Jul 1 2018
-//    Added support for ospray volume rendering.
-//
 // ****************************************************************************
 using namespace ospray;
 class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
@@ -115,15 +112,38 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
                              std::vector<std::string> &varnames,
                              std::vector<int> &varsize);
 
+    // void             SetVariableInformation(std::vector<std::string> &names,
+    //                                         std::vector<int> varsize);
+
+    // RC OSPRay Specific
+    //void             SetRayCastingSLIVR(bool s) { rayCastingSLIVR = s; };
     void             SetLighting(bool l) { lighting = l; };
+    /* void             SetLightDirection(double ld[3]) */
+    /*                 { for (int i=0;i <3; i++) { lightDirection[i] = ld[i]; } }; */
+    /* void             SetLightPosition(double lp[4])  */
+    /*                  { for (int i=0; i<4; i++) { lightPosition[i] = lp[i]; } }; */
     void             SetMatProperties(double matProp[4]) 
            { for (int i=0; i<4; i++) { materialProperties[i] = matProp[i]; } };
-    
     void             SetScalarRange(double range[2])
                      { scalarRange[0] = range[0]; scalarRange[1] = range[1]; };
     void             SetTFVisibleRange(double tfRange[2])
            { tFVisibleRange[0] = tfRange[0]; tFVisibleRange[1] = tfRange[1]; };
-
+    //void             SetTransferFn(avtOpacityMap *tf1D) 
+    //                                                  { transferFn1D = tf1D; };
+    void             SetViewDirection(double *vD)
+                     { for (int i=0; i<3; i++) { viewDirection[i] = vD[i]; } };
+    void             SetCameraPosition(double *cp) 
+                                    { std::copy(cp, cp + 3, cameraPosition); };
+    void             SetCameraUpVector(double *cu)
+                                    { std::copy(cu, cu + 3, cameraUpVector); };
+    void             SetCameraAspect(double a) { cameraAspect = a; };
+    void             SetClipPlanes(double cc[2])
+                             { clipPlanes[0] = cc[0]; clipPlanes[1] = cc[1]; };
+    void             SetPanPercentages(double p[2])
+                         { panPercentage[0] = p[0]; panPercentage[1] = p[1]; };
+    void             SetImageZoom(double z) { imageZoom = z; };
+    void             SetDepthExtents(double d[2])
+       { fullVolumeDepthExtents[0] = d[0]; fullVolumeDepthExtents[1] = d[1]; };
     void             SetMVPMatrix(vtkMatrix4x4 *mvp)
     {
 	model_to_screen_transform->DeepCopy(mvp); 
@@ -137,8 +157,15 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     void             GetComputedImage(float *image);
     void             SetProcIdPatchID(int c, int p){ proc = c; patch = p; };
 
-    void             SetSamplingRate(double r) { samplingRate = r; };
-    void             SetOSPRay(OSPVisItContext* o) { ospray = o; };    
+    // Set the background information
+    //void             SetDepthBuffer(float *z, int size){ depthBuffer = z; };
+    //void             SetRGBBuffer(unsigned char *cb, int width, int height)
+    //                                                  { rgbColorBuffer = cb; };
+    //void             SetBufferExtents(int e[4])
+    //                       { for (int i=0;i<4; i++) bufferExtents[i] = e[i]; };
+    void             SetRendererSampleRate(double r) 
+                                                   { rendererSampleRate = r; };
+    void             SetOSPRay(OSPVisItContext* o) { ospray = o; };
     void             SetRenderingExtents(int extents[4]) 
     {
 	renderingExtents[0] = extents[0];
@@ -153,6 +180,14 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     vtkMatrix4x4    *model_to_screen_transform;
     vtkMatrix4x4    *screen_to_model_transform;
 
+    double           clipPlanes[2];
+    double           panPercentage[2];
+    double           imageZoom;
+    double           fullVolumeDepthExtents[2];
+    double           viewDirection[3];
+    double           cameraPosition[3]; // (Qi) camera location in world space
+    double           cameraUpVector[3]; // (Qi) camera up vector direction
+    double           cameraAspect;
     int              renderingExtents[4];
 
     // Color computation
@@ -180,11 +215,12 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     int              proc;             // id of the processor
     int              patch;            // id of the patch
 
+    int              fullImgWidth, fullImgHeight;
     int              xMin, xMax, yMin, yMax;
 
     // OSPRay stuffs
     OSPVisItContext *ospray;
-    double           samplingRate;
+    double           rendererSampleRate;
 
     // Added for RayCasting OSPRay
     void             ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *,  

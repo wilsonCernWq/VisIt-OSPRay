@@ -113,9 +113,6 @@ class     avtOSPRayVoxelExtractor;
 //    Kevin Griffin, Fri Apr 22 16:31:57 PDT 2016
 //    Added support for polygons.
 //
-//    Qi Wu, Sun Jul 1 2018
-//    Added support for ospray volume rendering.
-//
 // ****************************************************************************
 
 class AVTFILTERS_API avtOSPRaySamplePointExtractor 
@@ -134,10 +131,19 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     void                      SetLighting(bool l) {lighting = l; };
     void                      SetMatProperties(double _matProp[4]) 
                   { for (int i=0;i<4;i++) materialProperties[i]=_matProp[i]; };
-
+    void                      SetViewDirection(double *vD)
+                         { for (int i=0; i<3; i++) viewDirection[i] = vD[i]; };
+    void                      SetPanPercentages(double p[2])
+                         { panPercentage[0] = p[0]; panPercentage[1] = p[1]; };
     void                      SetMVPMatrix(vtkMatrix4x4 *mvp)
                                              { modelViewProj->DeepCopy(mvp); };
 
+    void                      GetSpatialExtents(double se[6])
+                   { for (int i=0; i<6; i++) se[i] = minMaxSpatialBounds[i]; };
+    void                      GetAvgPatchExtents(double ae[6])
+                       { for (int i=0; i<3; i++) ae[i] = avgPatchExtents[i]; };
+    void                      GetCellDimension(double cd[6])
+                         { for (int i=0; i<3; i++) cd[i] = cellDimension[i]; };
 
     int                       GetImgPatchSize() { return patchCount; };
     ospray::ImgMetaData       GetImgMetaPatch(int patchId)
@@ -147,8 +153,17 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     void                      DelImgPatches();
 
 
+    void                      SetImageZoom(double z) { imageZoom = z; }
+    //void                      SetDepthBuffer(float *zBuffer, int size)
+    //                                                 { depthBuffer= zBuffer; };
+    //void                      SetRGBBuffer(unsigned char *cb, int w, int h)
+    //                                                  { rgbColorBuffer = cb; };
+    //void                      SetBufferExtents(int e[4])
+    //                      { for (int i=0; i<4; i++) bufferExtents[i] = e[i]; };
+
+    // Added by Qi (March 2018) for RayCasting:OSPRay  
     void SetOSPRay(OSPVisItContext* o) { ospray = o; }
-    void SetSamplingRate(double r) { samplingRate = r; }
+    void SetRendererSampleRate(double r) { rendererSampleRate = r; }
     void SetRenderingExtents(int extents[4]) 
     {
         renderingExtents[0] = extents[0];
@@ -174,16 +189,33 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     
     avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
     
+    double                    minMaxSpatialBounds[6];
+    double                    avgPatchExtents[3];
+    double                    cellDimension[3];
     int                       patchCount;
     
+    // Background + other plots
+    //   depthBuffer    : depth buffer for the background and other plots
+    //   rgbColorBuffer : bounding box + pseudo color + ...
+    //   bufferExtents  : extents of the buffer (minX, maxX, minY, maxY)
+    //float                    *depthBuffer; 
+    //unsigned char            *rgbColorBuffer; 
+    //int                       bufferExtents[4];
+
+    // Camera stuff
+    double                    viewDirection[3];
+    double                    panPercentage[2];
+    double                    imageZoom;
     vtkMatrix4x4             *modelViewProj;
 
+    // lighting & material
     bool                      lighting;
     double                    materialProperties[4];
 
+    // OSPRay
     int                       renderingExtents[4];    
     OSPVisItContext          *ospray;
-    double                    samplingRate;
+    double                    rendererSampleRate;
 
 };
 
