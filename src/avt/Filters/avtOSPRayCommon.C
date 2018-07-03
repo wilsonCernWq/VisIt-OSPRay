@@ -73,23 +73,25 @@ std::ostream *ospray::osp_err = (ospray::visit::CheckVerbose()) ?
 
 // ****************************************************************************
 //
-// OSPContext
+// OSPRay
 //
 // ****************************************************************************
 
-void OSPContext_ErrorFunc(OSPError, const char* msg) { 
-    osperr << "#osp: (rank " << PAR_Rank() << ")" 
-           << msg; 
+void OSPContext_ErrorFunc(OSPError, const char* msg)
+{ 
+    osperr << "#osp: (rank " << PAR_Rank() << ")" << msg; 
 }
-void OSPContext_StatusFunc(const char* msg) { 
-    osperr << "#osp: (rank " << PAR_Rank() << ")" 
-           << msg; 
+void OSPContext_StatusFunc(const char* msg)
+{ 
+    osperr << "#osp: (rank " << PAR_Rank() << ")" << msg; 
 }
-bool OSPVisItContext::initialized = false;
-void OSPVisItContext::Finalize() {}
-void OSPVisItContext::InitOSP(int numThreads) 
-{     
-    if (!OSPVisItContext::initialized) 
+static bool ospray_initialized = false;
+void ospray::Finalize()
+{
+}
+void ospray::InitOSP(int numThreads) 
+{   
+    if (!ospray_initialized) 
     {
 #ifdef __unix__
         // check hostname
@@ -100,6 +102,7 @@ void OSPVisItContext::InitOSP(int numThreads)
         // load ospray device
         ospout << "[ospray] Initialize OSPRay" << std::endl;	
         OSPDevice device = ospGetCurrentDevice();
+	// check if ospray has been initialized already
         if (!device) {
 	    ospout << "[ospray] device not found, creating one" << std::endl;
             device = ospNewDevice("default"); 
@@ -120,11 +123,27 @@ void OSPVisItContext::InitOSP(int numThreads)
         // load ospray module
         OSPError err = ospLoadModule("visit");
         if (err != OSP_NO_ERROR) {
-	        osperr << "[Error] can't load visit module" << std::endl;
+	    osperr << "[Error] can't load visit module" << std::endl;
         }
-        OSPVisItContext::initialized = true;
+        ospray_initialized = true;
     }
 }
+
+// ****************************************************************************
+//
+// OSPRay
+//
+// ****************************************************************************
+
+
+
+
+
+
+
+
+
+
 
 // We use this function to minimize interface
 void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
@@ -139,10 +158,7 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
     
     ren.Set(*(volume->patch.model));
     ren.Set(*camera);
-    
-    //volume->InitFB(imgWidth, imgHeight);
-    //volume->RenderFB();
-    
+        
     ospray::visit::FrameBuffer fb(volume->patch.fb);
     fb.Render(imgWidth, imgHeight,
 	      cam.GetWindowExts(0),
@@ -151,15 +167,12 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
 	      ren->bgDepthBuffer,
 	      *ren,
 	      dest);
-    //std::copy(volume->GetFBData(), 
-    //          volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
 }
 
 void OSPVisItContext::InitPatch(int id) 
 {
     if (volumes.find(id) == volumes.end()) {
         OSPVisItVolume v;
-        v.patchId = id;
         v.parent = this;
         volumes[id] = v;
     }

@@ -301,7 +301,7 @@ avtOSPRayRayTracer::Execute()
                             "ospout");
     // initialize ospray
     // -- multi-threading enabled
-    ospray->InitOSP();
+    ospray::InitOSP();
     // camera
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
     ((ospray::visit::Camera)ospray->camera)
@@ -323,8 +323,10 @@ avtOSPRayRayTracer::Execute()
     ren.ResetLights();
     double light_scale = lighting ? 0.9 : 1.0;
     ren.AddLight().Set(true,  materialProperties[0], light_scale); // ambient 
-    ren.AddLight().Set(false, materialProperties[1], light_scale, viewDirection);
-    ren.AddLight().Set(false, 1.5, light_scale, viewDirection); 
+    ren.AddLight().Set(false, materialProperties[1], light_scale,
+		       viewDirection);
+    ren.AddLight().Set(false, 1.5, light_scale,
+		       viewDirection); 
     for (int i = 0; i < 8; ++i) { // in VisIt there are only 8 lights
         const LightAttributes& la = lightList.GetLight(i);
         if (la.GetEnabledFlag()) {
@@ -585,16 +587,10 @@ avtOSPRayRayTracer::Execute()
             const int currExtents[4] = 
                 {currImgMeta.screen_ll[0], currImgMeta.screen_ur[0], 
                  currImgMeta.screen_ll[1], currImgMeta.screen_ur[1]};
-            // ospray::WriteArrayToPPM
-            // 	("/home/qwu/work/visit/build/img-"+std::to_string(i)+".ppm",
-            // 	 currData,
-            // 	 currImgMeta.screen_ur[0] - currImgMeta.screen_ll[0],
-            // 	 currImgMeta.screen_ur[1] - currImgMeta.screen_ll[1]);
             avtOSPRayImageCompositor::BlendBackToFront(currData,
                                                        currExtents,
                                                        compositedData, 
                                                        compositedExtents);
-            // Clean up data
             if (currImgData.imagePatch != NULL) {
                 delete[] currImgData.imagePatch;
             }
@@ -612,9 +608,9 @@ avtOSPRayRayTracer::Execute()
                                 "ospout");
         //---------------------------------------------------------------//
     } 
-    //
-    // PARALLEL: Image Composition
-    //
+    //-------------------------------------------------------------------//
+    // PARALLEL: Customized Parallel Direct Send Method
+    //-------------------------------------------------------------------//
     else { 
         //---------------------------------------------------------------//
         // Parallel Direct Send
@@ -707,11 +703,13 @@ avtOSPRayRayTracer::Execute()
     compositedData = NULL; 
     ospout << "[avtOSPRayRayTracer] Raycasting OSPRay is Done !" << std::endl;
 
+    ///////////////////////////////////////////////////////////////////
     //
     // Clean up
     //
+    ///////////////////////////////////////////////////////////////////
     screen_to_model_transform->Delete();
     model_to_screen_transform->Delete();
     screen_to_camera_transform->Delete();
-    ospray->Finalize();
+    ospray::Finalize();
 }

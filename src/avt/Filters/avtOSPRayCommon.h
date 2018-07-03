@@ -76,13 +76,6 @@ private:
 
     OSPVisItContext *parent;
     
-    //OSPFrameBuffer      framebuffer;
-    //float              *framebufferData;
-    //OSPTexture2D        framebufferBg;
-    //osp::vec2i imageSize;
-
-    // metadata for volume
-    int                 patchId;       // volume patch id
     bool                finished;      // check if this volume is initialized
     bool                enableShading;
     bool                enableDVR;     // Distributed Volume Renderer
@@ -92,11 +85,8 @@ private:
     
 
 public:
-    // constructor
+
     OSPVisItVolume() {
-        //framebuffer     = NULL;
-        //framebufferData = NULL;
-        //framebufferBg   = NULL;
         finished      = false; 
         enableShading = false;
         enableDVR     = false;
@@ -122,24 +112,6 @@ public:
     bool GetFinishedFlag() { return finished; }
     void SetFinishedFlag(bool f) { finished = f; } 
 
-    // framebuffer component     
-    /* void InitFB(unsigned int width, unsigned int height); */
-    /* void RenderFB(); */
-    /* float* GetFBData(); */
-    /* void CleanFB() { */
-    /*     if (framebufferData != NULL) {  */
-    /*         ospUnmapFrameBuffer(framebufferData, framebuffer);  */
-    /*         framebufferData = NULL; */
-    /*     } */
-    /*     if (framebuffer != NULL) {  */
-    /*         ospRelease(framebuffer); 	     */
-    /*         framebuffer = NULL; */
-    /*     } */
-    /*     if (framebufferBg != NULL) { */
-    /*         ospRelease(framebufferBg); 	     */
-    /*         framebufferBg = NULL; */
-    /*     } */
-    /* } */
 };
 
 // ****************************************************************************
@@ -152,6 +124,11 @@ public:
 //  Creation:   
 //
 // ****************************************************************************
+
+namespace ospray {
+    void InitOSP(int numThreads = 0);
+    void Finalize();
+};
 
 class OSPVisItContext
 {
@@ -168,12 +145,9 @@ public:
         volumes.clear();
     }
 
-    // helper
     void Render(float xMin, float xMax, float yMin, float yMax,
                 int imgWidth, int imgHeight, 
                 float*& dest, OSPVisItVolume* volume);
-    void InitOSP(int numThreads = 0);
-    void Finalize();
     void InitPatch(int id);
     OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
 
@@ -221,7 +195,7 @@ private:
     osp::box3f     bbox;
     
     double bounds[6];
-    static bool initialized;
+    //static bool initialized;
     std::string varname;
 };
 
