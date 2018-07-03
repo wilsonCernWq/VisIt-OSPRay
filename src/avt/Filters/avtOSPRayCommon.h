@@ -44,7 +44,180 @@
 #define AVT_OSPRAY_COMMON_H
 
 #include <ospray/visit/VisItWrapperCore.h>
+#include <ospray/visit/VisItWrapper.h>
 
+//#include <string>
+//#include <vector>
+//#include <map>
+
+// some constants
+/* #define OSP_PERSPECTIVE              1 */
+/* #define OSP_ORTHOGRAPHIC             2 */
+/* #define OSP_BLOCK_BRICKED_VOLUME     3 */
+/* #define OSP_SHARED_STRUCTURED_VOLUME 4 */
+/* #define OSP_INVALID                  5 */
+/* #define OSP_VALID                    6 */
+
+// ****************************************************************************
+//  Struct:  OSPVisItVolume
+//
+//  Purpose:
+//    
+//
+//  Programmer: Qi WU
+//  Creation:   
+//
+// ****************************************************************************
+/*
+class OSPVisItContext;
+class OSPVisItVolume 
+{
+private:
+    friend class OSPVisItContext;
+
+    OSPVisItContext *parent;
+
+    // objects owned by the struct
+    // -- ospray model ---
+    OSPModel            world;
+    unsigned char       worldType;
+    // --- ospray framebuffer ---
+    OSPFrameBuffer      framebuffer;
+    float              *framebufferData;
+    OSPTexture2D        framebufferBg;
+    osp::vec2i imageSize;
+    // --- ospray volume ---
+    OSPVolume           volume;
+    unsigned char       volumeType;
+    // --- ospray data ---
+    OSPDataType         voxelDataType;
+    OSPData             voxelData;
+    size_t              voxelSize;
+    void*               dataPtr;
+    std::string         dataType;
+
+    // metadata for volume
+    int                 patchId;       // volume patch id
+    bool                finished;      // check if this volume is initialized
+    bool                enableShading;
+    bool                enableDVR;     // Distributed Volume Renderer
+    float               specularKs;
+    float               specularNs;
+    float               samplingRate;
+
+    // geometric parameters for volume
+    osp::vec3i          regionSize;
+    osp::vec3f          regionStart;
+    osp::vec3f          regionStop;
+    osp::vec3f          regionSpacing;
+    osp::vec3f          regionUpperClip;
+    osp::vec3f          regionLowerClip;
+    osp::vec3f          regionScaling;
+    
+public:
+    // constructor
+    OSPVisItVolume() {
+        // objects owned by the struct
+        world           = NULL;
+        worldType       = OSP_INVALID;
+        framebuffer     = NULL;
+        framebufferData = NULL;
+        framebufferBg   = NULL;
+        volume          = NULL;
+        volumeType      = OSP_INVALID;
+        voxelDataType   = OSP_VOID_PTR;
+        voxelData       = NULL;
+        voxelSize       = 0;
+        dataPtr         = NULL;
+        dataType        = "";
+        // metadata for volume
+        //patchId = id;    
+        finished      = false; 
+        enableShading = false;
+        enableDVR     = false;
+        specularKs    = 1.0f;
+        specularNs    = 15.0f;
+        samplingRate  = 3.0f;
+        // geometric parameters for volume
+        regionSize.x  = regionSize.y  = regionSize.z  = 0;
+        regionStart.x = regionStart.y = regionStart.z = 0.0f;
+        regionStop.x  = regionStop.y  = regionStop.z  = 0.0f;
+        regionSpacing.x   = regionSpacing.y   = regionSpacing.z   = 0.0f;
+        regionUpperClip.x = regionUpperClip.y = regionUpperClip.z = 0.0f;
+        regionLowerClip.x = regionLowerClip.y = regionLowerClip.z = 0.0f;
+        regionScaling.x   = regionScaling.y   = regionScaling.z   = 1.0f;
+    }
+
+    // destructor
+    ~OSPVisItVolume() { Clean(); }    
+    void Clean() {
+        CleanFB();
+        CleanVolume();	
+        CleanWorld();
+  //  }
+*/
+/*  
+    // other function
+    void Set(int type, void *ptr, 
+             double *X, double *Y, double *Z, 
+             int nX, int nY, int nZ, 
+             double volumePBox[6], double volumeBBox[6],
+             double mtl[4], float sr, bool shading);
+    bool GetDVRFlag() { return enableDVR; }
+    void SetDVRFlag(bool mode) { enableDVR = mode; }
+    bool GetFinishedFlag() { return finished; }
+    void SetFinishedFlag(bool f) { finished = f; } 
+
+    // ospModel component
+    OSPModel GetWorld() { return world; }
+    void InitWorld();
+    void SetWorld();
+    void CleanWorld() {
+        if (world != NULL) {	    
+            ospRelease(world);
+            world = NULL;
+        }
+        worldType = OSP_INVALID;
+    }
+	
+    // ospVolume component
+    void InitVolume(int type, void *ptr,
+		    int nX, int nY, int nZ,
+		    unsigned char volumeType); 
+    OSPVolume GetVolume() { return volume; }
+    void SetVolume(double *X, double *Y, double *Z, 
+                   int nX, int nY, int nZ,
+                   double volumePBox[6], 
+                   double volumeBBox[6]);
+    void CleanVolume() {	
+        if (volume != NULL) { ospRelease(volume); volume = NULL; }
+        if (voxelData != NULL) { 
+            ospRelease(voxelData);
+            voxelData = NULL; 
+        }
+        volumeType = OSP_INVALID;
+    }
+
+    // framebuffer component     
+    void InitFB(unsigned int width, unsigned int height);
+    void RenderFB();
+    float* GetFBData();
+    void CleanFB() {
+        if (framebufferData != NULL) { 
+            ospUnmapFrameBuffer(framebufferData, framebuffer); 
+            framebufferData = NULL;
+        }
+        if (framebuffer != NULL) { 
+            ospRelease(framebuffer); 	    
+            framebuffer = NULL;
+        }
+        if (framebufferBg != NULL) {
+            ospRelease(framebufferBg); 	    
+            framebufferBg = NULL;
+        }
+    }
+};
+*/
 // ****************************************************************************
 //  Struct:  OSPVisItContext
 //
@@ -73,8 +246,69 @@ namespace ospray {
                                  double dbounds[6]);
     void SetActiveVariable(OSPVisItContext* core,const char* str);
     const std::string& GetActiveVariable(const OSPVisItContext* core);
+
 };
 
+/*
+    // ************************************************************************
+    // We expose this in header because iy will be called in other components
+    // where we dont have direct library linkage
+    // ************************************************************************
+    OSPVisItContext() 
+    {
+        regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
+    }
+    ~OSPVisItContext() {	
+        volumes.clear();
+        //renderer.Clean();
+        //camera.Delete();
+        //tfn.Delete();
+    }
+
+    // helper
+    void Render(float xMin, float xMax, float yMin, float yMax,
+                int imgWidth, int imgHeight, 
+                float*& dest, OSPVisItVolume* volume);
+    void InitOSP(int numThreads = 0);
+    void Finalize();
+    void InitPatch(int id);
+    OSPVisItVolume* GetPatch(int id) { return &volumes[id]; }
+
+    // parameters
+    void SetDataBounds(double dbounds[6]) {
+        for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
+    }
+    void SetScaling(double s[3]) { 
+        regionScaling.x = (float)s[0];
+        regionScaling.y = (float)s[1];
+        regionScaling.z = (float)s[2]; 
+    }
+
+
+    ospray::visit::CameraCore           camera;
+    ospray::visit::RendererCore         renderer;
+    ospray::visit::TransferFunctionCore tfn;
+    void SetBgBuffer(unsigned char* color, float* depth, int size[2]) 
+    {
+        ((ospray::visit::Renderer)renderer)
+            .SetBackgroundBuffer(color, depth, size);
+    }
+
+
+    std::map<int, OSPVisItVolume> volumes;
+
+    void SetActiveVariable(const char* str) { varname = str; }
+    const std::string& GetActiveVariable() const { return varname; }
+    
+private:
+    
+    friend class OSPVisItVolume;
+    osp::vec3f     regionScaling;
+    double bounds[6];
+    static bool initialized;
+    std::string varname;
+};
+*/
 #endif//AVT_OSPRAY_COMMON_H
 
 // ****************************************************************************

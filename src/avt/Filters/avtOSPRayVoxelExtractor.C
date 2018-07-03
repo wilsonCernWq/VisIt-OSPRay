@@ -355,12 +355,12 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         // debug5 << "VAR: ghost value " << (int)ghosts[0] << std::endl;
         //
         if (ghosts != NULL) {
-            // ospray::visit::Volume::ComputeGhostBounds(ghost_bound,
-            //                                           ghosts,
-            //                                           dims[0]-1,
-            //                                           dims[1]-1,
-            //                                           dims[2]-1);
-            //*
+            ospray::visit::Volume::ComputeGhostBounds(ghost_bound,
+                                                      ghosts,
+                                                      dims[0]-1,
+                                                      dims[1]-1,
+                                                      dims[2]-1);
+            /*
             int gnX = 0, gnY = 0, gnZ = 0;
             gnX = dims[0] - 1;
             gnY = dims[1] - 1;
@@ -404,7 +404,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                     if (ghost_bound[2] && ghost_bound[5]) { break; }
                 }
             }
-            //*/
+            */
         }
         // Data bounding box
         volumeCube[0] = X[0];
@@ -460,26 +460,20 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     {
         StackTimer t1("avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay "
                       "Create ImgArray (Pre-OSPRay preparation)");
-	ospout << "[avtOSPRayVoxelExtractor] patch extents " 
-	       << xMin << " " << xMax << " "
-	       << yMin << " " << yMax << std::endl;
-	ospout << "[avtOSPRayVoxelExtractor] renderingExtents "
-	       << renderingExtents[0] << " "
-	       << renderingExtents[1] << " "
-	       << renderingExtents[2] << " "
-	       << renderingExtents[3] << std::endl;
-	xMin = CLAMP(xMin, renderingExtents[0], renderingExtents[1]);
-	xMax = CLAMP(xMax, renderingExtents[0], renderingExtents[1]);
-	yMin = CLAMP(yMin, renderingExtents[2], renderingExtents[3]);
-	yMax = CLAMP(yMax, renderingExtents[2], renderingExtents[3]);
-        //if (xMin < renderingExtents[0]) { xMin = renderingExtents[0]; }
-        //if (yMin < renderingExtents[2]) { yMin = renderingExtents[2]; }    
-        //if (xMax > renderingExtents[1]) { xMax = renderingExtents[1]; }
-        //if (yMax > renderingExtents[3]) { yMax = renderingExtents[3]; }
+        // assign data to the class
+        //xMax+=1; yMax+=1;
+        ospout << "[avtOSPRayVoxelExtractor] patch extents " 
+               << xMin << " " << xMax << " "
+               << yMin << " " << yMax << std::endl;
+        if (xMin < renderingExtents[0]) { xMin = renderingExtents[0]; }
+        if (yMin < renderingExtents[2]) { yMin = renderingExtents[2]; }    
+        if (xMax > renderingExtents[1]) { xMax = renderingExtents[1]; }
+        if (yMax > renderingExtents[3]) { yMax = renderingExtents[3]; }
         imgWidth  = xMax-xMin;
         imgHeight = yMax-yMin;
-        imgArray = new float[((imgWidth)*4) * imgHeight];
 
+        // Initialize memory (framebuffer) no initialization
+        imgArray = new float[((imgWidth)*4) * imgHeight];
     }
 
     //=======================================================================//
@@ -593,6 +587,11 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             delete []imgArray; imgArray = NULL; 
         } 
     }
+    // else {
+    // 	WriteArrayToPPM("patch-after-render"+
+    // 			std::to_string(proc), imgArray, 
+    // 			imgWidth, imgHeight);
+    // }
 }
 
 
@@ -624,11 +623,10 @@ avtOSPRayVoxelExtractor::GetImageDimensions(int &inUse, int dims[2], int screen_
 }
 
 // ****************************************************************************
-//  Method: avtOSPRayVoxelExtractor::getComputedImage
+//  Method: avtSLIVRVoxelExtractor::getComputedImage
 //
 //  Purpose:
-//      Allocates space to the pointer address and copy the image generated
-//      to it
+//      Allocates space to the pointer address and copy the image generated to it
 //
 //  Programmer: Pascal Grosset
 //  Creation:   August 14, 2016
