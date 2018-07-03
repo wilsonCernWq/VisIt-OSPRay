@@ -132,13 +132,27 @@ void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
                              float*& dest, OSPVisItVolume* volume) 
 {
 
-    ((ospray::visit::Camera)camera).SetScreen(xMin, xMax, yMin, yMax);
-    ((ospray::visit::Renderer)renderer).Set(*(volume->patch.model));
-    ((ospray::visit::Renderer)renderer).Set(*camera);
-    volume->InitFB(imgWidth, imgHeight);
-    volume->RenderFB();
-    std::copy(volume->GetFBData(), 
-              volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
+    ospray::visit::Camera   cam(camera);
+    ospray::visit::Renderer ren(renderer);
+    
+    cam.SetScreen(xMin, xMax, yMin, yMax);
+    
+    ren.Set(*(volume->patch.model));
+    ren.Set(*camera);
+    
+    //volume->InitFB(imgWidth, imgHeight);
+    //volume->RenderFB();
+    
+    ospray::visit::FrameBuffer fb(volume->patch.fb);
+    fb.Render(imgWidth, imgHeight,
+	      cam.GetWindowExts(0),
+	      cam.GetWindowExts(2),
+	      ren->bgSize[0],
+	      ren->bgDepthBuffer,
+	      *ren,
+	      dest);
+    //std::copy(volume->GetFBData(), 
+    //          volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
 }
 
 void OSPVisItContext::InitPatch(int id) 
@@ -192,7 +206,7 @@ void OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
     finished = true;
 }
 
-
+/*
 // ospFrameBuffer component     
 void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
 {
@@ -241,7 +255,7 @@ void OSPVisItVolume::RenderFB() {
 float* OSPVisItVolume::GetFBData() {
     return framebufferData;
 }
-
+*/
 // ****************************************************************************
 //
 //

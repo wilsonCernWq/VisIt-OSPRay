@@ -70,15 +70,16 @@ class OSPVisItVolume
 {
 public:
     ospray::visit::PatchCore patch;
+
 private:
     friend class OSPVisItContext;
 
     OSPVisItContext *parent;
     
-    OSPFrameBuffer      framebuffer;
-    float              *framebufferData;
-    OSPTexture2D        framebufferBg;
-    osp::vec2i imageSize;
+    //OSPFrameBuffer      framebuffer;
+    //float              *framebufferData;
+    //OSPTexture2D        framebufferBg;
+    //osp::vec2i imageSize;
 
     // metadata for volume
     int                 patchId;       // volume patch id
@@ -93,9 +94,9 @@ private:
 public:
     // constructor
     OSPVisItVolume() {
-        framebuffer     = NULL;
-        framebufferData = NULL;
-        framebufferBg   = NULL;
+        //framebuffer     = NULL;
+        //framebufferData = NULL;
+        //framebufferBg   = NULL;
         finished      = false; 
         enableShading = false;
         enableDVR     = false;
@@ -107,7 +108,7 @@ public:
     // destructor
     ~OSPVisItVolume() { Clean(); }    
     void Clean() {
-        CleanFB();
+        //CleanFB();
     }
     
     // other function
@@ -121,25 +122,24 @@ public:
     bool GetFinishedFlag() { return finished; }
     void SetFinishedFlag(bool f) { finished = f; } 
 
-
     // framebuffer component     
-    void InitFB(unsigned int width, unsigned int height);
-    void RenderFB();
-    float* GetFBData();
-    void CleanFB() {
-        if (framebufferData != NULL) { 
-            ospUnmapFrameBuffer(framebufferData, framebuffer); 
-            framebufferData = NULL;
-        }
-        if (framebuffer != NULL) { 
-            ospRelease(framebuffer); 	    
-            framebuffer = NULL;
-        }
-        if (framebufferBg != NULL) {
-            ospRelease(framebufferBg); 	    
-            framebufferBg = NULL;
-        }
-    }
+    /* void InitFB(unsigned int width, unsigned int height); */
+    /* void RenderFB(); */
+    /* float* GetFBData(); */
+    /* void CleanFB() { */
+    /*     if (framebufferData != NULL) {  */
+    /*         ospUnmapFrameBuffer(framebufferData, framebuffer);  */
+    /*         framebufferData = NULL; */
+    /*     } */
+    /*     if (framebuffer != NULL) {  */
+    /*         ospRelease(framebuffer); 	     */
+    /*         framebuffer = NULL; */
+    /*     } */
+    /*     if (framebufferBg != NULL) { */
+    /*         ospRelease(framebufferBg); 	     */
+    /*         framebufferBg = NULL; */
+    /*     } */
+    /* } */
 };
 
 // ****************************************************************************
