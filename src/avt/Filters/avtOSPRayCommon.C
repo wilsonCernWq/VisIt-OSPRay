@@ -255,19 +255,11 @@ ospray::ComputeProjections(const avtViewInfo &view,
 			   double        canvas_size[2],
     			   int           rendering_extents[4]) 
 {
-    vtkCamera *vtkcamera = vtkCamera::New();
-#if (0)
-    vtkcamera->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
-    vtkcamera->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
-    vtkcamera->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
-    vtkcamera->SetViewAngle(view.viewAngle);
-    vtkcamera->SetClippingRange(old_near_plane, old_far_plane);
-    if (view.orthographic) { vtkcamera->ParallelProjectionOn(); }
-    else { vtkcamera->ParallelProjectionOff(); }
-    vtkcamera->SetParallelScale(view.parallelScale);
-#else
+    //----------------------------------------------------------------------//
     // see avt/View/avtViewInfo::SetCameraFromView
+    //----------------------------------------------------------------------//
     /* view.SetCameraFromView(vtkcamera); */
+    vtkCamera *vtkcamera = vtkCamera::New();
     vtkcamera->SetViewAngle(view.viewAngle);
     vtkcamera->SetEyeAngle(view.eyeAngle);
     if (view.setScale)
@@ -285,8 +277,9 @@ ospray::ComputeProjections(const avtViewInfo &view,
     vtkcamera->SetClippingRange(old_near_plane, old_far_plane);
     // here we dont want to move window center ?
     //vtkcamera->SetWindowCenter(2.0*view.imagePan[0], 2.0*view.imagePan[1]);
-#endif
+    //----------------------------------------------------------------------//
     // compute matrix
+    //----------------------------------------------------------------------//
     vtkMatrix4x4 *matMVPS =
 	vtkcamera->GetModelViewTransformMatrix();
     vtkMatrix4x4 *matProj = 
@@ -297,18 +290,26 @@ ospray::ComputeProjections(const avtViewInfo &view,
 			 screen_to_model_transform);
     vtkMatrix4x4::Invert(matProj,
 			 screen_to_camera_transform);
+    //----------------------------------------------------------------------//
     // compute canvas size (parallel scale)
-    if (!view.orthographic) {
+    //----------------------------------------------------------------------//
+    if (!view.orthographic)
+    {
     	canvas_size[0] = 2.0 * old_near_plane / matProj->GetElement(0, 0);
     	canvas_size[1] = 2.0 * old_near_plane / matProj->GetElement(1, 1);
     }
-    else {
+    else
+    {
     	canvas_size[0] = 2.0 / matProj->GetElement(0, 0);
     	canvas_size[1] = 2.0 / matProj->GetElement(1, 1);
     }
+    //----------------------------------------------------------------------//
     // cleanup
-    vtkcamera->Delete();    
+    //----------------------------------------------------------------------//
+    vtkcamera->Delete();
+    //----------------------------------------------------------------------//
     // get the renderable region
+    //----------------------------------------------------------------------//
     double depths[2];
     ospray::ProjectWorldToScreenCube(data_bound,
 				     screen_size[0], screen_size[1], 
