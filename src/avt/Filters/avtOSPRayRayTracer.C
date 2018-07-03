@@ -347,8 +347,7 @@ avtOSPRayRayTracer::Execute()
     ren.Set(0, 1, false, false, false);
     
     // others
-    ospray->SetDataBounds(dbounds);
-    ospray->SetScaling(scale);
+    ospray->SetScaleAndDataBounds(scale, dbounds);
     ospray->SetActiveVariable(activeVariable);
 
     //
