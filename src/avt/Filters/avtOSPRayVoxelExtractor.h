@@ -118,57 +118,55 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     // void             SetVariableInformation(std::vector<std::string> &names,
     //                                         std::vector<int> varsize);
 
-    void              SetViewInfo(const avtViewInfo & v)     { viewInfo = v; };
-    void             SetLighting(bool l) { lighting = l; };
-    void             SetScalarRange(double r[2])
-                             { scalarRange[0] = r[0]; scalarRange[1] = r[1]; };
-    void             SetTFVisibleRange(double r[2])
-                       { tFVisibleRange[0] = r[0]; tFVisibleRange[1] = r[1]; };
-    void             SetMVPMatrix(vtkMatrix4x4 *mvp)
-    {
-	model_to_screen_transform->DeepCopy(mvp); 
-	vtkMatrix4x4::Invert(model_to_screen_transform, 
-			     screen_to_model_transform); 
-    }
-
-    void             GetImageDimensions(int&,int dims[2],
-					int screen_ll[2],
-					int screen_ur[2],
-					float &, float &);
-    void             GetComputedImage(float *image);
     void             SetProcIdPatchID(int c, int p)   { proc = c; patch = p; };
-    
-    void             SetSamplingRate(double r)           { samplingRate = r; };
     void             SetOSPRay(OSPVisItContext* o)        { ospray_core = o; };
+    void             SetViewInfo(const avtViewInfo & v)      { viewInfo = v; };
+    void             SetSamplingRate(double r)           { samplingRate = r; };
     void             SetRenderingExtents(int extents[4]) 
     {
 	renderingExtents[0] = extents[0];
 	renderingExtents[1] = extents[1];
 	renderingExtents[2] = extents[2];	
 	renderingExtents[3] = extents[3];
-    }
+    };
+    void             SetMVPMatrix(vtkMatrix4x4 *mvp)
+    {
+	model_to_screen_transform->DeepCopy(mvp); 
+	vtkMatrix4x4::Invert(model_to_screen_transform, 
+			     screen_to_model_transform); 
+    };
+    void             SetScalarRange(double r[2])
+    {
+	scalarRange[0] = r[0];
+	scalarRange[1] = r[1];
+    };
+    void             SetTFVisibleRange(double r[2])
+    {
+	tFVisibleRange[0] = r[0];
+	tFVisibleRange[1] = r[1];
+    };
+    void             GetImageDimensions(int&,int dims[2],int screen_ll[2],
+					int screen_ur[2],float &, float &);
+    void             GetComputedImage(float *image);
 
   protected:
-
+    // the output image
+    float           *finalImage;
+    // some meta information
+    bool             drawn;  // whether the patch is drawn or not
+    int              patch;  // id of the patch
+    int              proc;   // id of the processor
+    // fields
+    avtViewInfo      viewInfo;
+    OSPVisItContext *ospray_core;    
+    double           samplingRate;    
+    int              renderingExtents[4];
+    // matrix
     vtkMatrix4x4    *model_to_screen_transform;
     vtkMatrix4x4    *screen_to_model_transform;
-
-    avtViewInfo      viewInfo;
-    
-    int              renderingExtents[4];
-
-    // Color computation
-    bool             lighting;
-
+    // others
     double           scalarRange[2];
     double           tFVisibleRange[2];
-
-    // Rendering
-    double           renderingDepthsExtents[2];
-
-
-    // Patch details for one image
-    int              patchDrawn;       // whether the patch is drawn or not
     int              imgWidth;
     int              imgHeight;
     int              imgDims[2];       // size of the patch
@@ -176,21 +174,11 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     int              imgUpperRight[2]; // coordinates in the whole image
     float            eyeSpaceDepth;    // for blending patches
     float            clipSpaceDepth;   // clip space depth for blending with bg
-
-    float            *imgArray;        // the final framebuffer
-    int              proc;             // id of the processor
-    int              patch;            // id of the patch
-
     int              xMin, xMax, yMin, yMax;
 
-    // OSPRay stuffs
-    OSPVisItContext *ospray_core;
-    double           samplingRate;
-
-    // Added for RayCasting OSPRay
     void             ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *,  
-                             std::vector<std::string> &varnames,
-                             std::vector<int> &varsize);
+                                   std::vector<std::string> &varnames,
+                                           std::vector<int> &varsize);
 };
 
 #endif

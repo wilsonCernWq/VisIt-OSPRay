@@ -123,39 +123,36 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     : public avtSamplePointExtractorBase
 {
   public:
-                              avtOSPRaySamplePointExtractor(int, int, int);
-    virtual                  ~avtOSPRaySamplePointExtractor();
+                          avtOSPRaySamplePointExtractor(int, int, int);
+    virtual              ~avtOSPRaySamplePointExtractor();
 
-    virtual const char       *GetType(void)
+    virtual const char   *GetType(void)
                                    { return "avtOSPRaySamplePointExtractor"; };
-    virtual const char       *GetDescription(void)
+    virtual const char   *GetDescription(void)
                                          { return "Extracting sample points";};
 
-    void                      SetViewInfo(const avtViewInfo & v)
-                                                             { viewInfo = v; };
-
-    void                      SetLighting(bool l) {lighting = l; };
-    void                      SetMVPMatrix(vtkMatrix4x4 *mvp)
-                                             { modelViewProj->DeepCopy(mvp); };
-
-    int                       GetImgPatchSize() { return patchCount; };
-    ospray::ImgMetaData       GetImgMetaPatch(int patchId)
-                                  { return imageMetaPatchVector.at(patchId); };
-    void                      GetAndDelImgData(int patchId,
-                                               ospray::ImgData &tempImgData);
-    void                      DelImgPatches();
-
-    void SetOSPRay(OSPVisItContext* o) { ospray_core = o; }
-    void SetSamplingRate(double r) { samplingRate = r; }
-    void SetRenderingExtents(int extents[4]) 
+    void                  SetOSPRay(OSPVisItContext* o)   { ospray_core = o; };
+    void                  SetViewInfo(const avtViewInfo & v) { viewInfo = v; };
+    void                  SetSamplingRate(double r)      { samplingRate = r; };
+    void                  SetRenderingExtents(int extents[4]) 
     {
         renderingExtents[0] = extents[0];
         renderingExtents[1] = extents[1];
         renderingExtents[2] = extents[2];
         renderingExtents[3] = extents[3];
     }
+    void                  SetMVPMatrix(vtkMatrix4x4 *mvp)
+    {
+	modelViewProj->DeepCopy(mvp);
+    };
 
-    // Output data for RayCasting OSPRay
+    int                   GetImgPatchSize() { return patchCount; };
+    void                  GetAndDelImgData(int patchId,
+					   ospray::ImgData &tempImgData);
+    ospray::ImgMetaData   GetImgMetaPatch(int patchId)
+                                  { return imageMetaPatchVector.at(patchId); };
+    void                  DelImgPatches();
+    
     std::vector<ospray::ImgMetaData>    imageMetaPatchVector;
     std::multimap<int, ospray::ImgData> imgDataHashMap;
     typedef std::multimap<int, ospray::ImgData>::iterator iter_t;
@@ -168,22 +165,15 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     virtual void              SendJittering(void);
     virtual bool              FilterUnderstandsTransformedRectMesh(void);
     void                      RasterBasedSample(vtkDataSet *, int num = 0);
-    ospray::ImgMetaData       InitMetaPatch(int id); // initialize a patch
-
-    avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
-    avtViewInfo               viewInfo;
+    ospray::ImgMetaData       InitMetaPatch(int id);
 
     OSPVisItContext          *ospray_core;
-    
-    int                       patchCount;
-    
+    avtOSPRayVoxelExtractor  *osprayVoxelExtractor;
+    avtViewInfo               viewInfo;
     vtkMatrix4x4             *modelViewProj;
-
-    bool                      lighting;
-
-    int                       renderingExtents[4];
     double                    samplingRate;
-
+    int                       renderingExtents[4];
+    int                       patchCount;
 };
 
 

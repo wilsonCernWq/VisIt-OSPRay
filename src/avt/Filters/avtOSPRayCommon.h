@@ -200,22 +200,23 @@ namespace ospray
     typedef ospray::visit::Model Model;
     typedef ospray::visit::FrameBuffer FrameBuffer;
     typedef ospray::visit::Patch Patch;
+    
     void CheckVolumeFormat(const int dt,
 			   std::string& str_type,
 			   OSPDataType& osp_type);
 
     void ComputeProjections(const avtViewInfo &view, 
-			    const double &aspect,
-			    const int screen[2],
-			    const double scale[3],
-			    const double &oldNearPlane,
-			    const double &oldFarPlane,
-			    vtkMatrix4x4  *model_to_screen_transform, 
-			    vtkMatrix4x4  *screen_to_model_transform, 
-			    vtkMatrix4x4  *screen_to_camera_transform,
-			    int            renderingExtents[4],
-			    double         sceneSize[2],
-			    double         dbounds[6]);
+			    const double      &aspect,
+			    const double      &old_near_plane,
+			    const double      &old_far_plane,
+			    const double       data_scale[3],
+			    const double       data_bound[6],
+			    const int          screen_size[2],
+			    vtkMatrix4x4 *model_to_screen_transform, 
+			    vtkMatrix4x4 *screen_to_model_transform, 
+			    vtkMatrix4x4 *screen_to_camera_transform,
+			    double        canvas_size[2],
+			    int           rendering_extents[4]);
     
     // ************************************************************************
     //  Struct:  ImgMetaData

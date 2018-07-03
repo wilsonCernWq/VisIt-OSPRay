@@ -113,24 +113,21 @@ avtOSPRayVoxelExtractor::avtOSPRayVoxelExtractor(int w, int h, int d,
                                              avtVolume *vol, avtCellList *cl)
     : avtVoxelExtractor(w, h, d, vol, cl)
 {
+    ospray_core = NULL;
     model_to_screen_transform = vtkMatrix4x4::New();
     screen_to_model_transform = vtkMatrix4x4::New();
 
-    lighting = false;
-
-    proc = patch = 0;
-    patchDrawn = 0;
-
+    proc  = 0;
+    patch = 0;
+    drawn = 0;
     imgDims[0] = imgDims[1] = 0;             // size of the patch
     imgLowerLeft[0] = imgLowerLeft[1] = 0;   // coordinates in the whole image
     imgUpperRight[0] = imgUpperRight[1] = 0; // coordinates in the whole image
-
-    eyeSpaceDepth = -1;
+    eyeSpaceDepth  = -1;
     clipSpaceDepth = -1;
 
-    imgArray = NULL;                         // the image data
+    finalImage = NULL;                         // the image data
 
-    ospray_core = NULL;
 }
 
 
@@ -162,10 +159,10 @@ avtOSPRayVoxelExtractor::~avtOSPRayVoxelExtractor()
     model_to_screen_transform->Delete();
     screen_to_model_transform->Delete();
 
-    if (imgArray != NULL)
-        delete []imgArray;
+    if (finalImage != NULL)
+        delete []finalImage;
 
-    imgArray = NULL;
+    finalImage = NULL;
 }
 
 // ****************************************************************************
@@ -222,7 +219,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     //=======================================================================//
     // Flag to indicate if the patch is drawn
     ospray::Context* ospray = (ospray::Context*)ospray_core;
-    patchDrawn = 0;
+    drawn = 0;
     
     //=======================================================================//
     // Register data and early skipping
@@ -415,6 +412,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     {
         StackTimer t1("avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay "
                       "Get screen size of the patch (Pre-OSPRay preparation)");
+	double renderingDepthsExtents[2];
         ospray::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
 					 viewInfo.imagePan, viewInfo.imageZoom,
                                          model_to_screen_transform, 
@@ -458,7 +456,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         if (yMax > renderingExtents[3]) { yMax = renderingExtents[3]; }
         imgWidth  = xMax-xMin;
         imgHeight = yMax-yMin;
-        imgArray = new float[((imgWidth)*4) * imgHeight];
+        finalImage = new float[((imgWidth)*4) * imgHeight];
     }
 
     //=======================================================================//
@@ -538,8 +536,8 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             if ((scalarRange[1] >= tFVisibleRange[0]) &&
                 (scalarRange[0] <= tFVisibleRange[1])) {
                 ospray->RenderPatch(patch, xMin, xMax, yMin, yMax,
-				    imgWidth, imgHeight, imgArray);
-                patchDrawn = 1;
+				    imgWidth, imgHeight, finalImage);
+                drawn = 1;
                 
             }
         }
@@ -558,11 +556,11 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     //=======================================================================//
     // Deallocate memory if not used
     //=======================================================================//
-    if (patchDrawn == 0)
+    if (drawn == 0)
     { 
-        if (imgArray != NULL) 
+        if (finalImage != NULL) 
         { 
-            delete []imgArray; imgArray = NULL; 
+            delete []finalImage; finalImage = NULL; 
         } 
     }
 }
@@ -588,14 +586,14 @@ avtOSPRayVoxelExtractor::GetImageDimensions(int &inUse, int dims[2],
                                             float &eyeDepth,
                                             float &clipDepth)
 {
-    inUse = patchDrawn;
-
-    dims[0] = imgDims[0];    dims[1] = imgDims[1];
-
-    screen_ll[0] = imgLowerLeft[0];     screen_ll[1] = imgLowerLeft[1];
-    screen_ur[0] = imgUpperRight[0];    screen_ur[1] = imgUpperRight[1];
-
-    eyeDepth = eyeSpaceDepth;
+    inUse = drawn;
+    dims[0] = imgDims[0];
+    dims[1] = imgDims[1];
+    screen_ll[0] = imgLowerLeft[0];
+    screen_ll[1] = imgLowerLeft[1];
+    screen_ur[0] = imgUpperRight[0];
+    screen_ur[1] = imgUpperRight[1];
+    eyeDepth  = eyeSpaceDepth;
     clipDepth = clipSpaceDepth;
 }
 
@@ -616,9 +614,8 @@ avtOSPRayVoxelExtractor::GetImageDimensions(int &inUse, int dims[2],
 void
 avtOSPRayVoxelExtractor::GetComputedImage(float *image)
 {
-    memcpy(image, imgArray, imgDims[0]*4*imgDims[1]*sizeof(float));
-
-    if (imgArray != NULL)
-        delete []imgArray;
-    imgArray = NULL;
+    memcpy(image, finalImage, imgDims[0]*4*imgDims[1]*sizeof(float));
+    if (finalImage != NULL)
+        delete []finalImage;
+    finalImage = NULL;
 }

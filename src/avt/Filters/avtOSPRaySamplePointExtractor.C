@@ -125,14 +125,9 @@ avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w,
                                                              int d)
     : avtSamplePointExtractorBase(w, h, d)
 {
+    ospray_core = NULL;
     osprayVoxelExtractor = NULL;
-
     modelViewProj = vtkMatrix4x4::New();
-
-    lighting = false;
-
-    ospray_core = NULL;    
-
     patchCount = 0;
     imageMetaPatchVector.clear();
     imgDataHashMap.clear();
@@ -371,22 +366,15 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         // Extractor Setup
         //-----------------------------	
         osprayVoxelExtractor->SetProcIdPatchID(PAR_Rank(), num);
-
         osprayVoxelExtractor->SetOSPRay(ospray_core);
-	
 	osprayVoxelExtractor->SetViewInfo(viewInfo);
         osprayVoxelExtractor->SetSamplingRate(samplingRate);       
-        osprayVoxelExtractor->SetRenderingExtents(renderingExtents);
-		
+        osprayVoxelExtractor->SetRenderingExtents(renderingExtents);	
         osprayVoxelExtractor->SetMVPMatrix(modelViewProj);
-
-        osprayVoxelExtractor->SetLighting(lighting);
-
 
 	// Note (Qi): probably not necessary
         osprayVoxelExtractor->SetGridsAreInWorldSpace
             (rectilinearGridsAreInWorldSpace, view, aspect, xform);
-
 	
         //-----------------------------
         // Extract

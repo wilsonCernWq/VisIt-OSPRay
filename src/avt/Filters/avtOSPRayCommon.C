@@ -243,167 +243,82 @@ ospray::CheckVolumeFormat(const int dt,
 
 void
 ospray::ComputeProjections(const avtViewInfo &view, 
-			   const double &aspect,
-			   const int     screen[2],
-			   const double  scale[3],
-			   const double &oldNearPlane,
-			   const double &oldFarPlane,
+			   const double      &aspect,
+			   const double      &old_near_plane,
+			   const double      &old_far_plane,
+			   const double       data_scale[3],
+			   const double       data_bound[6],
+			   const int          screen_size[2],
 			   vtkMatrix4x4 *model_to_screen_transform, 
 			   vtkMatrix4x4 *screen_to_model_transform, 
 			   vtkMatrix4x4 *screen_to_camera_transform,
-			   int           renderingExtents[4],
-			   double        sceneSize[2],
-			   double        dbounds[6])       
+			   double        canvas_size[2],
+    			   int           rendering_extents[4]) 
 {
-    vtkCamera *sceneCam = vtkCamera::New();
+    vtkCamera *vtkcamera = vtkCamera::New();
 #if (0)
-    sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
-    sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
-    sceneCam->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
-    sceneCam->SetViewAngle(view.viewAngle);
-    sceneCam->SetClippingRange(oldNearPlane, oldFarPlane);
-    if (view.orthographic) { sceneCam->ParallelProjectionOn(); }
-    else { sceneCam->ParallelProjectionOff(); }
-    sceneCam->SetParallelScale(view.parallelScale);
+    vtkcamera->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
+    vtkcamera->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
+    vtkcamera->SetViewUp(view.viewUp[0],view.viewUp[1],view.viewUp[2]);
+    vtkcamera->SetViewAngle(view.viewAngle);
+    vtkcamera->SetClippingRange(old_near_plane, old_far_plane);
+    if (view.orthographic) { vtkcamera->ParallelProjectionOn(); }
+    else { vtkcamera->ParallelProjectionOff(); }
+    vtkcamera->SetParallelScale(view.parallelScale);
 #else
-    sceneCam->SetViewAngle(view.viewAngle);
-    sceneCam->SetEyeAngle(view.eyeAngle);
+    // see avt/View/avtViewInfo::SetCameraFromView
+    /* view.SetCameraFromView(vtkcamera); */
+    vtkcamera->SetViewAngle(view.viewAngle);
+    vtkcamera->SetEyeAngle(view.eyeAngle);
     if (view.setScale)
     {
-        sceneCam->SetParallelScale(view.parallelScale);
+        vtkcamera->SetParallelScale(view.parallelScale);
     }
-    sceneCam->SetParallelProjection(view.orthographic ? 1 : 0);
-    sceneCam->SetClippingRange(view.nearPlane, view.farPlane);
-    sceneCam->SetViewShear(view.shear[0],view.shear[1],view.shear[2]);
-    sceneCam->SetFocalPoint(view.focus);
-    sceneCam->SetPosition(view.camera);
-    sceneCam->SetViewUp(view.viewUp);
-    //sceneCam->SetWindowCenter(2.0*view.imagePan[0], 2.0*view.imagePan[1]);
-    sceneCam->SetFocalDisk(view.imageZoom);
-    sceneCam->Zoom(view.imageZoom);
-    //view.SetCameraFromView(sceneCam);
+    vtkcamera->SetParallelProjection(view.orthographic ? 1 : 0);
+    vtkcamera->SetViewShear(view.shear[0],view.shear[1],view.shear[2]);
+    vtkcamera->SetFocalPoint(view.focus);
+    vtkcamera->SetPosition(view.camera);
+    vtkcamera->SetViewUp(view.viewUp);
+    vtkcamera->SetFocalDisk(view.imageZoom);
+    vtkcamera->Zoom(view.imageZoom);
+    // here we have to use the old near/far planes
+    vtkcamera->SetClippingRange(old_near_plane, old_far_plane);
+    // here we dont want to move window center ?
+    //vtkcamera->SetWindowCenter(2.0*view.imagePan[0], 2.0*view.imagePan[1]);
 #endif
-    // // Scaling
-    // vtkMatrix4x4 *matScale = vtkMatrix4x4::New();
-    // matScale->Identity(); 
-    // // Scale + Model + View Matrix
-    // vtkMatrix4x4 *matViewModelScale = vtkMatrix4x4::New();
-    // vtkMatrix4x4 *matViewModel = sceneCam->GetModelViewTransformMatrix();
-    // vtkMatrix4x4::Multiply4x4(matViewModel, matScale, matViewModelScale);
-    // // Zooming
-    // vtkMatrix4x4 *matZoomViewModelScale = vtkMatrix4x4::New();
-    // vtkMatrix4x4 *matZoom = vtkMatrix4x4::New();
-    // matZoom->Identity(); 
-    // //matZoom->SetElement(0, 0, view.imageZoom); 
-    // //matZoom->SetElement(1, 1, view.imageZoom);
-    // vtkMatrix4x4::Multiply4x4(matZoom, matViewModelScale, 
-    // 			      matZoomViewModelScale);
-    // // Projection:
-
+    // compute matrix
     vtkMatrix4x4 *matMVPS =
-	sceneCam->GetModelViewTransformMatrix();
+	vtkcamera->GetModelViewTransformMatrix();
     vtkMatrix4x4 *matProj = 
-	sceneCam->GetProjectionTransformMatrix(aspect, -1, 1);
-    if (!view.orthographic) {
-    	sceneSize[0] = 2.0 * oldNearPlane / matProj->GetElement(0, 0);
-    	sceneSize[1] = 2.0 * oldNearPlane / matProj->GetElement(1, 1);
-    }
-    else {
-    	sceneSize[0] = 2.0 / matProj->GetElement(0, 0);
-    	sceneSize[1] = 2.0 / matProj->GetElement(1, 1);
-    }
-    // Compute model_to_screen_transform matrix
+	vtkcamera->GetProjectionTransformMatrix(aspect, -1, 1);    
     vtkMatrix4x4::Multiply4x4(matProj, matMVPS,
 			      model_to_screen_transform);
     vtkMatrix4x4::Invert(model_to_screen_transform,
 			 screen_to_model_transform);
     vtkMatrix4x4::Invert(matProj,
 			 screen_to_camera_transform);
-    // Debug
-    //ospout << "[avrRayTracer] matZoom " << *matZoom << std::endl;
-    //ospout << "[avrRayTracer] matViewModel " << *matViewModel << std::endl;
-    //ospout << "[avrRayTracer] matScale " << *matScale << std::endl;
-    //ospout << "[avrRayTracer] matProj " << *matProj << std::endl;
-    // Cleanup
-    // matScale->Delete();
-    // matViewModel->Delete();
-    // matViewModelScale->Delete();
-    // matZoom->Delete();
-    // matZoomViewModelScale->Delete();
-    // matProj->Delete();
-    sceneCam->Delete();
-    
-    // Get the full image extents of the volume
-    double depthExtents[2];
-    ospray::ProjectWorldToScreenCube(dbounds, screen[0], screen[1], 
+    // compute canvas size (parallel scale)
+    if (!view.orthographic) {
+    	canvas_size[0] = 2.0 * old_near_plane / matProj->GetElement(0, 0);
+    	canvas_size[1] = 2.0 * old_near_plane / matProj->GetElement(1, 1);
+    }
+    else {
+    	canvas_size[0] = 2.0 / matProj->GetElement(0, 0);
+    	canvas_size[1] = 2.0 / matProj->GetElement(1, 1);
+    }
+    // cleanup
+    vtkcamera->Delete();    
+    // get the renderable region
+    double depths[2];
+    ospray::ProjectWorldToScreenCube(data_bound,
+				     screen_size[0], screen_size[1], 
 				     view.imagePan, view.imageZoom,
 				     model_to_screen_transform,
-				     renderingExtents, depthExtents);
-    renderingExtents[0] = std::max(renderingExtents[0], 0);
-    renderingExtents[2] = std::max(renderingExtents[2], 0);
-    renderingExtents[1] = std::min(1+renderingExtents[1], screen[0]);
-    renderingExtents[3] = std::min(1+renderingExtents[3], screen[1]);
-    // Debug
-    ospout << "[avrRayTracer] View settings: " << endl
-	   << "  camera: "       
-	   << view.camera[0] << ", " 
-	   << view.camera[1] << ", " 
-	   << view.camera[2] << std::endl
-	   << "  focus: "    
-	   << view.focus[0] << ", " 
-	   << view.focus[1] << ", " 
-	   << view.focus[2] << std::endl
-	   << "  viewUp: "    
-	   << view.viewUp[0] << ", " 
-	   << view.viewUp[1] << ", " 
-	   << view.viewUp[2] << std::endl
-	   << "  viewAngle: " << view.viewAngle << std::endl
-	   << "  eyeAngle:  " << view.eyeAngle  << std::endl
-	   << "  parallelScale: " << view.parallelScale  << std::endl
-	   << "  setScale: " << view.setScale << std::endl
-	   << "  scale:    " 
-	   << scale[0] << " " 
-	   << scale[1] << " " 
-	   << scale[2] << " " 
-	   << std::endl
-	   << "  nearPlane: " << view.nearPlane << std::endl
-	   << "  farPlane:  " << view.farPlane  << std::endl
-	   << "  imagePan[0]: " << view.imagePan[0] << std::endl 
-	   << "  imagePan[1]: " << view.imagePan[1] << std::endl
-	   << "  imageZoom:   " << view.imageZoom   << std::endl
-	   << "  orthographic: " << view.orthographic << std::endl
-	   << "  shear[0]: " << view.shear[0] << std::endl
-	   << "  shear[1]: " << view.shear[1] << std::endl
-	   << "  shear[2]: " << view.shear[2] << std::endl
-	   << "  oldNearPlane: " << oldNearPlane << std::endl
-	   << "  oldFarPlane:  " << oldFarPlane  << std::endl
-	   << "  aspect: " << aspect << std::endl
-	   << "[avrRayTracer] sceneSize: " 
-	   << sceneSize[0] << " " 
-	   << sceneSize[1] << std::endl
-	   << "[avrRayTracer] screen: " 
-	   << screen[0] << " " << screen[1] << std::endl
-	   << "[avrRayTracer] data bounds: "
-	   << dbounds[0] << " " << dbounds[1] << std::endl
-	   << "               data bounds  "
-	   << dbounds[2] << " " << dbounds[3] << std::endl
-	   << "               data bounds  "
-	   << dbounds[4] << " " << dbounds[5] << std::endl
-	   << "[avrRayTracer] rendering extents: " 
-	   << renderingExtents[0] << " " << renderingExtents[1] << std::endl
-	   << "               rendering extents: "
-	   << renderingExtents[2] << " " << renderingExtents[3] << std::endl
-	   << "[avrRayTracer] full image size: " 
-	   << renderingExtents[1] - renderingExtents[0] << " "
-	   << renderingExtents[3] - renderingExtents[2] << std::endl;
-    
-    ospout << "[avrRayTracer] model_to_screen_transform: " 
-	   << *model_to_screen_transform << std::endl;
-    ospout << "[avrRayTracer] screen_to_model_transform: " 
-	   << *screen_to_model_transform << std::endl;
-    ospout << "[avrRayTracer] screen_to_camera_transform: " 
-	   << *screen_to_camera_transform << std::endl;
-
+				     rendering_extents, depths);
+    rendering_extents[0] = std::max(rendering_extents[0], 0);
+    rendering_extents[2] = std::max(rendering_extents[2], 0);
+    rendering_extents[1] = std::min(1+rendering_extents[1], screen_size[0]);
+    rendering_extents[3] = std::min(1+rendering_extents[3], screen_size[1]);
 }
 
 void

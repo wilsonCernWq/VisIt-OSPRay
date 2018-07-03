@@ -284,14 +284,13 @@ avtOSPRayRayTracer::Execute()
     double         sceneSize[2];
     double         dbounds[6];  // Extents of the volume in world coordinates
     {
-	GetSpatialExtents(dbounds);		
-	ospray::ComputeProjections(view, aspect, screen, scale,
-				   oldNearPlane, oldFarPlane,
+	GetSpatialExtents(dbounds);
+	ospray::ComputeProjections(view, aspect, oldNearPlane, oldFarPlane,
+				   scale, dbounds, screen,
 				   model_to_screen_transform, 
 				   screen_to_model_transform, 
 				   screen_to_camera_transform,
-				   renderingExtents, sceneSize,
-				   dbounds);
+				   sceneSize, renderingExtents);
 	for (int y = 0; y < screen[1]; ++y) {
 	    for (int x = 0; x < screen[0]; ++x) {
 		int index = x + y * screen[0];
@@ -306,6 +305,70 @@ avtOSPRayRayTracer::Execute()
 		opaqueImageDepth[index] = -worldCoord[2];
 	    }
 	}
+	// Debug
+	ospout << "[avrRayTracer] avtViewInfo settings: " << endl
+	       << "\tcamera: "
+	       << view.camera[0] << ", " 
+	       << view.camera[1] << ", " 
+	       << view.camera[2] << std::endl
+	       << "\tfocus: "
+	       << view.focus[0] << ", " 
+	       << view.focus[1] << ", " 
+	       << view.focus[2] << std::endl
+	       << "\tviewUp: "    
+	       << view.viewUp[0] << ", " 
+	       << view.viewUp[1] << ", " 
+	       << view.viewUp[2] << std::endl
+	       << "\tviewAngle: " << view.viewAngle << std::endl
+	       << "\teyeAngle:  " << view.eyeAngle  << std::endl
+	       << "\tparallelScale: " << view.parallelScale  << std::endl
+	       << "\tsetScale: " << view.setScale << std::endl
+	       << "\tnearPlane: " << view.nearPlane << std::endl
+	       << "\tfarPlane:  " << view.farPlane  << std::endl
+	       << "\timagePan[0]: " << view.imagePan[0] << std::endl 
+	       << "\timagePan[1]: " << view.imagePan[1] << std::endl
+	       << "\timageZoom:   " << view.imageZoom   << std::endl
+	       << "\torthographic: " << view.orthographic << std::endl
+	       << "\tshear[0]: " << view.shear[0] << std::endl
+	       << "\tshear[1]: " << view.shear[1] << std::endl
+	       << "\tshear[2]: " << view.shear[2] << std::endl
+	       << "[avrRayTracer] other settings " << std::endl
+	       << "\toldNearPlane: " << oldNearPlane
+	       << std::endl
+	       << "\toldFarPlane:  " << oldFarPlane
+	       << std::endl
+	       << "\taspect: " << aspect << std::endl
+	       << "\tscale:    " 
+	       << scale[0] << " " 
+	       << scale[1] << " " 
+	       << scale[2] << " " << std::endl
+	       << "[avrRayTracer] sceneSize: " 
+	       << sceneSize[0] << " " 
+	       << sceneSize[1] << std::endl
+	       << "[avrRayTracer] screen: " 
+	       << screen[0] << " " << screen[1] << std::endl
+	       << "[avrRayTracer] data bounds: "
+	       << dbounds[0] << " " << dbounds[1] << std::endl
+	       << "               data bounds  "
+	       << dbounds[2] << " " << dbounds[3] << std::endl
+	       << "               data bounds  "
+	       << dbounds[4] << " " << dbounds[5] << std::endl
+	       << "[avrRayTracer] rendering extents: " 
+	       << renderingExtents[0] << " " << renderingExtents[1]
+	       << std::endl
+	       << "               rendering extents: "
+	       << renderingExtents[2] << " " << renderingExtents[3]
+	       << std::endl
+	       << "[avrRayTracer] full image size: " 
+	       << renderingExtents[1] - renderingExtents[0] << " "
+	       << renderingExtents[3] - renderingExtents[2] << std::endl;
+	ospout << "[avrRayTracer] model_to_screen_transform: " 
+	       << *model_to_screen_transform << std::endl;
+	ospout << "[avrRayTracer] screen_to_model_transform: " 
+	       << *screen_to_model_transform << std::endl;
+	ospout << "[avrRayTracer] screen_to_camera_transform: " 
+	       << *screen_to_camera_transform << std::endl;
+
     }
     
     //===================================================================//
@@ -382,14 +445,11 @@ avtOSPRayRayTracer::Execute()
     extractor.SetJittering(true);
     extractor.SetTransferFn(transferFn1D);
     extractor.SetInput(trans.GetOutput());
-
-    extractor.SetLighting(lighting);
+    extractor.SetOSPRay(ospray_core);
     extractor.SetViewInfo(view);
-    extractor.SetMVPMatrix(model_to_screen_transform);
     extractor.SetSamplingRate(samplingRate); 
     extractor.SetRenderingExtents(renderingExtents); // rendered region
-    
-    extractor.SetOSPRay(ospray_core);
+    extractor.SetMVPMatrix(model_to_screen_transform);
     
     //
     // For curvilinear and unstructured meshes, it makes sense to convert the
