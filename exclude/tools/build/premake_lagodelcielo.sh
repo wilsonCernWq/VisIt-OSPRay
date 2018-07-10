@@ -38,7 +38,7 @@ ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
-    ARGS=${ARGS}" --skip-opengl-context-check "
+    #ARGS=${ARGS}" --skip-opengl-context-check "
     ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.0 "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
     ARGS=${ARGS}" --slivr --uintah --ospray "
