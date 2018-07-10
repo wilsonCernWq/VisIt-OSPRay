@@ -1,7 +1,7 @@
 #/ssd/users/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Wed Jun 20 19:11:04 MDT 2018
+## created: Mon Jul  9 20:35:12 MDT 2018
 ## system: Linux lagodelcielo 4.4.120-45-default #1 SMP Wed Mar 14 20:51:49 UTC 2018 (623211f) x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -120,8 +120,8 @@ VISIT_OPTION_DEFAULT(VISIT_NETCDF_LIBDEP HDF5_LIBRARY_DIR hdf5_hl HDF5_LIBRARY_D
 ##
 ## PIDX
 ##
-SETUP_APP_VERSION(PIDX 0.9.1)
-VISIT_OPTION_DEFAULT(VISIT_PIDX_DIR /home/sci/qwu/software/Lagodelcielo/PIDX/install)
+SETUP_APP_VERSION(PIDX 0.9.2)
+VISIT_OPTION_DEFAULT(VISIT_PIDX_DIR ${VISITHOME}/pidx/${PIDX_VERSION}/${VISITARCH})
 
 ##
 ## Silo

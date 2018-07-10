@@ -33,15 +33,16 @@ ARGS=${ARGS}" --cmake --qt --python "
 ARGS=${ARGS}" --hdf5 --netcdf --szip --silo "
 ARGS=${ARGS}" --ispc --embree --tbb "
 ARGS=${ARGS}" --alt-boost-dir /usr "
-ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
 ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
-    #ARGS=${ARGS}" --skip-opengl-context-check "
+    ARGS=${ARGS}" --skip-opengl-context-check "
     ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.0 "
+    ARGS=${ARGS}" --pidx "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
     ARGS=${ARGS}" --slivr --uintah --ospray "
+    ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
 fi
 
 # ------------------------------ 
