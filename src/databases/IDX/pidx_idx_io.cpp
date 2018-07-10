@@ -56,7 +56,7 @@ static void terminate_with_error_msg(const char *format, ...)
 void init_mpi()
 {
 
-#if PIDX_HAVE_MPI
+#ifdef MPI_VERSION//PIDX_HAVE_MPI
   int mpi_init;
   MPI_Initialized(&mpi_init);
   
@@ -141,7 +141,7 @@ bool PIDXIO::openDataset(const String filename){
   
   for(int i=0; i < dims; i++){
     logic_box.p1[i] = 0;
-    logic_box.p2[i] = global_size[i];//-1;
+    logic_box.p2[i] = (double)global_size[i];
   }
   
   if (rank == 0) debug5 << "PIDX dims "<<global_size[0]<<" "<<global_size[1]<<" "<<global_size[2]<<std::endl;
@@ -291,7 +291,7 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
   
   PIDX_set_point(local_offset, box.p1[0], box.p1[1], box.p1[2]);
   PIDX_set_point(local_size, (box.p2[0]-box.p1[0]+1), (box.p2[1]-box.p1[1]+1),(box.p2[2]-box.p1[2]+1));
-
+  
   // local_size[3] = 1;
   // local_size[4] = 1;
   // local_offset[3] = 0;
@@ -300,8 +300,6 @@ unsigned char* PIDXIO::getData(const VisitIDXIO::Box box, const int timestate, c
 
   sprintf(debug_str,"%d: local box %lld %lld %lld size %lld %lld %lld time %d\n", rank, local_offset[0],local_offset[1],local_offset[2], local_size[0],local_size[1],local_size[2], timestate);
   debug5 << debug_str;
-
-  cout << debug_str;
 
   delete [] debug_str;
   
