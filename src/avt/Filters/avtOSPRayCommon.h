@@ -43,13 +43,175 @@
 #ifndef AVT_OSPRAY_COMMON_H
 #define AVT_OSPRAY_COMMON_H
 
-#include <ospray/visit/VisItWrapperCore.h>
-
+#include <ospray/ospray.h>
 #include <string>
 #include <vector>
 #include <map>
 
-// ****************************************************************************
+namespace ospray {
+namespace visit {
+  
+    /** 
+     * Helper Functions
+     */
+    template<typename T> void ospray_rm(T& obj) {
+        if (!obj) { ospRelease(obj); obj = NULL; }
+    }
+  
+    /**
+     * Abstraction of an object
+     */
+    template<typename T> struct Object {
+        bool init;
+        T    self;
+        Object() : init(false), self(NULL) {}
+        virtual ~Object() { ospray_rm(self); init = false; }
+        T operator*() { return self; }
+    };
+  
+    /**
+     * Transfer Function Wrapper
+     */
+    struct TransferFunctionCore : public Object<OSPTransferFunction> {
+    TransferFunctionCore() : Object<OSPTransferFunction>() {}
+    };
+
+    /**
+     * Camera Wrapper
+     */
+    struct CameraCore : public Object<OSPCamera> {
+        bool   orthographic;
+        int    windowExts[4];
+        int    screenSize[2];
+        double pan[2]; // pan ratio [0, 1]
+        double zoom;   // zoom factor
+        CameraCore() : Object<OSPCamera>() {
+            orthographic = false;
+            windowExts[0] = windowExts[1] = 0;
+            windowExts[2] = windowExts[3] = 0;
+            screenSize[0] = screenSize[1] = 0;
+            pan[0] = pan[1] = 0.0;
+            zoom = 1.0;
+        }
+    };
+
+    /**
+     * Light Wrapper
+     */
+    struct LightCore : public Object<OSPLight> {
+        bool isAmbient;
+        LightCore() : Object<OSPLight>() {
+            isAmbient = false;
+        }
+    };  
+
+    /**
+     * Renderer Wrapper
+     */
+    struct RendererCore : public Object<OSPRenderer> {
+        OSPData                lightData;
+        std::vector<LightCore> lightList;
+    RendererCore() : Object<OSPRenderer>() {
+            lightData = NULL;
+        }
+        ~RendererCore() { ospray_rm(lightData); }
+    };
+
+    /**
+     * Model Wrapper
+     */
+    struct ModelCore : public Object<OSPModel> {
+        ModelCore() : Object<OSPModel>() {}
+    };
+
+    /**
+     * Volume Wrapper
+     */
+    struct VolumeCore : public Object<OSPVolume> {
+        std::string volumeType;
+        OSPDataType dataType;
+        size_t      dataSize;
+        const void* dataPtr;
+        VolumeCore() : Object<OSPVolume>() {
+            volumeType = "";
+            dataType = OSP_UCHAR; /* just give it a value */
+            dataSize = 0;
+            dataPtr  = NULL;
+        }
+    };
+  
+    /**
+     * Framebuffer Wrapper
+     */
+    struct FrameBufferCore : public Object<OSPFrameBuffer> {
+        FrameBufferCore() : Object<OSPFrameBuffer>() {}
+    };
+
+    /**
+     * Now we define a PatchCore
+     */
+    struct Patch {
+        VolumeCore      volume;
+        ModelCore       model;
+        FrameBufferCore fb;
+    };
+
+    /**
+     * And a ContextCore
+     */
+    struct ContextCore {
+        // data
+        std::string varname;
+        std::map<int, Patch> patches;
+        CameraCore           camera;
+        RendererCore         renderer;
+        TransferFunctionCore tfn;
+        // flags
+        bool oneSidedLighting;       /* renderer */
+        bool shadowsEnabled;         /* renderer */
+        bool aoTransparencyEnabled;  /* renderer */
+        bool useGridAccelerator;     /*  volume  */
+        bool adaptiveSampling;       /*  volume  */
+        bool preIntegration;         /*  volume  */
+        bool singleShade;            /*  volume  */
+        bool gradientShadingEnabled; /*  volume  */
+        // other parameters
+        double Ks;
+        double Ns;
+        double samplingRate;
+        int aoSamples;
+        int spp;
+        double scale[3];
+        double gbbox[6];
+        // (shared, dont delete here)
+        const unsigned char *bgColorBuffer;  // backplatte color channel
+        const float         *bgDepthBuffer;  // backplatte depth channel 
+        int                  bgSize[2];      // channel buffer size
+        ContextCore() {
+            varname = "";
+            oneSidedLighting       = false;
+            shadowsEnabled         = false;
+            aoTransparencyEnabled  = false;
+            useGridAccelerator     = false;
+            adaptiveSampling       = false;
+            preIntegration         = false;
+            singleShade            = false;
+            gradientShadingEnabled = false;
+            Ks = 1.0; Ns = 20;
+            samplingRate = 3.0;
+            aoSamples = 0;
+            spp = 1;
+            scale[0] = scale[1] = scale[2] = 1.f;
+            gbbox[0] = gbbox[1] = gbbox[2] = 0.f;
+            gbbox[3] = gbbox[4] = gbbox[5] = 0.f;
+            bgSize[0] = bgSize[1] = 0;
+        }
+    };
+
+};
+};
+
+// ***************************************************************************
 //  Struct:  OSPVisItContext
 //
 //  Purpose:
@@ -58,7 +220,7 @@
 //  Programmer: Qi WU
 //  Creation:   
 //
-// ****************************************************************************
+// ***************************************************************************
 
 typedef ospray::visit::ContextCore OSPVisItContext;
 namespace ospray {
@@ -108,7 +270,7 @@ namespace ospray {
 
 #endif//AVT_OSPRAY_COMMON_H
 
-// ****************************************************************************
+// ***************************************************************************
 //
 //
 //
@@ -116,7 +278,7 @@ namespace ospray {
 //
 //
 //
-// ****************************************************************************
+// ***************************************************************************
 
 #ifndef VISIT_OSPRAY_CONTEXT_ONLY
 
@@ -135,8 +297,8 @@ namespace ospray {
 #include <vtkMatrix4x4.h>
 
 #include <ospray/ospray.h>
-#include <ospray/visit/VisItWrapper.h>
 #include <ospray/visit/VisItModuleCommon.h>
+#include <ospray/visit/VisItExtraLibraries.h>
 #include <ospray/visit/VisItImageComposite.h>
 
 #include <cmath>
@@ -180,7 +342,7 @@ namespace ospray {
     //////////////////////////////////////////////////////
 };
 
-// ****************************************************************************
+// ***************************************************************************
 //  Namespace:  ospray
 //
 //  Purpose:
@@ -189,10 +351,201 @@ namespace ospray {
 //  Programmer: Qi WU
 //  Creation:   
 //
-// ****************************************************************************
+// ***************************************************************************
 
-namespace ospray
-{
+namespace ospray {
+
+    namespace visit {
+
+        template<typename _CoreType, typename _OSPType> struct Manipulator {
+        protected:
+            typedef _CoreType CoreType;
+            typedef _OSPType  OSPType;
+            _CoreType *core;
+        public:
+            Manipulator(_CoreType& other) : core{&other} {}
+            _OSPType   operator* () { return *(*core); }
+            _CoreType* operator->() { return &(*core); }
+        };
+  
+        /**
+         * Transfer Function Wrapper
+         */
+        struct TransferFunction
+            : public Manipulator<TransferFunctionCore, OSPTransferFunction>
+        {
+        public:
+            TransferFunction(CoreType& other);
+            void Set(const void *table, const unsigned int size,
+                     const double datamin, const double datamax);      
+        };
+
+        /**
+         * Camera Wrapper
+         */
+        struct Camera
+            : public Manipulator<CameraCore, OSPCamera>
+        {
+        public:
+            Camera(CameraCore& other);
+            double GetWindowExts(const int i) const { 
+                return core->windowExts[i]; 
+            }
+            void Set(const bool ortho,
+                     const double camera_p[3], 
+                     const double camera_f[3], 
+                     const double camera_u[3], 
+                     const double fovy, 
+                     const double pan_ratio[2],
+                     const double zoom_ratio,
+                     const double near_clip,
+                     const double canvas_size[2],
+                     const int screen_size[2],
+                     const int tile_extents[4]);
+            void SetScreen(const double xMin, const double xMax,
+                           const double yMin, const double yMax);
+        };
+
+        /**
+         * Light Wrapper
+         */
+        struct Light
+            : public Manipulator<LightCore, OSPLight>
+        {
+        public:
+            Light(LightCore& other);
+            void Set(const bool ambient, const double i, 
+                     const double c, const double* d = NULL);
+            void Set(const bool ambient, const double i, 
+                     const double cr, const double cg, const double cb,
+                     const double* d = NULL);
+            void Set(const bool ambient, const double i, 
+                     const double c[3], const double* d = NULL);
+        };
+
+        /**
+         * Volume Wrapper
+         */
+        struct Volume 
+            : public Manipulator<VolumeCore, OSPVolume>
+        {
+        public:
+            Volume(VolumeCore& other);
+            bool Init(const std::string volume_type, 
+                      const OSPDataType data_type, 
+                      const std::string data_char,
+                      const size_t data_size, 
+                      const void* data_ptr);
+            void Set(const bool useGridAccelerator, 
+                     const bool adaptiveSampling,
+                     const bool preIntegration, 
+                     const bool singleShade, 
+                     const bool gradientShadingEnabled,
+                     const double samplingRate, 
+                     const double Ks, const double Ns,
+                     const double *X, const double *Y, const double *Z, 
+                     const int nX, const int nY, const int nZ,
+                     const double dbox[6], const double cbox[6], 
+                     const osp::vec3f& global_upper,
+                     const osp::vec3f& global_lower,
+                     const osp::vec3f& scale,
+                     OSPTransferFunction tfn);
+            void Set(const bool useGridAccelerator, 
+                     const bool adaptiveSampling,
+                     const bool preIntegration, 
+                     const bool singleShade, 
+                     const bool gradientShadingEnabled, 
+                     const double samplingRate, 
+                     const double Ks, const double Ns,
+                     const double *X, const double *Y, const double *Z, 
+                     const int nX, const int nY, const int nZ,
+                     const double dbox[6], const double cbox[6], 
+                     const osp::vec3f& global_upper,
+                     const osp::vec3f& global_lower,
+                     const osp::vec3f& scale,
+                     TransferFunction tfn)
+            {
+                Set(useGridAccelerator, adaptiveSampling,
+                    preIntegration, singleShade, 
+                    gradientShadingEnabled, samplingRate, 
+                    Ks, Ns, X, Y, Z, nX, nY, nZ,
+                    dbox, cbox, global_upper, global_lower, scale,
+                    *tfn);    
+            }
+
+            static void ComputeGhostBounds(bool bound[6], 
+                                           const unsigned char *ghosts, 
+                                           const int gnX, 
+                                           const int gnY, 
+                                           const int gnZ);
+        };
+
+        /**
+         * Model Wrapper
+         */
+        struct Model
+            : public Manipulator<ModelCore, OSPModel>
+        {
+        public:
+            Model(ModelCore& other);
+            void Reset();
+            void Init();
+            void Set(OSPVolume osp_volume);
+            void Set(Volume volume) { Set(*volume); }
+        };
+
+        /**
+         * Renderer Wrapper
+         */
+        struct Renderer
+            : public Manipulator<RendererCore, OSPRenderer>
+        {
+        public:
+            Renderer(RendererCore& other);
+            void  Init();
+            void  ResetLights();
+            Light AddLight();
+            void  FinalizeLights();
+            void  Set(const int aoSamples, const int spp, 
+                      const bool oneSidedLighting,
+                      const bool shadowsEnabled,
+                      const bool aoTransparencyEnabled);
+            void  Set(OSPCamera osp_camera);
+            void  Set(Camera        camera) { Set(*camera); }
+            void  Set(OSPModel   osp_world);
+            void  Set(Model          world) { Set(*world);  }
+        };
+
+
+        /**
+         * FrameBuffer Wrapper
+         */
+        struct FrameBuffer
+            : public Manipulator<FrameBufferCore, OSPFrameBuffer>
+        {
+        public:
+            FrameBuffer(FrameBufferCore& other);
+            void Render(const int tile_w, const int tile_h,
+                        const int tile_x, const int tile_y,
+                        const int global_stride, 
+                        const float* global_depth,
+                        OSPRenderer renderer,
+                        float*& dest);
+            void Render(const int tile_w, const int tile_h,
+                        const int tile_x, const int tile_y,
+                        const int global_stride, 
+                        const float* global_depth,
+                        Renderer renderer,
+                        float*& dest)
+            {
+                Render(tile_w, tile_h, tile_x, tile_y,
+                       global_stride, global_depth,
+                       *renderer, dest);
+            }
+
+        };
+    };
+
     typedef ospray::visit::TransferFunction TransferFunction;
     typedef ospray::visit::Camera Camera;
     typedef ospray::visit::Renderer Renderer;
@@ -200,25 +553,8 @@ namespace ospray
     typedef ospray::visit::Model Model;
     typedef ospray::visit::FrameBuffer FrameBuffer;
     typedef ospray::visit::Patch Patch;
-    
-    void CheckVolumeFormat(const int dt,
-			   std::string& str_type,
-			   OSPDataType& osp_type);
-
-    void ComputeProjections(const avtViewInfo &view, 
-			    const double      &aspect,
-			    const double      &old_near_plane,
-			    const double      &old_far_plane,
-			    const double       data_scale[3],
-			    const double       data_bound[6],
-			    const int          screen_size[2],
-			    vtkMatrix4x4 *model_to_screen_transform, 
-			    vtkMatrix4x4 *screen_to_model_transform, 
-			    vtkMatrix4x4 *screen_to_camera_transform,
-			    double        canvas_size[2],
-			    int           rendering_extents[4]);
-    
-    // ************************************************************************
+        
+    // ***********************************************************************
     //  Struct:  ImgMetaData
     //
     //  Purpose:
@@ -227,7 +563,7 @@ namespace ospray
     //  Programmer:  
     //  Creation:   
     //
-    // ************************************************************************
+    // ***********************************************************************
 
     struct ImgMetaData
     {
@@ -243,7 +579,7 @@ namespace ospray
         float clip_z;     // clip space z
     };
 
-    // ************************************************************************
+    // ***********************************************************************
     //  Struct:  ImgData
     //
     //  Purpose:
@@ -252,7 +588,7 @@ namespace ospray
     //  Programmer:  
     //  Creation:    
     //
-    // ************************************************************************
+    // ***********************************************************************
     
     struct ImgData
     {
@@ -266,11 +602,11 @@ namespace ospray
         }
     };
 
-    // ************************************************************************
+    // ***********************************************************************
     //
     //  Helper Functions
     //
-    // ************************************************************************
+    // ***********************************************************************
         
     void CheckMemoryHere(const std::string& message, 
                          std::string debugN = "debug5");
@@ -305,6 +641,23 @@ namespace ospray
         debug1    << str << std::endl;
         EXCEPTION1(VisItException, str.c_str()); 
     }
+
+    void CheckVolumeFormat(const int dt,
+                           std::string& str_type,
+                           OSPDataType& osp_type);
+
+    void ComputeProjections(const avtViewInfo &view, 
+                            const double      &aspect,
+                            const double      &old_near_plane,
+                            const double      &old_far_plane,
+                            const double       data_scale[3],
+                            const double       data_bound[6],
+                            const int          screen_size[2],
+                            vtkMatrix4x4 *model_to_screen_transform, 
+                            vtkMatrix4x4 *screen_to_model_transform, 
+                            vtkMatrix4x4 *screen_to_camera_transform,
+                            double        canvas_size[2],
+                            int           rendering_extents[4]);
 
     double ProjectWorldToScreen
         (const double worldCoord[3], 
@@ -349,13 +702,13 @@ namespace ospray
                              unsigned char *&imgFinal);
     
     void WriteArrayToPPM
-        (std::string filename, const float *image, int dimX, int dimY);
+        (std::string, const float *image, int dimX, int dimY);
 
     void WriteArrayToPPM
-        (std::string filename, const unsigned char *image, int dimX, int dimY);
+        (std::string, const unsigned char *image, int dimX, int dimY);
 
     void WriteArrayGrayToPPM
-        (std::string filename, const float * image, int dimX, int dimY);
+        (std::string, const float * image, int dimX, int dimY);
 };
 
 #endif//AVT_OSPRAY_COMMON_EXTRA_H
