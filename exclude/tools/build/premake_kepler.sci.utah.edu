@@ -22,21 +22,21 @@ if [[ ! -f build_visit ]]; then
     echo "please provide build_visit file"
     exit 1
 fi
-DIR_BUILD=/data/qwu/VisIt/3rdparty/$PREMAKE_VERSION
-DIR_INSTALL=/ssd/qwu/VisIt/3rdparty/$PREMAKE_VERSION
+DIR_BUILD=/home/sci/qwu/software/Kepler/VisIt/builds/$PREMAKE_VERSION
+DIR_INSTALL=/home/sci/qwu/software/Kepler/VisIt/installs/$PREMAKE_VERSION
 mkdir -p $DIR_BUILD
 mkdir -p $DIR_INSTALL
 
 ARGS=""
-ARGS=${ARGS}" --debug --no-visit "
+ARGS=${ARGS}" --debug --no-visit --stdout "
 ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++11 "
-ARGS=${ARGS}" --makeflags -j8 --parallel "
+ARGS=${ARGS}" --makeflags -j8 "
 ARGS=${ARGS}" --cmake --qt --python"
-ARGS=${ARGS}" --boost --hdf5 --netcdf --szip --silo "
-ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2018_20180618oss "
-ARGS=${ARGS}" --alt-ispc-dir /home/sci/qwu/software/ispc-v1.9.2-linux "
-ARGS=${ARGS}" --alt-embree-dir /home/sci/qwu/software/embree-3.2.0.x86_64.linux "
-ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Hastur/install-visit/lib64/cmake/ospray-1.6.0 "
+ARGS=${ARGS}" --boost "
+ARGS=${ARGS}" --parallel "
+ARGS=${ARGS}" --hdf5 --netcdf --szip --silo "
+ARGS=${ARGS}" --ispc --embree --ospray "
+ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2017_20170604oss "
 ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
@@ -50,17 +50,12 @@ fi
 # MPI
 # ------------------------------ 
 source /opt/intel/parallel_studio_xe_2017.2.050/psxevars.sh
-export PAR_COMPILER=/opt/intel/impi/2017.2.174/bin64/mpicc
-export PAR_COMPILER_CXX=/opt/intel/impi/2017.2.174/bin64/mpicxx
-export PAR_INCLUDE="-I/opt/intel/impi/2017.2.174/include64/"
+export PAR_INCLUDE="-I/opt/intel/compilers_and_libraries_2017.2.174/linux/mpi/intel64/include"
+export PAR_COMPILER=/opt/intel/compilers_and_libraries_2017.2.174/linux/mpi/intel64/bin/mpicc
+export PAR_COMPILER_CXX=/opt/intel/compilers_and_libraries_2017.2.174/linux/mpi/intel64/bin/mpicxx
 
 # ------------------------------ 
 # 3rdparties
 # ------------------------------ 
-
-# export ICET_FILE=IceT-devel.tar.gz
-# export ICET_VERSION=devel
-# export ICET_COMPATIBILITY_VERSION=devel
-# export ICET_BUILD_DIR=IceT-devel
     
 echo "yes" | bash ./build_visit $ARGS
