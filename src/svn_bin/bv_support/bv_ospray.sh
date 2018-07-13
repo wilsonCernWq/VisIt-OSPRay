@@ -200,7 +200,8 @@ function build_ospray
         return 1
     elif [[ $untarred_ospray_visit_module == 1 ]]; then
         rm -fr $OSPRAY_VISIT_MODULE_BUILD_DIR
-        mv $OSPRAY_VISIT_MODULE_UNTAR_DIR $OSPRAY_VISIT_MODULE_BUILD_DIR
+        mv $OSPRAY_VISIT_MODULE_UNTAR_DIR $OSPRAY_VISIT_MODULE_BUILD_DIR \
+            || error "Couldn't find module_visit for OSPRay"
     fi
 
     # build and install
