@@ -37,8 +37,8 @@ function bv_ospray_info
     export OSPRAY_DOWNLOAD_URL=${OSPRAY_DOWNLOAD_URL:-"https://github.com/wilsonCernWq/module_visit/releases/download/v${OSPRAY_VISIT_MODULE_VERSION}"}
 
     # ospray module
-    export OSPRAY_VISIT_MODULE_TARBALL=${OSPRAY_VISIT_MODULE_TARBALL:-"ospray-module-visit-release-${OSPRAY_VISIT_MODULE_VERSION}.zip"}
-    export OSPRAY_VISIT_MODULE_UNTAR_DIR=${OSPRAY_VISIT_MODULE_UNTAR_DIR:-"module_visit-release-${OSPRAY_VISIT_MODULE_VERSION}"}
+    export OSPRAY_VISIT_MODULE_TARBALL=${OSPRAY_VISIT_MODULE_TARBALL:-"module_visit-${OSPRAY_VISIT_MODULE_VERSION}.zip"}
+    export OSPRAY_VISIT_MODULE_UNTAR_DIR=${OSPRAY_VISIT_MODULE_UNTAR_DIR:-"module_visit-${OSPRAY_VISIT_MODULE_VERSION}"}
     export OSPRAY_VISIT_MODULE_BUILD_DIR=${OSPRAY_VISIT_MODULE_BUILD_DIR:-"${OSPRAY_BUILD_DIR}/modules/module_visit"}
     export OSPRAY_VISIT_MODULE_DOWNLOAD_URL=${OSPRAY_VISIT_MODULE_DOWNLOAD_URL:-"https://github.com/wilsonCernWq/module_visit/releases/download/v${OSPRAY_VISIT_MODULE_VERSION}"}
     
