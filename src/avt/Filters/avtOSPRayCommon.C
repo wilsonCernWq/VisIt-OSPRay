@@ -460,7 +460,8 @@ namespace ospray {
     // ALWAYS create a new framebuffer
     {
       ospray_rm(core->self);
-      core->self = ospNewFrameBuffer((const osp::vec2i&)fb_size, OSP_FB_RGBA32F, OSP_FB_COLOR);
+      core->self = 
+        ospNewFrameBuffer((const osp::vec2i&)fb_size, OSP_FB_RGBA32F, OSP_FB_COLOR);
       ospray_check(core->self, "framebuffer");
       ospRenderFrame(core->self, renderer, OSP_FB_COLOR);
       const float* image = (float*)ospMapFrameBuffer(core->self, OSP_FB_COLOR);

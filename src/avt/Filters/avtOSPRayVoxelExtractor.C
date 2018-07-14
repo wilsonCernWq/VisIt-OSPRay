@@ -396,11 +396,17 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         }
         // Data bounding box
         volumeCube[0] = X[0];
-        volumeCube[1] = X[nX-1];
         volumeCube[2] = Y[0];
-        volumeCube[3] = Y[nY-1];
         volumeCube[4] = Z[0];
-        volumeCube[5] = Z[nZ-1];
+        if (ncell_arrays > 0) { 
+          volumeCube[1] = X[nX];
+          volumeCube[3] = Y[nY];
+          volumeCube[5] = Z[nZ];
+        } else {
+          volumeCube[1] = X[nX-1];
+          volumeCube[3] = Y[nY-1];
+          volumeCube[5] = Z[nZ-1];
+        }
     }
 
     //=======================================================================//
@@ -476,20 +482,27 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             volumePBox[0] = X[0];
             volumePBox[1] = Y[0];
             volumePBox[2] = Z[0];
-            volumePBox[3] = X[nX-1];
-            volumePBox[4] = Y[nY-1];
-            volumePBox[5] = Z[nZ-1];
+            if (ncell_arrays > 0) { 
+              /* zonal data need to occupy a whole cell */
+              volumePBox[3] = X[nX];
+              volumePBox[4] = Y[nY];
+              volumePBox[5] = Z[nZ];
+            } else {
+              volumePBox[3] = X[nX-1];
+              volumePBox[4] = Y[nY-1];
+              volumePBox[5] = Z[nZ-1];
+            }
             // compute boundingbox and clipping plane for ospray
             if (ncell_arrays > 0) {
                 volumeBBox[0] = ghost_bound[0]?(X[0]+X[1])/2.:volumePBox[0];
                 volumeBBox[1] = ghost_bound[1]?(Y[0]+Y[1])/2.:volumePBox[1];
                 volumeBBox[2] = ghost_bound[2]?(Z[0]+Z[1])/2.:volumePBox[2];
                 volumeBBox[3] = 
-                    ghost_bound[3] ? (X[nX-1]+X[nX-2])/2. : volumePBox[3];
+                    ghost_bound[3] ? (X[nX]+X[nX-1])/2. : volumePBox[3];
                 volumeBBox[4] = 
-                    ghost_bound[4] ? (Y[nY-1]+Y[nY-2])/2. : volumePBox[4];
+                    ghost_bound[4] ? (Y[nY]+Y[nY-1])/2. : volumePBox[4];
                 volumeBBox[5] = 
-                    ghost_bound[5] ? (Z[nZ-1]+Z[nZ-2])/2. : volumePBox[5];
+                    ghost_bound[5] ? (Z[nZ]+Z[nZ-1])/2. : volumePBox[5];
             }
             else {
                 volumeBBox[0] = ghost_bound[0] ? X[1] : volumePBox[0];
