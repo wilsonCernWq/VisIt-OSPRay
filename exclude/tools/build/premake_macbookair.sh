@@ -17,8 +17,9 @@ ARGS=""
 ARGS=${ARGS}" --debug --no-visit "
 ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
 ARGS=${ARGS}" --makeflags -j2 "
-ARGS=${ARGS}" --system-cmake --python --qt "
+ARGS=${ARGS}" --cmake --python --qt --parallel "
 #ARGS=${ARGS}" --hdf5 --szip --zlib --silo "
+ARGS=${ARGS}"  --silo --hdf5 "
 ARGS=${ARGS}" --ospray "
 ARGS=${ARGS}" --alt-tbb-dir /Users/qwu/Work/softwares/tbb2018_20180312oss "
 ARGS=${ARGS}" --alt-ispc-dir /Users/qwu/Work/softwares/ispc-v1.9.2-osx "
@@ -33,9 +34,9 @@ fi
 # ------------------------------ 
 # VisIt MPI
 # ------------------------------ 
-#export PAR_COMPILER=/usr/local/Cellar/mpich/3.2.1_2/mpicc
-#export PAR_COMPILER_CXX=/usr/local/Cellar/mpich/3.2.1_2/mpicxx
-#export PAR_INCLUDE="-I/usr/local/Cellar/mpich/3.2.1_2/include/"
+export PAR_COMPILER=/usr/local/bin/mpicc
+export PAR_COMPILER_CXX=/usr/local/bin/mpicxx
+export PAR_INCLUDE="-I/usr/local/include"
 
 # ------------------------------ 
 # VisIt Environment
