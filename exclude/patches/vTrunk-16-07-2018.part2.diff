@@ -10079,10 +10079,6 @@ index f99371412..2d3927c95 100644
  // ****************************************************************************
  
  void
-diff --git a/config-site/.DS_Store b/config-site/.DS_Store
-new file mode 100644
-index 000000000..5008ddfcf
-Binary files /dev/null and b/config-site/.DS_Store differ
 diff --git a/plots/Volume/CMakeLists.txt b/plots/Volume/CMakeLists.txt
 index 725a48f70..f4e7e2244 100644
 --- a/plots/Volume/CMakeLists.txt

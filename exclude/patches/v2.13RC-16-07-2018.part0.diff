@@ -13000,10 +13000,6 @@ index bf7d525e6..4db7ec6e0 100644
  #cmakedefine VISIT_MANTA
 -#cmakedefine VISIT_OSPRAY
 +//#cmakedefine VISIT_OSPRAY
-diff --git a/config-site/.DS_Store b/config-site/.DS_Store
-new file mode 100644
-index 000000000..5008ddfcf
-Binary files /dev/null and b/config-site/.DS_Store differ
 diff --git a/plots/Volume/CMakeLists.txt b/plots/Volume/CMakeLists.txt
 index 4b7e63e71..3c40a9ac1 100644
 --- a/plots/Volume/CMakeLists.txt
