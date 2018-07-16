@@ -190,8 +190,12 @@ avtOSPRayVoxelExtractor::Extract(vtkRectilinearGrid *rgrid,
 {
     if (gridsAreInWorldSpace || pretendGridsAreInWorldSpace)
         ExtractWorldSpaceGridOSPRay(rgrid, varnames, varsizes);
-    else
-        ExtractImageSpaceGrid(rgrid, varnames, varsizes);
+    else {
+	ospray::Exception("Attempt to extract an image space grid,"
+			  "however, RayCasting OSPRay supports only"
+			  "world space grid extraction");
+        //ExtractImageSpaceGrid(rgrid, varnames, varsizes);
+    }
 }
 
 
@@ -336,7 +340,8 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             volumePointer = pt_arrays[npt_arrays-1];
             volumeDataType = pt_vartypes[npt_arrays-1];
         } else {
-            osperr << "WARNING: Empty dataset." << std::endl;
+	    ospray::Exception("dataset found is neither nodal nor zonal. "
+			      "OSPRay does not know how to handle it.");
         }
         ospout << "[avtOSPRayVoxelExtractor] patch dimension "
                << nX << " " << nY << " " << nZ << std::endl;

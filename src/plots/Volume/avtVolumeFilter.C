@@ -628,11 +628,21 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
     if (atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay) {
       avtOSPRayRayTracer* s = (avtOSPRayRayTracer*)software;
       s->SetActiveVariable(primaryVariable);
-      s->SetViewDirection(viewDirection);
-      s->SetLighting(atts.GetLightingFlag());
       s->SetLightInfo(window.GetLights());
       s->SetMatProperties(materialPropArray);
+      s->SetViewDirection(viewDirection);
+      s->SetLighting(atts.GetLightingFlag());
       s->SetSamplingRate(atts.GetRendererSamples());
+      s->SetShadowsEnabled(atts.GetOsprayShadowsEnabledFlag());
+      s->SetUseGridAccelerator(atts.GetOsprayUseGridAcceleratorFlag());
+      s->SetPreIntegration(atts.GetOsprayPreIntegrationFlag());
+      s->SetSingleShade(atts.GetOspraySingleShadeFlag());
+      s->SetOneSidedLighting(atts.GetOsprayOneSidedLightingFlag());
+      s->SetAoTransparencyEnabled(atts.GetOsprayAoTransparencyEnabledFlag());
+      s->SetSpp(atts.GetOspraySpp());
+      s->SetAoSamples(atts.GetOsprayAoSamples());
+      s->SetAoDistance(atts.GetOsprayAoDistance());
+      s->SetMinContribution(atts.GetOsprayMinContribution());
     }
 #endif
     }

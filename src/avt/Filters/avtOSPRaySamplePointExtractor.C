@@ -230,7 +230,7 @@ avtOSPRaySamplePointExtractor::SetUpExtractors(void)
         delete osprayVoxelExtractor;
     }
     osprayVoxelExtractor = new avtOSPRayVoxelExtractor(width, height, depth,
-                                                       volume,cl);
+                                                       volume, cl);
     // osprayVoxelExtractor->SetJittering(jitter);
     if (shouldDoTiling)
     {
@@ -418,14 +418,16 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         //---------------------------------------------------------
         // Other Grid
         //---------------------------------------------------------
-        const std::string msg = 
-            "Warning: Dataset type " +
-            std::to_string((int)(ds->GetDataObjectType())) + " " 
-            "is not a VTK_RECTILINEAR_GRID,\n"
-            "         Currently the RayCasting:OSPRay renderer\n"
-            "         only supports rectilinear grid,\n" 
-            "         Thus request cannot be completed.";
-        ospray::Exception(msg);
+	if (num == 0) {
+	    const std::string msg = 
+		"Dataset type " + std::to_string((int)(ds->GetDataObjectType())) + " "
+		"is not a VTK_RECTILINEAR_GRID. "
+		"Currently the RayCasting:OSPRay renderer "
+		"only supports rectilinear grid, " 
+		"thus the volume cannot be rendered\n";
+	    //ospray::Warning(msg);
+	    ospray::Exception(msg);
+	}
     }
 }
 

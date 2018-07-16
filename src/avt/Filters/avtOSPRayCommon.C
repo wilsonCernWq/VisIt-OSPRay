@@ -351,18 +351,22 @@ namespace ospray {
                       const OSPDataType data_type, 
                       const std::string data_char,
                       const size_t data_size, 
-                      const void* data_ptr)
+                      const void* data_ptr,
+		      const bool use_grid_accelerator)
     {
       if (!core->init || 
           volume_type != core->volumeType ||
           data_type   != core->dataType   ||
           data_size   != core->dataSize   ||
-          data_ptr    != core->dataPtr)
+          data_ptr    != core->dataPtr    ||
+	  use_grid_accelerator != core->useGridAccelerator)
+	  
       {
         core->volumeType = volume_type;
         core->dataType = data_type;
         core->dataSize = data_size;
         core->dataPtr  = data_ptr;
+	core->useGridAccelerator = use_grid_accelerator;
         ospray_rm(core->self);
         core->self = ospNewVolume(volume_type.c_str());
         ospray_check(core->self, volume_type);
@@ -375,13 +379,15 @@ namespace ospray {
           ospSetData(core->self, "voxelData", osp_data);
           ospray_rm(osp_data);
         }
+	// TODO: there is a bug inside the module_visit, therefore we cannot enable grid
+	//       accelerator currently
+	ospSet1i(core->self, "useGridAccelerator", /*(int)use_grid_accelerator*/false);
         core->init = true;
         return true;
       }
       return false;
     }
-    void Volume::Set(const bool useGridAccelerator,
-                     const bool adaptiveSampling,
+    void Volume::Set(const bool adaptiveSampling,
                      const bool preIntegration, 
                      const bool singleShade, 
                      const bool gradientShadingEnabled, 
@@ -414,7 +420,6 @@ namespace ospray {
       ospSet3f(core->self, "Ks", Ks, Ks, Ks);
       ospSet1f(core->self, "Ns", Ns);
       ospSet1i(core->self, "gradientShadingEnabled", (int)gradientShadingEnabled);
-      ospSet1i(core->self, "useGridAccelerator", (int)useGridAccelerator);
       ospSet1i(core->self, "adaptiveSampling", (int)adaptiveSampling);
       ospSet1i(core->self, "preIntegration", (int)preIntegration);
       ospSet1i(core->self, "singleShade", (int)singleShade);
@@ -567,9 +572,9 @@ void ospray::Context::SetupPatch(const int patchID,
     CheckVolumeFormat(vtk_type, str_type, osp_type);
     Volume volume(patches[patchID].volume);
     volume.Init("visit_shared_structured_volume",
-		osp_type, str_type, data_size, data_ptr);
-    volume.Set(useGridAccelerator,
-               adaptiveSampling,
+		osp_type, str_type, data_size, data_ptr,
+		useGridAccelerator);
+    volume.Set(adaptiveSampling,
                preIntegration,
                singleShade,
                gradientShadingEnabled,
@@ -678,7 +683,7 @@ ospray::CheckVolumeFormat(const int dt,
 	str_type = "double";
 	osp_type = OSP_DOUBLE;
     } else {
-	ospray::Exception("ERROR: Unsupported ospray volume type");
+	ospray::Exception("Unsupported ospray volume type.");
     }
     ospout << "[ospray] data type " << str_type << std::endl;
 }
@@ -791,7 +796,7 @@ ospray::ProjectWorldToScreen(const double worldCoord[3],
                   << clipHCoord[2] << ", "
                   << clipHCoord[3] << std::endl
 		  << "Matrix: " << *mvp << std::endl;
-	ospray::Exception("Zero Division During Projection");
+	ospray::Exception("Zero Division During Projection.");
     }
     // screen coordinates (int integer)
     screenCoord[0] =
@@ -833,7 +838,7 @@ ospray::ProjectScreenToWorld(const int screenCoord[2], const double z,
                   << clipHCoord[2] << ", "
                   << clipHCoord[3] << std::endl
 		  << "Matrix: " << *imvp << std::endl;
-	ospray::Exception("Zero Division During Projection");
+	ospray::Exception("Zero Division During Projection.");
     }    
     // normalize world space coordinate	
     worldCoord[0] = worldHCoord[0]/worldHCoord[3];
@@ -868,7 +873,7 @@ ospray::ProjectScreenToCamera(const int screenCoord[2], const double z,
                   << clipHCoord[2] << ", "
                   << clipHCoord[3] << std::endl
 		  << "Matrix: " << *imvp << std::endl;
-	ospray::Exception("Zero Division During Projection");
+	ospray::Exception("Zero Division During Projection.");
     }
     // normalize world space coordinate	
     cameraCoord[0] = cameraHCoord[0]/cameraHCoord[3];

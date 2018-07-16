@@ -132,11 +132,13 @@ namespace visit {
         OSPDataType dataType;
         size_t      dataSize;
         const void* dataPtr;
+	bool useGridAccelerator;
         VolumeCore() : Object<OSPVolume>() {
             volumeType = "";
             dataType = OSP_UCHAR; /* just give it a value */
             dataSize = 0;
             dataPtr  = NULL;
+	    useGridAccelerator = false;
         }
     };
   
@@ -287,6 +289,7 @@ namespace ospray {
 
 #include <avtParallel.h>
 #include <avtViewInfo.h>
+#include <avtCallback.h>
 
 #include <DebugStream.h>
 #include <StackTimer.h>
@@ -435,9 +438,9 @@ namespace ospray {
                       const OSPDataType data_type, 
                       const std::string data_char,
                       const size_t data_size, 
-                      const void* data_ptr);
-            void Set(const bool useGridAccelerator, 
-                     const bool adaptiveSampling,
+                      const void* data_ptr,
+		      const bool use_grid_accelerator);
+            void Set(const bool adaptiveSampling,
                      const bool preIntegration, 
                      const bool singleShade, 
                      const bool gradientShadingEnabled,
@@ -450,8 +453,7 @@ namespace ospray {
                      const osp::vec3f& global_lower,
                      const osp::vec3f& scale,
                      OSPTransferFunction tfn);
-            void Set(const bool useGridAccelerator, 
-                     const bool adaptiveSampling,
+            void Set(const bool adaptiveSampling,
                      const bool preIntegration, 
                      const bool singleShade, 
                      const bool gradientShadingEnabled, 
@@ -465,7 +467,7 @@ namespace ospray {
                      const osp::vec3f& scale,
                      TransferFunction tfn)
             {
-                Set(useGridAccelerator, adaptiveSampling,
+                Set(adaptiveSampling,
                     preIntegration, singleShade, 
                     gradientShadingEnabled, samplingRate, 
                     Ks, Ns, X, Y, Z, nX, nY, nZ,
@@ -639,9 +641,14 @@ namespace ospray {
     {
         std::cerr << str << std::endl;
         debug1    << str << std::endl;
-        EXCEPTION1(VisItException, str.c_str()); 
+        EXCEPTION1(ImproperUseException, str.c_str());
+	avtCallback::SetRenderingException(str);
     }
 
+    inline void Warning(const std::string str)
+    {
+	avtCallback::IssueWarning(str.c_str());
+    }
     void CheckVolumeFormat(const int dt,
                            std::string& str_type,
                            OSPDataType& osp_type);

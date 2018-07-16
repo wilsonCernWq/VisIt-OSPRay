@@ -93,8 +93,19 @@ bool OSPRaySortImgMetaDataByEyeSpaceDepth(ospray::ImgMetaData const& before,
 
 avtOSPRayRayTracer::avtOSPRayRayTracer() : avtRayTracerBase()
 {
-    lighting = false;
-
+    gradientShadingEnabled = false;
+    shadowsEnabled = false;
+    useGridAccelerator = false;
+    preIntegration = false;
+    singleShade = false;
+    oneSidedLighting = false;
+    aoTransparencyEnabled = false;
+    spp = 1;
+    aoSamples = 0;
+    aoDistance = 1e6;
+    samplingRate = 3.0;
+    minContribution = 0.001;
+    
     materialProperties[0] = 0.4;
     materialProperties[1] = 0.75;
     materialProperties[2] = 0.0;
@@ -383,7 +394,17 @@ avtOSPRayRayTracer::Execute()
     ospray->SetVariableName(activeVariable);    
     ospray->SetBackgroundBuffer(opaqueImageData, opaqueImageDepth.data(),
 				screen);
-    ospray->SetGradientShadingEnabled(lighting);
+
+    ospray->SetAdaptiveSampling(false);
+    ospray->SetAoSamples(aoSamples); 
+    ospray->SetSpp(spp);
+    ospray->SetOneSidedLighting(oneSidedLighting);
+    ospray->SetShadowsEnabled(shadowsEnabled);
+    ospray->SetAoTransparencyEnabled(aoTransparencyEnabled);
+    ospray->SetUseGridAccelerator(useGridAccelerator);
+    ospray->SetPreIntegration(preIntegration);
+    ospray->SetSingleShade(singleShade);
+    ospray->SetGradientShadingEnabled(gradientShadingEnabled);
     ospray->SetSamplingRate(samplingRate);
     ospray->SetScaleAndDataBounds(scale, dbounds);
     ospray->SetSpecular(materialProperties[2], materialProperties[3]);    
@@ -405,7 +426,7 @@ avtOSPRayRayTracer::Execute()
     ospray::Renderer ren(ospray->renderer);
     ren.Init();
     ren.ResetLights();
-    double light_scale = lighting ? 0.9 : 1.0;
+    double light_scale = gradientShadingEnabled ? 0.9 : 1.0;
     ren.AddLight().Set(true,  materialProperties[0], light_scale); // ambient 
     ren.AddLight().Set(false, materialProperties[1], light_scale,
 		       viewDirection);
