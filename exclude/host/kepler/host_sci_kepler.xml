@@ -42,9 +42,9 @@
         <Field name="sublaunchArgsSet" type="bool">false</Field>
         <Field name="sublaunchArgs" type="string"></Field>
         <Field name="sublaunchPreCmdSet" type="bool">true</Field>
-        <Field name="sublaunchPreCmd" type="string">"source /home/sci/qwu/software/Kepler/VisIt/visit-depend.sh activate"</Field>
+        <Field name="sublaunchPreCmd" type="string">""</Field>
         <Field name="sublaunchPostCmdSet" type="bool">true</Field>
-        <Field name="sublaunchPostCmd" type="string">"source /home/sci/qwu/software/Kepler/VisIt/visit-depend.sh deactivate"</Field>
+        <Field name="sublaunchPostCmd" type="string">""</Field>
         <Field name="machinefileSet" type="bool">false</Field>
         <Field name="machinefile" type="string"></Field>
         <Field name="visitSetsUpEnv" type="bool">false</Field>

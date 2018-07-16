@@ -30,19 +30,19 @@ ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
 ARGS=${ARGS}" --makeflags -j24 "
 ARGS=${ARGS}" --parallel "
 ARGS=${ARGS}" --cmake --qt --python "
-ARGS=${ARGS}" --hdf5 --netcdf --szip --silo --uintah"
-ARGS=${ARGS}" --ispc --embree --ospray "
+ARGS=${ARGS}" --hdf5 --netcdf --szip --silo "
+ARGS=${ARGS}" --ispc --embree --tbb "
 ARGS=${ARGS}" --alt-boost-dir /usr "
-ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2017_20170604oss "
-ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
 ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --skip-opengl-context-check "
-    # ARGS=${ARGS}" --llvm --mesagl"
+    ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.0 "
+    ARGS=${ARGS}" --pidx "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
-    ARGS=${ARGS}" --slivr "
+    ARGS=${ARGS}" --slivr --uintah --ospray "
+    ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
 fi
 
 # ------------------------------ 
