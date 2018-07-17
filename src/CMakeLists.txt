@@ -1183,7 +1183,47 @@ IF(VISIT_OSPRAY)
       ${LIBRARY_PATH_PREFIX}ospray_module_ispc${LIBRARY_SUFFIX}
       ${LIBRARY_PATH_PREFIX}ospray_module_visit${LIBRARY_SUFFIX}
       ${LIBRARY_PATH_PREFIX}ospray_module_visit_common${LIBRARY_SUFFIX})
-    # debug
+    # install
+    #
+    # I (Qi) am not sure how the installation should be done
+    # certainly we need to copy include files and libraries.
+    # I am providing useful information for ospray in case this
+    # needs to be developed in the future
+    #
+    # on linux ospray have libraries in a form of: 
+    #      libospray[xxx].so
+    #      libospray[xxx].so.0
+    #      libospray[xxx].so.[version]
+    #
+    # on mac ospray have libraries in a form of: 
+    #      libospray[xxx].dylib
+    #      libospray[xxx].0.dylib
+    #      libospray[xxx].[version].dylib
+    #
+    # on windows I am havent tested
+    #
+    # foreach (l ${OSPRAY_LIBRARIES})
+    #   if ((NOT "${l}" STREQUAL "optimized") AND 
+    #       (NOT "${l}" STREQUAL "debug"))
+    #     # THIRD_PARTY_INSTALL_LIBRARY(${l})
+    #     get_filename_component(_name_ ${l} NAME_WE)
+    #     if( (NOT "${_name_}" STREQUAL "libtbb_debug") AND
+    #         (NOT "${_name_}" STREQUAL "libtbbmalloc_debug") AND
+    #         (NOT "${_name_}" STREQUAL "libtbb") AND
+    #         (NOT "${_name_}" STREQUAL "libtbbmalloc") AND
+    #         (NOT "${_name_}" STREQUAL "libembree3") )
+    #       # THIRD_PARTY_INSTALL_LIBRARY(${l}.0)  
+    #     endif()
+    #     # get_filename_component(_ext_ ${l} EXT)
+    #     # get_filename_component(_name_ ${l} NAME_WE)
+    #     # get_filename_component(_path_ ${l} DIRECTORY)
+    #     # message(STATUS ${l})
+    #     # message(STATUS ${_ext_})
+    #     # message(STATUS ${_name_})
+    #     # message(STATUS ${_path_})
+    #   endif ()
+    # endforeach()
+    # # debug
     MESSAGE(STATUS "OSPRAY_INCLUDE_DIR: " ${OSPRAY_INCLUDE_DIR})
     MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
     MESSAGE(STATUS "OSPRay for VisIt: ON")
