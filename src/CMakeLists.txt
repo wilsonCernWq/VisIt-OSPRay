@@ -1184,12 +1184,6 @@ IF(VISIT_OSPRAY)
       ${LIBRARY_PATH_PREFIX}ospray_module_visit${LIBRARY_SUFFIX}
       ${LIBRARY_PATH_PREFIX}ospray_module_visit_common${LIBRARY_SUFFIX})
     # install
-    #
-    # I (Qi) am not sure how the installation should be done
-    # certainly we need to copy include files and libraries.
-    # I am providing useful information for ospray in case this
-    # needs to be developed in the future
-    #
     # on linux ospray have libraries in a form of: 
     #      libospray[xxx].so
     #      libospray[xxx].so.0
@@ -1200,30 +1194,46 @@ IF(VISIT_OSPRAY)
     #      libospray[xxx].0.dylib
     #      libospray[xxx].[version].dylib
     #
-    # on windows I am havent tested
+    # on windows
+    #      libospray[xxx].lib
+    #      libospray[xxx].dll
     #
-    # foreach (l ${OSPRAY_LIBRARIES})
-    #   if ((NOT "${l}" STREQUAL "optimized") AND 
-    #       (NOT "${l}" STREQUAL "debug"))
-    #     # THIRD_PARTY_INSTALL_LIBRARY(${l})
-    #     get_filename_component(_name_ ${l} NAME_WE)
-    #     if( (NOT "${_name_}" STREQUAL "libtbb_debug") AND
-    #         (NOT "${_name_}" STREQUAL "libtbbmalloc_debug") AND
-    #         (NOT "${_name_}" STREQUAL "libtbb") AND
-    #         (NOT "${_name_}" STREQUAL "libtbbmalloc") AND
-    #         (NOT "${_name_}" STREQUAL "libembree3") )
-    #       # THIRD_PARTY_INSTALL_LIBRARY(${l}.0)  
-    #     endif()
-    #     # get_filename_component(_ext_ ${l} EXT)
-    #     # get_filename_component(_name_ ${l} NAME_WE)
-    #     # get_filename_component(_path_ ${l} DIRECTORY)
-    #     # message(STATUS ${l})
-    #     # message(STATUS ${_ext_})
-    #     # message(STATUS ${_name_})
-    #     # message(STATUS ${_path_})
-    #   endif ()
-    # endforeach()
-    # # debug
+    IF(NOT VISIT_HEADERS_SKIP_INSTALL)
+      INSTALL(DIRECTORY ${OSPRAY_INCLUDE_DIR}
+        DESTINATION 
+        DESTINATION ${VISIT_INSTALLED_VERSION_INCLUDE}/ospray
+        FILE_PERMISSIONS OWNER_WRITE OWNER_READ
+                         GROUP_WRITE GROUP_READ
+                         WORLD_READ
+        DIRECTORY_PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE
+                              GROUP_WRITE GROUP_READ GROUP_EXECUTE
+                                          WORLD_READ WORLD_EXECUTE
+        PATTERN ".svn" EXCLUDE)
+    ENDIF(NOT VISIT_HEADERS_SKIP_INSTALL)
+    IF(VISIT_OSPRAY_SKIP_INSTALL)
+      FOREACH(l ${OSPRAY_LIBRARIES})
+        # GET_FILENAME_COMPONENT(_ext_ ${l} EXT)
+        # GET_FILENAME_COMPONENT(_name_ ${l} NAME_WE)
+        # GET_FILENAME_COMPONENT(_path_ ${l} DIRECTORY)
+        # MESSAGE(STATUS ${l})
+        # MESSAGE(STATUS ${_ext_})
+        # MESSAGE(STATUS ${_name_})
+        # MESSAGE(STATUS ${_path_})
+        IF( (NOT "${l}" STREQUAL "optimized") AND 
+            (NOT "${l}" STREQUAL "debug"))
+          GET_FILENAME_COMPONENT(_name_ ${l} NAME_WE)
+          IF( (NOT "${_name_}" STREQUAL "libtbb_debug") AND
+              (NOT "${_name_}" STREQUAL "libtbbmalloc_debug") AND
+              (NOT "${_name_}" STREQUAL "libtbb") AND
+              (NOT "${_name_}" STREQUAL "libtbbmalloc") AND
+              (NOT "${_name_}" STREQUAL "libembree3") )
+            THIRD_PARTY_INSTALL_LIBRARY(${l}.0)  
+          ENDIF()
+          THIRD_PARTY_INSTALL_LIBRARY(${l})
+        ENDIF()
+      ENDFOREACH()
+    ENDIF(VISIT_OSPRAY_SKIP_INSTALL)
+    # debug
     MESSAGE(STATUS "OSPRAY_INCLUDE_DIR: " ${OSPRAY_INCLUDE_DIR})
     MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
     MESSAGE(STATUS "OSPRay for VisIt: ON")
