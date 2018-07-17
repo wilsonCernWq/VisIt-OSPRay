@@ -26,23 +26,23 @@ mkdir -p $DIR_INSTALL
 
 ARGS=""
 ARGS=${ARGS}" --debug --no-visit "
-ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
+ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++11 "
 ARGS=${ARGS}" --makeflags -j24 "
 ARGS=${ARGS}" --parallel "
 ARGS=${ARGS}" --cmake --qt --python "
 ARGS=${ARGS}" --hdf5 --netcdf --szip --silo "
-ARGS=${ARGS}" --ispc --embree --tbb "
+ARGS=${ARGS}" --ispc --embree "
 ARGS=${ARGS}" --alt-boost-dir /usr "
 ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
-    ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.0 "
+    ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.0 --tbb "
     ARGS=${ARGS}" --pidx "
     ARGS=${ARGS}" --skip-opengl-context-check "
     ARGS=${ARGS}" --osmesa --llvm "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
-    ARGS=${ARGS}" --ospray "
+    ARGS=${ARGS}" --ospray --alt-tbb-dir /home/sci/qwu/software/tbb2018_20180618oss "
     ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
     ARGS=${ARGS}" --slivr --uintah "
 fi
