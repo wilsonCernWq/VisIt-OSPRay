@@ -148,7 +148,7 @@ IF(VISIT_OSPRAY)
          avtOSPRayRayTracer.C
          avtOSPRaySamplePointExtractor.C
          avtOSPRayVoxelExtractor.C
-	 )
+         )
     ADD_DEFINITIONS(-DVISIT_OSPRAY)
     IF(ICET_FOUND)
         # If we have Ice-T then add -DHAVE_ICET to the compilation flags.
@@ -157,10 +157,10 @@ IF(VISIT_OSPRAY)
             SET(ICET_OPENGL ${OPENGL_gl_LIBRARY})
         ENDIF(APPLE)
         # Link icet libraries using absolute pathes
-	SET(ICET_FULLPATH_LIB ${ICET_OPENGL})
-	FOREACH(X ${ICET_LIB})
-	    LIST(APPEND ICET_FULLPATH_LIB "${ICET_LIBRARY_DIR}/${X}")
-	ENDFOREACH()
+        SET(ICET_FULLPATH_LIB ${ICET_OPENGL})
+        FOREACH(X ${ICET_LIB})
+            LIST(APPEND ICET_FULLPATH_LIB "${ICET_LIBRARY_DIR}/${X}")
+        ENDFOREACH()
         # Other setups
         INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})
         LINK_DIRECTORIES(${ICET_LIBRARY_DIR})

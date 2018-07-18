@@ -121,7 +121,7 @@
 // ****************************************************************************
 
 avtOSPRaySamplePointExtractor::avtOSPRaySamplePointExtractor(int w,
-							     int h,
+                                                             int h,
                                                              int d)
     : avtSamplePointExtractorBase(w, h, d)
 {
@@ -260,7 +260,7 @@ avtOSPRaySamplePointExtractor::SetUpExtractors(void)
 void
 avtOSPRaySamplePointExtractor::InitSampling(avtDataTree_p dt)
 {
-    ospray::Context* ospray = (ospray::Context*)ospray_core;	
+    ospray::Context* ospray = (ospray::Context*)ospray_core;    
     for (int i = 0; i < dt->GetNChildren(); ++i)
     { ospray->InitPatch(i); }    
     patchCount = 0;
@@ -364,18 +364,18 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 
         //-----------------------------
         // Extractor Setup
-        //-----------------------------	
+        //----------------------------- 
         osprayVoxelExtractor->SetProcIdPatchID(PAR_Rank(), num);
         osprayVoxelExtractor->SetOSPRay(ospray_core);
-	osprayVoxelExtractor->SetViewInfo(viewInfo);
+        osprayVoxelExtractor->SetViewInfo(viewInfo);
         osprayVoxelExtractor->SetSamplingRate(samplingRate);       
-        osprayVoxelExtractor->SetRenderingExtents(renderingExtents);	
+        osprayVoxelExtractor->SetRenderingExtents(renderingExtents);    
         osprayVoxelExtractor->SetMVPMatrix(modelViewProj);
 
-	// Note (Qi): probably not necessary
+        // Note (Qi): probably not necessary
         osprayVoxelExtractor->SetGridsAreInWorldSpace
             (rectilinearGridsAreInWorldSpace, view, aspect, xform);
-	
+        
         //-----------------------------
         // Extract
         //-----------------------------
@@ -418,16 +418,16 @@ avtOSPRaySamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         //---------------------------------------------------------
         // Other Grid
         //---------------------------------------------------------
-	if (num == 0) {
-	    const std::string msg = 
-		"Dataset type " + std::to_string((int)(ds->GetDataObjectType())) + " "
-		"is not a VTK_RECTILINEAR_GRID. "
-		"Currently the RayCasting:OSPRay renderer "
-		"only supports rectilinear grid, " 
-		"thus the volume cannot be rendered\n";
-	    //ospray::Warning(msg);
-	    ospray::Exception(msg);
-	}
+        if (num == 0) {
+            const std::string msg = 
+                "Dataset type " + std::to_string((int)(ds->GetDataObjectType())) + " "
+                "is not a VTK_RECTILINEAR_GRID. "
+                "Currently the RayCasting:OSPRay renderer "
+                "only supports rectilinear grid, " 
+                "thus the volume cannot be rendered\n";
+            //ospray::Warning(msg);
+            ospray::Exception(msg);
+        }
     }
 }
 
@@ -501,8 +501,8 @@ avtOSPRaySamplePointExtractor::DelImgPatches() {
     for (iter_t it=imgDataHashMap.begin(); it!=imgDataHashMap.end(); it++)
     {
         if ((*it).second.imagePatch != NULL) { 
-	    delete [](*it).second.imagePatch;
-	}
+            delete [](*it).second.imagePatch;
+        }
         (*it).second.imagePatch = NULL;
     }
     imgDataHashMap.clear();
@@ -530,15 +530,15 @@ avtOSPRaySamplePointExtractor::GetAndDelImgData(int patchId,
                                           ospray::ImgData &tempImgData) 
 {
     size_t imagePatchSize = 
-	imageMetaPatchVector[patchId].dims[0] * 
-	imageMetaPatchVector[patchId].dims[1] * sizeof(float) * 4;
+        imageMetaPatchVector[patchId].dims[0] * 
+        imageMetaPatchVector[patchId].dims[1] * sizeof(float) * 4;
     iter_t it = imgDataHashMap.find(patchId);
     tempImgData.procId = it->second.procId;
     tempImgData.patchNumber = it->second.patchNumber;
     // do shallow copy instead of deep copy
     tempImgData.imagePatch = it->second.imagePatch;
     // memcpy(tempImgData.imagePatch,
-    // 	      it->second.imagePatch,
+    //        it->second.imagePatch,
     //        imagePatchSize);
     // delete [](*it).second.imagePatch;
     it->second.imagePatch = NULL;

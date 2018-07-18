@@ -241,13 +241,13 @@ avtVolumeFilter::Execute(void)
 
     // Get the local histogram for this rank.
     // const std::string variableName_ =
-    // 	(atts.GetScaling() == VolumeAttributes::Linear) ?
-    // 	primaryVariable : "_expr_" + std::string(primaryVariable);
+    //  (atts.GetScaling() == VolumeAttributes::Linear) ?
+    //  primaryVariable : "_expr_" + std::string(primaryVariable);
     // std::cout << "primaryVariable = " << primaryVariable << std::endl;
     std::vector<VISIT_LONG_LONG> numvals_in(numValsInHist, 0);
     if(avtDatasetExaminer::CalculateHistogram(ds, primaryVariable,
-					      minmax[0], minmax[1],
-					      numvals_in))
+                                              minmax[0], minmax[1],
+                                              numvals_in))
         
     {
       debug1 << "CalculateHistogram failed for "
@@ -257,7 +257,7 @@ avtVolumeFilter::Execute(void)
     // Get the global histograms acrosss all ranks.
     std::vector<VISIT_LONG_LONG> numvals_out(numValsInHist, 0);
     SumLongLongArrayAcrossAllProcessors(&(numvals_in[0]),
-					&(numvals_out[0]), numValsInHist);
+                                        &(numvals_out[0]), numValsInHist);
     
     VISIT_LONG_LONG maxVal = 0;
     for (i = 0 ; i < numValsInHist ; i++)
@@ -324,8 +324,8 @@ avtVolumeFilter::CreateOpacityMap(double range[2])
     {
         om.SetTable(vtf, 256, atts.GetOpacityAttenuation() * 2.0 - 1.0, 
                     atts.GetRendererSamples());
-	om.SetTableFloatNOC(vtf, 256,
-			    atts.GetOpacityAttenuation() * 2.0 - 1.0); 
+        om.SetTableFloatNOC(vtf, 256,
+                            atts.GetOpacityAttenuation() * 2.0 - 1.0); 
     }
     else
 #endif
@@ -333,7 +333,7 @@ avtVolumeFilter::CreateOpacityMap(double range[2])
         if ((atts.GetRendererType() == VolumeAttributes::RayCasting) && 
             (atts.GetSampling() == VolumeAttributes::Trilinear))
             om.SetTable(vtf, 256, atts.GetOpacityAttenuation()*2.0 - 1.0,
-			atts.GetRendererSamples());
+                        atts.GetRendererSamples());
         else
         {
             // Set the opacity map just using the transfer function.
@@ -406,7 +406,7 @@ avtVolumeFilter::CreateOpacityMap(double range[2])
 }
 
 extern bool GetLogicalBounds(avtDataObject_p input,
-			     int &width,int &height, int &depth);
+                             int &width,int &height, int &depth);
 
 #if defined(VISIT_SLIVR) || defined(VISIT_OSPRAY)
 
@@ -508,10 +508,10 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
         {
             opacIndex = count;
         }
-	// if (vl.varnames[i] == gradName)
-	// {
-	//     gradIndex = count;
-	// }
+        // if (vl.varnames[i] == gradName)
+        // {
+        //     gradIndex = count;
+        // }
         count += vl.varsizes[i];
     }
 
@@ -572,13 +572,13 @@ avtVolumeFilter::RenderImageRayCasting(avtImage_p opaque_image,
         double viewDirection[3];
         int numSlices;
         viewDirection[0] = (view.GetViewNormal()[0] > 0)?
-	    view.GetViewNormal()[0]:
+            view.GetViewNormal()[0]:
             -view.GetViewNormal()[0];
         viewDirection[1] = (view.GetViewNormal()[1] > 0)?
-	    view.GetViewNormal()[1]:
+            view.GetViewNormal()[1]:
             -view.GetViewNormal()[1];
         viewDirection[2] = (view.GetViewNormal()[2] > 0)?
-	    view.GetViewNormal()[2]: 
+            view.GetViewNormal()[2]: 
             -view.GetViewNormal()[2];
         numSlices = (width_ * viewDirection[0] +
                      height_* viewDirection[1] + 

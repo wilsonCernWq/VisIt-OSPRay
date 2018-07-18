@@ -74,7 +74,7 @@ bool CheckThreadedBlend_Communicator()
     bool use = true;
     const char* env_use = std::getenv("OSPRAY_SERIAL_BLEND");
     if (env_use) { 
-	use = atoi(env_use) <= 0; 
+        use = atoi(env_use) <= 0; 
     }
     return use;
 }
@@ -136,7 +136,7 @@ bool avtOSPRayIC_IceT::CheckUsage()
     bool use_icet = false;
     const char* env_use_icet = std::getenv("OSPRAY_USE_ICET");
     if (env_use_icet) { 
-	use_icet = atoi(env_use_icet) > 0; 
+        use_icet = atoi(env_use_icet) > 0; 
     }
     return use_icet;
 }
@@ -284,7 +284,7 @@ void avtOSPRayIC_IceT::SetTile(const float* d,
     }
     int i = 0;
     for (std::multimap<float,int>::iterator it = ordered_depths.begin(); 
-	 it != ordered_depths.end(); ++it) {
+         it != ordered_depths.end(); ++it) {
         all_orders[i] = (*it).second;
         i++;
     }
@@ -300,19 +300,19 @@ void avtOSPRayIC_IceT::SetTile(const float* d,
     // Composite Stratagy
     //
     if (strategy == ICET_STRATEGY_REDUCE) {
-	icetStrategy(ICET_STRATEGY_REDUCE);
-    } else {	
-	icetStrategy(ICET_STRATEGY_SEQUENTIAL);
-	icetSingleImageStrategy(strategy);
+        icetStrategy(ICET_STRATEGY_REDUCE);
+    } else {    
+        icetStrategy(ICET_STRATEGY_SEQUENTIAL);
+        icetSingleImageStrategy(strategy);
     }
     //
     // Bounding Box
     //
     icetBoundingBoxf(((float) e[0]   /(screen[0]-1) - 0.5f) * 2.f,
-    	             ((float)(e[1]-1)/(screen[0]-1) - 0.5f) * 2.f,
-		     ((float) e[2]   /(screen[1]-1) - 0.5f) * 2.f,
-		     ((float)(e[3]-1)/(screen[1]-1) - 0.5f) * 2.f,
-    		     0.0, 0.0);
+                     ((float)(e[1]-1)/(screen[0]-1) - 0.5f) * 2.f,
+                     ((float) e[2]   /(screen[1]-1) - 0.5f) * 2.f,
+                     ((float)(e[3]-1)/(screen[1]-1) - 0.5f) * 2.f,
+                     0.0, 0.0);
     //
     // Compose
     //
@@ -332,30 +332,30 @@ void avtOSPRayIC_IceT::Composite(float*& output)
     result = icetDrawFrame(identity, identity, bgColor);
     if (MPIRank == 0) { ospout << " ... Done" << std::endl; }
     if (MPIRank == 0) {
-	icetImageCopyColorf(result, output, ICET_IMAGE_COLOR_RGBA_FLOAT);
+        icetImageCopyColorf(result, output, ICET_IMAGE_COLOR_RGBA_FLOAT);
     }
 #endif
 }
 
 #if defined(PARALLEL) && defined(VISIT_OSPRAY_ICET)
 void avtOSPRayIC_IceT::DrawCallback(const IceTDouble*,
-					const IceTDouble*, 
-					const IceTFloat*, 
-					const IceTInt*,
-					IceTImage img) 
+                                        const IceTDouble*, 
+                                        const IceTFloat*, 
+                                        const IceTInt*,
+                                        IceTImage img) 
 {
     float *o = icetImageGetColorf(img);
     const int outputStride = icetImageGetWidth(img);
-    for (int j = 0; j < imgMeta[3]; ++j) {	
-	for (int i = 0; i < imgMeta[2]; ++i) {
-	    const int gIdx = 
-		i + imgMeta[0] + (j + imgMeta[1]) * outputStride;
-	    const int lIdx = i + j * imgMeta[2];
-	    o[4 * gIdx + 0] = imgData[4 * lIdx + 0];
-	    o[4 * gIdx + 1] = imgData[4 * lIdx + 1];
-	    o[4 * gIdx + 2] = imgData[4 * lIdx + 2];
-	    o[4 * gIdx + 3] = imgData[4 * lIdx + 3];
-	}
+    for (int j = 0; j < imgMeta[3]; ++j) {      
+        for (int i = 0; i < imgMeta[2]; ++i) {
+            const int gIdx = 
+                i + imgMeta[0] + (j + imgMeta[1]) * outputStride;
+            const int lIdx = i + j * imgMeta[2];
+            o[4 * gIdx + 0] = imgData[4 * lIdx + 0];
+            o[4 * gIdx + 1] = imgData[4 * lIdx + 1];
+            o[4 * gIdx + 2] = imgData[4 * lIdx + 2];
+            o[4 * gIdx + 3] = imgData[4 * lIdx + 3];
+        }
     }
 }
 #endif
@@ -563,17 +563,17 @@ avtOSPRayImageCompositor::~avtOSPRayImageCompositor()
 // **************************************************************************
 
 void avtOSPRayImageCompositor::BlendFrontToBack(const float *srcImage,
-					       const int srcExtents[4],
-					       const int blendExtents[4], 
-					       float *&dstImage,
-					       const int dstExtents[4])
+                                               const int srcExtents[4],
+                                               const int blendExtents[4], 
+                                               float *&dstImage,
+                                               const int dstExtents[4])
 {
     if (UseThreadedBlend_Communicator) {
       ospray::visit::BlendFrontToBack(blendExtents,
-				srcExtents,
-				srcImage,
-				dstExtents,
-				dstImage);
+                                srcExtents,
+                                srcImage,
+                                dstExtents,
+                                dstImage);
     } else {
         // image sizes
         const int srcX = srcExtents[1] - srcExtents[0];
@@ -636,17 +636,17 @@ void avtOSPRayImageCompositor::BlendFrontToBack(const float *srcImage,
 // **************************************************************************
 
 void avtOSPRayImageCompositor::BlendBackToFront(const float *srcImage,
-					       const int srcExtents[4],
-					       const int blendExtents[4], 
-					       float *&dstImage,
-					       const int dstExtents[4])
+                                               const int srcExtents[4],
+                                               const int blendExtents[4], 
+                                               float *&dstImage,
+                                               const int dstExtents[4])
 {
     if (UseThreadedBlend_Communicator) {
       ospray::visit::BlendBackToFront(blendExtents,
-	                        srcExtents,
-	                        srcImage,
-	                        dstExtents,
-	                        dstImage);
+                                srcExtents,
+                                srcImage,
+                                dstExtents,
+                                dstImage);
     } else {
         // image sizes
         const int srcX = srcExtents[1] - srcExtents[0];
@@ -668,7 +668,7 @@ void avtOSPRayImageCompositor::BlendBackToFront(const float *srcImage,
                 // get indices
                 int srcIndex = (srcX*(y-srcExtents[2]) + x-srcExtents[0])*4;
                 int dstIndex = (dstX*(y-dstExtents[2]) + x-dstExtents[0])*4;
-                // back to front compositing	    
+                // back to front compositing        
                 float trans = 1.0f - srcImage[srcIndex + 3];
                 dstImage[dstIndex+0] = 
                     CLAMP(dstImage[dstIndex+0] * trans + srcImage[srcIndex+0],
@@ -702,9 +702,9 @@ void avtOSPRayImageCompositor::BlendBackToFront(const float *srcImage,
 // **************************************************************************
 
 void avtOSPRayImageCompositor::BlendFrontToBack(const float * srcImage,
-					       const int srcExtents[4], 
-					       float *& dstImage,
-					       const int dstExtents[4])
+                                               const int srcExtents[4], 
+                                               float *& dstImage,
+                                               const int dstExtents[4])
 {
     BlendFrontToBack(srcImage, srcExtents, srcExtents, dstImage, dstExtents);
 }
@@ -724,9 +724,9 @@ void avtOSPRayImageCompositor::BlendFrontToBack(const float * srcImage,
 // **************************************************************************
 
 void avtOSPRayImageCompositor::BlendBackToFront(const float * srcImage,
-					       const int srcExtents[4], 
-					       float *& dstImage, 
-					       const int dstExtents[4])
+                                               const int srcExtents[4], 
+                                               float *& dstImage, 
+                                               const int dstExtents[4])
 {
     BlendBackToFront(srcImage, srcExtents, srcExtents, dstImage, dstExtents);
 }
@@ -766,16 +766,16 @@ void avtOSPRayImageCompositor::Barrier() {
 // ***************************************************************************
 
 void avtOSPRayImageCompositor::ColorImage(float *&srcImage,
-					 const int widthSrc,
-					 const int heightSrc,
-					 const float color[4])
+                                         const int widthSrc,
+                                         const int heightSrc,
+                                         const float color[4])
 {
     for (int i = 0; i < heightSrc * widthSrc; ++i) {
-	const int srcIndex = 4 * i;
-	srcImage[srcIndex+0] = color[0];
-	srcImage[srcIndex+1] = color[1];
-	srcImage[srcIndex+2] = color[2];
-	srcImage[srcIndex+3] = color[3];
+        const int srcIndex = 4 * i;
+        srcImage[srcIndex+0] = color[0];
+        srcImage[srcIndex+1] = color[1];
+        srcImage[srcIndex+2] = color[2];
+        srcImage[srcIndex+3] = color[3];
     }
 }
 
@@ -794,9 +794,9 @@ void avtOSPRayImageCompositor::ColorImage(float *&srcImage,
 // ***************************************************************************
 
 void avtOSPRayImageCompositor::PlaceImage(const float *srcImage,
-					 const int srcExtents[4], 
-					 float *&dstImage,
-					 const int dstExtents[4])
+                                         const int srcExtents[4], 
+                                         float *&dstImage,
+                                         const int dstExtents[4])
 {
     const int srcX = srcExtents[1] - srcExtents[0];
     const int srcY = srcExtents[3] - srcExtents[2];
@@ -808,18 +808,18 @@ void avtOSPRayImageCompositor::PlaceImage(const float *srcImage,
     const int endingY = std::min(srcExtents[3], dstExtents[3]);
     
     for (int y = startingY; y < endingY; ++y) {
-	for (int x = startingX; x < endingX; ++x) {
-	    // index in the sub-image
-	    const int srcIndex = 
-		(srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4; 
-	    // index in the larger buffer
-	    const int dstIndex = 
-		(dstX * (y-dstExtents[2]) + x-dstExtents[0]) * 4;
-	    dstImage[dstIndex+0] = srcImage[srcIndex+0];
-	    dstImage[dstIndex+1] = srcImage[srcIndex+1];
-	    dstImage[dstIndex+2] = srcImage[srcIndex+2];
-	    dstImage[dstIndex+3] = srcImage[srcIndex+3];
-	}
+        for (int x = startingX; x < endingX; ++x) {
+            // index in the sub-image
+            const int srcIndex = 
+                (srcX * (y-srcExtents[2]) + x-srcExtents[0]) * 4; 
+            // index in the larger buffer
+            const int dstIndex = 
+                (dstX * (y-dstExtents[2]) + x-dstExtents[0]) * 4;
+            dstImage[dstIndex+0] = srcImage[srcIndex+0];
+            dstImage[dstIndex+1] = srcImage[srcIndex+1];
+            dstImage[dstIndex+2] = srcImage[srcIndex+2];
+            dstImage[dstIndex+3] = srcImage[srcIndex+3];
+        }
     }
 }
 
@@ -838,8 +838,8 @@ void avtOSPRayImageCompositor::PlaceImage(const float *srcImage,
 // **************************************************************************
 
 void avtOSPRayImageCompositor::BlendWithBackground(float *&image,
-						  const int extents[4],
-						  const float bgColor[4])
+                                                  const int extents[4],
+                                                  const float bgColor[4])
 {
     const int pixelSize = (extents[3]-extents[2]) * (extents[1]-extents[0]);
     // estimated potential speedup: 2.240
@@ -876,11 +876,11 @@ void avtOSPRayImageCompositor::IceTInit(int W, int H)
 {
     if (!avtOSPRayIC_IceT::Valid()) {
         std::cerr << "ERROR: IceT compositor is not valid. "
-		  << "Probably IceT is not compiled with VisIt"
-		  << std::endl;
-	ospray::Exception("ERROR: IceT compositor is not valid. "
+                  << "Probably IceT is not compiled with VisIt"
+                  << std::endl;
+        ospray::Exception("ERROR: IceT compositor is not valid. "
                           "Probably IceT is not compiled with VisIt");
-	return;
+        return;
     }
     if (compositor) delete compositor;
     compositor = new avtOSPRayIC_IceT(mpiSize, mpiRank);
@@ -888,20 +888,20 @@ void avtOSPRayImageCompositor::IceTInit(int W, int H)
 }
 
 void avtOSPRayImageCompositor::IceTSetTile(const float* d, 
-					  const int*   e,
-	                                  const float& z)
+                                          const int*   e,
+                                          const float& z)
 {
     ospray::timestamp timingDetail;
     //---------------------------------------------------------------------//
     ospray::CheckSectionStart("avtOSPRayImageCompositor", 
-			     "IceTSetTile", timingDetail,
-			     "IceT Setup Image Tile");
+                             "IceTSetTile", timingDetail,
+                             "IceT Setup Image Tile");
     //---------------------------------------------------------------------//
     compositor->SetTile(d, e, z);
     //---------------------------------------------------------------------//
     ospray::CheckSectionStop("avtOSPRayImageCompositor", 
-			    "IceTSetTile", timingDetail,
-			    "IceT Setup Image Tile");
+                            "IceTSetTile", timingDetail,
+                            "IceT Setup Image Tile");
     //---------------------------------------------------------------------//
 }
 
@@ -910,16 +910,16 @@ void avtOSPRayImageCompositor::IceTComposite(float*& output)
     ospray::timestamp timingDetail;
     //---------------------------------------------------------------------//
     ospray::CheckSectionStart("avtOSPRayImageCompositor", 
-			     "IceTComposite", timingDetail,
-			     "IceT Image Composition");
+                             "IceTComposite", timingDetail,
+                             "IceT Image Composition");
     //---------------------------------------------------------------------//
     compositor->Composite(output);
     if (compositor != NULL) { delete compositor; }
     compositor = NULL;
     //---------------------------------------------------------------------//
     ospray::CheckSectionStop("avtOSPRayImageCompositor", 
-			    "IceTComposite", timingDetail,
-			    "IceT Image Composition");
+                            "IceTComposite", timingDetail,
+                            "IceT Image Composition");
     //---------------------------------------------------------------------//
 }
 
@@ -1019,10 +1019,10 @@ void avtOSPRayImageCompositor::OneNodeComposite(float*& output)
 
 void
 avtOSPRayImageCompositor::UpdateBoundingBox(int currentBoundingBox[4],
-					   const int imageExtents[4])
+                                           const int imageExtents[4])
 {
     if ((currentBoundingBox[0] == 0 && currentBoundingBox[1] == 0) && 
-	(currentBoundingBox[2] == 0 && currentBoundingBox[3] == 0)) {
+        (currentBoundingBox[2] == 0 && currentBoundingBox[3] == 0)) {
         currentBoundingBox[0]=imageExtents[0];
         currentBoundingBox[1]=imageExtents[1];
         currentBoundingBox[2]=imageExtents[2];
@@ -1086,10 +1086,10 @@ avtOSPRayImageCompositor::UpdateBoundingBox(int currentBoundingBox[4],
 
 void
 avtOSPRayImageCompositor::GatherDepthAtRoot(const int numlocalPatches,
-					   const float *localPatchesDepth,
-					   int &totalPatches,
-					   int *&patchCountPerRank,
-					   float *&allPatchesDepth)
+                                           const float *localPatchesDepth,
+                                           int &totalPatches,
+                                           int *&patchCountPerRank,
+                                           float *&allPatchesDepth)
 {
 #ifdef PARALLEL
     // Get how many patches are coming from each MPI rank
@@ -1102,13 +1102,13 @@ avtOSPRayImageCompositor::GatherDepthAtRoot(const int numlocalPatches,
     // reference
     // https://www.mpich.org/static/docs/v3.1/www3/MPI_Gather.html
     MPI_Gather(&numlocalPatches, /* send buffer */
-	       1, /* send count */
-	       MPI_INT, 
-	       patchCountPerRank, /* address of receive buffer (root) */
-	       1, /* number of elements for any single receive (root) */
-	       MPI_INT, 
-	       0, /* rank of receiving process (integer) */
-	       MPI_COMM_WORLD); /* communicator (handle) */
+               1, /* send count */
+               MPI_INT, 
+               patchCountPerRank, /* address of receive buffer (root) */
+               1, /* number of elements for any single receive (root) */
+               MPI_INT, 
+               0, /* rank of receiving process (integer) */
+               MPI_COMM_WORLD); /* communicator (handle) */
 
     // gather number of patch group
     if (mpiRank == 0)
@@ -1127,16 +1127,16 @@ avtOSPRayImageCompositor::GatherDepthAtRoot(const int numlocalPatches,
                                 patchesOffset[i-1] + patchCountPerRank[i-1]; 
                         }
                 }
-	
+        
             // allocate only at root
             allPatchesDepth = new float[totalPatches];
         }
 
     // Gathers into specified locations from all processes in a group
     MPI_Gatherv(localPatchesDepth, numlocalPatches, MPI_FLOAT, 
-		allPatchesDepth, /* receive all depth */
-		patchCountPerRank, patchesOffset, MPI_FLOAT, 
-		0, MPI_COMM_WORLD);
+                allPatchesDepth, /* receive all depth */
+                patchCountPerRank, patchesOffset, MPI_FLOAT, 
+                0, MPI_COMM_WORLD);
 
     // Cleanup
     if (mpiRank == 0 && patchesOffset != NULL)
@@ -1162,11 +1162,11 @@ avtOSPRayImageCompositor::GatherDepthAtRoot(const int numlocalPatches,
 
 void
 avtOSPRayImageCompositor::SerialDirectSend(int localNumPatches,
-					  float *localPatchesDepth, 
-					  int *extents,
-					  float *imgData,
-					  float bgColor[4],
-					  int width, int height)
+                                          float *localPatchesDepth, 
+                                          int *extents,
+                                          float *imgData,
+                                          float bgColor[4],
+                                          int width, int height)
 {
 #ifdef PARALLEL
     //
@@ -1183,10 +1183,10 @@ avtOSPRayImageCompositor::SerialDirectSend(int localNumPatches,
     int   *totalPatchCountsPerRank = NULL;
     float *totalPatchDepths = NULL;
     GatherDepthAtRoot(localNumPatches,
-		      localPatchesDepth,
-		      totalPatches, 
-		      totalPatchCountsPerRank,
-		      totalPatchDepths);
+                      localPatchesDepth,
+                      totalPatches, 
+                      totalPatchCountsPerRank,
+                      totalPatchDepths);
     //
     //
     //
@@ -1214,7 +1214,7 @@ avtOSPRayImageCompositor::SerialDirectSend(int localNumPatches,
 
             recvImage = new float[width*height*4]();
             finalImage = new float[width*height*4]();
-	
+        
             int localIndex = 0;
 
             // Compositing
@@ -1256,7 +1256,7 @@ avtOSPRayImageCompositor::SerialDirectSend(int localNumPatches,
                 {
                     int imgSize = 
                         (extents[i*4 + 1] - extents[i*4 + 0]) *
-                        (extents[i*4 + 3] - extents[i*4 + 2]) * 4;	    
+                        (extents[i*4 + 3] - extents[i*4 + 2]) * 4;          
                     if (imgSize > 0)
                         {
                             MPI_Send(&extents[i*4],
@@ -1269,7 +1269,7 @@ avtOSPRayImageCompositor::SerialDirectSend(int localNumPatches,
 
     // Cleanup
     if (totalPatchDepths != NULL)
-	delete []totalPatchDepths;
+        delete []totalPatchDepths;
 
     if (totalPatchCountsPerRank != NULL)
         delete []totalPatchCountsPerRank;
@@ -1321,11 +1321,11 @@ avtOSPRayImageCompositor::RegionAllocation(int *& regions)
 // **************************************************************************
 void
 avtOSPRayImageCompositor::parallelDirectSend(float *imgData,
-					    int imgExtents[4],
-					    int region[],
-					    int numRegions,
-					    int tags[2],
-					    int fullImageExtents[4])
+                                            int imgExtents[4],
+                                            int region[],
+                                            int numRegions,
+                                            int tags[2],
+                                            int fullImageExtents[4])
 {
 #ifdef PARALLEL
     //
@@ -1340,8 +1340,8 @@ avtOSPRayImageCompositor::parallelDirectSend(float *imgData,
     bool inRegion = true;
     std::vector<int> regionVector(region, region+numRegions);
     std::vector<int>::iterator it = std::find(regionVector.begin(),
-					      regionVector.end(),
-					      mpiRank);
+                                              regionVector.end(),
+                                              mpiRank);
 
     if (it == regionVector.end())
         {
@@ -1358,9 +1358,9 @@ avtOSPRayImageCompositor::parallelDirectSend(float *imgData,
 
     // Extents of my region
     int myStartingHeight =
-	fullImageExtents[2] +
-	myPositionInRegion *
-	regionHeight;
+        fullImageExtents[2] +
+        myPositionInRegion *
+        regionHeight;
     int myEndingHeight = myStartingHeight + regionHeight;
     if (myPositionInRegion == numRegions-1)
         myEndingHeight = fullImageExtents[3];
@@ -1760,9 +1760,9 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
     bool inRegion = true;
     std::vector<int> regionVector(region, region+numRegions);
     const std::vector<int>::const_iterator it = 
-	std::find(regionVector.begin(),
-		  regionVector.end(), 
-		  mpiRank);
+        std::find(regionVector.begin(),
+                  regionVector.end(), 
+                  mpiRank);
     if (it == regionVector.end())
         {
             inRegion = false;
@@ -1800,9 +1800,9 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
     //---------------------------------------------------------------------//
     computeRegionExtents(mpiSize, height); // ?
     int myStartingHeight = getScreenRegionStart
-	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
+        (myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
     int myEndingHeight   = getScreenRegionEnd
-	(myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
+        (myPositionInRegion, fullImageExtents[2], fullImageExtents[3]);
     myRegionHeight = CLAMP((myEndingHeight-myStartingHeight), 0, height);
     //---------------------------------------------------------------------//
     ospray::CheckSectionStop("avtOSPRayImageCompositor", 
@@ -1810,7 +1810,7 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
                              "Compute Region Boundaries");
     // ospout << "myStartingHeight: " << myStartingHeight << ", "
     //        << "myEndingHeight: "   << myEndingHeight   << ", "
-    //	      << "myRegionHeight: "   << myRegionHeight   << std::endl;
+    //        << "myRegionHeight: "   << myRegionHeight   << std::endl;
     //---------------------------------------------------------------------//
 
 
@@ -1838,7 +1838,7 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
     // 2D array: extents for each partition
     std::vector < std::vector<float> > extentsPerPartiton;
     for (int i=0; i<numRegions; i++) { 
-	extentsPerPartiton.push_back(std::vector<float>()); 
+        extentsPerPartiton.push_back(std::vector<float>()); 
     }
     // ospout << "Parallel Direct Send ~ numPatches " << numPatches << endl;
     int totalSendBufferSize = 0;
@@ -1955,8 +1955,8 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
         }
     //---------------------------------------------------------------------//
     ospray::CheckSectionStop("avtOSPRayImageCompositor", 
-			    "ParallelDirectSendManyPatches", timingDetail,
-			    "Copy the Data for Each Region for Each Patch");
+                            "ParallelDirectSendManyPatches", timingDetail,
+                            "Copy the Data for Each Region for Each Patch");
     //---------------------------------------------------------------------//
 
 
@@ -1965,8 +1965,8 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
     //
     //---------------------------------------------------------------------//
     ospray::CheckSectionStart("avtOSPRayImageCompositor", 
-			     "ParallelDirectSendManyPatches", timingDetail,
-			     "Exchange Information about Size to Recv");
+                             "ParallelDirectSendManyPatches", timingDetail,
+                             "Exchange Information about Size to Recv");
     //---------------------------------------------------------------------//
     int *recvInfoATABuffer = new int[numRegions*2]();
     MPI_Alltoall(sendBuffer, 2, MPI_INT,  recvInfoATABuffer, 2, MPI_INT, MPI_COMM_WORLD);
@@ -1974,8 +1974,8 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
     sendBuffer = NULL;
     //---------------------------------------------------------------------//
     ospray::CheckSectionStop("avtOSPRayImageCompositor", 
-			    "ParallelDirectSendManyPatches", timingDetail,
-			    "Exchange Information about Size to Recv");
+                            "ParallelDirectSendManyPatches", timingDetail,
+                            "Exchange Information about Size to Recv");
     //ospout << "Parallel Direct Send ~ Exchange information about size to recv" << endl;
     //---------------------------------------------------------------------//
 
@@ -1985,8 +1985,8 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
     //
     //---------------------------------------------------------------------//
     ospray::CheckSectionStart("avtOSPRayImageCompositor", 
-			     "ParallelDirectSendManyPatches", timingDetail,
-			     "Calculate Buffer Size Needed");
+                             "ParallelDirectSendManyPatches", timingDetail,
+                             "Calculate Buffer Size Needed");
     //---------------------------------------------------------------------//
     int infoBufferSize = 0;
     int dataBufferSize = 0;
@@ -2002,8 +2002,8 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
         }
     //---------------------------------------------------------------------//
     ospray::CheckSectionStop("avtOSPRayImageCompositor", 
-			    "ParallelDirectSendManyPatches", timingDetail,
-			    "Calculate Buffer Size Needed");
+                            "ParallelDirectSendManyPatches", timingDetail,
+                            "Calculate Buffer Size Needed");
     //---------------------------------------------------------------------//
 
 
@@ -2031,8 +2031,8 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
     //
     //---------------------------------------------------------------------//
     ospray::CheckSectionStart("avtOSPRayImageCompositor", 
-			     "ParallelDirectSendManyPatches", timingDetail,
-			     "Create Recv Buffers");
+                             "ParallelDirectSendManyPatches", timingDetail,
+                             "Create Recv Buffers");
     //---------------------------------------------------------------------//
     float *recvInfoBuffer = new float[infoBufferSize*6];  // 6 - passing 6 parameters for each patch
     float *recvDataBuffer =  new float[dataBufferSize*4]; // 4 - to account for RGBA
@@ -2068,8 +2068,8 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
         }
     //---------------------------------------------------------------------//
     ospray::CheckSectionStop("avtOSPRayImageCompositor", 
-			    "ParallelDirectSendManyPatches", timingDetail,
-			    "Create Recv Buffers");
+                            "ParallelDirectSendManyPatches", timingDetail,
+                            "Create Recv Buffers");
     //---------------------------------------------------------------------//
 
 
@@ -2078,8 +2078,8 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
     //
     //---------------------------------------------------------------------//
     ospray::CheckSectionStart("avtOSPRayImageCompositor", 
-			     "ParallelDirectSendManyPatches", timingDetail,
-			     "Async Send");
+                             "ParallelDirectSendManyPatches", timingDetail,
+                             "Async Send");
     //---------------------------------------------------------------------//
     int offset = 0;
     int sendCount = 0;
@@ -2185,29 +2185,29 @@ avtOSPRayImageCompositor::ParallelDirectSendManyPatches
                               "Cleanup");
     //---------------------------------------------------------------------//
     if (sendDataBuffer != NULL)
-	delete []sendDataBuffer;
+        delete []sendDataBuffer;
     sendDataBuffer = NULL;
 
     if (sendDataBufferSize != NULL)
-	delete []sendDataBufferSize;
+        delete []sendDataBufferSize;
     sendDataBufferSize = NULL;
 
     if (sendDataBufferOffsets != NULL)
-	delete []sendDataBufferOffsets;
+        delete []sendDataBufferOffsets;
     sendDataBufferOffsets = NULL;
 
 
     if (sendMetaRq != NULL)
-	delete []sendMetaRq;
+        delete []sendMetaRq;
 
     if (sendImageRq != NULL)
-	delete []sendImageRq;
+        delete []sendImageRq;
 
     if (sendMetaSt != NULL)
-	delete []sendMetaSt;
+        delete []sendMetaSt;
 
     if (sendImageSt != NULL)
-	delete []sendImageSt;
+        delete []sendImageSt;
 
     sendMetaRq = NULL;
     sendImageRq = NULL;
@@ -2268,10 +2268,10 @@ avtOSPRayImageCompositor::gatherImages(int regionGather[], int totalNumRanks, fl
 {
 #ifdef PARALLEL
     //debug5 << "gatherImages starting... totalNumRanks: " << totalNumRanks << ", compositingDone: " << compositingDone
-    //	   << ", imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
+    //     << ", imgExtents: " << imgExtents[0] << ", " << imgExtents[1] << ", " << imgExtents[2] << ", " << imgExtents[3] << std::endl;
 
     for (int i=0; i<4; i++)
-	finalImageExtents[i] = finalBB[i] = 0;
+        finalImageExtents[i] = finalBB[i] = 0;
 
     if (mpiRank == 0)
         {
@@ -2331,7 +2331,7 @@ avtOSPRayImageCompositor::gatherImages(int regionGather[], int totalNumRanks, fl
                         }
                     else
                         MPI_Irecv(&finalImage[i*regularBufferSize], regularBufferSize,  MPI_FLOAT, src, tag, MPI_COMM_WORLD,  &recvImageRq[recvCount] );
-			
+                        
 
                     //debug5 << i << " ~ recvCount: " << recvCount << std::endl;
                     recvCount++;

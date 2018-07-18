@@ -242,7 +242,7 @@ avtSLIVRSamplePointExtractor::SetUpExtractors(void)
         delete slivrVoxelExtractor;
     }
     slivrVoxelExtractor = new avtSLIVRVoxelExtractor(width, height, depth,
-													 volume,cl);
+                                                                                                         volume,cl);
     //slivrVoxelExtractor->SetJittering(jitter);
     if (shouldDoTiling)
     {
@@ -361,14 +361,14 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 
         //
         // Compositing Setup
-	//
+        //
         slivrVoxelExtractor->SetGridsAreInWorldSpace(
             rectilinearGridsAreInWorldSpace, view, aspect, xform);
 
         slivrVoxelExtractor->setDepthBuffer(depthBuffer,
-					    bufferExtents[1]*bufferExtents[3]);
+                                            bufferExtents[1]*bufferExtents[3]);
         slivrVoxelExtractor->setRGBBuffer(rgbColorBuffer,
-					  bufferExtents[1],bufferExtents[3]);
+                                          bufferExtents[1],bufferExtents[3]);
         slivrVoxelExtractor->setBufferExtents(bufferExtents);
 
         slivrVoxelExtractor->SetViewDirection(view_direction);
@@ -386,7 +386,7 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
 
 
         slivrVoxelExtractor->Extract((vtkRectilinearGrid *) ds,
-									 varnames, varsizes);
+                                                                         varnames, varsizes);
 
         //
         // Get rendering results
@@ -395,11 +395,11 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
         tmpImageMetaPatch = initMetaPatch(patchCount);
 
         slivrVoxelExtractor->getImageDimensions(tmpImageMetaPatch.inUse,
-												tmpImageMetaPatch.dims,
-												tmpImageMetaPatch.screen_ll,
-												tmpImageMetaPatch.screen_ur,
-												tmpImageMetaPatch.eye_z,
-												tmpImageMetaPatch.clip_z);
+                                                                                                tmpImageMetaPatch.dims,
+                                                                                                tmpImageMetaPatch.screen_ll,
+                                                                                                tmpImageMetaPatch.screen_ur,
+                                                                                                tmpImageMetaPatch.eye_z,
+                                                                                                tmpImageMetaPatch.clip_z);
         if (tmpImageMetaPatch.inUse == 1)
         {
             tmpImageMetaPatch.avg_z = tmpImageMetaPatch.eye_z;
@@ -410,13 +410,13 @@ avtSLIVRSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
             tmpImageDataHash.procId = tmpImageMetaPatch.procId;
             tmpImageDataHash.patchNumber = tmpImageMetaPatch.patchNumber;
             tmpImageDataHash.imagePatch =
-				new float[tmpImageMetaPatch.dims[0] *
-						  tmpImageMetaPatch.dims[1] * 4];
+                                new float[tmpImageMetaPatch.dims[0] *
+                                                  tmpImageMetaPatch.dims[1] * 4];
 
             slivrVoxelExtractor->getComputedImage(tmpImageDataHash.imagePatch);
             imgDataHashMap.insert
-				(std::pair<int, imgData>(tmpImageDataHash.patchNumber,
-										 tmpImageDataHash));
+                                (std::pair<int, imgData>(tmpImageDataHash.patchNumber,
+                                                                                 tmpImageDataHash));
 
             patchCount++;
         }

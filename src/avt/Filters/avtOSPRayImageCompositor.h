@@ -73,8 +73,8 @@ class avtOSPRayIC_Implementation
     virtual ~avtOSPRayIC_Implementation() {};
     virtual void Init (int W, int H) = 0;
     virtual void SetTile (const float* data, 
-			  const int* extents, 
-			  const float& depth) = 0;
+                          const int* extents, 
+                          const float& depth) = 0;
     virtual void Composite (float*& output) = 0;
 };
 
@@ -106,25 +106,25 @@ class avtOSPRayImageCompositor
 
     // Those functions can be static
     static void BlendFrontToBack(const float *, const int srcExtents[4],
-				 const int blendExtents[4], 
-				 float *&, const int dstExtents[4]);
+                                 const int blendExtents[4], 
+                                 float *&, const int dstExtents[4]);
     static void BlendBackToFront(const float *, const int srcExtents[4], 
-				 const int blendExtents[4], 
-				 float *&, const int dstExtents[4]);
+                                 const int blendExtents[4], 
+                                 float *&, const int dstExtents[4]);
     static void BlendFrontToBack(const float *, const int srcExtents[4], 
-				 float *&, const int dstExtents[4]);
+                                 float *&, const int dstExtents[4]);
     static void BlendBackToFront(const float *, const int srcExtents[4], 
-				 float *&, const int dstExtents[4]);
+                                 float *&, const int dstExtents[4]);
     void Barrier();
 
  private:
     //----------------------------------------------------------------------//
     static void ColorImage(float *&, const int, const int, 
-			   const float color[4]);
+                           const float color[4]);
     static void PlaceImage(const float *, const int srcExtents[4], 
-			   float *&, const int dstExtents[4]);
+                           float *&, const int dstExtents[4]);
     static void BlendWithBackground(float *&, const int extents[4],
-				    const float bgColor[4]);
+                                    const float bgColor[4]);
  public:
     //----------------------------------------------------------------------//
     // Different Algorithms
@@ -197,7 +197,7 @@ class avtOSPRayImageCompositor
     void GatherDepthAtRoot(const int, const float *, int &, int *&, float *&);
  public:
     void SerialDirectSend
-	(int, float*, int*, float*, float bgColor[4], int, int);
+        (int, float*, int*, float*, float bgColor[4], int, int);
 
     //----------------------------------------------------------------------//
     // Parallel Direct Send
@@ -205,9 +205,9 @@ class avtOSPRayImageCompositor
  public:
     void RegionAllocation(int *&);
     int  ParallelDirectSendManyPatches
-	(const std::multimap<int, ospray::ImgData>&,
-	 const std::vector<ospray::ImgMetaData>&,
-	 int, int*, int, int tags[2], int fullImageExtents[4]);
+        (const std::multimap<int, ospray::ImgData>&,
+         const std::vector<ospray::ImgMetaData>&,
+         int, int*, int, int tags[2], int fullImageExtents[4]);
 
  private:
     ///--------------------------------------
@@ -223,22 +223,22 @@ class avtOSPRayImageCompositor
     //----------------------------------------------------------------------//
       
     void computeRegionExtents(int numRanks, int height);
-	
+        
     int getRegularRegionSize(){ return regularRegionSize; } 
     int getRegionStart(int region){ return regionRankExtents[region*3+0]; }
     int getRegionEnd(int region){ return regionRankExtents[region*3+1]; }
     int getRegionSize(int region){ return regionRankExtents[region*3+2]; }
     int getMaxRegionHeight(){ return maxRegionHeight; }
-	
+        
     int getScreenRegionStart(int region, int screenImgMinY, int screenImgMaxY)
     {
-	return CLAMP(getRegionStart(region)+screenImgMinY, 
-		     screenImgMinY, screenImgMaxY); 
+        return CLAMP(getRegionStart(region)+screenImgMinY, 
+                     screenImgMinY, screenImgMaxY); 
     }
     int getScreenRegionEnd(int region, int screenImgMinY, int screenImgMaxY)
     {
-	return CLAMP(getRegionEnd(region)+screenImgMinY, 
-		     screenImgMinY, screenImgMaxY); 
+        return CLAMP(getRegionEnd(region)+screenImgMinY, 
+                     screenImgMinY, screenImgMaxY); 
     }
 
  public:
@@ -250,7 +250,7 @@ class avtOSPRayImageCompositor
     int findRegionsForPatch(int patchExtents[4], int screenProjectedExtents[4], int numRegions, int &from, int &to);
 
 
-    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);	
+    void parallelDirectSend(float *imgData, int imgExtents[4], int region[], int numRegions, int tags[2], int fullImageExtents[4]);     
     void gatherImages(int regionGather[], int numToRecv, float * inputImg, int imgExtents[4], int boundingBox[4], int tag, int fullImageExtents[4], int myRegionHeight);
 
  public:

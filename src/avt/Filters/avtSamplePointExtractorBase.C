@@ -208,7 +208,7 @@ avtSamplePointExtractorBase::SetRectilinearGridsAreInWorldSpace(bool val,
 
 void
 avtSamplePointExtractorBase::RestrictToTile(int wmin, int wmax,
-											int hmin, int hmax)
+                                                                                        int hmin, int hmax)
 {
     shouldDoTiling = true;
     width_min  = wmin;
@@ -344,13 +344,13 @@ avtSamplePointExtractorBase::ExecuteTree(avtDataTree_p dt)
     /////////////////////////
     if (DebugStream::Level5())
     { 
-	unsigned long m_size, m_rss;
-	avtMemory::GetMemorySize(m_size, m_rss);
-	debug5 << "RAR_Rank: " << PAR_Rank() << " "
-	       << GetType() << "::ExecuteTree " 
-	       << " Initial Memory Usage: "
-	       << m_size << " rss (MB): "
-	       << m_rss/(1024*1024) << endl;
+        unsigned long m_size, m_rss;
+        avtMemory::GetMemorySize(m_size, m_rss);
+        debug5 << "RAR_Rank: " << PAR_Rank() << " "
+               << GetType() << "::ExecuteTree " 
+               << " Initial Memory Usage: "
+               << m_size << " rss (MB): "
+               << m_rss/(1024*1024) << endl;
     }
 
     //
@@ -361,7 +361,7 @@ avtSamplePointExtractorBase::ExecuteTree(avtDataTree_p dt)
     //
     // Call this function for initialization if necessary by children classes
     //
-    InitSampling(dt);	
+    InitSampling(dt);   
 
     if (*dt == NULL || (dt->GetNChildren() <= 0 && (!(dt->HasData()))))
         return;
@@ -384,7 +384,7 @@ avtSamplePointExtractorBase::ExecuteTree(avtDataTree_p dt)
                 if (ch->ChildIsPresent(i))
                 {
                     if (*ch == NULL || (ch->GetNChildren() <= 0 &&
-					(!(ch->HasData()))))
+                                        (!(ch->HasData()))))
                         continue;
                     nodes.push(new datatree_childindex(ch->GetChild(i),i));
                 }
@@ -413,13 +413,13 @@ avtSamplePointExtractorBase::ExecuteTree(avtDataTree_p dt)
     /////////////////////////
     if (DebugStream::Level5())
     { 
-	unsigned long m_size, m_rss;
-	avtMemory::GetMemorySize(m_size, m_rss);
-	debug5 << "RAR_Rank: " << PAR_Rank() << " "
-	       << GetType() << "::ExecuteTree " 
-	       << " Final Memory Usage: "
-	       << m_size << " rss (MB): "
-	       << m_rss/(1024*1024) << endl;
+        unsigned long m_size, m_rss;
+        avtMemory::GetMemorySize(m_size, m_rss);
+        debug5 << "RAR_Rank: " << PAR_Rank() << " "
+               << GetType() << "::ExecuteTree " 
+               << " Final Memory Usage: "
+               << m_size << " rss (MB): "
+               << m_rss/(1024*1024) << endl;
     }
 }
 

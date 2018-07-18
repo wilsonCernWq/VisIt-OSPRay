@@ -132,13 +132,13 @@ namespace visit {
         OSPDataType dataType;
         size_t      dataSize;
         const void* dataPtr;
-	bool useGridAccelerator;
+        bool useGridAccelerator;
         VolumeCore() : Object<OSPVolume>() {
             volumeType = "";
             dataType = OSP_UCHAR; /* just give it a value */
             dataSize = 0;
             dataPtr  = NULL;
-	    useGridAccelerator = false;
+            useGridAccelerator = false;
         }
     };
   
@@ -230,43 +230,43 @@ namespace ospray {
     void Finalize();
     struct Context : public ospray::visit::ContextCore {
     public:
-	void SetBackgroundBuffer(const unsigned char* color,
-				 const float* depth, const int size[2]);
-	void SetSpecular(const double& k, const double& n) { Ks = k; Ns = n; }
-	void SetScaleAndDataBounds(const double v[3], const double d[6])
-	{
-	    scale[0] = v[0]; scale[1] = v[1]; scale[2] = v[2];
-	    gbbox[0] = d[0] * scale[0];
-	    gbbox[3] = d[1] * scale[0];
-	    gbbox[1] = d[2] * scale[1];
-	    gbbox[4] = d[3] * scale[1];
-	    gbbox[2] = d[4] * scale[2];
-	    gbbox[5] = d[5] * scale[2];
-	}	
-	void SetSamplingRate(const double& v) { samplingRate = v; }
-	void SetAoSamples(const int v) { aoSamples = v; } 
-	void SetSpp(const int v) { spp = v; }
-	void SetOneSidedLighting(bool v) { oneSidedLighting = v; }
-	void SetShadowsEnabled(bool v) { shadowsEnabled = v; }
-	void SetAoTransparencyEnabled(bool v) { aoTransparencyEnabled = v; }
-	void SetUseGridAccelerator(bool v) { useGridAccelerator = v; }
-	void SetAdaptiveSampling(bool v) { adaptiveSampling = v; }
-	void SetPreIntegration(bool v) { preIntegration = v; }
-	void SetSingleShade(bool v) { singleShade = v; }
-	void SetGradientShadingEnabled(bool v) { gradientShadingEnabled = v; }
-	void SetVariableName(const std::string& str) { varname = str; }
-	const std::string& GetVariableName() const { return varname; }
-	void InitPatch(const int patchID);
-	void SetupPatch(const int patchID, const int vtk_type,
-			const size_t data_size, const void* data_ptr,
-			const double *X, const double *Y, const double *Z, 
-			const int nX, const int nY, const int nZ,
-			const double dbox[6], const double cbox[6]);
-	void RenderPatch(const int patchID,
-			 const float xMin, const float xMax, 
-			 const float yMin, const float yMax,
-			 const int tile_w, const int tile_h,
-			 float*& dest); 
+        void SetBackgroundBuffer(const unsigned char* color,
+                                 const float* depth, const int size[2]);
+        void SetSpecular(const double& k, const double& n) { Ks = k; Ns = n; }
+        void SetScaleAndDataBounds(const double v[3], const double d[6])
+        {
+            scale[0] = v[0]; scale[1] = v[1]; scale[2] = v[2];
+            gbbox[0] = d[0] * scale[0];
+            gbbox[3] = d[1] * scale[0];
+            gbbox[1] = d[2] * scale[1];
+            gbbox[4] = d[3] * scale[1];
+            gbbox[2] = d[4] * scale[2];
+            gbbox[5] = d[5] * scale[2];
+        }       
+        void SetSamplingRate(const double& v) { samplingRate = v; }
+        void SetAoSamples(const int v) { aoSamples = v; } 
+        void SetSpp(const int v) { spp = v; }
+        void SetOneSidedLighting(bool v) { oneSidedLighting = v; }
+        void SetShadowsEnabled(bool v) { shadowsEnabled = v; }
+        void SetAoTransparencyEnabled(bool v) { aoTransparencyEnabled = v; }
+        void SetUseGridAccelerator(bool v) { useGridAccelerator = v; }
+        void SetAdaptiveSampling(bool v) { adaptiveSampling = v; }
+        void SetPreIntegration(bool v) { preIntegration = v; }
+        void SetSingleShade(bool v) { singleShade = v; }
+        void SetGradientShadingEnabled(bool v) { gradientShadingEnabled = v; }
+        void SetVariableName(const std::string& str) { varname = str; }
+        const std::string& GetVariableName() const { return varname; }
+        void InitPatch(const int patchID);
+        void SetupPatch(const int patchID, const int vtk_type,
+                        const size_t data_size, const void* data_ptr,
+                        const double *X, const double *Y, const double *Z, 
+                        const int nX, const int nY, const int nZ,
+                        const double dbox[6], const double cbox[6]);
+        void RenderPatch(const int patchID,
+                         const float xMin, const float xMax, 
+                         const float yMin, const float yMax,
+                         const int tile_w, const int tile_h,
+                         float*& dest); 
     };
 };
 
@@ -439,7 +439,7 @@ namespace ospray {
                       const std::string data_char,
                       const size_t data_size, 
                       const void* data_ptr,
-		      const bool use_grid_accelerator);
+                      const bool use_grid_accelerator);
             void Set(const bool adaptiveSampling,
                      const bool preIntegration, 
                      const bool singleShade, 
@@ -622,7 +622,7 @@ namespace ospray {
                                   const std::string& str) 
     {
         debug5 << c << "::" << f << " " << str << " Start" << std::endl;
-        timingDetail = visitTimer->StartTimer();	    
+        timingDetail = visitTimer->StartTimer();            
     }
     
     inline void CheckSectionStop(const std::string& c,
@@ -642,12 +642,12 @@ namespace ospray {
         std::cerr << str << std::endl;
         debug1    << str << std::endl;
         EXCEPTION1(ImproperUseException, str.c_str());
-	avtCallback::SetRenderingException(str);
+        avtCallback::SetRenderingException(str);
     }
 
     inline void Warning(const std::string str)
     {
-	avtCallback::IssueWarning(str.c_str());
+        avtCallback::IssueWarning(str.c_str());
     }
     void CheckVolumeFormat(const int dt,
                            std::string& str_type,
@@ -668,7 +668,7 @@ namespace ospray {
 
     double ProjectWorldToScreen
         (const double worldCoord[3], 
-         const int screenWidth, const int screenHeight,	 
+         const int screenWidth, const int screenHeight,  
          const double panPercentage[2], const double imageZoom,
          vtkMatrix4x4 *mvp, int screenCoord[2]);
     

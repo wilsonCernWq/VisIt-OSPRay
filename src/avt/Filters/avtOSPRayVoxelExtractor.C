@@ -191,9 +191,9 @@ avtOSPRayVoxelExtractor::Extract(vtkRectilinearGrid *rgrid,
     if (gridsAreInWorldSpace || pretendGridsAreInWorldSpace)
         ExtractWorldSpaceGridOSPRay(rgrid, varnames, varsizes);
     else {
-	ospray::Exception("Attempt to extract an image space grid,"
-			  "however, RayCasting OSPRay supports only"
-			  "world space grid extraction");
+        ospray::Exception("Attempt to extract an image space grid,"
+                          "however, RayCasting OSPRay supports only"
+                          "world space grid extraction");
         //ExtractImageSpaceGrid(rgrid, varnames, varsizes);
     }
 }
@@ -288,7 +288,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             {
                 ospray::Exception("Error: primary variable " +
                                   ospray->GetVariableName() +
-                                  " not found.");		
+                                  " not found.");               
             }
             if (cell_size[ncell_arrays-1] != 1)
             {
@@ -324,7 +324,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             {
                 ospray::Exception("Error: primary variable " +
                                   ospray->GetVariableName() +
-                                  " not found.");		
+                                  " not found.");               
             }
             if (pt_size[npt_arrays-1] != 1)
             {
@@ -340,8 +340,8 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             volumePointer = pt_arrays[npt_arrays-1];
             volumeDataType = pt_vartypes[npt_arrays-1];
         } else {
-	    ospray::Exception("dataset found is neither nodal nor zonal. "
-			      "OSPRay does not know how to handle it.");
+            ospray::Exception("dataset found is neither nodal nor zonal. "
+                              "OSPRay does not know how to handle it.");
         }
         ospout << "[avtOSPRayVoxelExtractor] patch dimension "
                << nX << " " << nY << " " << nZ << std::endl;
@@ -358,7 +358,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             int gnX = 0, gnY = 0, gnZ = 0;
             gnX = dims[0] - 1;
             gnY = dims[1] - 1;
-            gnZ = dims[2] - 1;	
+            gnZ = dims[2] - 1;  
             for (int y = 1; y < (gnY-1); ++y) {
                 for (int z = 1; z < (gnZ-1); ++z) {
                     if (!ghost_bound[0]) {
@@ -423,9 +423,9 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
     {
         StackTimer t1("avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay "
                       "Get screen size of the patch (Pre-OSPRay preparation)");
-	double renderingDepthsExtents[2];
+        double renderingDepthsExtents[2];
         ospray::ProjectWorldToScreenCube(volumeCube, w_max, h_max, 
-					 viewInfo.imagePan, viewInfo.imageZoom,
+                                         viewInfo.imagePan, viewInfo.imageZoom,
                                          model_to_screen_transform, 
                                          patchScreenExtents, 
                                          renderingDepthsExtents);
@@ -542,9 +542,9 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                           "ExtractWorldSpaceGridOSPRay "
                           "OSPRay Create Volume");
             ospray->SetupPatch(patch, volumeDataType,
-			       (size_t)nX * (size_t)nY * (size_t)nZ,
-			       volumePointer, X, Y, Z, nX, nY, nZ,
-			       volumePBox, volumeBBox);
+                               (size_t)nX * (size_t)nY * (size_t)nZ,
+                               volumePointer, X, Y, Z, nX, nY, nZ,
+                               volumePBox, volumeBBox);
         }
         // Render Volume
         {
@@ -554,7 +554,7 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
             if ((scalarRange[1] >= tFVisibleRange[0]) &&
                 (scalarRange[0] <= tFVisibleRange[1])) {
                 ospray->RenderPatch(patch, xMin, xMax, yMin, yMax,
-				    imgWidth, imgHeight, finalImage);
+                                    imgWidth, imgHeight, finalImage);
                 drawn = 1;
                 
             }

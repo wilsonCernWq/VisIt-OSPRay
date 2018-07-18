@@ -444,8 +444,8 @@ avtOpacityMap::SetTableFloatNOC(unsigned char *arr, int te, double attenuation)
 
     for (int i = 0 ; i < tableEntries ; i++)
     {
-	double bp = tan(1.570796327 * (0.5 - attenuation*0.49999));
-	double alpha = pow((float) arr[i*4+3]/255.0f, (float)bp);
+        double bp = tan(1.570796327 * (0.5 - attenuation*0.49999));
+        double alpha = pow((float) arr[i*4+3]/255.0f, (float)bp);
         transferFn1D[i].R = (float)arr[i*4+0]/255.0f;
         transferFn1D[i].G = (float)arr[i*4+1]/255.0f;
         transferFn1D[i].B = (float)arr[i*4+2]/255.0f;
@@ -534,13 +534,13 @@ void avtOpacityMap::ComputeVisibleRange()
                             scalarRange) + min;
 
      debug5 << " max: " << max << " min: " << min 
-	    << " scalarRange: " << scalarRange 
+            << " scalarRange: " << scalarRange 
             << " minVisibleScalarIndex: " << minVisibleScalarIndex 
-	    << " maxVisibleScalarIndex: " << maxVisibleScalarIndex 
+            << " maxVisibleScalarIndex: " << maxVisibleScalarIndex 
             << " tableEntries: " << tableEntries
-	    << " maxVisibleScalar: " << maxVisibleScalar 
+            << " maxVisibleScalar: " << maxVisibleScalar 
             << " minVisibleScalar: " << minVisibleScalar 
-	    << std::endl;
+            << std::endl;
 }
 
 // ****************************************************************************

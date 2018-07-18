@@ -124,29 +124,29 @@ class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
     void             SetSamplingRate(double r)           { samplingRate = r; };
     void             SetRenderingExtents(int extents[4]) 
     {
-	renderingExtents[0] = extents[0];
-	renderingExtents[1] = extents[1];
-	renderingExtents[2] = extents[2];	
-	renderingExtents[3] = extents[3];
+        renderingExtents[0] = extents[0];
+        renderingExtents[1] = extents[1];
+        renderingExtents[2] = extents[2];       
+        renderingExtents[3] = extents[3];
     };
     void             SetMVPMatrix(vtkMatrix4x4 *mvp)
     {
-	model_to_screen_transform->DeepCopy(mvp); 
-	vtkMatrix4x4::Invert(model_to_screen_transform, 
-			     screen_to_model_transform); 
+        model_to_screen_transform->DeepCopy(mvp); 
+        vtkMatrix4x4::Invert(model_to_screen_transform, 
+                             screen_to_model_transform); 
     };
     void             SetScalarRange(double r[2])
     {
-	scalarRange[0] = r[0];
-	scalarRange[1] = r[1];
+        scalarRange[0] = r[0];
+        scalarRange[1] = r[1];
     };
     void             SetTFVisibleRange(double r[2])
     {
-	tFVisibleRange[0] = r[0];
-	tFVisibleRange[1] = r[1];
+        tFVisibleRange[0] = r[0];
+        tFVisibleRange[1] = r[1];
     };
     void             GetImageDimensions(int&,int dims[2],int screen_ll[2],
-					int screen_ur[2],float &, float &);
+                                        int screen_ur[2],float &, float &);
     void             GetComputedImage(float *image);
 
   protected:

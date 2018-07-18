@@ -143,12 +143,12 @@ class AVTFILTERS_API avtOSPRaySamplePointExtractor
     }
     void                  SetMVPMatrix(vtkMatrix4x4 *mvp)
     {
-	modelViewProj->DeepCopy(mvp);
+        modelViewProj->DeepCopy(mvp);
     };
 
     int                   GetImgPatchSize() { return patchCount; };
     void                  GetAndDelImgData(int patchId,
-					   ospray::ImgData &tempImgData);
+                                           ospray::ImgData &tempImgData);
     ospray::ImgMetaData   GetImgMetaPatch(int patchId)
                                   { return imageMetaPatchVector.at(patchId); };
     void                  DelImgPatches();
