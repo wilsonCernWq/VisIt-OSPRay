@@ -1,0 +1,35 @@
+diff --git a/avt/Filters/avtMassVoxelExtractor.C b/avt/Filters/avtMassVoxelExtractor.C
+index c7135484..ee3d65c0 100644
+--- a/avt/Filters/avtMassVoxelExtractor.C
++++ b/avt/Filters/avtMassVoxelExtractor.C
+@@ -2423,11 +2423,19 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
+         }
+     }
+     // Data bounding box
+-    double volumeCube[6] = {
+-        X[0], X[nX-1],
+-        Y[0], Y[nY-1],
+-        Z[0], Z[nZ-1]
+-    };
++    double volumeCube[6];
++    volumeCube[0] = X[0];
++    volumeCube[2] = Y[0];
++    volumeCube[4] = Z[0];
++    if (ncell_arrays > 0) { 
++        volumeCube[1] = X[nX];
++        volumeCube[3] = Y[nY];
++        volumeCube[5] = Z[nZ];
++    } else {
++        volumeCube[1] = X[nX-1];
++        volumeCube[3] = Y[nY-1];
++        volumeCube[5] = Z[nZ-1];
++    }
+     // Timing
+     visitTimer->StopTimer(timing_get_metadata , 
+                           "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
+@@ -3367,3 +3375,5 @@ avtMassVoxelExtractor::ComputePixelColor(double source_rgb[4], double dest_rgb[4
+ 
+     patchDrawn = 1;
+ }
++
++
