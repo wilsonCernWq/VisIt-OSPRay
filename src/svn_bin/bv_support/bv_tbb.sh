@@ -117,9 +117,8 @@ function build_tbb
     # Unzip the TBB tarball and copy it to the VisIt installation.
     info "Installing prebuilt TBB"
     tar zxvf $TBB_FILE
-    mkdir -p $VISITDIR/tbb/$TBB_VERSION/$VISITARCH
-    cp -R $TBB_VERSION/* "$VISITDIR/tbb/$TBB_VERSION/$VISITARCH"
-    rm -rf $TBB_VERSION
+    mkdir -p $VISITDIR/tbb/$TBB_VERSION/$VISITARCH || error "Cannot make tbb install directory"
+    cp -R $TBB_VERSION/* $VISITDIR/tbb/$TBB_VERSION/$VISITARCH || error "Cannot copy to tbb install directory"
 
     # others
     if [[ "$DO_GROUP" == "yes" ]] ; then

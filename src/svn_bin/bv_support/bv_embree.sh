@@ -43,13 +43,15 @@ function bv_embree_info
     export EMBREE_VERSION=${EMBREE_VERSION:-"3.2.0"}
     if [[ "$OPSYS" == "Darwin" ]] ; then
         export EMBREE_FILE=${EMBREE_FILE:-"embree-${EMBREE_VERSION}.x86_64.macosx.tar.gz"}
+        export EMBREE_INSTALL_DIR_NAME=embree-$EMBREE_VERSION.x86_64.macosx
     else
         export EMBREE_FILE=${EMBREE_FILE:-"embree-${EMBREE_VERSION}.x86_64.linux.tar.gz"}
+        export EMBREE_INSTALL_DIR_NAME=embree-$EMBREE_VERSION.x86_64.linux
     fi
     export EMBREE_COMPATIBILITY_VERSION=${EMBREE_COMPATIBILITY_VERSION:-"${EMBREE_VERSION}"}
     export EMBREE_BUILD_DIR=${EMBREE_BUILD_DIR:-"${EMBREE_VERSION}"}
     export EMBREE_URL=${EMBREE_URL:-"https://github.com/embree/embree/releases/download/v${EMBREE_VERSION}/"}
-    export EMBREE_INSTALL_DIR_NAME=embree-$EMBREE_VERSION.x86_64.linux
+
     export EMBREE_MD5_CHECKSUM=""
     export EMBREE_SHA256_CHECKSUM=""
 }
@@ -118,11 +120,9 @@ function build_embree
     # Unzip the EMBREE tarball and copy it to the VisIt installation.
     info "Installing prebuilt embree"    
     tar zxvf $EMBREE_FILE
-    rm $EMBREE_INSTALL_DIR_NAME/lib/libtbbmalloc.so.2
-    rm $EMBREE_INSTALL_DIR_NAME/lib/libtbb.so.2
-    mkdir -p $VISITDIR/embree/$EMBREE_VERSION/$VISITARCH
-    cp -R $EMBREE_INSTALL_DIR_NAME/* "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"
-    rm -rf $EMBREE_INSTALL_DIR_NAME
+    rm $EMBREE_INSTALL_DIR_NAME/lib/libtbb*
+    mkdir -p $VISITDIR/embree/$EMBREE_VERSION/$VISITARCH || error "Cannot create embree install directory"
+    cp -R $EMBREE_INSTALL_DIR_NAME/* $VISITDIR/embree/$EMBREE_VERSION/$VISITARCH || error "Cannot copy to embree install directory"
     if [[ "$DO_GROUP" == "yes" ]] ; then
         chmod -R ug+w,a+rX "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"
         chgrp -R ${GROUP} "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"

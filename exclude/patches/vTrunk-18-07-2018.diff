@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index a2b91e962..9ae29cdbd 100644
+index a2b91e962e..9ae29cdbd1 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -426,6 +426,9 @@
@@ -121,7 +121,7 @@ index a2b91e962..9ae29cdbd 100644
  
  #-----------------------------------------------------------------------------
 diff --git a/avt/Filters/CMakeLists.txt b/avt/Filters/CMakeLists.txt
-index e0f4d336e..e01be9754 100644
+index e0f4d336e3..6ca4ddbe38 100644
 --- a/avt/Filters/CMakeLists.txt
 +++ b/avt/Filters/CMakeLists.txt
 @@ -131,14 +131,42 @@ avtWorldSpaceToImageSpaceTransform.C
@@ -150,7 +150,7 @@ index e0f4d336e..e01be9754 100644
 +         avtOSPRayRayTracer.C
 +         avtOSPRaySamplePointExtractor.C
 +         avtOSPRayVoxelExtractor.C
-+	 )
++         )
 +    ADD_DEFINITIONS(-DVISIT_OSPRAY)
 +    IF(ICET_FOUND)
 +        # If we have Ice-T then add -DHAVE_ICET to the compilation flags.
@@ -159,10 +159,10 @@ index e0f4d336e..e01be9754 100644
 +            SET(ICET_OPENGL ${OPENGL_gl_LIBRARY})
 +        ENDIF(APPLE)
 +        # Link icet libraries using absolute pathes
-+	SET(ICET_FULLPATH_LIB ${ICET_OPENGL})
-+	FOREACH(X ${ICET_LIB})
-+	    LIST(APPEND ICET_FULLPATH_LIB "${ICET_LIBRARY_DIR}/${X}")
-+	ENDFOREACH()
++        SET(ICET_FULLPATH_LIB ${ICET_OPENGL})
++        FOREACH(X ${ICET_LIB})
++            LIST(APPEND ICET_FULLPATH_LIB "${ICET_LIBRARY_DIR}/${X}")
++        ENDFOREACH()
 +        # Other setups
 +        INCLUDE_DIRECTORIES(${ICET_INCLUDE_DIR})
 +        LINK_DIRECTORIES(${ICET_LIBRARY_DIR})
@@ -198,7 +198,7 @@ index e0f4d336e..e01be9754 100644
  ENDIF(VISIT_PARALLEL)
 diff --git a/avt/Filters/avtOSPRayCommon.C b/avt/Filters/avtOSPRayCommon.C
 new file mode 100644
-index 000000000..84960e10d
+index 0000000000..84960e10d1
 --- /dev/null
 +++ b/avt/Filters/avtOSPRayCommon.C
 @@ -0,0 +1,1099 @@
@@ -1303,7 +1303,7 @@ index 000000000..84960e10d
 +}
 diff --git a/avt/Filters/avtOSPRayCommon.h b/avt/Filters/avtOSPRayCommon.h
 new file mode 100644
-index 000000000..e1b087d04
+index 0000000000..e1b087d042
 --- /dev/null
 +++ b/avt/Filters/avtOSPRayCommon.h
 @@ -0,0 +1,724 @@
@@ -2033,7 +2033,7 @@ index 000000000..e1b087d04
 +
 diff --git a/avt/Filters/avtOSPRayImageCompositor.C b/avt/Filters/avtOSPRayImageCompositor.C
 new file mode 100644
-index 000000000..08aaf7c9c
+index 0000000000..08aaf7c9c5
 --- /dev/null
 +++ b/avt/Filters/avtOSPRayImageCompositor.C
 @@ -0,0 +1,2394 @@
@@ -4433,7 +4433,7 @@ index 000000000..08aaf7c9c
 +}
 diff --git a/avt/Filters/avtOSPRayImageCompositor.h b/avt/Filters/avtOSPRayImageCompositor.h
 new file mode 100644
-index 000000000..c1ca917e2
+index 0000000000..c1ca917e25
 --- /dev/null
 +++ b/avt/Filters/avtOSPRayImageCompositor.h
 @@ -0,0 +1,267 @@
@@ -4706,7 +4706,7 @@ index 000000000..c1ca917e2
 +#endif//AVT_OSPRAY_IMG_COMMUNICATOR_H
 diff --git a/avt/Filters/avtOSPRayRayTracer.C b/avt/Filters/avtOSPRayRayTracer.C
 new file mode 100644
-index 000000000..d82ed0672
+index 0000000000..d82ed06725
 --- /dev/null
 +++ b/avt/Filters/avtOSPRayRayTracer.C
 @@ -0,0 +1,781 @@
@@ -5493,7 +5493,7 @@ index 000000000..d82ed0672
 +}
 diff --git a/avt/Filters/avtOSPRayRayTracer.h b/avt/Filters/avtOSPRayRayTracer.h
 new file mode 100644
-index 000000000..63ca7ae0e
+index 0000000000..63ca7ae0e5
 --- /dev/null
 +++ b/avt/Filters/avtOSPRayRayTracer.h
 @@ -0,0 +1,162 @@
@@ -5661,7 +5661,7 @@ index 000000000..63ca7ae0e
 +#endif
 diff --git a/avt/Filters/avtOSPRaySamplePointExtractor.C b/avt/Filters/avtOSPRaySamplePointExtractor.C
 new file mode 100644
-index 000000000..cfbaff7eb
+index 0000000000..cfbaff7ebb
 --- /dev/null
 +++ b/avt/Filters/avtOSPRaySamplePointExtractor.C
 @@ -0,0 +1,574 @@
@@ -6241,7 +6241,7 @@ index 000000000..cfbaff7eb
 +}
 diff --git a/avt/Filters/avtOSPRaySamplePointExtractor.h b/avt/Filters/avtOSPRaySamplePointExtractor.h
 new file mode 100644
-index 000000000..6e3e2c0fa
+index 0000000000..6e3e2c0faa
 --- /dev/null
 +++ b/avt/Filters/avtOSPRaySamplePointExtractor.h
 @@ -0,0 +1,180 @@
@@ -6427,7 +6427,7 @@ index 000000000..6e3e2c0fa
 +#endif
 diff --git a/avt/Filters/avtOSPRayVoxelExtractor.C b/avt/Filters/avtOSPRayVoxelExtractor.C
 new file mode 100644
-index 000000000..2e98c0a7d
+index 0000000000..2e98c0a7d8
 --- /dev/null
 +++ b/avt/Filters/avtOSPRayVoxelExtractor.C
 @@ -0,0 +1,639 @@
@@ -7072,7 +7072,7 @@ index 000000000..2e98c0a7d
 +}
 diff --git a/avt/Filters/avtOSPRayVoxelExtractor.h b/avt/Filters/avtOSPRayVoxelExtractor.h
 new file mode 100644
-index 000000000..cf976c3e6
+index 0000000000..cf976c3e6a
 --- /dev/null
 +++ b/avt/Filters/avtOSPRayVoxelExtractor.h
 @@ -0,0 +1,184 @@
@@ -7262,7 +7262,7 @@ index 000000000..cf976c3e6
 +#endif
 diff --git a/avt/Filters/avtSLIVRCommon.C b/avt/Filters/avtSLIVRCommon.C
 new file mode 100644
-index 000000000..fba43591d
+index 0000000000..fba43591d1
 --- /dev/null
 +++ b/avt/Filters/avtSLIVRCommon.C
 @@ -0,0 +1,38 @@
@@ -7308,7 +7308,7 @@ diff --git a/avt/Filters/imgMetaData.h b/avt/Filters/avtSLIVRCommon.h
 similarity index 98%
 rename from avt/Filters/imgMetaData.h
 rename to avt/Filters/avtSLIVRCommon.h
-index eddea3f89..641ae817c 100644
+index eddea3f89b..641ae817c0 100644
 --- a/avt/Filters/imgMetaData.h
 +++ b/avt/Filters/avtSLIVRCommon.h
 @@ -35,8 +35,8 @@
@@ -7326,7 +7326,7 @@ diff --git a/avt/Filters/avtImgCommunicator.C b/avt/Filters/avtSLIVRImageComposi
 similarity index 94%
 rename from avt/Filters/avtImgCommunicator.C
 rename to avt/Filters/avtSLIVRImageCompositor.C
-index d02d0c66d..fc7cfd12a 100644
+index d02d0c66da..fc7cfd12af 100644
 --- a/avt/Filters/avtImgCommunicator.C
 +++ b/avt/Filters/avtSLIVRImageCompositor.C
 @@ -37,25 +37,25 @@
@@ -7725,7 +7725,7 @@ diff --git a/avt/Filters/avtImgCommunicator.h b/avt/Filters/avtSLIVRImageComposi
 similarity index 94%
 rename from avt/Filters/avtImgCommunicator.h
 rename to avt/Filters/avtSLIVRImageCompositor.h
-index 4a69d2231..b413d6ffa 100644
+index 4a69d2231b..b413d6ffa5 100644
 --- a/avt/Filters/avtImgCommunicator.h
 +++ b/avt/Filters/avtSLIVRImageCompositor.h
 @@ -37,18 +37,20 @@
@@ -7778,7 +7778,7 @@ index 4a69d2231..b413d6ffa 100644
  
      int clamp(int value, int _min, int _max){ return std::max( std::min(value,_max), _min); }
 diff --git a/avt/Filters/avtSLIVRRayTracer.C b/avt/Filters/avtSLIVRRayTracer.C
-index d4eef7ac1..68b393ec9 100644
+index d4eef7ac12..68b393ec9b 100644
 --- a/avt/Filters/avtSLIVRRayTracer.C
 +++ b/avt/Filters/avtSLIVRRayTracer.C
 @@ -85,7 +85,6 @@ bool SLIVRsortImgMetaDataByEyeSpaceDepth(imgMetaData const& before, imgMetaData
@@ -7806,7 +7806,7 @@ index d4eef7ac1..68b393ec9 100644
      sceneCam->SetPosition(view.camera[0],view.camera[1],view.camera[2]);
      sceneCam->SetFocalPoint(view.focus[0],view.focus[1],view.focus[2]);
 diff --git a/avt/Filters/avtSLIVRRayTracer.h b/avt/Filters/avtSLIVRRayTracer.h
-index cd1b4abfc..7082831d3 100644
+index cd1b4abfc7..7082831d3a 100644
 --- a/avt/Filters/avtSLIVRRayTracer.h
 +++ b/avt/Filters/avtSLIVRRayTracer.h
 @@ -46,7 +46,7 @@
@@ -7828,7 +7828,7 @@ index cd1b4abfc..7082831d3 100644
      double                lightPosition[4];
      double                lightDirection[3];
 diff --git a/avt/Filters/avtSLIVRSamplePointExtractor.C b/avt/Filters/avtSLIVRSamplePointExtractor.C
-index 6c15476ff..fa078a7f2 100644
+index 6c15476ff7..fa078a7f2c 100644
 --- a/avt/Filters/avtSLIVRSamplePointExtractor.C
 +++ b/avt/Filters/avtSLIVRSamplePointExtractor.C
 @@ -124,7 +124,10 @@ avtSLIVRSamplePointExtractor::avtSLIVRSamplePointExtractor(int w, int h, int d)
@@ -7862,11 +7862,10 @@ index 6c15476ff..fa078a7f2 100644
      if (shouldDoTiling)
      {
          slivrVoxelExtractor->Restrict(width_min, width_max-1,
-@@ -248,6 +251,32 @@ avtSLIVRSamplePointExtractor::SetUpExtractors(void)
-     }
+@@ -249,6 +252,32 @@ avtSLIVRSamplePointExtractor::SetUpExtractors(void)
  }
  
-+// ****************************************************************************
+ // ****************************************************************************
 +//  Method: avtSLIVRSamplePointExtractor::InitSampling
 +//
 +//  Purpose:
@@ -7892,9 +7891,10 @@ index 6c15476ff..fa078a7f2 100644
 +    imgDataHashMap.clear();
 +}
 +
- // ****************************************************************************
++// ****************************************************************************
  //  Method: avtSLIVRSamplePointExtractor::DoSampling
  //
+ //  Purpose:
 @@ -268,18 +297,9 @@ avtSLIVRSamplePointExtractor::SetUpExtractors(void)
  void
  avtSLIVRSamplePointExtractor::DoSampling(vtkDataSet *ds, int idx)
@@ -7992,7 +7992,7 @@ index 6c15476ff..fa078a7f2 100644
              patchCount++;
          }
 diff --git a/avt/Filters/avtSLIVRSamplePointExtractor.h b/avt/Filters/avtSLIVRSamplePointExtractor.h
-index 371d23115..e4e13d920 100644
+index 371d231158..e4e13d9209 100644
 --- a/avt/Filters/avtSLIVRSamplePointExtractor.h
 +++ b/avt/Filters/avtSLIVRSamplePointExtractor.h
 @@ -52,7 +52,7 @@
@@ -8030,7 +8030,7 @@ index 371d23115..e4e13d920 100644
  
  
 diff --git a/avt/Filters/avtSLIVRVoxelExtractor.C b/avt/Filters/avtSLIVRVoxelExtractor.C
-index a35f629c9..31d376a0a 100644
+index a35f629c9b..31d376a0ae 100644
 --- a/avt/Filters/avtSLIVRVoxelExtractor.C
 +++ b/avt/Filters/avtSLIVRVoxelExtractor.C
 @@ -37,7 +37,7 @@
@@ -8043,7 +8043,7 @@ index a35f629c9..31d376a0a 100644
  
  #include <avtSLIVRVoxelExtractor.h>
 diff --git a/avt/Filters/avtSLIVRVoxelExtractor.h b/avt/Filters/avtSLIVRVoxelExtractor.h
-index 3e17c52e5..3fd3dd313 100644
+index 3e17c52e5b..3fd3dd3133 100644
 --- a/avt/Filters/avtSLIVRVoxelExtractor.h
 +++ b/avt/Filters/avtSLIVRVoxelExtractor.h
 @@ -46,7 +46,7 @@
@@ -8065,7 +8065,7 @@ index 3e17c52e5..3fd3dd313 100644
  // ****************************************************************************
  //  Class: avtSLIVRVoxelExtractor
 diff --git a/avt/Filters/avtSamplePointExtractor.C b/avt/Filters/avtSamplePointExtractor.C
-index a599aaac7..52a67bff5 100644
+index a599aaac79..52a67bff5d 100644
 --- a/avt/Filters/avtSamplePointExtractor.C
 +++ b/avt/Filters/avtSamplePointExtractor.C
 @@ -628,7 +628,7 @@ avtSamplePointExtractor::RasterBasedSample(vtkDataSet *ds, int num)
@@ -8078,7 +8078,7 @@ index a599aaac7..52a67bff5 100644
          massVoxelExtractor->Extract((vtkRectilinearGrid *) ds, varnames, varsizes);
          return;
 diff --git a/avt/Filters/avtSamplePointExtractorBase.C b/avt/Filters/avtSamplePointExtractorBase.C
-index 15a70c134..3f8552054 100644
+index 15a70c1348..3f85520548 100644
 --- a/avt/Filters/avtSamplePointExtractorBase.C
 +++ b/avt/Filters/avtSamplePointExtractorBase.C
 @@ -190,7 +190,7 @@ avtSamplePointExtractorBase::SetRectilinearGridsAreInWorldSpace(bool val,
@@ -8206,7 +8206,7 @@ index 15a70c134..3f8552054 100644
  
  
 diff --git a/avt/Filters/avtSamplePointExtractorBase.h b/avt/Filters/avtSamplePointExtractorBase.h
-index ce7fc8b00..29656c95f 100644
+index ce7fc8b00c..29656c95f9 100644
 --- a/avt/Filters/avtSamplePointExtractorBase.h
 +++ b/avt/Filters/avtSamplePointExtractorBase.h
 @@ -166,7 +166,7 @@ class AVTFILTERS_API avtSamplePointExtractorBase
@@ -8235,7 +8235,7 @@ index ce7fc8b00..29656c95f 100644
  };
  
 diff --git a/avt/Pipeline/Data/avtOpacityMap.C b/avt/Pipeline/Data/avtOpacityMap.C
-index a35f50db8..8f42c9bfb 100644
+index a35f50db81..8f42c9bfbd 100644
 --- a/avt/Pipeline/Data/avtOpacityMap.C
 +++ b/avt/Pipeline/Data/avtOpacityMap.C
 @@ -78,7 +78,7 @@ avtOpacityMap::avtOpacityMap(int te)
@@ -8434,7 +8434,7 @@ index a35f50db8..8f42c9bfb 100644
  //  Method: avtOpacityMap::GetOpacity
  //
 diff --git a/avt/Pipeline/Data/avtOpacityMap.h b/avt/Pipeline/Data/avtOpacityMap.h
-index 3a430c180..ccd31c74b 100644
+index 3a430c1807..ccd31c74bf 100644
 --- a/avt/Pipeline/Data/avtOpacityMap.h
 +++ b/avt/Pipeline/Data/avtOpacityMap.h
 @@ -54,7 +54,7 @@ struct RGBA
@@ -8570,7 +8570,7 @@ index 3a430c180..ccd31c74b 100644
      indexHigh = (int)(indexPos+1.0);
  
 diff --git a/avt/Plotter/CMakeLists.txt b/avt/Plotter/CMakeLists.txt
-index 4ca2625d9..79a18e9f0 100644
+index 4ca2625d9b..79a18e9f03 100644
 --- a/avt/Plotter/CMakeLists.txt
 +++ b/avt/Plotter/CMakeLists.txt
 @@ -77,6 +77,12 @@
@@ -8620,7 +8620,7 @@ index 4ca2625d9..79a18e9f0 100644
 -
 diff --git a/avt/Plotter/OSPRay/CMake/FindOSPRay.cmake b/avt/Plotter/OSPRay/CMake/FindOSPRay.cmake
 deleted file mode 100644
-index 02ecdda96..000000000
+index 02ecdda96d..0000000000
 --- a/avt/Plotter/OSPRay/CMake/FindOSPRay.cmake
 +++ /dev/null
 @@ -1,105 +0,0 @@
@@ -8731,7 +8731,7 @@ index 02ecdda96..000000000
 -
 diff --git a/avt/Plotter/OSPRay/README b/avt/Plotter/OSPRay/README
 deleted file mode 100644
-index 139597f9c..000000000
+index 139597f9cb..0000000000
 --- a/avt/Plotter/OSPRay/README
 +++ /dev/null
 @@ -1,2 +0,0 @@
@@ -8739,7 +8739,7 @@ index 139597f9c..000000000
 -
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/CMake/FindOSPRay.cmake b/avt/Plotter/OSPRay/vtkOSPRay/CMake/FindOSPRay.cmake
 deleted file mode 100644
-index 3d5e0851d..000000000
+index 3d5e0851dd..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/CMake/FindOSPRay.cmake
 +++ /dev/null
 @@ -1,95 +0,0 @@
@@ -8840,7 +8840,7 @@ index 3d5e0851d..000000000
 -
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/CMakeLists.txt b/avt/Plotter/OSPRay/vtkOSPRay/CMakeLists.txt
 deleted file mode 100755
-index 87595764c..000000000
+index 87595764c4..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/CMakeLists.txt
 +++ /dev/null
 @@ -1,122 +0,0 @@
@@ -8968,7 +8968,7 @@ index 87595764c..000000000
 -#ENDIF ( BUILD_EXAMPLES )
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/LICENSE b/avt/Plotter/OSPRay/vtkOSPRay/LICENSE
 deleted file mode 100644
-index 66d0235bc..000000000
+index 66d0235bcd..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/LICENSE
 +++ /dev/null
 @@ -1,77 +0,0 @@
@@ -9052,14 +9052,14 @@ index 66d0235bc..000000000
 \ No newline at end of file
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/R b/avt/Plotter/OSPRay/vtkOSPRay/R
 deleted file mode 100644
-index 096a02db9..000000000
+index 096a02db9d..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/R
 +++ /dev/null
 @@ -1 +0,0 @@
 -Binary file vtkOSPRay_src.tar matches
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/README b/avt/Plotter/OSPRay/vtkOSPRay/README
 deleted file mode 100755
-index 139597f9c..000000000
+index 139597f9cb..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/README
 +++ /dev/null
 @@ -1,2 +0,0 @@
@@ -9067,7 +9067,7 @@ index 139597f9c..000000000
 -
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/README.md b/avt/Plotter/OSPRay/vtkOSPRay/README.md
 deleted file mode 100644
-index eb244451f..000000000
+index eb244451f6..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/README.md
 +++ /dev/null
 @@ -1,9 +0,0 @@
@@ -9082,7 +9082,7 @@ index eb244451f..000000000
 -
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/module.cmake b/avt/Plotter/OSPRay/vtkOSPRay/module.cmake
 deleted file mode 100755
-index 5a091d988..000000000
+index 5a091d988d..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/module.cmake
 +++ /dev/null
 @@ -1,48 +0,0 @@
@@ -9136,7 +9136,7 @@ index 5a091d988..000000000
 -)
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRay.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRay.h
 deleted file mode 100755
-index f39a3952f..000000000
+index f39a3952f1..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRay.h
 +++ /dev/null
 @@ -1,43 +0,0 @@
@@ -9185,7 +9185,7 @@ index f39a3952f..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayActor.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayActor.cxx
 deleted file mode 100755
-index 5dd2cf854..000000000
+index 5dd2cf854f..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayActor.cxx
 +++ /dev/null
 @@ -1,165 +0,0 @@
@@ -9356,7 +9356,7 @@ index 5dd2cf854..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayActor.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayActor.h
 deleted file mode 100755
-index 401a8f8d8..000000000
+index 401a8f8d87..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayActor.h
 +++ /dev/null
 @@ -1,128 +0,0 @@
@@ -9490,7 +9490,7 @@ index 401a8f8d8..000000000
 -#endif // __vtkOSPRayActor_h
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCamera.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCamera.cxx
 deleted file mode 100755
-index 5d48dc39d..000000000
+index 5d48dc39de..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCamera.cxx
 +++ /dev/null
 @@ -1,113 +0,0 @@
@@ -9609,7 +9609,7 @@ index 5d48dc39d..000000000
 -  }
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCamera.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCamera.h
 deleted file mode 100755
-index b27f64f0e..000000000
+index b27f64f0e9..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCamera.h
 +++ /dev/null
 @@ -1,66 +0,0 @@
@@ -9681,7 +9681,7 @@ index b27f64f0e..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCompositeMapper.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCompositeMapper.cxx
 deleted file mode 100755
-index 22fd34294..000000000
+index 22fd342943..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCompositeMapper.cxx
 +++ /dev/null
 @@ -1,45 +0,0 @@
@@ -9732,7 +9732,7 @@ index 22fd34294..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCompositeMapper.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCompositeMapper.h
 deleted file mode 100755
-index 250bbbf29..000000000
+index 250bbbf290..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayCompositeMapper.h
 +++ /dev/null
 @@ -1,56 +0,0 @@
@@ -9794,7 +9794,7 @@ index 250bbbf29..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayConfigure.h.in b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayConfigure.h.in
 deleted file mode 100755
-index 2ecddcc9d..000000000
+index 2ecddcc9de..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayConfigure.h.in
 +++ /dev/null
 @@ -1,37 +0,0 @@
@@ -9837,7 +9837,7 @@ index 2ecddcc9d..000000000
 -#endif // __@PROJECT_NAME@Configure_h
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLODActor.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLODActor.cxx
 deleted file mode 100755
-index 5f1692c25..000000000
+index 5f1692c254..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLODActor.cxx
 +++ /dev/null
 @@ -1,56 +0,0 @@
@@ -9899,7 +9899,7 @@ index 5f1692c25..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLODActor.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLODActor.h
 deleted file mode 100755
-index a132a1a29..000000000
+index a132a1a290..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLODActor.h
 +++ /dev/null
 @@ -1,51 +0,0 @@
@@ -9956,7 +9956,7 @@ index a132a1a29..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLight.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLight.cxx
 deleted file mode 100755
-index bb4a56df3..000000000
+index bb4a56df35..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLight.cxx
 +++ /dev/null
 @@ -1,136 +0,0 @@
@@ -10098,7 +10098,7 @@ index bb4a56df3..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLight.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLight.h
 deleted file mode 100755
-index ab2578323..000000000
+index ab25783231..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayLight.h
 +++ /dev/null
 @@ -1,69 +0,0 @@
@@ -10173,7 +10173,7 @@ index ab2578323..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayManager.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayManager.cxx
 deleted file mode 100755
-index 310083f73..000000000
+index 310083f73a..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayManager.cxx
 +++ /dev/null
 @@ -1,76 +0,0 @@
@@ -10255,7 +10255,7 @@ index 310083f73..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayManager.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayManager.h
 deleted file mode 100755
-index df0c99486..000000000
+index df0c994862..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayManager.h
 +++ /dev/null
 @@ -1,94 +0,0 @@
@@ -10355,7 +10355,7 @@ index df0c99486..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayModule.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayModule.h
 deleted file mode 100755
-index 7566a539d..000000000
+index 7566a539d5..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayModule.h
 +++ /dev/null
 @@ -1,41 +0,0 @@
@@ -10402,7 +10402,7 @@ index 7566a539d..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.cxx
 deleted file mode 100755
-index d38fb7948..000000000
+index d38fb79488..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.cxx
 +++ /dev/null
 @@ -1,148 +0,0 @@
@@ -10556,7 +10556,7 @@ index d38fb7948..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.h
 deleted file mode 100755
-index 539281142..000000000
+index 539281142a..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayObjectFactory.h
 +++ /dev/null
 @@ -1,51 +0,0 @@
@@ -10613,7 +10613,7 @@ index 539281142..000000000
 -#endif /* vtkOSPRayObjectFactory_h */
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPVLODVolume.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPVLODVolume.cxx
 deleted file mode 100755
-index c6f35b6f9..000000000
+index c6f35b6f9a..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPVLODVolume.cxx
 +++ /dev/null
 @@ -1,401 +0,0 @@
@@ -11020,7 +11020,7 @@ index c6f35b6f9..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPVLODVolume.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPVLODVolume.h
 deleted file mode 100755
-index 83f58604d..000000000
+index 83f58604da..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPVLODVolume.h
 +++ /dev/null
 @@ -1,110 +0,0 @@
@@ -11136,7 +11136,7 @@ index 83f58604d..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.cxx
 deleted file mode 100755
-index beec2db66..000000000
+index beec2db666..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.cxx
 +++ /dev/null
 @@ -1,1018 +0,0 @@
@@ -12160,7 +12160,7 @@ index beec2db66..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.h
 deleted file mode 100755
-index 3678475ed..000000000
+index 3678475ed6..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayPolyDataMapper.h
 +++ /dev/null
 @@ -1,118 +0,0 @@
@@ -12284,7 +12284,7 @@ index 3678475ed..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayProperty.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayProperty.cxx
 deleted file mode 100755
-index efd77e425..000000000
+index efd77e4254..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayProperty.cxx
 +++ /dev/null
 @@ -1,138 +0,0 @@
@@ -12428,7 +12428,7 @@ index efd77e425..000000000
 -  }
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayProperty.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayProperty.h
 deleted file mode 100755
-index 5ab2b76c3..000000000
+index 5ab2b76c39..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayProperty.h
 +++ /dev/null
 @@ -1,128 +0,0 @@
@@ -12562,7 +12562,7 @@ index 5ab2b76c3..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderable.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderable.cxx
 deleted file mode 100755
-index 986e7d926..000000000
+index 986e7d9263..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderable.cxx
 +++ /dev/null
 @@ -1 +0,0 @@
@@ -12570,7 +12570,7 @@ index 986e7d926..000000000
 \ No newline at end of file
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderable.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderable.h
 deleted file mode 100755
-index b7256129a..000000000
+index b7256129ab..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderable.h
 +++ /dev/null
 @@ -1,40 +0,0 @@
@@ -12617,7 +12617,7 @@ index b7256129a..000000000
 \ No newline at end of file
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderer.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderer.cxx
 deleted file mode 100755
-index 0062050b7..000000000
+index 0062050b7b..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderer.cxx
 +++ /dev/null
 @@ -1,721 +0,0 @@
@@ -13344,7 +13344,7 @@ index 0062050b7..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderer.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderer.h
 deleted file mode 100755
-index 36ca7b239..000000000
+index 36ca7b239f..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayRenderer.h
 +++ /dev/null
 @@ -1,243 +0,0 @@
@@ -13593,7 +13593,7 @@ index 36ca7b239..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTestSource.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTestSource.cxx
 deleted file mode 100755
-index 67bdc456b..000000000
+index 67bdc456b3..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTestSource.cxx
 +++ /dev/null
 @@ -1,207 +0,0 @@
@@ -13806,7 +13806,7 @@ index 67bdc456b..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTestSource.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTestSource.h
 deleted file mode 100755
-index 690ccb020..000000000
+index 690ccb0201..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTestSource.h
 +++ /dev/null
 @@ -1,87 +0,0 @@
@@ -13899,7 +13899,7 @@ index 690ccb020..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTexture.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTexture.cxx
 deleted file mode 100755
-index ba6c6f00f..000000000
+index ba6c6f00f5..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTexture.cxx
 +++ /dev/null
 @@ -1,219 +0,0 @@
@@ -14124,7 +14124,7 @@ index ba6c6f00f..000000000
 -    }
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTexture.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTexture.h
 deleted file mode 100755
-index c44e7ec52..000000000
+index c44e7ec521..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayTexture.h
 +++ /dev/null
 @@ -1,91 +0,0 @@
@@ -14221,7 +14221,7 @@ index c44e7ec52..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.cxx
 deleted file mode 100755
-index ab3a7b9b6..000000000
+index ab3a7b9b6d..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.cxx
 +++ /dev/null
 @@ -1,1363 +0,0 @@
@@ -15590,7 +15590,7 @@ index ab3a7b9b6..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.h
 deleted file mode 100755
-index 00b1a3998..000000000
+index 00b1a39982..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkOSPRayVolumeRayCastMapper.h
 +++ /dev/null
 @@ -1,315 +0,0 @@
@@ -15911,7 +15911,7 @@ index 00b1a3998..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayImageVolumeRepresentation.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayImageVolumeRepresentation.cxx
 deleted file mode 100755
-index 23dbe7ea0..000000000
+index 23dbe7ea0a..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayImageVolumeRepresentation.cxx
 +++ /dev/null
 @@ -1,421 +0,0 @@
@@ -16339,7 +16339,7 @@ index 23dbe7ea0..000000000
 \ No newline at end of file
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayImageVolumeRepresentation.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayImageVolumeRepresentation.h
 deleted file mode 100755
-index 5a50a5764..000000000
+index 5a50a57643..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayImageVolumeRepresentation.h
 +++ /dev/null
 @@ -1,191 +0,0 @@
@@ -16536,7 +16536,7 @@ index 5a50a5764..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayOutlineRepresentation.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayOutlineRepresentation.cxx
 deleted file mode 100755
-index 7d0583949..000000000
+index 7d05839498..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayOutlineRepresentation.cxx
 +++ /dev/null
 @@ -1,69 +0,0 @@
@@ -16611,7 +16611,7 @@ index 7d0583949..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayOutlineRepresentation.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayOutlineRepresentation.h
 deleted file mode 100755
-index 4c42cbd1a..000000000
+index 4c42cbd1a9..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayOutlineRepresentation.h
 +++ /dev/null
 @@ -1,70 +0,0 @@
@@ -16687,7 +16687,7 @@ index 4c42cbd1a..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayRepresentation.cxx b/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayRepresentation.cxx
 deleted file mode 100755
-index abfbe6a11..000000000
+index abfbe6a117..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayRepresentation.cxx
 +++ /dev/null
 @@ -1,156 +0,0 @@
@@ -16849,7 +16849,7 @@ index abfbe6a11..000000000
 -}
 diff --git a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayRepresentation.h b/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayRepresentation.h
 deleted file mode 100755
-index b16a3a007..000000000
+index b16a3a0072..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRay/vtkPVOSPRayRepresentation.h
 +++ /dev/null
 @@ -1,74 +0,0 @@
@@ -16929,7 +16929,7 @@ index b16a3a007..000000000
 -#endif
 diff --git a/avt/Plotter/OSPRay/vtkOSPRayModule.h b/avt/Plotter/OSPRay/vtkOSPRayModule.h
 deleted file mode 100644
-index b1b3a97dc..000000000
+index b1b3a97dc0..0000000000
 --- a/avt/Plotter/OSPRay/vtkOSPRayModule.h
 +++ /dev/null
 @@ -1,9 +0,0 @@
@@ -16943,7 +16943,7 @@ index b1b3a97dc..000000000
 -
 -#endif
 diff --git a/avt/Plotter/vtk/InitVTKRendering.C b/avt/Plotter/vtk/InitVTKRendering.C
-index f99371412..2d3927c95 100644
+index f99371412f..2d3927c953 100644
 --- a/avt/Plotter/vtk/InitVTKRendering.C
 +++ b/avt/Plotter/vtk/InitVTKRendering.C
 @@ -188,6 +188,9 @@ vtkVisItGraphicsFactory::vtkVisItGraphicsFactory()
@@ -16957,7 +16957,7 @@ index f99371412..2d3927c95 100644
  
  void
 diff --git a/avt/VisWindow/CMakeLists.txt b/avt/VisWindow/CMakeLists.txt
-index 0065e9ce1..cdcd52828 100644
+index 0065e9ce15..cdcd528281 100644
 --- a/avt/VisWindow/CMakeLists.txt
 +++ b/avt/VisWindow/CMakeLists.txt
 @@ -183,11 +183,17 @@ LINK_DIRECTORIES(${LIBRARY_OUTPUT_DIRECTORY} ${EAVL_LIBRARY_DIR} )
@@ -16978,528 +16978,8 @@ index 0065e9ce1..cdcd52828 100644
 +    ENDIF(VISIT_OSPRAY)
      VISIT_INSTALL_TARGETS(avtviswindow_par)
  ENDIF(VISIT_PARALLEL)
-diff --git a/config-site/.DS_Store b/config-site/.DS_Store
-new file mode 100644
-index 000000000..5008ddfcf
-Binary files /dev/null and b/config-site/.DS_Store differ
-diff --git a/config-site/hastur.sci.utah.edu.cmake b/config-site/hastur.sci.utah.edu.cmake
-new file mode 100644
-index 000000000..a1098e313
---- /dev/null
-+++ b/config-site/hastur.sci.utah.edu.cmake
-@@ -0,0 +1,125 @@
-+#/ssd/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.1/bin/cmake
-+##
-+## ./build_visit generated host.cmake
-+## created: Thu Jul 12 14:52:03 MDT 2018
-+## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
-+## by: qwu
-+
-+##
-+## Setup VISITHOME & VISITARCH variables.
-+##
-+SET(VISITHOME /ssd/qwu/VisIt/3rdparty/trunk)
-+SET(VISITARCH linux-x86_64_gcc-7.1)
-+
-+## Compiler flags.
-+##
-+VISIT_OPTION_DEFAULT(VISIT_C_COMPILER gcc TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_CXX_COMPILER g++ TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER /home/sci/qwu/software/gcc/gcc-7.1.0-install/bin/gfortran TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_C_FLAGS " -m64 -fPIC  -O2 -g -fvisibility=hidden" TYPE STRING)
-+VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O2 -g -std=c++11 -fvisibility=hidden" TYPE STRING)
-+
-+##
-+## Parallel Build Setup.
-+##
-+VISIT_OPTION_DEFAULT(VISIT_PARALLEL ON TYPE BOOL)
-+## (configured w/ mpi compiler wrapper)
-+VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/impi/2017.2.174/bin64/mpicc TYPE FILEPATH)
-+
-+##
-+## VisIt Thread Option
-+##
-+VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
-+
-+##############################################################
-+##
-+## Database reader plugin support libraries
-+##
-+## The HDF4, HDF5 and NetCDF libraries must be first so that
-+## their libdeps are defined for any plugins that need them.
-+##
-+## For libraries with LIBDEP settings, order matters.
-+## Libraries with LIBDEP settings that depend on other
-+## Library's LIBDEP settings must come after them.
-+##############################################################
-+##
-+
-+##
-+## Python
-+##
-+VISIT_OPTION_DEFAULT(VISIT_PYTHON_DIR ${VISITHOME}/python/2.7.14/${VISITARCH})
-+
-+##
-+## Qt
-+##
-+SETUP_APP_VERSION(QT 5.10.1)
-+VISIT_OPTION_DEFAULT(VISIT_QT_DIR ${VISITHOME}/qt/${QT_VERSION}/${VISITARCH})
-+
-+##
-+## QWT
-+##
-+SETUP_APP_VERSION(QWT 6.1.2)
-+VISIT_OPTION_DEFAULT(VISIT_QWT_DIR ${VISITHOME}/qwt/${QWT_VERSION}/${VISITARCH})
-+
-+##
-+## EMBREE
-+##
-+VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT /home/sci/qwu/software/embree-3.2.0.x86_64.linux)
-+
-+##
-+## ISPC
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT /home/sci/qwu/software/ispc-v1.9.2-linux)
-+
-+##
-+## TBB
-+##
-+VISIT_OPTION_DEFAULT(TBB_ROOT /home/sci/qwu/software/tbb2018_20180618oss)
-+
-+##
-+## OSPRay
-+##
-+VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/sci/qwu/OSPRay/Hastur/install-visit/lib64/cmake/ospray-1.6.0)
-+
-+##
-+## VTK
-+##
-+SETUP_APP_VERSION(VTK 8.1.0)
-+VISIT_OPTION_DEFAULT(VISIT_VTK_DIR ${VISITHOME}/vtk/${VTK_VERSION}/${VISITARCH})
-+
-+##
-+## SZIP
-+##
-+VISIT_OPTION_DEFAULT(VISIT_SZIP_DIR ${VISITHOME}/szip/2.1/${VISITARCH})
-+
-+##
-+## HDF5
-+##
-+VISIT_OPTION_DEFAULT(VISIT_HDF5_DIR ${VISITHOME}/hdf5/1.8.14/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz /usr/lib z TYPE STRING)
-+
-+##
-+## BOOST
-+##
-+SETUP_APP_VERSION(BOOST 1_67_0)
-+VISIT_OPTION_DEFAULT(VISIT_BOOST_DIR ${VISITHOME}/boost/${BOOST_VERSION}/${VISITARCH})
-+
-+##
-+## Ice-T
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/77c708f9090236b576669b74c53e9f105eedbd7e/${VISITARCH})
-+##
-+
-+##
-+## NetCDF
-+##
-+VISIT_OPTION_DEFAULT(VISIT_NETCDF_DIR ${VISITHOME}/netcdf/4.1.1/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_NETCDF_LIBDEP HDF5_LIBRARY_DIR hdf5_hl HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP} TYPE STRING)
-+
-+##
-+## Silo
-+##
-+VISIT_OPTION_DEFAULT(VISIT_SILO_DIR ${VISITHOME}/silo/4.10.2/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP} /usr/lib z TYPE STRING)
-+
-diff --git a/config-site/lagodelcielo.cmake b/config-site/lagodelcielo.cmake
-new file mode 100644
-index 000000000..e866268d2
---- /dev/null
-+++ b/config-site/lagodelcielo.cmake
-@@ -0,0 +1,141 @@
-+#/ssd/users/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
-+##
-+## ./build_visit generated host.cmake
-+## created: Mon Jul 16 20:15:31 MDT 2018
-+## system: Linux lagodelcielo 4.4.120-45-default #1 SMP Wed Mar 14 20:51:49 UTC 2018 (623211f) x86_64 x86_64 x86_64 GNU/Linux
-+## by: qwu
-+
-+##
-+## Setup VISITHOME & VISITARCH variables.
-+##
-+SET(VISITHOME /ssd/users/qwu/VisIt/3rdparty/trunk)
-+SET(VISITARCH linux-x86_64_gcc-7.3)
-+
-+## Compiler flags.
-+##
-+VISIT_OPTION_DEFAULT(VISIT_C_COMPILER gcc TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_CXX_COMPILER g++ TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER /usr/bin/gfortran TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_C_FLAGS " -m64 -fPIC  -O2 -g -fvisibility=hidden" TYPE STRING)
-+VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O2 -g -std=c++11 -fvisibility=hidden" TYPE STRING)
-+
-+##
-+## Parallel Build Setup.
-+##
-+VISIT_OPTION_DEFAULT(VISIT_PARALLEL ON TYPE BOOL)
-+## (configured w/ mpi compiler wrapper)
-+VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /opt/intel/compilers_and_libraries_2018.1.163/linux/mpi/intel64/bin/mpicc TYPE FILEPATH)
-+
-+##
-+## VisIt Thread Option
-+##
-+VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
-+
-+##############################################################
-+##
-+## Database reader plugin support libraries
-+##
-+## The HDF4, HDF5 and NetCDF libraries must be first so that
-+## their libdeps are defined for any plugins that need them.
-+##
-+## For libraries with LIBDEP settings, order matters.
-+## Libraries with LIBDEP settings that depend on other
-+## Library's LIBDEP settings must come after them.
-+##############################################################
-+##
-+
-+##
-+## Python
-+##
-+VISIT_OPTION_DEFAULT(VISIT_PYTHON_DIR ${VISITHOME}/python/2.7.14/${VISITARCH})
-+
-+##
-+## Qt
-+##
-+SETUP_APP_VERSION(QT 5.10.1)
-+VISIT_OPTION_DEFAULT(VISIT_QT_DIR ${VISITHOME}/qt/${QT_VERSION}/${VISITARCH})
-+
-+##
-+## QWT
-+##
-+SETUP_APP_VERSION(QWT 6.1.2)
-+VISIT_OPTION_DEFAULT(VISIT_QWT_DIR ${VISITHOME}/qwt/${QWT_VERSION}/${VISITARCH})
-+
-+##
-+## LLVM
-+##
-+VISIT_OPTION_DEFAULT(VISIT_LLVM_DIR ${VISITHOME}/llvm/5.0.0/${VISITARCH})
-+
-+##
-+## MesaGL
-+##
-+VISIT_OPTION_DEFAULT(VISIT_MESAGL_DIR ${VISITHOME}/mesagl/17.2.8/${VISITARCH})
-+
-+##
-+## EMBREE
-+##
-+VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT ${VISITHOME}/embree/3.2.0/${VISITARCH})
-+
-+##
-+## ISPC
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT ${VISITHOME}/ispc/1.9.2/${VISITARCH})
-+
-+##
-+## TBB
-+##
-+VISIT_OPTION_DEFAULT(TBB_ROOT ${VISITHOME}/tbb/tbb2018_20171205oss/${VISITARCH})
-+
-+##
-+## OSPRay
-+##
-+VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.0)
-+
-+##
-+## VTK
-+##
-+SETUP_APP_VERSION(VTK 8.1.0)
-+VISIT_OPTION_DEFAULT(VISIT_VTK_DIR ${VISITHOME}/vtk/${VTK_VERSION}/${VISITARCH})
-+
-+##
-+## SZIP
-+##
-+VISIT_OPTION_DEFAULT(VISIT_SZIP_DIR ${VISITHOME}/szip/2.1/${VISITARCH})
-+
-+##
-+## HDF5
-+##
-+VISIT_OPTION_DEFAULT(VISIT_HDF5_DIR ${VISITHOME}/hdf5/1.8.14/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz /usr/lib z TYPE STRING)
-+
-+##
-+## BOOST
-+##
-+SETUP_APP_VERSION(BOOST 1_67_0)
-+VISIT_OPTION_DEFAULT(VISIT_BOOST_DIR /usr)
-+
-+##
-+## Ice-T
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/77c708f9090236b576669b74c53e9f105eedbd7e/${VISITARCH})
-+##
-+
-+##
-+## NetCDF
-+##
-+VISIT_OPTION_DEFAULT(VISIT_NETCDF_DIR ${VISITHOME}/netcdf/4.1.1/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_NETCDF_LIBDEP HDF5_LIBRARY_DIR hdf5_hl HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP} TYPE STRING)
-+
-+##
-+## PIDX
-+##
-+SETUP_APP_VERSION(PIDX 0.9.2)
-+VISIT_OPTION_DEFAULT(VISIT_PIDX_DIR ${VISITHOME}/pidx/${PIDX_VERSION}/${VISITARCH})
-+
-+##
-+## Silo
-+##
-+VISIT_OPTION_DEFAULT(VISIT_SILO_DIR ${VISITHOME}/silo/4.10.2/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP} /usr/lib z TYPE STRING)
-+
-diff --git a/config-site/qwu-ThinkPad-T430s.cmake b/config-site/qwu-ThinkPad-T430s.cmake
-new file mode 100644
-index 000000000..cd0c36757
---- /dev/null
-+++ b/config-site/qwu-ThinkPad-T430s.cmake
-@@ -0,0 +1,118 @@
-+#/home/qwu/work/visit/3rdparty/installs/trunk/cmake/3.8.1/linux-x86_64_gcc-6.3/bin/cmake
-+##
-+## ./build_visit generated host.cmake
-+## created: Thu Jun 21 00:25:02 MDT 2018
-+## system: Linux qwu-ThinkPad-T430s 4.10.0-42-generic #46-Ubuntu SMP Mon Dec 4 14:38:01 UTC 2017 x86_64 x86_64 x86_64 GNU/Linux
-+## by: qwu
-+
-+##
-+## Setup VISITHOME & VISITARCH variables.
-+##
-+SET(VISITHOME /home/qwu/work/visit/3rdparty/installs/trunk)
-+SET(VISITARCH linux-x86_64_gcc-6.3)
-+
-+## Compiler flags.
-+##
-+VISIT_OPTION_DEFAULT(VISIT_C_COMPILER gcc TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_CXX_COMPILER g++ TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER /usr/bin/gfortran TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_C_FLAGS " -m64 -fPIC  -O2 -g -fvisibility=hidden" TYPE STRING)
-+VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS " -m64 -fPIC  -O2 -g -std=c++98 -fvisibility=hidden" TYPE STRING)
-+
-+##
-+## Parallel Build Setup.
-+##
-+VISIT_OPTION_DEFAULT(VISIT_PARALLEL ON TYPE BOOL)
-+## (configured w/ mpi compiler wrapper)
-+VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /usr/bin/mpicc TYPE FILEPATH)
-+
-+##
-+## VisIt Thread Option
-+##
-+VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
-+
-+##############################################################
-+##
-+## Database reader plugin support libraries
-+##
-+## The HDF4, HDF5 and NetCDF libraries must be first so that
-+## their libdeps are defined for any plugins that need them.
-+##
-+## For libraries with LIBDEP settings, order matters.
-+## Libraries with LIBDEP settings that depend on other
-+## Library's LIBDEP settings must come after them.
-+##############################################################
-+##
-+
-+##
-+## ZLIB
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ZLIB_DIR ${VISITHOME}/zlib/1.2.8/${VISITARCH})
-+
-+##
-+## Python
-+##
-+VISIT_OPTION_DEFAULT(VISIT_PYTHON_DIR ${VISITHOME}/python/2.7.14/${VISITARCH})
-+
-+##
-+## Qt
-+##
-+SETUP_APP_VERSION(QT 5.10.1)
-+VISIT_OPTION_DEFAULT(VISIT_QT_DIR ${VISITHOME}/qt/${QT_VERSION}/${VISITARCH})
-+
-+##
-+## QWT
-+##
-+SETUP_APP_VERSION(QWT 6.1.2)
-+VISIT_OPTION_DEFAULT(VISIT_QWT_DIR ${VISITHOME}/qwt/${QWT_VERSION}/${VISITARCH})
-+
-+##
-+## EMBREE
-+##
-+VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT /home/qwu/software/embree-3.2.0.x86_64.linux)
-+
-+##
-+## ISPC
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT /home/qwu/software/ispc-v1.9.1-linux)
-+
-+##
-+## TBB
-+##
-+VISIT_OPTION_DEFAULT(TBB_ROOT /home/qwu/software/tbb2017_20170604oss)
-+
-+##
-+## OSPRay
-+##
-+VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/qwu/work/ospray/install/master/lib/cmake/ospray-1.7.0)
-+
-+##
-+## VTK
-+##
-+SETUP_APP_VERSION(VTK 8.1.0)
-+VISIT_OPTION_DEFAULT(VISIT_VTK_DIR ${VISITHOME}/vtk/${VTK_VERSION}/${VISITARCH})
-+
-+##
-+## SZIP
-+##
-+VISIT_OPTION_DEFAULT(VISIT_SZIP_DIR ${VISITHOME}/szip/2.1/${VISITARCH})
-+
-+##
-+## HDF5
-+##
-+VISIT_OPTION_DEFAULT(VISIT_HDF5_DIR ${VISITHOME}/hdf5/1.8.14/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP ${VISITHOME}/szip/2.1/${VISITARCH}/lib sz ${VISITHOME}/zlib/1.2.8/${VISITARCH}/lib z TYPE STRING)
-+
-+##
-+## Ice-T
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/77c708f9090236b576669b74c53e9f105eedbd7e/${VISITARCH})
-+##
-+
-+##
-+## Silo
-+##
-+VISIT_OPTION_DEFAULT(VISIT_SILO_DIR ${VISITHOME}/silo/4.10.2/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP} ZLIB_LIBRARY_DIR z TYPE STRING)
-+
-diff --git a/config-site/qwu.MacAir.local.cmake b/config-site/qwu.MacAir.local.cmake
-new file mode 100644
-index 000000000..049146bfa
---- /dev/null
-+++ b/config-site/qwu.MacAir.local.cmake
-@@ -0,0 +1,108 @@
-+#/Users/qwu/Work/visit/3rdparty/installs/trunk/cmake/3.8.1/i386-apple-darwin16_gcc/bin/cmake
-+##
-+## ./build_visit generated host.cmake
-+## created: Sun Jul 15 00:52:42 MDT 2018
-+## system: Darwin qwu.MacAir.local 16.7.0 Darwin Kernel Version 16.7.0: Tue Jan 30 11:27:06 PST 2018; root:xnu-3789.73.11~1/RELEASE_X86_64 x86_64
-+## by: qwu
-+
-+##
-+## Setup VISITHOME & VISITARCH variables.
-+##
-+SET(VISITHOME /Users/qwu/Work/visit/3rdparty/installs/trunk)
-+SET(VISITARCH i386-apple-darwin16_gcc)
-+
-+## Compiler flags.
-+##
-+VISIT_OPTION_DEFAULT(VISIT_C_COMPILER gcc TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_CXX_COMPILER g++ TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_FORTRAN_COMPILER /usr/local/bin/gfortran TYPE FILEPATH)
-+VISIT_OPTION_DEFAULT(VISIT_C_FLAGS "-fno-common -fexceptions -O2 -g" TYPE STRING)
-+VISIT_OPTION_DEFAULT(VISIT_CXX_FLAGS "-fno-common -fexceptions -O2 -g -std=c++98" TYPE STRING)
-+
-+##
-+## Parallel Build Setup.
-+##
-+VISIT_OPTION_DEFAULT(VISIT_PARALLEL ON TYPE BOOL)
-+## (configured w/ mpi compiler wrapper)
-+VISIT_OPTION_DEFAULT(VISIT_MPI_COMPILER /usr/local/bin/mpicc TYPE FILEPATH)
-+
-+##
-+## VisIt Thread Option
-+##
-+VISIT_OPTION_DEFAULT(VISIT_THREAD OFF TYPE BOOL)
-+
-+##############################################################
-+##
-+## Database reader plugin support libraries
-+##
-+## The HDF4, HDF5 and NetCDF libraries must be first so that
-+## their libdeps are defined for any plugins that need them.
-+##
-+## For libraries with LIBDEP settings, order matters.
-+## Libraries with LIBDEP settings that depend on other
-+## Library's LIBDEP settings must come after them.
-+##############################################################
-+##
-+
-+##
-+## Python
-+##
-+VISIT_OPTION_DEFAULT(VISIT_PYTHON_DIR ${VISITHOME}/python/2.7.14/${VISITARCH})
-+
-+##
-+## Qt
-+##
-+SETUP_APP_VERSION(QT 5.10.1)
-+VISIT_OPTION_DEFAULT(VISIT_QT_DIR ${VISITHOME}/qt/${QT_VERSION}/${VISITARCH})
-+
-+##
-+## QWT
-+##
-+SETUP_APP_VERSION(QWT 6.1.2)
-+VISIT_OPTION_DEFAULT(VISIT_QWT_DIR ${VISITHOME}/qwt/${QWT_VERSION}/${VISITARCH})
-+
-+##
-+## EMBREE
-+##
-+VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT /Users/qwu/Work/softwares/embree-3.2.0.x86_64.macosx)
-+
-+##
-+## ISPC
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT /Users/qwu/Work/softwares/ispc-v1.9.2-osx)
-+
-+##
-+## TBB
-+##
-+VISIT_OPTION_DEFAULT(TBB_ROOT /Users/qwu/Work/softwares/tbb2018_20180312oss)
-+
-+##
-+## OSPRay
-+##
-+VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR ${VISITHOME}/ospray/1.6.1/${VISITARCH}/lib/cmake/ospray-1.6.1)
-+
-+##
-+## VTK
-+##
-+SETUP_APP_VERSION(VTK 8.1.0)
-+VISIT_OPTION_DEFAULT(VISIT_VTK_DIR ${VISITHOME}/vtk/${VTK_VERSION}/${VISITARCH})
-+
-+##
-+## HDF5
-+##
-+VISIT_OPTION_DEFAULT(VISIT_HDF5_DIR ${VISITHOME}/hdf5/1.8.14/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_HDF5_LIBDEP  /usr/lib z TYPE STRING)
-+
-+##
-+## Ice-T
-+##
-+VISIT_OPTION_DEFAULT(VISIT_ICET_DIR ${VISITHOME}/icet/77c708f9090236b576669b74c53e9f105eedbd7e/${VISITARCH})
-+##
-+
-+##
-+## Silo
-+##
-+VISIT_OPTION_DEFAULT(VISIT_SILO_DIR ${VISITHOME}/silo/4.10.2/${VISITARCH})
-+VISIT_OPTION_DEFAULT(VISIT_SILO_LIBDEP HDF5_LIBRARY_DIR hdf5 ${VISIT_HDF5_LIBDEP} /usr/lib z TYPE STRING)
-+
 diff --git a/plots/Volume/CMakeLists.txt b/plots/Volume/CMakeLists.txt
-index 725a48f70..f4e7e2244 100644
+index 725a48f704..f4e7e2244f 100644
 --- a/plots/Volume/CMakeLists.txt
 +++ b/plots/Volume/CMakeLists.txt
 @@ -97,6 +97,11 @@ IF(VISIT_SLIVR)
@@ -17545,7 +17025,7 @@ index 725a48f70..f4e7e2244 100644
      ADD_TARGET_DEFINITIONS(EVolumePlot_par ENGINE)
  ENDIF(VISIT_PARALLEL)
 diff --git a/plots/Volume/PyVolumeAttributes.C b/plots/Volume/PyVolumeAttributes.C
-index 4880d99ad..3c8a0d74a 100644
+index 4880d99ad7..3c8a0d74a6 100644
 --- a/plots/Volume/PyVolumeAttributes.C
 +++ b/plots/Volume/PyVolumeAttributes.C
 @@ -78,6 +78,44 @@ PyVolumeAttributes_ToString(const VolumeAttributes *atts, const char *prefix)
@@ -17613,11 +17093,10 @@ index 4880d99ad..3c8a0d74a 100644
        default:
            break;
      }
-@@ -351,6 +393,246 @@ VolumeAttributes_Notify(PyObject *self, PyObject *args)
-     return Py_None;
+@@ -352,6 +394,246 @@ VolumeAttributes_Notify(PyObject *self, PyObject *args)
  }
  
-+/*static*/ PyObject *
+ /*static*/ PyObject *
 +VolumeAttributes_SetOsprayShadowsEnabledFlag(PyObject *self, PyObject *args)
 +{
 +    VolumeAttributesObject *obj = (VolumeAttributesObject *)self;
@@ -17857,9 +17336,10 @@ index 4880d99ad..3c8a0d74a 100644
 +    return retval;
 +}
 +
- /*static*/ PyObject *
++/*static*/ PyObject *
  VolumeAttributes_SetLegendFlag(PyObject *self, PyObject *args)
  {
+     VolumeAttributesObject *obj = (VolumeAttributesObject *)self;
 @@ -957,14 +1239,15 @@ VolumeAttributes_SetRendererType(PyObject *self, PyObject *args)
          return NULL;
  
@@ -17972,7 +17452,7 @@ index 4880d99ad..3c8a0d74a 100644
      else if(strcmp(name, "lightingFlag") == 0)
          obj = VolumeAttributes_SetLightingFlag(self, tuple);
 diff --git a/plots/Volume/PyVolumeAttributes.h b/plots/Volume/PyVolumeAttributes.h
-index a64c8d3a9..f7c940855 100644
+index a64c8d3a97..f7c940855c 100644
 --- a/plots/Volume/PyVolumeAttributes.h
 +++ b/plots/Volume/PyVolumeAttributes.h
 @@ -44,7 +44,7 @@
@@ -17985,7 +17465,7 @@ index a64c8d3a9..f7c940855 100644
  void           PyVolumeAttributes_CloseDown();
  PyMethodDef *  PyVolumeAttributes_GetMethodTable(int *nMethods);
 diff --git a/plots/Volume/QvisVolumePlotWindow.C b/plots/Volume/QvisVolumePlotWindow.C
-index 077c86d29..d4fe5a9f5 100644
+index 077c86d290..d4fe5a9f55 100644
 --- a/plots/Volume/QvisVolumePlotWindow.C
 +++ b/plots/Volume/QvisVolumePlotWindow.C
 @@ -926,7 +926,6 @@ QvisVolumePlotWindow::CreateOpacityGroup(QWidget *parent, QVBoxLayout *pLayout,
@@ -18066,16 +17546,16 @@ index 077c86d29..d4fe5a9f5 100644
      default:
          EXCEPTION1(ImproperUseException, "No such renderer type.");
      }        
-@@ -1175,6 +1201,9 @@ QvisVolumePlotWindow::CreateRendererOptionsGroup(int maxWidth)
-     rendererTypesComboBox->addItem(tr("Ray casting: integration (grey scale)"));
+@@ -1176,6 +1202,9 @@ QvisVolumePlotWindow::CreateRendererOptionsGroup(int maxWidth)
  #ifdef VISIT_SLIVR
      rendererTypesComboBox->addItem(tr("Ray casting: SLIVR"));
-+#endif
+ #endif
 +#ifdef VISIT_OSPRAY
 +    rendererTypesComboBox->addItem(tr("Ray casting: OSPRay"));
- #endif
++#endif
      connect(rendererTypesComboBox, SIGNAL(activated(int)),
              this, SLOT(rendererTypeChanged(int)));
+ 
 @@ -1190,7 +1219,7 @@ QvisVolumePlotWindow::CreateRendererOptionsGroup(int maxWidth)
      //
      // Create the methods stuff
@@ -18273,20 +17753,20 @@ index 077c86d29..d4fe5a9f5 100644
  
              opacityVariable->setEnabled(true);
              rendererTypesComboBox->blockSignals(false);
-@@ -3404,6 +3607,11 @@ QvisVolumePlotWindow::rendererTypeChanged(int val)
-       case 3:
+@@ -3405,6 +3608,11 @@ QvisVolumePlotWindow::rendererTypeChanged(int val)
          volumeAtts->SetRendererType(VolumeAttributes::RayCastingSLIVR);
          break;
-+#endif
+ #endif
 +#ifdef VISIT_OSPRAY
 +      case 4:
 +        volumeAtts->SetRendererType(VolumeAttributes::RayCastingOSPRay);
 +        break;
- #endif
++#endif
        default:
          EXCEPTION1(ImproperUseException,
+                    "The Volume plot received a signal for a renderer "
 diff --git a/plots/Volume/QvisVolumePlotWindow.h b/plots/Volume/QvisVolumePlotWindow.h
-index bf3919c0f..09fd95b91 100644
+index bf3919c0f8..09fd95b91f 100644
 --- a/plots/Volume/QvisVolumePlotWindow.h
 +++ b/plots/Volume/QvisVolumePlotWindow.h
 @@ -54,6 +54,7 @@ class QRadioButton;
@@ -18364,7 +17844,7 @@ index bf3919c0f..09fd95b91 100644
      void                    EnableSamplingMethods(bool enable);
      void                    EnableDefaultGroup();
 diff --git a/plots/Volume/Volume.xml b/plots/Volume/Volume.xml
-index e5d5b42d2..b157272c6 100644
+index e5d5b42d25..b157272c62 100644
 --- a/plots/Volume/Volume.xml
 +++ b/plots/Volume/Volume.xml
 @@ -37,6 +37,7 @@
@@ -18415,7 +17895,7 @@ index e5d5b42d2..b157272c6 100644
          true
        </Field>
 diff --git a/plots/Volume/VolumeAttributes.C b/plots/Volume/VolumeAttributes.C
-index ba300dabe..019723c3d 100644
+index ba300dabea..019723c3de 100644
 --- a/plots/Volume/VolumeAttributes.C
 +++ b/plots/Volume/VolumeAttributes.C
 @@ -47,20 +47,20 @@
@@ -18688,11 +18168,10 @@ index ba300dabe..019723c3d 100644
                  SetRendererType(Renderer(ival));
          }
          else if(node->GetNodeType() == STRING_NODE)
-@@ -1233,6 +1353,76 @@ VolumeAttributes::SetFromNode(DataNode *parentNode)
- // Set property methods
+@@ -1234,6 +1354,76 @@ VolumeAttributes::SetFromNode(DataNode *parentNode)
  ///////////////////////////////////////////////////////////////////////////////
  
-+void
+ void
 +VolumeAttributes::SetOsprayShadowsEnabledFlag(bool osprayShadowsEnabledFlag_)
 +{
 +    osprayShadowsEnabledFlag = osprayShadowsEnabledFlag_;
@@ -18762,14 +18241,14 @@ index ba300dabe..019723c3d 100644
 +    Select(ID_osprayMinContribution, (void *)&osprayMinContribution);
 +}
 +
- void
++void
  VolumeAttributes::SetLegendFlag(bool legendFlag_)
  {
-@@ -1465,6 +1655,66 @@ VolumeAttributes::SetMaterialProperties(const double *materialProperties_)
- // Get property methods
+     legendFlag = legendFlag_;
+@@ -1466,6 +1656,66 @@ VolumeAttributes::SetMaterialProperties(const double *materialProperties_)
  ///////////////////////////////////////////////////////////////////////////////
  
-+bool
+ bool
 +VolumeAttributes::GetOsprayShadowsEnabledFlag() const
 +{
 +    return osprayShadowsEnabledFlag;
@@ -18829,9 +18308,10 @@ index ba300dabe..019723c3d 100644
 +    return osprayMinContribution;
 +}
 +
- bool
++bool
  VolumeAttributes::GetLegendFlag() const
  {
+     return legendFlag;
 @@ -1757,38 +2007,48 @@ VolumeAttributes::GetFieldName(int index) const
  {
      switch (index)
@@ -19159,7 +18639,7 @@ index ba300dabe..019723c3d 100644
          {
              return true;
 diff --git a/plots/Volume/VolumeAttributes.code b/plots/Volume/VolumeAttributes.code
-index 8873455ad..e8ecb65a5 100644
+index 8873455ad1..e8ecb65a5c 100644
 --- a/plots/Volume/VolumeAttributes.code
 +++ b/plots/Volume/VolumeAttributes.code
 @@ -52,6 +52,9 @@ Definition:
@@ -19197,7 +18677,7 @@ index 8873455ad..e8ecb65a5 100644
 +Definitions: -DVISIT_OSPRAY
 +
 diff --git a/plots/Volume/VolumeAttributes.h b/plots/Volume/VolumeAttributes.h
-index ac9aa8535..3567f4687 100644
+index ac9aa85353..3567f46879 100644
 --- a/plots/Volume/VolumeAttributes.h
 +++ b/plots/Volume/VolumeAttributes.h
 @@ -67,7 +67,8 @@ public:
@@ -19289,7 +18769,7 @@ index ac9aa8535..3567f4687 100644
  
  #endif
 diff --git a/plots/Volume/VolumeAttributes.java b/plots/Volume/VolumeAttributes.java
-index 129f5a16d..310f19b10 100644
+index 129f5a16d6..310f19b10d 100644
 --- a/plots/Volume/VolumeAttributes.java
 +++ b/plots/Volume/VolumeAttributes.java
 @@ -61,13 +61,14 @@ import llnl.visit.GaussianControlPointList;
@@ -20021,7 +19501,7 @@ index 129f5a16d..310f19b10 100644
      private boolean                  lightingFlag;
      private ColorControlPointList    colorControlPoints;
 diff --git a/plots/Volume/avtVolumeFilter.C b/plots/Volume/avtVolumeFilter.C
-index 23a1e585d..f9b746c14 100644
+index 23a1e585db..f9b746c14b 100644
 --- a/plots/Volume/avtVolumeFilter.C
 +++ b/plots/Volume/avtVolumeFilter.C
 @@ -79,6 +79,13 @@
@@ -20436,7 +19916,7 @@ index 23a1e585d..f9b746c14 100644
          newcontract = new avtContract(contract, nds);
          primaryVariable = new char[strlen(exprName.c_str())+1];
 diff --git a/plots/Volume/avtVolumeFilter.h b/plots/Volume/avtVolumeFilter.h
-index d60df439e..675a8121b 100644
+index d60df439ed..675a8121bb 100644
 --- a/plots/Volume/avtVolumeFilter.h
 +++ b/plots/Volume/avtVolumeFilter.h
 @@ -44,11 +44,11 @@
@@ -20488,7 +19968,7 @@ index d60df439e..675a8121b 100644
  
      virtual void             Execute(void);
 diff --git a/plots/Volume/avtVolumePlot.C b/plots/Volume/avtVolumePlot.C
-index ecdf4b192..6ef3990c6 100644
+index ecdf4b192e..6ef3990c6a 100644
 --- a/plots/Volume/avtVolumePlot.C
 +++ b/plots/Volume/avtVolumePlot.C
 @@ -233,7 +233,8 @@ avtVolumePlot::PlotIsImageBased(void)
@@ -20512,7 +19992,7 @@ index ecdf4b192..6ef3990c6 100644
  #ifdef ENGINE
          // gradient calc for raycasting integration not needed, but
 diff --git a/sim/V2/runtime/CMakeLists.txt b/sim/V2/runtime/CMakeLists.txt
-index 9c87f8f89..7b4b0c6fb 100644
+index 9c87f8f898..7b4b0c6fb6 100644
 --- a/sim/V2/runtime/CMakeLists.txt
 +++ b/sim/V2/runtime/CMakeLists.txt
 @@ -172,8 +172,8 @@ VISIT_INSTALL_TARGETS(simV2runtime_ser)
@@ -20528,7 +20008,7 @@ index 9c87f8f89..7b4b0c6fb 100644
      ENDIF(NOT APPLE)
 diff --git a/svn_bin/bv_support/bv_embree.sh b/svn_bin/bv_support/bv_embree.sh
 new file mode 100644
-index 000000000..999e14880
+index 0000000000..3793e836f8
 --- /dev/null
 +++ b/svn_bin/bv_support/bv_embree.sh
 @@ -0,0 +1,171 @@
@@ -20577,13 +20057,15 @@ index 000000000..999e14880
 +    export EMBREE_VERSION=${EMBREE_VERSION:-"3.2.0"}
 +    if [[ "$OPSYS" == "Darwin" ]] ; then
 +        export EMBREE_FILE=${EMBREE_FILE:-"embree-${EMBREE_VERSION}.x86_64.macosx.tar.gz"}
++        export EMBREE_INSTALL_DIR_NAME=embree-$EMBREE_VERSION.x86_64.macosx
 +    else
 +        export EMBREE_FILE=${EMBREE_FILE:-"embree-${EMBREE_VERSION}.x86_64.linux.tar.gz"}
++        export EMBREE_INSTALL_DIR_NAME=embree-$EMBREE_VERSION.x86_64.linux
 +    fi
 +    export EMBREE_COMPATIBILITY_VERSION=${EMBREE_COMPATIBILITY_VERSION:-"${EMBREE_VERSION}"}
 +    export EMBREE_BUILD_DIR=${EMBREE_BUILD_DIR:-"${EMBREE_VERSION}"}
 +    export EMBREE_URL=${EMBREE_URL:-"https://github.com/embree/embree/releases/download/v${EMBREE_VERSION}/"}
-+    export EMBREE_INSTALL_DIR_NAME=embree-$EMBREE_VERSION.x86_64.linux
++
 +    export EMBREE_MD5_CHECKSUM=""
 +    export EMBREE_SHA256_CHECKSUM=""
 +}
@@ -20652,11 +20134,9 @@ index 000000000..999e14880
 +    # Unzip the EMBREE tarball and copy it to the VisIt installation.
 +    info "Installing prebuilt embree"    
 +    tar zxvf $EMBREE_FILE
-+    rm $EMBREE_INSTALL_DIR_NAME/lib/libtbbmalloc.so.2
-+    rm $EMBREE_INSTALL_DIR_NAME/lib/libtbb.so.2
-+    mkdir -p $VISITDIR/embree/$EMBREE_VERSION/$VISITARCH
-+    cp -R $EMBREE_INSTALL_DIR_NAME/* "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"
-+    rm -rf $EMBREE_INSTALL_DIR_NAME
++    rm $EMBREE_INSTALL_DIR_NAME/lib/libtbb*
++    mkdir -p $VISITDIR/embree/$EMBREE_VERSION/$VISITARCH || error "Cannot create embree install directory"
++    cp -R $EMBREE_INSTALL_DIR_NAME/* $VISITDIR/embree/$EMBREE_VERSION/$VISITARCH || error "Cannot copy to embree install directory"
 +    if [[ "$DO_GROUP" == "yes" ]] ; then
 +        chmod -R ug+w,a+rX "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"
 +        chgrp -R ${GROUP} "$VISITDIR/embree/$EMBREE_VERSION/$VISITARCH"
@@ -20705,10 +20185,10 @@ index 000000000..999e14880
 +
 diff --git a/svn_bin/bv_support/bv_ispc.sh b/svn_bin/bv_support/bv_ispc.sh
 new file mode 100644
-index 000000000..1327b5eff
+index 0000000000..cf27b75d5b
 --- /dev/null
 +++ b/svn_bin/bv_support/bv_ispc.sh
-@@ -0,0 +1,166 @@
+@@ -0,0 +1,167 @@
 +function bv_ispc_initialize
 +{
 +    export DO_ISPC="no"
@@ -20755,13 +20235,15 @@ index 000000000..1327b5eff
 +    if [[ "$OPSYS" == "Darwin" ]] ; then
 +        export ISPC_FILE=${ISPC_FILE:-"ispc-v${ISPC_VERSION}-osx.tar.gz"}
 +        export ISPC_URL=${ISPC_URL:-"http://sdvis.org/ospray/download/dependencies/osx/"}
++        export ISPC_INSTALL_DIR_NAME=ispc-v$ISPC_VERSION-osx
 +    else
 +        export ISPC_FILE=${ISPC_FILE:-"ispc-v${ISPC_VERSION}-linux.tar.gz"}
 +        export ISPC_URL=${ISPC_URL:-"http://sdvis.org/ospray/download/dependencies/linux/"}
++        export ISPC_INSTALL_DIR_NAME=ispc-v$ISPC_VERSION-linux
 +    fi
 +    export ISPC_COMPATIBILITY_VERSION=${ISPC_COMPATIBILITY_VERSION:-"${ISPC_VERSION}"}
 +    export ISPC_BUILD_DIR=${ISPC_BUILD_DIR:-"${ISPC_VERSION}"}
-+    export ISPC_INSTALL_DIR_NAME=ispc-v$ISPC_VERSION-linux
++
 +    export ISPC_MD5_CHECKSUM=""
 +    export ISPC_SHA256_CHECKSUM=""
 +}
@@ -20826,9 +20308,8 @@ index 000000000..1327b5eff
 +    # Unzip the ISPC tarball and copy it to the VisIt installation.
 +    info "Installing prebuilt ISPC"    
 +    tar zxvf $ISPC_FILE
-+    mkdir -p $VISITDIR/ispc/$ISPC_VERSION/$VISITARCH
-+    cp -R $ISPC_INSTALL_DIR_NAME/* "$VISITDIR/ispc/$ISPC_VERSION/$VISITARCH"
-+    rm -rf $ISPC_INSTALL_DIR_NAME
++    mkdir -p $VISITDIR/ispc/$ISPC_VERSION/$VISITARCH || error "Cannot create ispc install directory"
++    cp -R $ISPC_INSTALL_DIR_NAME/* $VISITDIR/ispc/$ISPC_VERSION/$VISITARCH || error "Cannot copy to ispc install directory"
 +    if [[ "$DO_GROUP" == "yes" ]] ; then
 +        chmod -R ug+w,a+rX "$VISITDIR/ispc/$ISPC_VERSION/$VISITARCH"
 +        chgrp -R ${GROUP} "$VISITDIR/ispc/$ISPC_VERSION/$VISITARCH"
@@ -20876,7 +20357,7 @@ index 000000000..1327b5eff
 +}
 +
 diff --git a/svn_bin/bv_support/bv_ospray.sh b/svn_bin/bv_support/bv_ospray.sh
-index 0db31d351..de5dbf93b 100644
+index 0db31d3517..de5dbf93b3 100644
 --- a/svn_bin/bv_support/bv_ospray.sh
 +++ b/svn_bin/bv_support/bv_ospray.sh
 @@ -1,6 +1,11 @@
@@ -21177,7 +20658,7 @@ index 0db31d351..de5dbf93b 100644
  }
 +
 diff --git a/svn_bin/bv_support/bv_tbb.sh b/svn_bin/bv_support/bv_tbb.sh
-index e35301881..a60f9ba29 100644
+index e353018811..f01809add5 100644
 --- a/svn_bin/bv_support/bv_tbb.sh
 +++ b/svn_bin/bv_support/bv_tbb.sh
 @@ -1,6 +1,8 @@
@@ -21246,16 +20727,16 @@ index e35301881..a60f9ba29 100644
          ensure_built_or_ready "tbb" $TBB_VERSION $TBB_BUILD_DIR $TBB_FILE
          if [[ $? != 0 ]] ; then
              ANY_ERRORS="yes"
-@@ -89,14 +117,14 @@ function build_tbb
+@@ -89,14 +117,13 @@ function build_tbb
      # Unzip the TBB tarball and copy it to the VisIt installation.
      info "Installing prebuilt TBB"
      tar zxvf $TBB_FILE
 -    mkdir $VISITDIR/tbb
 -    mkdir $VISITDIR/tbb/$VISITARCH
 -    cp -R $TBB_VERSION "$VISITDIR/tbb/$VISITARCH"
-+    mkdir -p $VISITDIR/tbb/$TBB_VERSION/$VISITARCH
-+    cp -R $TBB_VERSION/* "$VISITDIR/tbb/$TBB_VERSION/$VISITARCH"
-     rm -rf $TBB_VERSION
+-    rm -rf $TBB_VERSION
++    mkdir -p $VISITDIR/tbb/$TBB_VERSION/$VISITARCH || error "Cannot make tbb install directory"
++    cp -R $TBB_VERSION/* $VISITDIR/tbb/$TBB_VERSION/$VISITARCH || error "Cannot copy to tbb install directory"
  
 +    # others
      if [[ "$DO_GROUP" == "yes" ]] ; then
@@ -21266,7 +20747,7 @@ index e35301881..a60f9ba29 100644
      fi
      cd "$START_DIR"
      info "Done with TBB"
-@@ -113,7 +141,11 @@ function bv_tbb_is_enabled
+@@ -113,7 +140,11 @@ function bv_tbb_is_enabled
  
  function bv_tbb_is_installed
  {
@@ -21279,7 +20760,7 @@ index e35301881..a60f9ba29 100644
      if [[ $? == 0 ]] ; then
          return 1
      fi
-@@ -122,8 +154,8 @@ function bv_tbb_is_installed
+@@ -122,8 +153,8 @@ function bv_tbb_is_installed
  
  function bv_tbb_build
  {
@@ -21291,7 +20772,7 @@ index e35301881..a60f9ba29 100644
              info "Skipping build of TBB"
          else
 diff --git a/svn_bin/bv_support/bv_vtk.sh b/svn_bin/bv_support/bv_vtk.sh
-index 0516822c9..4160290ce 100644
+index 0516822c9c..4160290ce4 100644
 --- a/svn_bin/bv_support/bv_vtk.sh
 +++ b/svn_bin/bv_support/bv_vtk.sh
 @@ -51,7 +51,7 @@ function bv_vtk_depends_on
@@ -21312,7 +20793,7 @@ index 0516822c9..4160290ce 100644
  
      CMAKE_BIN="${CMAKE_INSTALL}/cmake"
 diff --git a/svn_bin/bv_support/modules.xml b/svn_bin/bv_support/modules.xml
-index f66242099..8af931c19 100644
+index f662420992..8af931c196 100644
 --- a/svn_bin/bv_support/modules.xml
 +++ b/svn_bin/bv_support/modules.xml
 @@ -20,6 +20,7 @@
