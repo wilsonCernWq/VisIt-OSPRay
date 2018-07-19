@@ -2318,7 +2318,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     imgWidth = imgHeight = 0;
     // Let's find out if this range can even intersect the dataset.
     // If not, just skip it.
+    /*
     if (!FrustumIntersectsGrid(w_min, w_max, h_min, h_max)) { return; }
+    */
     // Timing
     visitTimer->StopTimer(timing_register_data, 
                           "avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR "
@@ -2334,13 +2336,17 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
     // Calculate patch dimensions for point array and cell array
     //   This is to check if the patch is a cell data or a point data
     //   I have to assume cell dataset has a higher priority
-    const size_t varIdx = 
-      std::find(varnames.begin(), varnames.end(), ospray->var) - 
-      varnames.begin();
+    ospout << "[avtOSPRayVoxelExtractor] "
+           << "ncell_arrays " << ncell_arrays << " "
+           << "npt_arrays "   << npt_arrays << std::endl;
     if (ncell_arrays > 0) {
-      ospout << "[avtOSPRayVoxelExtractor] Cell Dataset "
-             << std::endl << std::endl;
-      if (DebugStream::Level5())
+      const size_t varIdx = ncell_arrays - 1;
+      // const size_t varIdx = 
+      //   std::find(varnames.begin(), varnames.end(), ospray->var) - 
+      //   varnames.begin();      
+      if (DebugStream::Level5() || slivr::CheckVerbose()) {
+        ospout << "[avtOSPRayVoxelExtractor] Cell Dataset "
+               << std::endl << std::endl;
         for (int i = 0; i < ncell_arrays; ++i) 
           ospout << "  variable_name: "
                  << rgrid->GetCellData()->GetArray(i)->GetName()
@@ -2352,20 +2358,25 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
                  << cell_size[i]       << std::endl
                  << "  cell_vartypes[" << i << "] "
                  << cell_vartypes[i]   << std::endl << std::endl;
-      if (rgrid->GetCellData()->GetArray(varIdx)->GetName() !=
-          ospray->var)
-      {
-        // ospray::Exception("Error: primary variable " +
-        //                   ospray->var +
-        //                   " not found.");               
-      }
-      if (cell_size[varIdx] != 1)
-      {
-        // ospray::Exception("Error: non-scalar variable " +
-        //                   ospray->var +
-        //                   " of length " +
-        //                   std::to_string(cell_size[ncell_arrays-1]) +
-        //                   " found.");
+        if (rgrid->GetCellData()->GetArray(varIdx)->GetName() !=
+            ospray->var)
+        {
+          avtCallback::IssueWarning(("Error: primary variable " +
+                                     ospray->var +
+                                     " not found, found " + 
+                                     rgrid->GetCellData()->
+                                     GetArray(varIdx)->GetName() +
+                                     "), therefore the rendered volume "
+                                     "might be wrong.").c_str());
+        }
+        if (cell_size[varIdx] != 1)
+        {
+          avtCallback::IssueWarning(("Error: non-scalar variable " +
+                                  ospray->var +
+                                  " of length " +
+                                  std::to_string(cell_size[varIdx]) +
+                                  " found.").c_str());
+        }
       }
       nX = dims[0] - 1;
       nY = dims[1] - 1;
@@ -2374,9 +2385,13 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
       volumeDataType = cell_vartypes[varIdx];
     }
     else if (npt_arrays > 0) {
-      ospout << "[avtOSPRayVoxelExtractor] Point Dataset "
-             << std::endl << std::endl;
-      if (DebugStream::Level5())
+      const size_t varIdx = npt_arrays - 1;
+      // const size_t varIdx = 
+      //   std::find(varnames.begin(), varnames.end(), ospray->var) - 
+      //   varnames.begin();
+      if (DebugStream::Level5() || slivr::CheckVerbose()) {
+        ospout << "[avtOSPRayVoxelExtractor] Point Dataset "
+               << std::endl << std::endl;        
         for (int i = 0; i < npt_arrays; ++i)
           ospout << "  variable_name: "
                  << rgrid->GetPointData()->GetArray(i)->GetName()
@@ -2388,20 +2403,25 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
                  << pt_size[i]       << std::endl
                  << "  pt_vartypes[" << i << "] "
                  << pt_vartypes[i]   << std::endl << std::endl;
-      if (rgrid->GetPointData()->GetArray(varIdx)->GetName() !=
-          ospray->var)
-      {
-        // ospray::Exception("Error: primary variable " +
-        //                   ospray->GetVariableName() +
-        //                   " not found.");               
-      }
-      if (pt_size[varIdx] != 1)
-      {
-        // ospray::Exception("Error: non-scalar variable " +
-        //                   ospray->GetVariableName() +
-        //                   " of length " +
-        //                   std::to_string(pt_size[npt_arrays-1]) +
-        //                   " found.");
+        if (rgrid->GetPointData()->GetArray(varIdx)->GetName() !=
+            ospray->var)
+        {
+          avtCallback::IssueWarning(("Error: primary variable " +
+                                     ospray->var +
+                                     " not found, found " + 
+                                     rgrid->GetPointData()->
+                                     GetArray(varIdx)->GetName() +
+                                     "), therefore the rendered volume "
+                                     "might be wrong.").c_str());
+        }
+        if (pt_size[varIdx] != 1)
+        {
+          avtCallback::IssueWarning(("Error: non-scalar variable " +
+                                     ospray->var +
+                                     " of length " +
+                                     std::to_string(pt_size[npt_arrays-1]) +
+                                     " found.").c_str());
+        }
       }
       nX = dims[0];
       nY = dims[1];
@@ -2409,8 +2429,8 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
       volumePointer = pt_arrays[varIdx];
       volumeDataType = pt_vartypes[varIdx];
     } else {
-      // ospray::Exception("dataset found is neither nodal nor zonal. "
-      //                   "OSPRay does not know how to handle it.");
+      avtCallback::IssueWarning("dataset found is neither nodal nor zonal. "
+                                "OSPRay does not know how to handle it.");
     }
     ospout << "[avtMassVoxelExtractor] patch dimension "
            << nX << " " << nY << " " << nZ << std::endl;
@@ -2580,7 +2600,9 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
         double volumePBox[6] = {
             // for cell centered data, we put the voxel on its left boundary
             X[0], Y[0], Z[0], 
-            X[nX-1], Y[nY-1], Z[nZ-1]
+            (ncell_arrays > 0) ? X[nX] : X[nX-1], 
+            (ncell_arrays > 0) ? Y[nY] : Y[nY-1], 
+            (ncell_arrays > 0) ? Z[nZ] : Z[nZ-1]
         };
         // compute boundingbox and clipping plane for ospray
         double volumeBBox[6];
