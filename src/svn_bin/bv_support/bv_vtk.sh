@@ -51,7 +51,7 @@ function bv_vtk_depends_on
     fi
 
     if [[ "$DO_OSPRAY" == "yes" ]]; then
-        depends_on="${depends_on} embree ospray"
+        depends_on="${depends_on} ospray"
     fi
 
     # Only depend on Qt if we're not doing server-only builds.
