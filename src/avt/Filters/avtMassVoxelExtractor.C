@@ -2371,11 +2371,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
         }
         if (cell_size[varIdx] != 1)
         {
-          avtCallback::IssueWarning(("Error: non-scalar variable " +
-                                  ospray->var +
-                                  " of length " +
-                                  std::to_string(cell_size[varIdx]) +
-                                  " found.").c_str());
+          ospout << "Error: non-scalar variable "
+                 << ospray->var
+                 << " of length "
+                 << cell_size[ncell_arrays-1]
+                 << " found." << std::endl;
         }
       }
       nX = dims[0] - 1;
@@ -2416,11 +2416,11 @@ avtMassVoxelExtractor::ExtractWorldSpaceGridRCSLIVR
         }
         if (pt_size[varIdx] != 1)
         {
-          avtCallback::IssueWarning(("Error: non-scalar variable " +
-                                     ospray->var +
-                                     " of length " +
-                                     std::to_string(pt_size[npt_arrays-1]) +
-                                     " found.").c_str());
+          ospout << "Error: non-scalar variable "
+                 << ospray->var
+                 << " of length "
+                 << pt_size[npt_arrays-1]
+                 << " found." << std::endl;
         }
       }
       nX = dims[0];
