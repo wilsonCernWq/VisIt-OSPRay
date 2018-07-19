@@ -92,7 +92,7 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
 
     avtImage_p               RenderImage(avtImage_p, const WindowAttributes &);
     avtImage_p               RenderImageRaycastingSLIVR(avtImage_p opaque_image, 
-							const WindowAttributes &);
+                                                        const WindowAttributes &);
     int                      GetNumberOfStages(const WindowAttributes &);
 
   protected:
@@ -108,7 +108,4 @@ class avtVolumeFilter : public avtDatasetToDatasetFilter
     OSPVisItContext *ospray;
 };
 
-
 #endif
-
-

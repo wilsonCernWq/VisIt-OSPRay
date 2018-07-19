@@ -233,7 +233,7 @@ avtVolumePlot::PlotIsImageBased(void)
 {
     return (atts.GetRendererType() == VolumeAttributes::RayCasting ||
             atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
-	    atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay ||
+            atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay ||
             atts.GetRendererType() == VolumeAttributes::RayCastingIntegration);
 }
 
@@ -970,5 +970,3 @@ avtVolumePlot::Equivalent(const AttributeGroup *a)
         return false;
     return true;
 }
-
-

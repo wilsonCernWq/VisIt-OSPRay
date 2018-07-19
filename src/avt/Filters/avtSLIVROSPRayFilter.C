@@ -65,10 +65,10 @@ double slivr::rad2deg (double radins) {
 // other function
 void 
 OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z, 
-		    int nX, int nY, int nZ,
-		    double volumePBox[6], 
-		    double volumeBBox[6], 
-		    double mtl[4], float sr, bool shading)
+                    int nX, int nY, int nZ,
+                    double volumePBox[6], 
+                    double volumeBBox[6], 
+                    double mtl[4], float sr, bool shading)
 {
     /* OSPRay Volume */
     specularKs    = (float)mtl[2];
@@ -84,18 +84,18 @@ OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
         ospout << "[ospray] update data" << std::endl;
     };
     if (true/*!finished*/) {
-	// Because we initialized the volume each frame
-	// we need to removed the old volume from model first
-	volumeType = OSP_INVALID;
-	InitVolume();
-	SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
-		  volumePBox, volumeBBox);
+        // Because we initialized the volume each frame
+        // we need to removed the old volume from model first
+        volumeType = OSP_INVALID;
+        InitVolume();
+        SetVolume(type, ptr, X, Y, Z, nX, nY, nZ,
+                  volumePBox, volumeBBox);
     }
     /* OSPRay Model */
     if (true/*!finished*/) {
-	worldType = OSP_INVALID; 
-	InitWorld();
-	SetWorld();
+        worldType = OSP_INVALID; 
+        InitWorld();
+        SetWorld();
     }
     /* update volume */
     finished = true;
@@ -104,64 +104,64 @@ OSPVisItVolume::Set(int type, void *ptr, double *X, double *Y, double *Z,
 // ospModel component
 void OSPVisItVolume::InitWorld() {
     if (worldType == OSP_INVALID) {
-	CleanWorld();
-	worldType = OSP_VALID;
-	world = ospNewModel();
+        CleanWorld();
+        worldType = OSP_VALID;
+        world = ospNewModel();
     }
 }
 void OSPVisItVolume::SetWorld() {
     if (world != NULL) { 
-	ospAddVolume(world, volume);
-	ospCommit(world);
+        ospAddVolume(world, volume);
+        ospCommit(world);
     }
 }
 
 // ospVolume component
 void OSPVisItVolume::InitVolume(unsigned char type) {
     if (volumeType != type) { // only initialize once
-	CleanVolume();
-	volumeType = type;
-	switch (type) {
-	case (OSP_BLOCK_BRICKED_VOLUME):
-	    volume = ospNewVolume("block_bricked_volume"); 
-	    break;
-	case (OSP_SHARED_STRUCTURED_VOLUME):
-	    volume = ospNewVolume("visit_shared_structured_volume"); 
-	    break;
-	default:
-	    debug1 << "ERROR: ospray volume not initialized"
-		   << std::endl;
-	    volumeType = OSP_INVALID;
-	    EXCEPTION1(VisItException, 
-		       "ERROR: ospray volume not initialized");
-	}
+        CleanVolume();
+        volumeType = type;
+        switch (type) {
+        case (OSP_BLOCK_BRICKED_VOLUME):
+            volume = ospNewVolume("block_bricked_volume"); 
+            break;
+        case (OSP_SHARED_STRUCTURED_VOLUME):
+            volume = ospNewVolume("visit_shared_structured_volume"); 
+            break;
+        default:
+            debug1 << "ERROR: ospray volume not initialized"
+                   << std::endl;
+            volumeType = OSP_INVALID;
+            EXCEPTION1(VisItException, 
+                       "ERROR: ospray volume not initialized");
+        }
     }
 }
 void 
 OSPVisItVolume::SetVolume(int type, void *ptr, 
-			  double *X, double *Y, double *Z, 
-			  int nX, int nY, int nZ,
-			  double volumePBox[6], double volumeBBox[6]) 
+                          double *X, double *Y, double *Z, 
+                          int nX, int nY, int nZ,
+                          double volumePBox[6], double volumeBBox[6]) 
 {
     // calculate volume data type
     if (type == VTK_UNSIGNED_CHAR) {
-	dataType = "uchar";
-	voxelDataType = OSP_UCHAR;
+        dataType = "uchar";
+        voxelDataType = OSP_UCHAR;
     } else if (type == VTK_SHORT) {
-	dataType = "short";
-	voxelDataType = OSP_SHORT;
+        dataType = "short";
+        voxelDataType = OSP_SHORT;
     } else if (type == VTK_UNSIGNED_SHORT) {
-	dataType = "ushort";
-	voxelDataType = OSP_USHORT;
+        dataType = "ushort";
+        voxelDataType = OSP_USHORT;
     } else if (type == VTK_FLOAT) {
-	dataType = "float";
-	voxelDataType = OSP_FLOAT;
+        dataType = "float";
+        voxelDataType = OSP_FLOAT;
     } else if (type == VTK_DOUBLE) {
-	dataType = "double";
-	voxelDataType = OSP_DOUBLE;
+        dataType = "double";
+        voxelDataType = OSP_DOUBLE;
     } else {
-	debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
-	EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
+        debug1 << "ERROR: Unsupported ospray volume type" << std::endl;
+        EXCEPTION1(VisItException, "ERROR: Unsupported ospray volume type");
     }
     ospout << "[ospray] data type " << dataType << std::endl;
     // assign data pointer
@@ -192,15 +192,15 @@ OSPVisItVolume::SetVolume(int type, void *ptr,
 
     // commit voxel data
     if (voxelData != NULL) { 
-	debug1 << "ERROR: Found VoxelData to be non-empty "
-	       << "while creating new volume" << std::endl;
-	EXCEPTION1(VisItException, 
-		   "ERROR: Found VoxelData to be non-empty "
-		   "while creating new volume");
+        debug1 << "ERROR: Found VoxelData to be non-empty "
+               << "while creating new volume" << std::endl;
+        EXCEPTION1(VisItException, 
+                   "ERROR: Found VoxelData to be non-empty "
+                   "while creating new volume");
     }
     voxelSize = nX * nY * nZ;
     voxelData = ospNewData(voxelSize, voxelDataType,
-			   dataPtr, OSP_DATA_SHARED_BUFFER);
+                           dataPtr, OSP_DATA_SHARED_BUFFER);
     ospSetData(volume, "voxelData", voxelData);
 
     // commit volume
@@ -270,36 +270,36 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     // Using round(r * (N - 1)) can remove the problem
     //
     // const int Xs = 
-    // 	floor(parent->camera.imgS.x * parent->camera.size[0]);
+    //  floor(parent->camera.imgS.x * parent->camera.size[0]);
     // const int Ys = 
-    // 	floor(parent->camera.imgS.y * parent->camera.size[1]);
+    //  floor(parent->camera.imgS.y * parent->camera.size[1]);
     // const int Xs = 
-    // 	round(parent->camera.imgS.x * (parent->camera.size[0]-1));
+    //  round(parent->camera.imgS.x * (parent->camera.size[0]-1));
     // const int Ys = 
-    // 	round(parent->camera.imgS.y * (parent->camera.size[1]-1));
+    //  round(parent->camera.imgS.y * (parent->camera.size[1]-1));
     //
     // It seems this is the correct way of doing it
     //
     // It seems we need to also fix pan and zoom also
     //
     const int Xs = 
-    	std::min((int)round((parent->camera.r_xl + parent->camera.panx) * 
-			    parent->camera.size[0]),
-		 parent->camera.size[0]-1);
+        std::min((int)round((parent->camera.r_xl + parent->camera.panx) * 
+                            parent->camera.size[0]),
+                 parent->camera.size[0]-1);
     const int Ys =
-	std::min((int)round((parent->camera.r_yl + parent->camera.pany) * 
-			    parent->camera.size[1]),
-		 parent->camera.size[1]-1);
+        std::min((int)round((parent->camera.r_yl + parent->camera.pany) * 
+                            parent->camera.size[1]),
+                 parent->camera.size[1]-1);
     for (int i = 0; i < width; ++i) {
-    	for (int j = 0; j < height; ++j) {
-    	    maxDepth[i + j * width] = 
-    		parent->renderer.maxDepthBuffer
-		[Xs + i + (Ys + j) * parent->renderer.maxDepthSize.x];
-    	}
+        for (int j = 0; j < height; ++j) {
+            maxDepth[i + j * width] = 
+                parent->renderer.maxDepthBuffer
+                [Xs + i + (Ys + j) * parent->renderer.maxDepthSize.x];
+        }
     }
     framebufferBg = ospNewTexture2D(imageSize, OSP_TEXTURE_R32F, 
-				    maxDepth.data(),
-				    OSP_TEXTURE_FILTER_NEAREST);
+                                    maxDepth.data(),
+                                    OSP_TEXTURE_FILTER_NEAREST);
     ospCommit(framebufferBg);
     ospSetObject(parent->renderer.renderer, "maxDepthTexture", framebufferBg);
     ospCommit(parent->renderer.renderer);
@@ -308,8 +308,8 @@ void OSPVisItVolume::InitFB(unsigned int width, unsigned int height)
     // create framebuffer
     CleanFB();
     framebuffer = ospNewFrameBuffer(imageSize, 
-				    OSP_FB_RGBA32F,
-				    OSP_FB_COLOR);
+                                    OSP_FB_RGBA32F,
+                                    OSP_FB_COLOR);
 }
 void OSPVisItVolume::RenderFB() {
     ospRenderFrame(framebuffer, parent->renderer.renderer, OSP_FB_COLOR);
@@ -371,15 +371,15 @@ void OSPVisItLight::Set(double materialProperties[4], double viewDirection[3])
 void OSPVisItRenderer::Init() 
 {
     if (rendererType == INVALID) {
-	Clean();
-	rendererType = SCIVIS;
-	renderer = ospNewRenderer("scivis");
-	lights.Init(renderer);
+        Clean();
+        rendererType = SCIVIS;
+        renderer = ospNewRenderer("scivis");
+        lights.Init(renderer);
     }
 }
 void OSPVisItRenderer::Set(double materialProperties[4],
-			   double viewDirection[3],
-			   bool flagUseShading) 
+                           double viewDirection[3],
+                           bool flagUseShading) 
 {    
     ospSet1f(renderer, "bgColor",   0.f);
     ospSet1i(renderer, "aoSamples", aoSamples);
@@ -389,14 +389,14 @@ void OSPVisItRenderer::Set(double materialProperties[4],
     ospSet1i(renderer, "aoTransparencyEnabled", flagAoTransparencyEnabled);
     if (flagUseShading)
     {
-	ospout << "[ospray] use lighting w/ material " 
-	    << "ambient "    << materialProperties[0] << " "
-	    << "diffuse "    << materialProperties[1] << " "
-	    << "specular "   << materialProperties[2] << " "
-	    << "glossiness " << materialProperties[3] << std::endl;
-	lights.Set(materialProperties, viewDirection);
-	ospSetData(renderer, "lights", lights.lightdata);
-	ospCommit(renderer);	
+        ospout << "[ospray] use lighting w/ material " 
+            << "ambient "    << materialProperties[0] << " "
+            << "diffuse "    << materialProperties[1] << " "
+            << "specular "   << materialProperties[2] << " "
+            << "glossiness " << materialProperties[3] << std::endl;
+        lights.Set(materialProperties, viewDirection);
+        ospSetData(renderer, "lights", lights.lightdata);
+        ospCommit(renderer);    
     }
     ospCommit(renderer);
 }
@@ -419,32 +419,32 @@ void OSPVisItRenderer::SetModel(const OSPModel& world)
 void OSPVisItCamera::Init(State type) 
 {
     if (cameraType != type) {
-	Clean();
-	cameraType = type;
-	switch (cameraType) {
-	case (PERSPECTIVE):
-	    camera = ospNewCamera("perspective");
-	    break;
-	case (ORTHOGRAPHIC):
-	    camera = ospNewCamera("orthographic");
-	    break;
-	default:
-	    cameraType = INVALID;
-	    EXCEPTION1(VisItException, "ERROR: wrong ospray camera type"); 
-	}
+        Clean();
+        cameraType = type;
+        switch (cameraType) {
+        case (PERSPECTIVE):
+            camera = ospNewCamera("perspective");
+            break;
+        case (ORTHOGRAPHIC):
+            camera = ospNewCamera("orthographic");
+            break;
+        default:
+            cameraType = INVALID;
+            EXCEPTION1(VisItException, "ERROR: wrong ospray camera type"); 
+        }
     }
 }
 void OSPVisItCamera::Set(const double camp[3], 
-			 const double camf[3], 
-			 const double camu[3], 
-			 const double camd[3],
-			 const double sceneSize[2],
-			 const double aspect, 
-			 const double fovy, 
-			 const double zoom_ratio, 
-			 const double pan_ratio[2],
-			 const int bufferExtents[4],
-			 const int screenExtents[2]) 
+                         const double camf[3], 
+                         const double camu[3], 
+                         const double camd[3],
+                         const double sceneSize[2],
+                         const double aspect, 
+                         const double fovy, 
+                         const double zoom_ratio, 
+                         const double pan_ratio[2],
+                         const int bufferExtents[4],
+                         const int screenExtents[2]) 
 {
     osp::vec3f camP, camD, camU;
     camP.x = camp[0]; camP.y = camp[1]; camP.z = camp[2];    
@@ -461,18 +461,18 @@ void OSPVisItCamera::Set(const double camp[3],
     ospSet1f(camera, "aspect", aspect);
     if      (cameraType == PERSPECTIVE)  { ospSet1f(camera, "fovy", fovy); }
     else if (cameraType == ORTHOGRAPHIC) { 
-	ospSet1f(camera, "height", sceneSize[1]); 
+        ospSet1f(camera, "height", sceneSize[1]); 
     }
     ospCommit(camera);
     this->SetScreen(bufferExtents[0], bufferExtents[1],
-		    bufferExtents[2], bufferExtents[3]);
+                    bufferExtents[2], bufferExtents[3]);
 }
 void OSPVisItCamera::SetScreen(float xMin, float xMax, float yMin, float yMax) 
 {
     r_xl = xMin/size[0] - panx; 
     r_yl = yMin/size[1] - pany; 
     r_xu = xMax/size[0] - panx;
-    r_yu = yMax/size[1] - pany;	
+    r_yu = yMax/size[1] - pany; 
     imgS.x = (r_xl - 0.5f) / zoom + 0.5f;
     imgS.y = (r_yl - 0.5f) / zoom + 0.5f;
     imgE.x = (r_xu - 0.5f) / zoom + 0.5f;
@@ -490,30 +490,30 @@ void OSPVisItCamera::SetScreen(float xMin, float xMax, float yMin, float yMax)
 void OSPVisItTransferFunction::Init() 
 {
     if (transferfcnType == INVALID) {
-	Clean();
-	transferfcnType = PIECEWISE_LINEAR;
-	transferfcn = ospNewTransferFunction("piecewise_linear");
+        Clean();
+        transferfcnType = PIECEWISE_LINEAR;
+        transferfcn = ospNewTransferFunction("piecewise_linear");
     }
 }
 void OSPVisItTransferFunction::Set(const OSPVisItColor *table,
-				   const unsigned int size, 
-				   const float datamin, 
-				   const float datamax) 
+                                   const unsigned int size, 
+                                   const float datamin, 
+                                   const float datamax) 
 {
     std::vector<osp::vec3f> colors;
     std::vector<float>      opacities;
     for (int i = 0; i < size; ++i) {
-	osp::vec3f color;
-	color.x = table[i].R;
-	color.y = table[i].G;
-	color.z = table[i].B;
-	colors.push_back(color);
-	opacities.push_back(table[i].A);
+        osp::vec3f color;
+        color.x = table[i].R;
+        color.y = table[i].G;
+        color.z = table[i].B;
+        colors.push_back(color);
+        opacities.push_back(table[i].A);
     }
     OSPData colorData   = 
-	ospNewData(colors.size(), OSP_FLOAT3, colors.data());
+        ospNewData(colors.size(), OSP_FLOAT3, colors.data());
     OSPData opacityData = 
-	ospNewData(opacities.size(), OSP_FLOAT, opacities.data());
+        ospNewData(opacities.size(), OSP_FLOAT, opacities.data());
     osp::vec2f range;
     range.x = datamin;
     range.y = datamax;
@@ -550,81 +550,81 @@ void OSPVisItContext::InitOSP(int numThreads)
     OSPDevice device = ospGetCurrentDevice();
     if (device == NULL) 
     {
-	// check hostname
+        // check hostname
 #ifdef __unix__
-	char hname[200];
-	gethostname(hname, 200);
+        char hname[200];
+        gethostname(hname, 200);
         ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
 #endif
-	// initialize ospray
+        // initialize ospray
         ospout << "[ospray] Initialize OSPRay";
-	device = ospNewDevice();	
-	// setup debug 
-	if (DebugStream::Level5()) {
-	    ospout << " debug mode";
-	    ospDeviceSet1i(device, "debug", 0);
-	}
-	// setup number of threads (this can only be hard-coded)
-	if (numThreads > 0) {
-	    ospout << " numThreads: " << numThreads;
-	    ospDeviceSet1i(device, "numThreads", numThreads);
-	}
-	ospout << std::endl;
-	ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
-	ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
-	ospDeviceCommit(device);
-	ospSetCurrentDevice(device);
-	// load ospray module
-	OSPError err = ospLoadModule("visit");
-	if (err != OSP_NO_ERROR) {
-	    osperr << "[Error] can't load visit module" << std::endl;
-	}
+        device = ospNewDevice();        
+        // setup debug 
+        if (DebugStream::Level5()) {
+            ospout << " debug mode";
+            ospDeviceSet1i(device, "debug", 0);
+        }
+        // setup number of threads (this can only be hard-coded)
+        if (numThreads > 0) {
+            ospout << " numThreads: " << numThreads;
+            ospDeviceSet1i(device, "numThreads", numThreads);
+        }
+        ospout << std::endl;
+        ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
+        ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
+        ospDeviceCommit(device);
+        ospSetCurrentDevice(device);
+        // load ospray module
+        OSPError err = ospLoadModule("visit");
+        if (err != OSP_NO_ERROR) {
+            osperr << "[Error] can't load visit module" << std::endl;
+        }
     }
     initialized = true;
 }
 
 // We use this function to minimize interface
 void OSPVisItContext::Render(float xMin, float xMax, float yMin, float yMax,
-			     int imgWidth, int imgHeight,
-			     float*& dest, OSPVisItVolume* volume) 
+                             int imgWidth, int imgHeight,
+                             float*& dest, OSPVisItVolume* volume) 
 {
     int timing_SetSubCamera = visitTimer->StartTimer();
     camera.SetScreen(xMin, xMax, yMin, yMax);
     visitTimer->StopTimer(timing_SetSubCamera,
-			  "[OSPRay] Calling OSPContext::SetSubCamera");
+                          "[OSPRay] Calling OSPContext::SetSubCamera");
 
     int timing_SetModel = visitTimer->StartTimer();
     renderer.SetModel(volume->GetWorld());
     renderer.SetCamera(camera.camera);
     visitTimer->StopTimer(timing_SetModel,
-			  "[OSPRay] Calling OSPContext::SetModel");
+                          "[OSPRay] Calling OSPContext::SetModel");
 
     int timing_InitFB = visitTimer->StartTimer();
     volume->InitFB(imgWidth, imgHeight);
     visitTimer->StopTimer(timing_InitFB,
-			  "[OSPRay] Calling OSPContext::InitFB");
+                          "[OSPRay] Calling OSPContext::InitFB");
 
     int timing_RenderFB = visitTimer->StartTimer();
     volume->RenderFB();
     visitTimer->StopTimer(timing_RenderFB,
-			  "[OSPRay] Calling OSPContext::RenderFB");
+                          "[OSPRay] Calling OSPContext::RenderFB");
 
     int timing_stdcopy = visitTimer->StartTimer();
     std::copy(volume->GetFBData(), 
-	      volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
+              volume->GetFBData() + (imgWidth * imgHeight) * 4, dest);
     visitTimer->StopTimer(timing_stdcopy, 
-			  "[OSPRay] Calling OSPContext::std::copy");
+                          "[OSPRay] Calling OSPContext::std::copy");
 }
 
 void OSPVisItContext::InitPatch(int id) 
 {
     if (volumes.size() < id) {
-	debug1 << "ERROR: wrong patch index " << id << std::endl;
-	EXCEPTION1(VisItException, "ERROR: wrong patch index"); 
-	return;
+        debug1 << "ERROR: wrong patch index " << id << std::endl;
+        EXCEPTION1(VisItException, "ERROR: wrong patch index"); 
+        return;
     }
     if (volumes.size() == id) { 
-	volumes.push_back(id); 
+        volumes.push_back(id); 
     }
     volumes[id].parent = this;
 }
@@ -644,33 +644,33 @@ void OSPVisItContext::InitPatch(int id)
 
 void slivr::CheckMemoryHere(const std::string& message, std::string debugN)
 {
-    if (debugN.compare("ospout") == 0) {	
-	slivr::CheckMemoryHere(message, *osp_out);
+    if (debugN.compare("ospout") == 0) {        
+        slivr::CheckMemoryHere(message, *osp_out);
     }
     else if (debugN.compare("debug5") == 0) {
-	if (DebugStream::Level5()) {
-	    slivr::CheckMemoryHere(message, DebugStream::Stream5());
-	}       
+        if (DebugStream::Level5()) {
+            slivr::CheckMemoryHere(message, DebugStream::Stream5());
+        }       
     }
     else if (debugN.compare("debug4") == 0) {
-	if (DebugStream::Level4()) {
-	    slivr::CheckMemoryHere(message, DebugStream::Stream4());
-	}       
+        if (DebugStream::Level4()) {
+            slivr::CheckMemoryHere(message, DebugStream::Stream4());
+        }       
     }
     else if (debugN.compare("debug3") == 0) {
-	if (DebugStream::Level3()) {
-	    slivr::CheckMemoryHere(message, DebugStream::Stream3());
-	}       
+        if (DebugStream::Level3()) {
+            slivr::CheckMemoryHere(message, DebugStream::Stream3());
+        }       
     }
     else if (debugN.compare("debug2") == 0) {
-	if (DebugStream::Level2()) {
-	    slivr::CheckMemoryHere(message, DebugStream::Stream2());
-	}       
+        if (DebugStream::Level2()) {
+            slivr::CheckMemoryHere(message, DebugStream::Stream2());
+        }       
     }
     else if (debugN.compare("debug1") == 0) {
-	if (DebugStream::Level1()) {
-	    slivr::CheckMemoryHere(message, DebugStream::Stream1());
-	}       
+        if (DebugStream::Level1()) {
+            slivr::CheckMemoryHere(message, DebugStream::Stream1());
+        }       
     }
 }
 
@@ -679,8 +679,8 @@ void slivr::CheckMemoryHere(const std::string& message, std::ostream& out)
     unsigned long m_size, m_rss;
     avtMemory::GetMemorySize(m_size, m_rss);
     out << message << std::endl << "\t"
-	<< " Rank " << PAR_Rank()
-	<< " Memory use begin " << m_size 
-	<< " rss " << m_rss/(1024*1024) << " (MB)"
-	<< std::endl;
+        << " Rank " << PAR_Rank()
+        << " Memory use begin " << m_size 
+        << " rss " << m_rss/(1024*1024) << " (MB)"
+        << std::endl;
 }

@@ -107,220 +107,220 @@ class     vtkMatrix4x4;
 class AVTFILTERS_API avtMassVoxelExtractor : public avtExtractor
 {
 public:
-		         avtMassVoxelExtractor(int, int, int, avtVolume *, avtCellList *);
-	virtual         ~avtMassVoxelExtractor();
+                         avtMassVoxelExtractor(int, int, int, avtVolume *, avtCellList *);
+        virtual         ~avtMassVoxelExtractor();
 
-	void             Extract(vtkRectilinearGrid *,
-				 std::vector<std::string> &varnames,
-				 std::vector<int> &varsize);
+        void             Extract(vtkRectilinearGrid *,
+                                 std::vector<std::string> &varnames,
+                                 std::vector<int> &varsize);
 
-	void             SetGridsAreInWorldSpace
-	    (bool, const avtViewInfo &,double, const double *);
-	void             SetVariableInformation
-	    (std::vector<std::string> &names, std::vector<int> varsize);
-	void             SetTrilinear(bool t) { trilinearInterpolation = t; };
+        void             SetGridsAreInWorldSpace
+            (bool, const avtViewInfo &,double, const double *);
+        void             SetVariableInformation
+            (std::vector<std::string> &names, std::vector<int> varsize);
+        void             SetTrilinear(bool t) { trilinearInterpolation = t; };
 
-	//
-	// RayCast SLIVR Specific
-	//
-	void             SetRayCastingSLIVR(bool s) { rayCastingSLIVR = s; };
-	void             SetLighting(bool l) { lighting = l; };
-	void             SetLightDirection(double lightDir[3])
-	{ for (int i=0;i<3;i++) { lightDirection[i] = lightDir[i]; } }
-	void             SetLightPosition(double lightPos[4]) 
-	{ for (int i=0;i<4;i++) { lightPosition[i] = lightPos[i]; } }
-	void             SetMatProperties(double matProp[4]) 
-	{ for (int i=0;i<4;i++) { materialProperties[i] = matProp[i]; } }
-	void             SetScalarRange(double range[2])
-	{ scalarRange[0] = range[0]; scalarRange[1] = range[1];}
-	void             SetTFVisibleRange(double tfRange[2])
-	{ tFVisibleRange[0] = tfRange[0]; tFVisibleRange[1] = tfRange[1]; }
-	void             SetTransferFn(avtOpacityMap *tf1D) 
-	{ transferFn1D = tf1D; };
-	void             SetViewDirection(double *_vD)
-	{ for (int i=0; i<3; i++) { viewDirection[i] = view_direction[i] = _vD[i]; } }
-	void             SetCameraPosition(double *_cp) 
-	{ std::copy(_cp, _cp + 3, cameraPosition); }
-	void             SetCameraUpVector(double *_cu) 
-	{ std::copy(_cu, _cu + 3, cameraUpVector); }
-	void             SetCameraAspect(double _a) { cameraAspect = _a; }
-	void             SetClipPlanes(double _camClip[2])
-	{ clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
-	void             SetPanPercentages(double _pan[2])
-	{ panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1]; }
-	void             SetImageZoom(double _zoom) { imageZoom = _zoom; }
-	void             SetDepthExtents(double _depthExtents[2])
-	{ 
-	    fullVolumeDepthExtents[0] = _depthExtents[0]; 
-	    fullVolumeDepthExtents[1] = _depthExtents[1]; 
-	}
-	void             SetMVPMatrix(vtkMatrix4x4 *_mvp)
-	{ 
-	    model_to_screen_transform->DeepCopy(_mvp); 
-	    vtkMatrix4x4::Invert(model_to_screen_transform, screen_to_model_transform); 
-	}
-
-	//
-	// Getting the image
-	//
-	void             GetImageDimensions
-	    (int &, int dims[2], int screen_ll[2], int screen_ur[2], float &, float &);
-	void             GetComputedImage(float *);
-	void             SetProcIdPatchID(int _proc, int _patch)
-	{ proc = _proc; patch = _patch; }
-
-	//
-	// Set the background information
         //
-	void             SetDepthBuffer(float *_zBuffer, int size) { depthBuffer=_zBuffer; }
-	void             SetRGBBuffer(unsigned char  *_colorBuffer, int width, int height)
-	{ rgbColorBuffer=_colorBuffer; };
-	void             SetBufferExtents(int _extents[4])
-	{ for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
-	void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
-	void             SetOSPRay(OSPVisItContext* o) { ospray = o; }
-	void             SetFullImageExtents(int extents[4]) 
-	{
-	    fullImageExtents[0] = extents[0];
-	    fullImageExtents[1] = extents[1];
-	    fullImageExtents[2] = extents[2];	
-	    fullImageExtents[3] = extents[3];
-	}
+        // RayCast SLIVR Specific
+        //
+        void             SetRayCastingSLIVR(bool s) { rayCastingSLIVR = s; };
+        void             SetLighting(bool l) { lighting = l; };
+        void             SetLightDirection(double lightDir[3])
+        { for (int i=0;i<3;i++) { lightDirection[i] = lightDir[i]; } }
+        void             SetLightPosition(double lightPos[4]) 
+        { for (int i=0;i<4;i++) { lightPosition[i] = lightPos[i]; } }
+        void             SetMatProperties(double matProp[4]) 
+        { for (int i=0;i<4;i++) { materialProperties[i] = matProp[i]; } }
+        void             SetScalarRange(double range[2])
+        { scalarRange[0] = range[0]; scalarRange[1] = range[1];}
+        void             SetTFVisibleRange(double tfRange[2])
+        { tFVisibleRange[0] = tfRange[0]; tFVisibleRange[1] = tfRange[1]; }
+        void             SetTransferFn(avtOpacityMap *tf1D) 
+        { transferFn1D = tf1D; };
+        void             SetViewDirection(double *_vD)
+        { for (int i=0; i<3; i++) { viewDirection[i] = view_direction[i] = _vD[i]; } }
+        void             SetCameraPosition(double *_cp) 
+        { std::copy(_cp, _cp + 3, cameraPosition); }
+        void             SetCameraUpVector(double *_cu) 
+        { std::copy(_cu, _cu + 3, cameraUpVector); }
+        void             SetCameraAspect(double _a) { cameraAspect = _a; }
+        void             SetClipPlanes(double _camClip[2])
+        { clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1]; }
+        void             SetPanPercentages(double _pan[2])
+        { panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1]; }
+        void             SetImageZoom(double _zoom) { imageZoom = _zoom; }
+        void             SetDepthExtents(double _depthExtents[2])
+        { 
+            fullVolumeDepthExtents[0] = _depthExtents[0]; 
+            fullVolumeDepthExtents[1] = _depthExtents[1]; 
+        }
+        void             SetMVPMatrix(vtkMatrix4x4 *_mvp)
+        { 
+            model_to_screen_transform->DeepCopy(_mvp); 
+            vtkMatrix4x4::Invert(model_to_screen_transform, screen_to_model_transform); 
+        }
+
+        //
+        // Getting the image
+        //
+        void             GetImageDimensions
+            (int &, int dims[2], int screen_ll[2], int screen_ur[2], float &, float &);
+        void             GetComputedImage(float *);
+        void             SetProcIdPatchID(int _proc, int _patch)
+        { proc = _proc; patch = _patch; }
+
+        //
+        // Set the background information
+        //
+        void             SetDepthBuffer(float *_zBuffer, int size) { depthBuffer=_zBuffer; }
+        void             SetRGBBuffer(unsigned char  *_colorBuffer, int width, int height)
+        { rgbColorBuffer=_colorBuffer; };
+        void             SetBufferExtents(int _extents[4])
+        { for (int i=0;i<4; i++) bufferExtents[i]=_extents[i]; }
+        void             SetRendererSampleRate(double r) { rendererSampleRate = r; }
+        void             SetOSPRay(OSPVisItContext* o) { ospray = o; }
+        void             SetFullImageExtents(int extents[4]) 
+        {
+            fullImageExtents[0] = extents[0];
+            fullImageExtents[1] = extents[1];
+            fullImageExtents[2] = extents[2];   
+            fullImageExtents[3] = extents[3];
+        }
 
 protected:
-	int              fullImageExtents[4];
-	bool             gridsAreInWorldSpace;
-	bool             pretendGridsAreInWorldSpace;
-	avtViewInfo      view;
-	double           aspect;
-	double           cur_clip_range[2];
-	vtkMatrix4x4    *view_to_world_transform;
-	vtkMatrix4x4    *world_to_view_transform;
+        int              fullImageExtents[4];
+        bool             gridsAreInWorldSpace;
+        bool             pretendGridsAreInWorldSpace;
+        avtViewInfo      view;
+        double           aspect;
+        double           cur_clip_range[2];
+        vtkMatrix4x4    *view_to_world_transform;
+        vtkMatrix4x4    *world_to_view_transform;
 
-	bool             trilinearInterpolation;
-	bool             rayCastingSLIVR;
+        bool             trilinearInterpolation;
+        bool             rayCastingSLIVR;
 
-	vtkMatrix4x4    *model_to_screen_transform;
-	vtkMatrix4x4    *screen_to_model_transform;
-	double           clipPlanes[2];
-	double 		 panPercentage[2];
-	double           imageZoom;
-	double           fullVolumeDepthExtents[2];
-	double           viewDirection[3];  // -->
-	double           view_direction[3]; // they are redundant. One of them should be removed
-	double           cameraPosition[3]; // (Qi) camera location in world coordinate
-	double           cameraUpVector[3]; // (Qi) camera up vector direction
-	double           cameraAspect;
-	double          *X;
-	double          *Y;
-	double          *Z;
-	unsigned char   *ghosts;
-	int              dims[3];
-	int              ncell_arrays;
-	void            *cell_arrays[AVT_VARIABLE_LIMIT];
-	int              cell_size[AVT_VARIABLE_LIMIT];
-	int              cell_index[AVT_VARIABLE_LIMIT];
-	int              cell_vartypes[AVT_VARIABLE_LIMIT];
-	int              npt_arrays;
-	void            *pt_arrays[AVT_VARIABLE_LIMIT];
-	int              pt_size[AVT_VARIABLE_LIMIT];
-	int              pt_index[AVT_VARIABLE_LIMIT];
-	int              pt_vartypes[AVT_VARIABLE_LIMIT];
+        vtkMatrix4x4    *model_to_screen_transform;
+        vtkMatrix4x4    *screen_to_model_transform;
+        double           clipPlanes[2];
+        double           panPercentage[2];
+        double           imageZoom;
+        double           fullVolumeDepthExtents[2];
+        double           viewDirection[3];  // -->
+        double           view_direction[3]; // they are redundant. One of them should be removed
+        double           cameraPosition[3]; // (Qi) camera location in world coordinate
+        double           cameraUpVector[3]; // (Qi) camera up vector direction
+        double           cameraAspect;
+        double          *X;
+        double          *Y;
+        double          *Z;
+        unsigned char   *ghosts;
+        int              dims[3];
+        int              ncell_arrays;
+        void            *cell_arrays[AVT_VARIABLE_LIMIT];
+        int              cell_size[AVT_VARIABLE_LIMIT];
+        int              cell_index[AVT_VARIABLE_LIMIT];
+        int              cell_vartypes[AVT_VARIABLE_LIMIT];
+        int              npt_arrays;
+        void            *pt_arrays[AVT_VARIABLE_LIMIT];
+        int              pt_size[AVT_VARIABLE_LIMIT];
+        int              pt_index[AVT_VARIABLE_LIMIT];
+        int              pt_vartypes[AVT_VARIABLE_LIMIT];
 
-	double          *prop_buffer;
-	int             *ind_buffer;
-	bool            *valid_sample;
+        double          *prop_buffer;
+        int             *ind_buffer;
+        bool            *valid_sample;
 
-	// We repeatedly divide by the term (X[i+1]-X[i]).  In the interest of
-	// performance, cache the term 1./(X[i+1]-X[i]) and use that for faster
-	// multiplication.  This sped up total performance by about 5%.
-	double           *divisors_X;
-	double           *divisors_Y;
-	double           *divisors_Z;
+        // We repeatedly divide by the term (X[i+1]-X[i]).  In the interest of
+        // performance, cache the term 1./(X[i+1]-X[i]) and use that for faster
+        // multiplication.  This sped up total performance by about 5%.
+        double           *divisors_X;
+        double           *divisors_Y;
+        double           *divisors_Z;
 
-	void             ExtractImageSpaceGrid(vtkRectilinearGrid *,
-					       std::vector<std::string> &varnames,
-					       std::vector<int> &varsize);
-	void             ExtractWorldSpaceGrid(vtkRectilinearGrid *,
-					       std::vector<std::string> &varnames,
-					       std::vector<int> &varsize);
+        void             ExtractImageSpaceGrid(vtkRectilinearGrid *,
+                                               std::vector<std::string> &varnames,
+                                               std::vector<int> &varsize);
+        void             ExtractWorldSpaceGrid(vtkRectilinearGrid *,
+                                               std::vector<std::string> &varnames,
+                                               std::vector<int> &varsize);
 
-	void             RegisterGrid(vtkRectilinearGrid*,
-				      std::vector<std::string>&,std::vector<int>&);
-	void             SampleAlongSegment(const double *, const double*, int, int);
-	void             SampleVariable(int, int, int, int);
-	bool             FrustumIntersectsGrid(int, int, int, int) const;
-	bool             FrustumIntersectsGridSLIVR(int, int, int, int) const;
-	void             GetSegment(int, int, double *, double *) const;
-	static void      FindPlaneNormal(const double *, const double *,
-					 const double *, double *);
-	bool             GridOnPlusSideOfPlane(const double *, const double *) const;
-	bool             FindSegmentIntersections(const double *, const double *,
-						  int &, int &);
+        void             RegisterGrid(vtkRectilinearGrid*,
+                                      std::vector<std::string>&,std::vector<int>&);
+        void             SampleAlongSegment(const double *, const double*, int, int);
+        void             SampleVariable(int, int, int, int);
+        bool             FrustumIntersectsGrid(int, int, int, int) const;
+        bool             FrustumIntersectsGridSLIVR(int, int, int, int) const;
+        void             GetSegment(int, int, double *, double *) const;
+        static void      FindPlaneNormal(const double *, const double *,
+                                         const double *, double *);
+        bool             GridOnPlusSideOfPlane(const double *, const double *) const;
+        bool             FindSegmentIntersections(const double *, const double *,
+                                                  int &, int &);
 
-	// Trilinear and RC SLIVR
-	double           TrilinearInterpolate(double vals[8], float distRight, float distTop, float distBack);
-	void             ComputeIndices(int dims[3], int indices[6], int returnIndices[8]);
-	void             ComputeIndicesVert(int dims[3], int indices[6], int returnIndices[8]);
-	void             GetIndexandDistFromCenter(float dist, int index,   
-						   int &index_before, int &index_after,  
-						   float &dist_before, float &dist_after);
+        // Trilinear and RC SLIVR
+        double           TrilinearInterpolate(double vals[8], float distRight, float distTop, float distBack);
+        void             ComputeIndices(int dims[3], int indices[6], int returnIndices[8]);
+        void             ComputeIndicesVert(int dims[3], int indices[6], int returnIndices[8]);
+        void             GetIndexandDistFromCenter(float dist, int index,   
+                                                   int &index_before, int &index_after,  
+                                                   float &dist_before, float &dist_after);
 
-	//
-	// OSPRay stuffs
-	//
-	OSPVisItContext      *ospray;
-	double           rendererSampleRate;
+        //
+        // OSPRay stuffs
+        //
+        OSPVisItContext      *ospray;
+        double           rendererSampleRate;
 
-	//
-	// RC SLIVR Specific
-	//
-	// Color computation
-	bool             lighting;
-	double           lightPosition[4];
-	float            lightDirection[3];
-	double           materialProperties[4];
-	avtOpacityMap   *transferFn1D;
-	float            gradient[3];
-	double           scalarRange[2];
-	double           tFVisibleRange[2];
-	//
-	// Background + other plots
-	float           *depthBuffer;           // depth buffer for the background and other plots
-	unsigned char   *rgbColorBuffer;        // bounding box + pseudo color + ...
-	int              bufferExtents[4];      // extents of the buffer(minX, maxX, minY, maxY)
-	//
-	// Rendering
-	// int              renderingAreaExtents[4];
-	double           renderingDepthsExtents[2];
-	//
-	// Patch details for one image
-	int              patchDrawn;            // whether the patch is drawn or not
-	int              imgWidth, imgHeight;
-	int              imgDims[2];            // size of the patch
-	int              imgLowerLeft[2];       // coordinates in the whole image
-	int              imgUpperRight[2];      //
-	float            eyesSpaceDepth;         // for blending patches
-	float            clipSpaceDepth;        // clip space depth for blending with other visit stuff
-	float           *imgArray;              // the image data
-	int              proc;                  // id of the processor
-	int              patch;                 // id of the patch
-	int              fullImgWidth, fullImgHeight;
-	int              xMin, xMax, yMin, yMax;
-	//
-	// RC SLIVR Only
-	void             ComputePixelColor(double source_rgb[4],
-					   double dest_rgb[4],
-					   float gradient[3]);
-	//
-	// added for raycasting slivr
-	void             GetSegmentRCSLIVR(int x, int y,
-					   double depthsExtents[2],
-					   double *, double *);
-	void             SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y);
-	void             ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *, 
-						      std::vector<std::string> &varnames,
-						      std::vector<int> &varsize);
+        //
+        // RC SLIVR Specific
+        //
+        // Color computation
+        bool             lighting;
+        double           lightPosition[4];
+        float            lightDirection[3];
+        double           materialProperties[4];
+        avtOpacityMap   *transferFn1D;
+        float            gradient[3];
+        double           scalarRange[2];
+        double           tFVisibleRange[2];
+        //
+        // Background + other plots
+        float           *depthBuffer;           // depth buffer for the background and other plots
+        unsigned char   *rgbColorBuffer;        // bounding box + pseudo color + ...
+        int              bufferExtents[4];      // extents of the buffer(minX, maxX, minY, maxY)
+        //
+        // Rendering
+        // int              renderingAreaExtents[4];
+        double           renderingDepthsExtents[2];
+        //
+        // Patch details for one image
+        int              patchDrawn;            // whether the patch is drawn or not
+        int              imgWidth, imgHeight;
+        int              imgDims[2];            // size of the patch
+        int              imgLowerLeft[2];       // coordinates in the whole image
+        int              imgUpperRight[2];      //
+        float            eyesSpaceDepth;         // for blending patches
+        float            clipSpaceDepth;        // clip space depth for blending with other visit stuff
+        float           *imgArray;              // the image data
+        int              proc;                  // id of the processor
+        int              patch;                 // id of the patch
+        int              fullImgWidth, fullImgHeight;
+        int              xMin, xMax, yMin, yMax;
+        //
+        // RC SLIVR Only
+        void             ComputePixelColor(double source_rgb[4],
+                                           double dest_rgb[4],
+                                           float gradient[3]);
+        //
+        // added for raycasting slivr
+        void             GetSegmentRCSLIVR(int x, int y,
+                                           double depthsExtents[2],
+                                           double *, double *);
+        void             SampleVariableRCSLIVR(int first, int last, int intersect, int x, int y);
+        void             ExtractWorldSpaceGridRCSLIVR(vtkRectilinearGrid *, 
+                                                      std::vector<std::string> &varnames,
+                                                      std::vector<int> &varsize);
 };
 
 #endif

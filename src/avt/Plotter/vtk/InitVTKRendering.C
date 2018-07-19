@@ -183,10 +183,10 @@ InitVTKRendering::Initialize(void)
 // #ifdef VISIT_OSPRAY
 //     if (avtCallback::UseOSPRay())
 //     {
-// 	// debug1 << "InitVTKRendering::Initializing turning on OSPRay" << endl;
-// 	// vtkOSPRayObjectFactory* ofactory = vtkOSPRayObjectFactory::New();
-// 	// vtkObjectFactory::RegisterFactory(ofactory);
-// 	// ofactory->Delete();
+//      // debug1 << "InitVTKRendering::Initializing turning on OSPRay" << endl;
+//      // vtkOSPRayObjectFactory* ofactory = vtkOSPRayObjectFactory::New();
+//      // vtkObjectFactory::RegisterFactory(ofactory);
+//      // ofactory->Delete();
 //     }
 // #endif
 

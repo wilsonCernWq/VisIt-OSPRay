@@ -191,15 +191,12 @@ protected:
                                                 double &, double &);
 
     void                  ComputeRay(double camera[3], 
-				     double position[3], double ray[3]);
+                                     double position[3], double ray[3]);
     bool                  CheckInBounds(double volBounds[6], double coord[3]);
     bool                  Intersect(double bounds[6], double ray[3], 
-				    double cameraPos[3], 
-				    double &tMin, double &tMax);
+                                    double cameraPos[3], 
+                                    double &tMin, double &tMax);
 
 };
 
-
 #endif
-
-

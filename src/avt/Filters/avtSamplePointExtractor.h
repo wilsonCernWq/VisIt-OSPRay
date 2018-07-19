@@ -174,7 +174,7 @@ public:
     void                      StopTiling(void) { shouldDoTiling = false; };
     void                      SendCellsMode(bool);
     void                      SetRectilinearGridsAreInWorldSpace(bool, 
-								 const avtViewInfo &,double);
+                                                                 const avtViewInfo &,double);
     void                      Set3DMode(bool _m) { modeIs3D = _m; };
     void                      SetKernelBasedSampling(bool);
     void                      SetJittering(bool);
@@ -183,62 +183,62 @@ public:
     void                      SetRayCastingSLIVR(bool _s) { rayCastingSLIVR = _s; };
     void                      SetRayCastingSLIVRParallel(bool _p)
     {
-	rayCastingSLIVRParallel = _p;
+        rayCastingSLIVRParallel = _p;
     };
     void                      SetLighting(bool _l) { lighting = _l; };
     void                      SetLightPosition(double _lp[4])
     {
-	for (int i=0;i<4;i++) { lightPosition[i] = _lp[i]; }
+        for (int i=0;i<4;i++) { lightPosition[i] = _lp[i]; }
     }
     void                      SetLightDirection(double _ld[3])
     {
-	for (int i=0;i<3;i++) { lightDirection[i] = _ld[i]; }
+        for (int i=0;i<3;i++) { lightDirection[i] = _ld[i]; }
     }
     void                      SetMatProperties(double _matProp[4])
     {
-	for (int i=0;i<4;i++) { materialProperties[i] = _matProp[i]; }
+        for (int i=0;i<4;i++) { materialProperties[i] = _matProp[i]; }
     }
     void                      SetTransferFn(avtOpacityMap *_transferFn1D)
     {
-	transferFn1D = _transferFn1D;
+        transferFn1D = _transferFn1D;
     };
     void                      SetViewDirection(double *_vD) 
     {
-	std::copy(_vD, _vD + 3, viewDirection);
+        std::copy(_vD, _vD + 3, viewDirection);
     }
     void                      SetClipPlanes(double _camClip[2])
     {
-	clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1];
+        clipPlanes[0] = _camClip[0]; clipPlanes[1] = _camClip[1];
     }
     void                      SetPanPercentages(double _pan[2])
     {
-	panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1];
+        panPercentage[0] = _pan[0]; panPercentage[1] = _pan[1];
     }
     void                      SetImageZoom(double _zoom) { imageZoom = _zoom; }
     void                      SetDepthExtents(double _depthExtents[2])
     {
-	depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1];
+        depthExtents[0] = _depthExtents[0]; depthExtents[1] = _depthExtents[1];
     }
     void                      SetMVPMatrix(vtkMatrix4x4 *_mvp)
     {
-	modelViewProj->DeepCopy(_mvp);
+        modelViewProj->DeepCopy(_mvp);
     }
 
     void                      GetSpatialExtents(double _spatialExtents[6])
     {
-	for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i];
+        for (int i=0; i<6; i++) _spatialExtents[i] = minMaxSpatialBounds[i];
     }
     void                      GetAvgPatchExtents(double _avgPatchExtents[6])
     {
-	for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i];
+        for (int i=0; i<3; i++) _avgPatchExtents[i] = avgPatchExtents[i];
     }
     void                      GetCellDimension(double _cellDimension[6])
     {
-	for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i];
+        for (int i=0; i<3; i++) _cellDimension[i] = cellDimension[i];
     }
     void                      GetProjectedExents(int _projectedExtents[4])
     {
-	for (int i=0; i<4; i++) _projectedExtents[i]=projectedImageExtents[i];
+        for (int i=0; i<4; i++) _projectedExtents[i]=projectedImageExtents[i];
     }
     //
     // Getting image information
@@ -246,7 +246,7 @@ public:
     // gets the max number of patches it could have
     int                       GetTotalAssignedPatches() 
     {
-	return totalAssignedPatches;
+        return totalAssignedPatches;
     }    
     // gets the number of patches
     int                       GetImgPatchSize(){ return patchCount;};
@@ -256,23 +256,23 @@ public:
     { return imageMetaPatchVector.at(patchId); }
     // gets the image & erase its existence
     void                      GetAndDelImgData
-	(int patchId, slivr::ImgData &tempImgData);
+        (int patchId, slivr::ImgData &tempImgData);
 
     // deletes patches
     void                      DelImgPatches();
     // Set background buffer
     void                      SetDepthBuffer(float *_zBuffer, int _size)
     {
-	depthBuffer = _zBuffer;
+        depthBuffer = _zBuffer;
     }
     void                      SetRGBBuffer(unsigned char *_colorBuffer, 
-					   int _width, int _height)
+                                           int _width, int _height)
     {
-	rgbColorBuffer = _colorBuffer;
+        rgbColorBuffer = _colorBuffer;
     }
     void                      SetBufferExtents(int _extents[4])
     {
-	for (int i=0;i<4; i++) bufferExtents[i] = _extents[i];
+        for (int i=0;i<4; i++) bufferExtents[i] = _extents[i];
     }
 
     // Qi add for ospray  
@@ -280,10 +280,10 @@ public:
     void SetRendererSampleRate(double r) { rendererSampleRate = r; }
     void SetFullImageExtents(int extents[4]) 
     {
-	fullImageExtents[0] = extents[0];
-	fullImageExtents[1] = extents[1];
-	fullImageExtents[2] = extents[2];	
-	fullImageExtents[3] = extents[3];
+        fullImageExtents[0] = extents[0];
+        fullImageExtents[1] = extents[1];
+        fullImageExtents[2] = extents[2];       
+        fullImageExtents[3] = extents[3];
     }
 
 protected:
@@ -384,5 +384,3 @@ protected:
 };
 
 #endif
-
-

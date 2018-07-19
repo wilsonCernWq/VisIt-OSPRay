@@ -59,46 +59,46 @@
 namespace slivr
 {
     double ProjectWorldToScreen
-	(const double worldCoord[3], 
-	 const int screenWidth, const int screenHeight,	 
-	 const double panPercentage[2], const double imageZoom,
-	 vtkMatrix4x4 *mvp, int screenCoord[2]);
+        (const double worldCoord[3], 
+         const int screenWidth, const int screenHeight,  
+         const double panPercentage[2], const double imageZoom,
+         vtkMatrix4x4 *mvp, int screenCoord[2]);
   
     void ProjectScreenToWorld
-	(const int screenCoord[2], const double z,
-	 const int screenWidth, const int screenHeight, 
-	 const double panPercentage[2], const double imageZoom,
-	 vtkMatrix4x4 *imvp, double worldCoord[3]);
+        (const int screenCoord[2], const double z,
+         const int screenWidth, const int screenHeight, 
+         const double panPercentage[2], const double imageZoom,
+         vtkMatrix4x4 *imvp, double worldCoord[3]);
 
     void ProjectScreenToCamera
-	(const int screenCoord[2], const double z,
-	 const int screenWidth, const int screenHeight,
-	 vtkMatrix4x4 *imvp, double cameraCoord[3]);
+        (const int screenCoord[2], const double z,
+         const int screenWidth, const int screenHeight,
+         vtkMatrix4x4 *imvp, double cameraCoord[3]);
 
     inline void ProjectScreenToWorld
-	(const int x, const int y, const double z,
-	 const int screenWidth, const int screenHeight, 
-	 const double panPercentage[2], const double imageZoom,
-	 vtkMatrix4x4 *imvp, double worldCoord[3]) 
+        (const int x, const int y, const double z,
+         const int screenWidth, const int screenHeight, 
+         const double panPercentage[2], const double imageZoom,
+         vtkMatrix4x4 *imvp, double worldCoord[3]) 
     {
-	int screen_coord[2] = {x, y};
-	slivr::ProjectScreenToWorld(screen_coord, z, screenWidth, screenHeight, 
-				    panPercentage, imageZoom, imvp, worldCoord);
+        int screen_coord[2] = {x, y};
+        slivr::ProjectScreenToWorld(screen_coord, z, screenWidth, screenHeight, 
+                                    panPercentage, imageZoom, imvp, worldCoord);
     }
 
     void ProjectWorldToScreenCube
-	(const double cube[6], const int screenWidth, const int screenHeight, 
-	 const double panPercentage[2], const double imageZoom, 
-	 vtkMatrix4x4 *mvp,int screenExtents[4], double depthExtents[2]);
+        (const double cube[6], const int screenWidth, const int screenHeight, 
+         const double panPercentage[2], const double imageZoom, 
+         vtkMatrix4x4 *mvp,int screenExtents[4], double depthExtents[2]);
 
     void CompositeBackground(int screen[2],
-			     int compositedImageExtents[4],
-			     int compositedImageWidth,
-			     int compositedImageHeight,
-			     float *compositedImageBuffer,
-			     unsigned char *opaqueImageColor,
-			     float         *opaqueImageDepth,
-			     unsigned char *&imgFinal);
+                             int compositedImageExtents[4],
+                             int compositedImageWidth,
+                             int compositedImageHeight,
+                             float *compositedImageBuffer,
+                             unsigned char *opaqueImageColor,
+                             float         *opaqueImageDepth,
+                             unsigned char *&imgFinal);
 };
 
 // ****************************************************************************
@@ -115,16 +115,16 @@ namespace slivr
 {
     struct ImgMetaData
     {
-	int procId;       // processor that produced the patch
-	int patchNumber;  // id of the patch on that processor
-	int destProcId;   // destination proc where this patch gets composited
-	int inUse;        // whether the patch is composed locally or not
-	int dims[2];      // height, width
-	int screen_ll[2]; // (lower left)  position in the final image
-	int screen_ur[2]; // (upper right)
-	float avg_z;      // camera space depth of the patch (average)
-	float eye_z;      // camera space z
-	float clip_z;     // clip space z
+        int procId;       // processor that produced the patch
+        int patchNumber;  // id of the patch on that processor
+        int destProcId;   // destination proc where this patch gets composited
+        int inUse;        // whether the patch is composed locally or not
+        int dims[2];      // height, width
+        int screen_ll[2]; // (lower left)  position in the final image
+        int screen_ur[2]; // (upper right)
+        float avg_z;      // camera space depth of the patch (average)
+        float eye_z;      // camera space z
+        float clip_z;     // clip space z
     };
 };
 
@@ -142,14 +142,14 @@ namespace slivr
 {
     struct ImgData
     {
-	// acts as a key
-	int procId;        // processor that produced the patch
-	int patchNumber;   // id of the patch on that processor
-	float *imagePatch; // the image data - RGBA
-	ImgData() { imagePatch = NULL; }
-	bool operator==(const ImgData &a) {
-	    return (patchNumber == a.patchNumber);
-	}
+        // acts as a key
+        int procId;        // processor that produced the patch
+        int patchNumber;   // id of the patch on that processor
+        float *imagePatch; // the image data - RGBA
+        ImgData() { imagePatch = NULL; }
+        bool operator==(const ImgData &a) {
+            return (patchNumber == a.patchNumber);
+        }
     };
 }
 
@@ -167,19 +167,19 @@ namespace slivr
 {
     struct ConvexHull
     {
-	int numPatches;
-	// [0] rows along x axis, [1] rows along y axis, [2] rows along z axis
-	int arrangement[3];
-	float extents[6];       // minX, maxX   minY, maxY   minZ, maxZ
-	float cellDims[3];      // x, y, z
-	float tolerance;  
-	// amount of overlap that is considered ok
-	// -- typically 2 cells for cell centered data
-	// 0: no overlap  
-	// 1: overlpa in Z 
-	// 2: overlap in Y
-	// 3: overlap in Z
-	int Overlap(ConvexHull);
+        int numPatches;
+        // [0] rows along x axis, [1] rows along y axis, [2] rows along z axis
+        int arrangement[3];
+        float extents[6];       // minX, maxX   minY, maxY   minZ, maxZ
+        float cellDims[3];      // x, y, z
+        float tolerance;  
+        // amount of overlap that is considered ok
+        // -- typically 2 cells for cell centered data
+        // 0: no overlap  
+        // 1: overlpa in Z 
+        // 2: overlap in Y
+        // 3: overlap in Z
+        int Overlap(ConvexHull);
     };
 };
 

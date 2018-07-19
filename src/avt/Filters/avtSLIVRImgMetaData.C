@@ -53,16 +53,16 @@ inline bool CheckThreadedBlend_MetaData()
     bool use = true;
     const char* env_use = std::getenv("SLIVR_NOT_USE_THREADED_BLEND");
     if (env_use) { 
-	use = atoi(env_use) <= 0; 
+        use = atoi(env_use) <= 0; 
     }
     if (!use) {
-	ospout << "[avtSLIVRImgMetaData] "
-	       << "Not Using Multi-Threading for Blending"
-	       << std::endl;
+        ospout << "[avtSLIVRImgMetaData] "
+               << "Not Using Multi-Threading for Blending"
+               << std::endl;
     } else {
-	ospout << "[avtSLIVRImgMetaData] "
-	       << "Using Multi-Threading for Blending"
-	       << std::endl;
+        ospout << "[avtSLIVRImgMetaData] "
+               << "Using Multi-Threading for Blending"
+               << std::endl;
     }
     return use;
 }
@@ -89,10 +89,10 @@ double slivr::ProjectWorldToScreen
 {
     // world space coordinate in homogeneous coordinate
     double worldHCoord[4] = {
-	worldCoord[0],
-	worldCoord[1],
-	worldCoord[2],
-	1.0
+        worldCoord[0],
+        worldCoord[1],
+        worldCoord[2],
+        1.0
     };
 
     // world to clip space (-1 ~ 1)
@@ -100,28 +100,28 @@ double slivr::ProjectWorldToScreen
     mvp->MultiplyPoint(worldHCoord, clipHCoord);
     if (clipHCoord[3] == 0.0)
     {
-	std::cerr << "slivr::ProjectWorldToScreen "
-		  << "Zero Division During Projection" 
-		  << std::endl;
-	std::cerr << "world coordinates: (" 
-		  << worldHCoord[0] << ", " 
-		  << worldHCoord[1] << ", " 
-		  << worldHCoord[2] << ", " 
-		  << worldHCoord[3] << ")" << std::endl
-		  << "clip space coordinate: ("
-		  << clipHCoord[0] << ", " 
-		  << clipHCoord[1] << ", " 
-		  << clipHCoord[2] << ", "
-		  << clipHCoord[3] << std::endl;
-	std::cerr << "Matrix: " << *mvp << std::endl;
-	EXCEPTION1(VisItException, "Zero Division During Projection");
+        std::cerr << "slivr::ProjectWorldToScreen "
+                  << "Zero Division During Projection" 
+                  << std::endl;
+        std::cerr << "world coordinates: (" 
+                  << worldHCoord[0] << ", " 
+                  << worldHCoord[1] << ", " 
+                  << worldHCoord[2] << ", " 
+                  << worldHCoord[3] << ")" << std::endl
+                  << "clip space coordinate: ("
+                  << clipHCoord[0] << ", " 
+                  << clipHCoord[1] << ", " 
+                  << clipHCoord[2] << ", "
+                  << clipHCoord[3] << std::endl;
+        std::cerr << "Matrix: " << *mvp << std::endl;
+        EXCEPTION1(VisItException, "Zero Division During Projection");
     }
 
     // normalize clip space coordinate
     double clipCoord[3] = {
-	clipHCoord[0]/clipHCoord[3],
-	clipHCoord[1]/clipHCoord[3],
-	clipHCoord[2]/clipHCoord[3]
+        clipHCoord[0]/clipHCoord[3],
+        clipHCoord[1]/clipHCoord[3],
+        clipHCoord[2]/clipHCoord[3]
     };
 
     // screen coordinates (int integer)
@@ -145,36 +145,36 @@ slivr::ProjectScreenToWorld
 {
     // remove panning
     const int x = 
-	screenCoord[0] - round(screenWidth*panPercentage[0]*imageZoom);
+        screenCoord[0] - round(screenWidth*panPercentage[0]*imageZoom);
     const int y = 
-	screenCoord[1] - round(screenHeight*panPercentage[1]*imageZoom);
+        screenCoord[1] - round(screenHeight*panPercentage[1]*imageZoom);
     
     // do projection
     double worldHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
-	(x - screenWidth/2.0) /(screenWidth/2.0),
-	(y - screenHeight/2.0)/(screenHeight/2.0),
-	z, 1.0};
+        (x - screenWidth/2.0) /(screenWidth/2.0),
+        (y - screenHeight/2.0)/(screenHeight/2.0),
+        z, 1.0};
     imvp->MultiplyPoint(clipHCoord, worldHCoord);
     if (worldHCoord[3] == 0) {
-	debug5 << "slivr::ProjectScreenToWorld "
-	       << "Zero Division During Projection" 
-	       << std::endl;
-	std::cerr << "world coordinates: (" 
-		  << worldHCoord[0] << ", " 
-		  << worldHCoord[1] << ", " 
-		  << worldHCoord[2] << ", " 
-		  << worldHCoord[3] << ")" << std::endl
-		  << "clip space coordinate: ("
-		  << clipHCoord[0] << ", " 
-		  << clipHCoord[1] << ", " 
-		  << clipHCoord[2] << ", "
-		  << clipHCoord[3] << std::endl;
-	std::cerr << "Matrix: " << *imvp << std::endl;
-	EXCEPTION1(VisItException, "Zero Division During Projection");
+        debug5 << "slivr::ProjectScreenToWorld "
+               << "Zero Division During Projection" 
+               << std::endl;
+        std::cerr << "world coordinates: (" 
+                  << worldHCoord[0] << ", " 
+                  << worldHCoord[1] << ", " 
+                  << worldHCoord[2] << ", " 
+                  << worldHCoord[3] << ")" << std::endl
+                  << "clip space coordinate: ("
+                  << clipHCoord[0] << ", " 
+                  << clipHCoord[1] << ", " 
+                  << clipHCoord[2] << ", "
+                  << clipHCoord[3] << std::endl;
+        std::cerr << "Matrix: " << *imvp << std::endl;
+        EXCEPTION1(VisItException, "Zero Division During Projection");
     }
     
-    // normalize world space coordinate	
+    // normalize world space coordinate 
     worldCoord[0] = worldHCoord[0]/worldHCoord[3];
     worldCoord[1] = worldHCoord[1]/worldHCoord[3];
     worldCoord[2] = worldHCoord[2]/worldHCoord[3];
@@ -193,30 +193,30 @@ slivr::ProjectScreenToCamera
     // do projection
     double cameraHCoord[4] = {0,0,0,1};
     double clipHCoord[4] = {
-	(x - screenWidth /2.0)/(screenWidth /2.0),
-	(y - screenHeight/2.0)/(screenHeight/2.0),
-	z,
-	1.0};
+        (x - screenWidth /2.0)/(screenWidth /2.0),
+        (y - screenHeight/2.0)/(screenHeight/2.0),
+        z,
+        1.0};
     imvp->MultiplyPoint(clipHCoord, cameraHCoord);
     if (cameraHCoord[3] == 0) {
-	debug5 << "slivr::ProjectScreenToWorld "
-	       << "Zero Division During Projection" 
-	       << std::endl;
-	std::cerr << "world coordinates: (" 
-		  << cameraHCoord[0] << ", " 
-		  << cameraHCoord[1] << ", " 
-		  << cameraHCoord[2] << ", " 
-		  << cameraHCoord[3] << ")" << std::endl
-		  << "clip space coordinate: ("
-		  << clipHCoord[0] << ", " 
-		  << clipHCoord[1] << ", " 
-		  << clipHCoord[2] << ", "
-		  << clipHCoord[3] << std::endl;
-	std::cerr << "Matrix: " << *imvp << std::endl;
-	EXCEPTION1(VisItException, "Zero Division During Projection");
+        debug5 << "slivr::ProjectScreenToWorld "
+               << "Zero Division During Projection" 
+               << std::endl;
+        std::cerr << "world coordinates: (" 
+                  << cameraHCoord[0] << ", " 
+                  << cameraHCoord[1] << ", " 
+                  << cameraHCoord[2] << ", " 
+                  << cameraHCoord[3] << ")" << std::endl
+                  << "clip space coordinate: ("
+                  << clipHCoord[0] << ", " 
+                  << clipHCoord[1] << ", " 
+                  << clipHCoord[2] << ", "
+                  << clipHCoord[3] << std::endl;
+        std::cerr << "Matrix: " << *imvp << std::endl;
+        EXCEPTION1(VisItException, "Zero Division During Projection");
     }
     
-    // normalize world space coordinate	
+    // normalize world space coordinate 
     cameraCoord[0] = cameraHCoord[0]/cameraHCoord[3];
     cameraCoord[1] = cameraHCoord[1]/cameraHCoord[3];
     cameraCoord[2] = cameraHCoord[2]/cameraHCoord[3];
@@ -238,15 +238,15 @@ slivr::ProjectWorldToScreenCube
     float coordinates[8][3];
     coordinates[0][0] = cube[0];   
     coordinates[0][1] = cube[2];   
-    coordinates[0][2] = cube[4];	
+    coordinates[0][2] = cube[4];        
 
     coordinates[1][0] = cube[1];   
     coordinates[1][1] = cube[2];   
-    coordinates[1][2] = cube[4];	
+    coordinates[1][2] = cube[4];        
 
     coordinates[2][0] = cube[1];  
     coordinates[2][1] = cube[3];
-    coordinates[2][2] = cube[4];	
+    coordinates[2][2] = cube[4];        
 
     coordinates[3][0] = cube[0]; 
     coordinates[3][1] = cube[3]; 
@@ -258,7 +258,7 @@ slivr::ProjectWorldToScreenCube
 
     coordinates[5][0] = cube[1]; 
     coordinates[5][1] = cube[2]; 
-    coordinates[5][2] = cube[5];	
+    coordinates[5][2] = cube[5];        
 
     coordinates[6][0] = cube[1]; 
     coordinates[6][1] = cube[3];
@@ -272,107 +272,107 @@ slivr::ProjectWorldToScreenCube
     int screenCoord[2]; double depth;
     for (int i=0; i<8; i++)
     {
-	worldCoord[0] = coordinates[i][0];
-	worldCoord[1] = coordinates[i][1];
-	worldCoord[2] = coordinates[i][2];
-	depth = slivr::ProjectWorldToScreen
-	    (worldCoord, screenWidth, screenHeight, 
-	     panPercentage, imageZoom, mvp, screenCoord);
-	// clamp values
-	screenCoord[0] = CLAMP(screenCoord[0], 0, screenWidth);
-	screenCoord[1] = CLAMP(screenCoord[1], 0, screenHeight);
-	screenExtents[0] = xMin = std::min(xMin, screenCoord[0]);
-	screenExtents[1] = xMax = std::max(xMax, screenCoord[0]);
-	screenExtents[2] = yMin = std::min(yMin, screenCoord[1]);
-	screenExtents[3] = yMax = std::max(yMax, screenCoord[1]);
-	depthExtents[0] = zMin = std::min(zMin, depth);
-	depthExtents[1] = zMax = std::max(zMax, depth);
+        worldCoord[0] = coordinates[i][0];
+        worldCoord[1] = coordinates[i][1];
+        worldCoord[2] = coordinates[i][2];
+        depth = slivr::ProjectWorldToScreen
+            (worldCoord, screenWidth, screenHeight, 
+             panPercentage, imageZoom, mvp, screenCoord);
+        // clamp values
+        screenCoord[0] = CLAMP(screenCoord[0], 0, screenWidth);
+        screenCoord[1] = CLAMP(screenCoord[1], 0, screenHeight);
+        screenExtents[0] = xMin = std::min(xMin, screenCoord[0]);
+        screenExtents[1] = xMax = std::max(xMax, screenCoord[0]);
+        screenExtents[2] = yMin = std::min(yMin, screenCoord[1]);
+        screenExtents[3] = yMax = std::max(yMax, screenCoord[1]);
+        depthExtents[0] = zMin = std::min(zMin, depth);
+        depthExtents[1] = zMax = std::max(zMax, depth);
     }
 }
 
 
 void
 slivr::CompositeBackground(int screen[2],
-			 int compositedImageExtents[4],
-			 int compositedImageWidth,
-			 int compositedImageHeight,
-			 float *compositedImageBuffer,
-			 unsigned char *opaqueImageColor,
-			 float         *opaqueImageDepth,
-			 unsigned char *&imgFinal)
+                         int compositedImageExtents[4],
+                         int compositedImageWidth,
+                         int compositedImageHeight,
+                         float *compositedImageBuffer,
+                         unsigned char *opaqueImageColor,
+                         float         *opaqueImageDepth,
+                         unsigned char *&imgFinal)
 {
 #ifdef VISIT_OSPRAY
     if (UseThreadedBlend_MetaData) {
     visit::CompositeBackground(screen,
-			       compositedImageExtents,
-			       compositedImageWidth,
-			       compositedImageHeight,
-			       compositedImageBuffer,
-			       opaqueImageColor,
-			       opaqueImageDepth,
-			       imgFinal);
+                               compositedImageExtents,
+                               compositedImageWidth,
+                               compositedImageHeight,
+                               compositedImageBuffer,
+                               opaqueImageColor,
+                               opaqueImageDepth,
+                               imgFinal);
     } else {
 #endif
     for (int y = 0; y < screen[1]; y++)
     {
-	for (int x = 0; x < screen[0]; x++)
-	{
-	    int indexScreen     = y * screen[0] + x;
-	    int indexComposited =
-		(y - compositedImageExtents[2]) * compositedImageWidth +
-		(x - compositedImageExtents[0]);
+        for (int x = 0; x < screen[0]; x++)
+        {
+            int indexScreen     = y * screen[0] + x;
+            int indexComposited =
+                (y - compositedImageExtents[2]) * compositedImageWidth +
+                (x - compositedImageExtents[0]);
 
-	    bool insideComposited = 
-		((x >= compositedImageExtents[0] && 
-		  x < compositedImageExtents[1]) &&
-		 (y >= compositedImageExtents[2] && 
-		  y < compositedImageExtents[3]));
+            bool insideComposited = 
+                ((x >= compositedImageExtents[0] && 
+                  x < compositedImageExtents[1]) &&
+                 (y >= compositedImageExtents[2] && 
+                  y < compositedImageExtents[3]));
 
-	    if (insideComposited)
-	    {
-		if (compositedImageBuffer[indexComposited*4 + 3] == 0)
-		{
-		    // No data from rendering here! - Good
-		    imgFinal[indexScreen * 3 + 0] = 
-			opaqueImageColor[indexScreen * 3 + 0];
-		    imgFinal[indexScreen * 3 + 1] = 
-			opaqueImageColor[indexScreen * 3 + 1];
-		    imgFinal[indexScreen * 3 + 2] = 
-			opaqueImageColor[indexScreen * 3 + 2];
-		}
-		else
-		{
-		    // Volume in front
-		    float alpha = 
-			(1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
-		    imgFinal[indexScreen * 3 + 0] = 
-			CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 0] *
-			      255.f,
-			      0.f, 255.f);
-		    imgFinal[indexScreen * 3 + 1] = 
-			CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 1] *
-			      255.f,
-			      0.f, 255.f);
-		    imgFinal[indexScreen * 3 + 2] =
-			CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
-			      compositedImageBuffer[indexComposited * 4 + 2] *
-			      255.f,
-			      0.f, 255.f);
-		}
-	    }
-	    else
-	    {
-		// Outside bounding box: Use the background : Good
-		imgFinal[indexScreen * 3 + 0] = 
-		    opaqueImageColor[indexScreen * 3 + 0];
-		imgFinal[indexScreen * 3 + 1] =
-		    opaqueImageColor[indexScreen * 3 + 1];
-		imgFinal[indexScreen * 3 + 2] =
-		    opaqueImageColor[indexScreen * 3 + 2];
-	    }
-	}
+            if (insideComposited)
+            {
+                if (compositedImageBuffer[indexComposited*4 + 3] == 0)
+                {
+                    // No data from rendering here! - Good
+                    imgFinal[indexScreen * 3 + 0] = 
+                        opaqueImageColor[indexScreen * 3 + 0];
+                    imgFinal[indexScreen * 3 + 1] = 
+                        opaqueImageColor[indexScreen * 3 + 1];
+                    imgFinal[indexScreen * 3 + 2] = 
+                        opaqueImageColor[indexScreen * 3 + 2];
+                }
+                else
+                {
+                    // Volume in front
+                    float alpha = 
+                        (1.0 - compositedImageBuffer[indexComposited * 4 + 3]);
+                    imgFinal[indexScreen * 3 + 0] = 
+                        CLAMP(opaqueImageColor[indexScreen * 3 + 0] * alpha +
+                              compositedImageBuffer[indexComposited * 4 + 0] *
+                              255.f,
+                              0.f, 255.f);
+                    imgFinal[indexScreen * 3 + 1] = 
+                        CLAMP(opaqueImageColor[indexScreen * 3 + 1] * alpha +
+                              compositedImageBuffer[indexComposited * 4 + 1] *
+                              255.f,
+                              0.f, 255.f);
+                    imgFinal[indexScreen * 3 + 2] =
+                        CLAMP(opaqueImageColor[indexScreen * 3 + 2] * alpha +
+                              compositedImageBuffer[indexComposited * 4 + 2] *
+                              255.f,
+                              0.f, 255.f);
+                }
+            }
+            else
+            {
+                // Outside bounding box: Use the background : Good
+                imgFinal[indexScreen * 3 + 0] = 
+                    opaqueImageColor[indexScreen * 3 + 0];
+                imgFinal[indexScreen * 3 + 1] =
+                    opaqueImageColor[indexScreen * 3 + 1];
+                imgFinal[indexScreen * 3 + 2] =
+                    opaqueImageColor[indexScreen * 3 + 2];
+            }
+        }
     }
 #ifdef VISIT_OSPRAY
     }
@@ -394,7 +394,7 @@ slivr::CompositeBackground(int screen[2],
 void WriteArrayToPPM(std::string filename, float * image, int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
-			     std::ios::out | std::ios::binary);
+                             std::ios::out | std::ios::binary);
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
@@ -413,33 +413,33 @@ void WriteArrayToPPM(std::string filename, float * image, int dimX, int dimY)
 }
 
 void WriteArrayToPPM(std::string filename, 
-		     unsigned char *image, 
-		     int dimX, int dimY)
+                     unsigned char *image, 
+                     int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
-			     std::ios::out | std::ios::binary);
+                             std::ios::out | std::ios::binary);
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
-	outputFile.write(reinterpret_cast<char*>(&image[y * dimX * 3]), 
-			 dimX * 3);
+        outputFile.write(reinterpret_cast<char*>(&image[y * dimX * 3]), 
+                         dimX * 3);
     } 
     outputFile.close();
 }
 
 void WriteArrayGrayToPPM(std::string filename, 
-			 float* image, 
-			 int dimX, int dimY)
+                         float* image, 
+                         int dimX, int dimY)
 {
     std::ofstream outputFile((filename+ ".ppm").c_str(), 
-			     std::ios::out | std::ios::binary);
+                             std::ios::out | std::ios::binary);
     outputFile <<  "P6\n" << dimX << "\n" << dimY << "\n" << 255 << "\n"; 
     for (int y=dimY-1; y>=0; --y)
     {
         for (int x=0; x<dimX; ++x)
         {
             int index = (y * dimX + x);
-	    char var = CLAMP(image[index], 0.f, 1.f) * 255;
+            char var = CLAMP(image[index], 0.f, 1.f) * 255;
             char color[3];
             color[0] = var;
             color[1] = var;
@@ -463,28 +463,28 @@ void WriteArrayGrayToPPM(std::string filename,
 int slivr::ConvexHull::Overlap(ConvexHull _hull) 
 {
     if ( (_hull.extents[1] < extents[0]) || 
-	 (_hull.extents[0] > extents[1]) )   // No overlap in X
+         (_hull.extents[0] > extents[1]) )   // No overlap in X
     {
-	if ( (_hull.extents[3] < extents[2]) || 
-	     (_hull.extents[2] > extents[3]) )   // No overlap in Y
-	{
-	    if ( (_hull.extents[5] < extents[4]) ||
-		 (_hull.extents[4] > extents[5]) )   // No overlap in Z
-	    {
-		return 0;
-	    }
-	    else
-	    {
-		return 3;
-	    }
-	}
-	else
-	{
-	    return 2;
-	}
+        if ( (_hull.extents[3] < extents[2]) || 
+             (_hull.extents[2] > extents[3]) )   // No overlap in Y
+        {
+            if ( (_hull.extents[5] < extents[4]) ||
+                 (_hull.extents[4] > extents[5]) )   // No overlap in Z
+            {
+                return 0;
+            }
+            else
+            {
+                return 3;
+            }
+        }
+        else
+        {
+            return 2;
+        }
     }
     else
     {
-	return 1;
+        return 1;
     }
 }

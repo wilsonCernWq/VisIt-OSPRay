@@ -87,43 +87,43 @@ namespace slivr
     inline bool InitVerbose() 
     {
 #ifndef VISIT_OSPRAY
-	return false;
+        return false;
 #else
         // ********************************************************************
-	//
-	// OSPRay defines following environmental variables
-	//
-	// OSPRAY_THREADS
-	// OSPRAY_SET_AFFINITY
-	// OSPRAY_DEBUG
-	// OSPRAY_LOG_LEVEL
-	// OSPRAY_LOG_OUTPUT
-	//
-	// We define one more environmental variable here
-	//
-	// OSPRAY_VERBOSE
-	//
+        //
+        // OSPRay defines following environmental variables
+        //
+        // OSPRAY_THREADS
+        // OSPRAY_SET_AFFINITY
+        // OSPRAY_DEBUG
+        // OSPRAY_LOG_LEVEL
+        // OSPRAY_LOG_OUTPUT
+        //
+        // We define one more environmental variable here
+        //
+        // OSPRAY_VERBOSE
+        //
         // ********************************************************************
-	const char* env_verbose   = std::getenv("OSPRAY_VERBOSE");
-	const char* env_debug     = std::getenv("OSPRAY_DEBUG");
-	const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");	
-	bool verbose = false;
-	if (env_verbose) {
-	    if (atoi(env_verbose) > 0) { verbose = true; }
-	}
-	if (env_debug) {
-	    if (atoi(env_debug) > 0) { verbose = true; }
-	}
-	if (env_log_level) {
-	    if (atoi(env_log_level) > 0) { verbose = true; }
-	}
-	if (verbose) {
-	    slivr::osp_out = &std::cout;
-	    slivr::osp_err = &std::cerr;
-	    return true;
-	} else {
-	    return false;
-	}
+        const char* env_verbose   = std::getenv("OSPRAY_VERBOSE");
+        const char* env_debug     = std::getenv("OSPRAY_DEBUG");
+        const char* env_log_level = std::getenv("OSPRAY_LOG_LEVEL");    
+        bool verbose = false;
+        if (env_verbose) {
+            if (atoi(env_verbose) > 0) { verbose = true; }
+        }
+        if (env_debug) {
+            if (atoi(env_debug) > 0) { verbose = true; }
+        }
+        if (env_log_level) {
+            if (atoi(env_log_level) > 0) { verbose = true; }
+        }
+        if (verbose) {
+            slivr::osp_out = &std::cout;
+            slivr::osp_err = &std::cerr;
+            return true;
+        } else {
+            return false;
+        }
 #endif
     }
 
@@ -134,27 +134,27 @@ namespace slivr
     // ************************************************************************
     inline int InitOSPRaySpp() {
 #ifndef VISIT_OSPRAY
-	return 1;
+        return 1;
 #else
-	int spp = 1;
-	const char* env_spp = std::getenv("OSPRAY_SPP");
-	if (env_spp) {
-	    if (atoi(env_spp) > 0) { 
-		spp = atoi(env_spp); 
-	    }
-	}	
-	return spp;
+        int spp = 1;
+        const char* env_spp = std::getenv("OSPRAY_SPP");
+        if (env_spp) {
+            if (atoi(env_spp) > 0) { 
+                spp = atoi(env_spp); 
+            }
+        }       
+        return spp;
 #endif
     }
     inline bool CheckVerbose() // initialize OSPRAY_VERBOSE
     {
-	static bool OSPRAY_VERBOSE = slivr::InitVerbose();
-	return OSPRAY_VERBOSE;
+        static bool OSPRAY_VERBOSE = slivr::InitVerbose();
+        return OSPRAY_VERBOSE;
     }
     inline int CheckOSPRaySpp()
     {
-	static int spp = InitOSPRaySpp();
-	return spp;
+        static int spp = InitOSPRaySpp();
+        return spp;
     }
 };
 
@@ -185,12 +185,12 @@ class OSPVisItVolume
 {
  public:
     void Set(int type, void *ptr, 
-	     double *X, double *Y, double *Z, 
-	     int nX, int nY, int nZ, 
-	     double volumePBox[6], double volumeBBox[6],
-	     double mtl[4], float sr, bool shading)
+             double *X, double *Y, double *Z, 
+             int nX, int nY, int nZ, 
+             double volumePBox[6], double volumeBBox[6],
+             double mtl[4], float sr, bool shading)
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else
     {};
 #endif
@@ -240,43 +240,43 @@ class OSPVisItVolume
  public:
     // constructor
     OSPVisItVolume(int id) {
-	// objects owned by the struct
-	world           = NULL;
-	worldType       = OSP_INVALID;
-	framebuffer     = NULL;
-	framebufferData = NULL;
-	framebufferBg   = NULL;
-	volume          = NULL;
-	volumeType      = OSP_INVALID;
-	voxelDataType   = OSP_VOID_PTR;
-	voxelData       = NULL;
-	voxelSize       = 0;
-	dataPtr         = NULL;
-	dataType        = "";
-	// metadata for volume
-	patchId = id;    
-	finished      = false; 
-	enableShading = false;
-	enableDVR     = false;
-	specularKs    = 1.0f;
-	specularNs    = 15.0f;
-	samplingRate  = 3.0f;
-	// geometric parameters for volume
-	regionSize.x  = regionSize.y  = regionSize.z  = 0;
-	regionStart.x = regionStart.y = regionStart.z = 0.0f;
-	regionStop.x  = regionStop.y  = regionStop.z  = 0.0f;
-	regionSpacing.x   = regionSpacing.y   = regionSpacing.z   = 0.0f;
-	regionUpperClip.x = regionUpperClip.y = regionUpperClip.z = 0.0f;
-	regionLowerClip.x = regionLowerClip.y = regionLowerClip.z = 0.0f;
-	regionScaling.x   = regionScaling.y   = regionScaling.z   = 1.0f;
+        // objects owned by the struct
+        world           = NULL;
+        worldType       = OSP_INVALID;
+        framebuffer     = NULL;
+        framebufferData = NULL;
+        framebufferBg   = NULL;
+        volume          = NULL;
+        volumeType      = OSP_INVALID;
+        voxelDataType   = OSP_VOID_PTR;
+        voxelData       = NULL;
+        voxelSize       = 0;
+        dataPtr         = NULL;
+        dataType        = "";
+        // metadata for volume
+        patchId = id;    
+        finished      = false; 
+        enableShading = false;
+        enableDVR     = false;
+        specularKs    = 1.0f;
+        specularNs    = 15.0f;
+        samplingRate  = 3.0f;
+        // geometric parameters for volume
+        regionSize.x  = regionSize.y  = regionSize.z  = 0;
+        regionStart.x = regionStart.y = regionStart.z = 0.0f;
+        regionStop.x  = regionStop.y  = regionStop.z  = 0.0f;
+        regionSpacing.x   = regionSpacing.y   = regionSpacing.z   = 0.0f;
+        regionUpperClip.x = regionUpperClip.y = regionUpperClip.z = 0.0f;
+        regionLowerClip.x = regionLowerClip.y = regionLowerClip.z = 0.0f;
+        regionScaling.x   = regionScaling.y   = regionScaling.z   = 1.0f;
     }
 
     // destructor
     ~OSPVisItVolume() { Clean(); }    
     void Clean() {
-	CleanFB();
-	CleanVolume();	
-	CleanWorld();
+        CleanFB();
+        CleanVolume();  
+        CleanWorld();
     }
     
     // other function
@@ -290,28 +290,28 @@ class OSPVisItVolume
     void InitWorld();
     void SetWorld();
     void CleanWorld() {
-	if (world != NULL) {	    
-	    ospRelease(world);
-	    world = NULL;
-	}
-	worldType = OSP_INVALID;
+        if (world != NULL) {        
+            ospRelease(world);
+            world = NULL;
+        }
+        worldType = OSP_INVALID;
     }
-	
+        
     // ospVolume component
     void InitVolume(unsigned char type = OSP_SHARED_STRUCTURED_VOLUME); 
     OSPVolume GetVolume() { return volume; }
     void SetVolume(int type, void *ptr,
-		   double *X, double *Y, double *Z, 
-		   int nX, int nY, int nZ,
-		   double volumePBox[6], 
-		   double volumeBBox[6]);
-    void CleanVolume() {	
-	if (volume != NULL) { ospRelease(volume); volume = NULL; }
-	if (voxelData != NULL) { 
-	    ospRelease(voxelData);
-	    voxelData = NULL; 
-	}
-	volumeType = OSP_INVALID;
+                   double *X, double *Y, double *Z, 
+                   int nX, int nY, int nZ,
+                   double volumePBox[6], 
+                   double volumeBBox[6]);
+    void CleanVolume() {        
+        if (volume != NULL) { ospRelease(volume); volume = NULL; }
+        if (voxelData != NULL) { 
+            ospRelease(voxelData);
+            voxelData = NULL; 
+        }
+        volumeType = OSP_INVALID;
     }
 
     // framebuffer component     
@@ -319,18 +319,18 @@ class OSPVisItVolume
     void RenderFB();
     float* GetFBData();
     void CleanFB() {
-	if (framebufferData != NULL) { 
-	    ospUnmapFrameBuffer(framebufferData, framebuffer); 
-	    framebufferData = NULL;
-	}
-	if (framebuffer != NULL) { 
-	    ospFreeFrameBuffer(framebuffer); 	    
-	    framebuffer = NULL;
-	}
-	if (framebufferBg != NULL) {
-	    ospRelease(framebufferBg); 	    
-	    framebufferBg = NULL;
-	}
+        if (framebufferData != NULL) { 
+            ospUnmapFrameBuffer(framebufferData, framebuffer); 
+            framebufferData = NULL;
+        }
+        if (framebuffer != NULL) { 
+            ospFreeFrameBuffer(framebuffer);        
+            framebuffer = NULL;
+        }
+        if (framebufferBg != NULL) {
+            ospRelease(framebufferBg);      
+            framebufferBg = NULL;
+        }
     }
 #endif//VISIT_OSPRAY
 };
@@ -355,10 +355,10 @@ struct OSPVisItLight
     OSPLight sLight; // constant sun light
     OSPData  lightdata;
     OSPVisItLight() {
-	aLight = NULL;
-	dLight = NULL;
-	sLight = NULL;
-	lightdata = NULL;
+        aLight = NULL;
+        dLight = NULL;
+        sLight = NULL;
+        lightdata = NULL;
     }
     ~OSPVisItLight() { Clean(); }
     void Clean() {/* TODO should we delete them? */}
@@ -383,8 +383,8 @@ struct OSPVisItRenderer
 {
 public:
     enum State {
-	INVALID, /* TODO do we need this actually ? */
-	SCIVIS,
+        INVALID, /* TODO do we need this actually ? */
+        SCIVIS,
     } rendererType;
 
 #ifdef VISIT_OSPRAY
@@ -401,22 +401,22 @@ public:
     osp::vec2i   maxDepthSize;    // buffer extents (minX, maxX, minY, max)  
 public:
     OSPVisItRenderer() {
-	renderer = NULL;
-	rendererType = INVALID;
-	aoSamples = 0;
-	spp = slivr::CheckOSPRaySpp();
-	flagOneSidedLighting = false;
-	flagShadowsEnabled = false;
-	flagAoTransparencyEnabled = false;
+        renderer = NULL;
+        rendererType = INVALID;
+        aoSamples = 0;
+        spp = slivr::CheckOSPRaySpp();
+        flagOneSidedLighting = false;
+        flagShadowsEnabled = false;
+        flagAoTransparencyEnabled = false;
     }
     ~OSPVisItRenderer() { Clean(); }
     void Clean() {
-	if (renderer != NULL) {
-	    lights.Clean();
-	    ospRelease(renderer);
-	    renderer = NULL;
-	    rendererType = INVALID;
-	}
+        if (renderer != NULL) {
+            lights.Clean();
+            ospRelease(renderer);
+            renderer = NULL;
+            rendererType = INVALID;
+        }
     }
     void SetCamera(const OSPCamera& camera);
     void SetModel(const OSPModel& world);
@@ -424,14 +424,14 @@ public:
 
     void Init()
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else 
     {};
 #endif
 
     void Set(double materialProperties[4], double viewDirection[3], bool)
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else 
     {};
 #endif
@@ -454,38 +454,38 @@ struct OSPVisItCamera
 {
 public:
     enum State {
-	INVALID,
-	PERSPECTIVE,
-	ORTHOGRAPHIC,
+        INVALID,
+        PERSPECTIVE,
+        ORTHOGRAPHIC,
     } cameraType;
 
     void Init(State type)
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else 
     {};
 #endif
 
     void Set(const double camp[3], 
-	     const double camf[3], 
-	     const double camu[3], 
-	     const double camd[3],
-	     const double sceneSize[2],
-	     const double aspect, 
-	     const double fovy, 
-	     const double zoom_ratio, 
-	     const double pan_ratio[2],
-	     const int bufferExtents[4],
-	     const int screenExtents[2])
+             const double camf[3], 
+             const double camu[3], 
+             const double camd[3],
+             const double sceneSize[2],
+             const double aspect, 
+             const double fovy, 
+             const double zoom_ratio, 
+             const double pan_ratio[2],
+             const int bufferExtents[4],
+             const int screenExtents[2])
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else 
     {};
 #endif
 
     void SetScreen(float xMin, float xMax, float yMin, float yMax)
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else 
     {};
 #endif
@@ -504,24 +504,24 @@ public:
     osp::vec2f imgS, imgE;
 public:
     OSPVisItCamera() {
-	camera = NULL;
-	cameraType = INVALID;
-	panx = 0.0f;
-	pany = 0.0f;
-	zoom = 1.0f;
-	size[0] = size[1] = 0.0f;
-	imgS.x = 0.f;
-	imgS.y = 0.f;
-	imgE.x = 0.f;
-	imgE.y = 0.f;
+        camera = NULL;
+        cameraType = INVALID;
+        panx = 0.0f;
+        pany = 0.0f;
+        zoom = 1.0f;
+        size[0] = size[1] = 0.0f;
+        imgS.x = 0.f;
+        imgS.y = 0.f;
+        imgE.x = 0.f;
+        imgE.y = 0.f;
     }
     ~OSPVisItCamera() { Clean(); }
     void Clean() {
-	if (camera != NULL) {
-	    ospRelease(camera);
-	    camera = NULL;
-	    cameraType = INVALID;
-	}
+        if (camera != NULL) {
+            ospRelease(camera);
+            camera = NULL;
+            cameraType = INVALID;
+        }
     }
 #endif//VISIT_OSPRAY
 };
@@ -561,31 +561,31 @@ public:
     OSPTransferFunction  transferfcn;
 public:
     OSPVisItTransferFunction() {
-	transferfcn = NULL;
-	transferfcnType = INVALID;
+        transferfcn = NULL;
+        transferfcnType = INVALID;
     }
     void Clean() {
-	if (transferfcn != NULL) {
-	    ospRelease(transferfcn);
-	    transferfcn = NULL;
-	    transferfcnType = INVALID;
-	}
+        if (transferfcn != NULL) {
+            ospRelease(transferfcn);
+            transferfcn = NULL;
+            transferfcnType = INVALID;
+        }
     }
 #endif
 
     void Init()
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else 
     {};
 #endif
 
     void Set(const OSPVisItColor* table,
-	     const unsigned int size, 
-	     const float datamin,
-	     const float datamax)
+             const unsigned int size, 
+             const float datamin,
+             const float datamax)
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else 
     {};
 #endif
@@ -606,6 +606,8 @@ public:
 
 class OSPVisItContext
 {
+public:
+    std::string var;
 #ifdef VISIT_OSPRAY
 private:
     friend class OSPVisItVolume;
@@ -638,10 +640,10 @@ private:
     OSPVisItContext() 
     {
 #ifdef VISIT_OSPRAY
-	regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
-	initialized = false;
+        regionScaling.x = regionScaling.y = regionScaling.z = 1.0f;
+        initialized = false;
 #else
-	EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
+        EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
 #endif//VISIT_OSPRAY
     }
 
@@ -649,13 +651,13 @@ private:
     // We expose this in header because iy will be called in other components
     // where we dont have direct library linkage
     // ************************************************************************
-    ~OSPVisItContext() {	
+    ~OSPVisItContext() {        
 #ifdef VISIT_OSPRAY
-	// clean stuffs
-	volumes.clear();
-	renderer.Clean();
-	camera.Clean();
-	transferfcn.Clean();
+        // clean stuffs
+        volumes.clear();
+        renderer.Clean();
+        camera.Clean();
+        transferfcn.Clean();
 #endif//VISIT_OSPRAY
     }
 
@@ -663,10 +665,10 @@ private:
     // helper
     // ************************************************************************
     void Render(float xMin, float xMax, float yMin, float yMax,
-		int imgWidth, int imgHeight, 
-		float*& dest, OSPVisItVolume* volume)
+                int imgWidth, int imgHeight, 
+                float*& dest, OSPVisItVolume* volume)
 #ifdef VISIT_OSPRAY
-	;
+        ;
 #else 
     { EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG); }; 
 #endif//VISIT_OSPRAY
@@ -676,27 +678,27 @@ private:
     // ************************************************************************
     void SetDataBounds(double dbounds[6]) {
 #ifdef VISIT_OSPRAY
-	for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
+        for (int i = 0; i < 6; ++i) { bounds[i] = dbounds[i]; }
 #else
-	EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
+        EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
 #endif//VISIT_OSPRAY
     }
     void SetBgBuffer(float* depth, int extents[4]) {
 #ifdef VISIT_OSPRAY
-	renderer.maxDepthBuffer = depth;
-	renderer.maxDepthSize.x = extents[1] - extents[0];
-	renderer.maxDepthSize.y = extents[3] - extents[2];
+        renderer.maxDepthBuffer = depth;
+        renderer.maxDepthSize.x = extents[1] - extents[0];
+        renderer.maxDepthSize.y = extents[3] - extents[2];
 #else
-	EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
+        EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
 #endif//VISIT_OSPRAY
     }
     void SetScaling(double s[3]) { 
 #ifdef VISIT_OSPRAY
-	regionScaling.x = (float)s[0];
-	regionScaling.y = (float)s[1];
-	regionScaling.z = (float)s[2]; 
+        regionScaling.x = (float)s[0];
+        regionScaling.y = (float)s[1];
+        regionScaling.z = (float)s[2]; 
 #else
-	EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
+        EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
 #endif//VISIT_OSPRAY
     }
 
@@ -708,10 +710,10 @@ private:
     void InitPatch(int id);
 #else
     void InitOSP(int numThreads = 0) {
-    	EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
+        EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
     };
     void InitPatch(int id) {
-    	EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
+        EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
     };
 #endif//VISIT_OSPRAY
 
@@ -720,9 +722,9 @@ private:
     // ************************************************************************
     OSPVisItVolume* GetPatch(int id) {
 #ifdef VISIT_OSPRAY
-	return &volumes[id]; 
+        return &volumes[id]; 
 #else
-	EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
+        EXCEPTION1(ImproperUseException, OSPRAY_ERROR_MSG);
 #endif//VISIT_OSPRAY
     }
 
@@ -744,23 +746,22 @@ namespace slivr
     double deg2rad (double degrees);
     double rad2deg (double radins);
     void CheckMemoryHere(const std::string& message, 
-			 std::string debugN = "debug5");
+                         std::string debugN = "debug5");
     void CheckMemoryHere(const std::string& message, 
-			 std::ostream& out);
+                         std::ostream& out);
     inline void CheckSectionStart(const std::string& c, const std::string& f,
-				  int& timingDetail, const std::string& str) {
-	debug5 << c << "::" << f << " " << str << " Start" << std::endl;
-	timingDetail = visitTimer->StartTimer();	    
+                                  int& timingDetail, const std::string& str) {
+        debug5 << c << "::" << f << " " << str << " Start" << std::endl;
+        timingDetail = visitTimer->StartTimer();            
     }
     
     inline void CheckSectionStop(const std::string& c, const std::string& f,
-				 int& timingDetail, const std::string& str) {
-	visitTimer->StopTimer(timingDetail, (c + "::" + f + " " + str).c_str());
-	slivr::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(), 
-			       "ospout");
-	debug5 << c << "::" << f << " " << str << " Done" << std::endl;
+                                 int& timingDetail, const std::string& str) {
+        visitTimer->StopTimer(timingDetail, (c + "::" + f + " " + str).c_str());
+        slivr::CheckMemoryHere(("[" + c + "]" + " " + f + " " + str).c_str(), 
+                               "ospout");
+        debug5 << c << "::" << f << " " << str << " Done" << std::endl;
     }
 };
 
-#endif//AVT_OSPRAY_FILTER_H
-
+#endif //AVT_OSPRAY_FILTER_H
