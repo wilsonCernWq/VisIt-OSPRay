@@ -42,7 +42,8 @@ if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --pidx "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
     ARGS=${ARGS}" --slivr --uintah --ospray "
-    ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
+    #ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
+    ARGS=${ARGS}" --pidx  "
 fi
 
 # ------------------------------ 
