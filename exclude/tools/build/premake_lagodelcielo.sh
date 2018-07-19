@@ -40,7 +40,7 @@ if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.0 --tbb "
     ARGS=${ARGS}" --pidx "
     #ARGS=${ARGS}" --skip-opengl-context-check "
-    ARGS=${ARGS}" --mesagl --llvm "
+    ARGS=${ARGS}" --mesagl --llvm --uintah "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
     ARGS=${ARGS}" --ospray --alt-tbb-dir /home/sci/qwu/software/tbb2018_20180618oss "
     ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
