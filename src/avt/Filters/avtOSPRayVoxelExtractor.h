@@ -103,7 +103,7 @@ class     vtkMatrix4x4;
 //    Added support for ospray volume rendering.
 //
 // ****************************************************************************
-using namespace ospray;
+
 class AVTFILTERS_API avtOSPRayVoxelExtractor : public avtVoxelExtractor
 {
   public:

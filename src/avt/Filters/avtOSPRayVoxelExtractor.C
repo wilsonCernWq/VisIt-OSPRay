@@ -194,7 +194,6 @@ avtOSPRayVoxelExtractor::Extract(vtkRectilinearGrid *rgrid,
         ospray::Exception("Attempt to extract an image space grid,"
                           "however, RayCasting OSPRay supports only"
                           "world space grid extraction");
-        //ExtractImageSpaceGrid(rgrid, varnames, varsizes);
     }
 }
 
@@ -267,42 +266,45 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
         // Calculate patch dimensions for point array and cell array
         //   This is to check if the patch is a cell data or a point data
         //   I have to assume cell dataset has a higher priority
+        const size_t varIdx = 
+          std::find(varnames.begin(), varnames.end(), ospray->GetVariableName()) - 
+          varnames.begin();
         if (ncell_arrays > 0) {
-
             ospout << "[avtOSPRayVoxelExtractor] Cell Dataset "
                    << std::endl << std::endl;
             if (DebugStream::Level5() || ospray::visit::CheckVerbose())
-                for (int i = 0; i < ncell_arrays; ++i)
-                    ospout << "  variable_name: "
-                           << rgrid->GetCellData()->GetArray(i)->GetName()
-                           << std::endl
-                           << "  idx_cell_arrays: " << i << std::endl
-                           << "  cell_index["    << i << "] "
-                           << cell_index[i]      << std::endl
-                           << "  cell_size["     << i << "] "
-                           << cell_size[i]       << std::endl
-                           << "  cell_vartypes[" << i << "] "
-                           << cell_vartypes[i]   << std::endl << std::endl;
-            if (rgrid->GetCellData()->GetArray(ncell_arrays-1)->GetName() !=
+              for (int i = 0; i < ncell_arrays; ++i) 
+                ospout << "  variable_name: "
+                       << rgrid->GetCellData()->GetArray(i)->GetName()
+                       << std::endl
+                       << "  idx_cell_arrays: " << i << std::endl
+                       << "  cell_index["    << i << "] "
+                       << cell_index[i]      << std::endl
+                       << "  cell_size["     << i << "] "
+                       << cell_size[i]       << std::endl
+                       << "  cell_vartypes[" << i << "] "
+                       << cell_vartypes[i]   << std::endl << std::endl;
+            if (rgrid->GetCellData()->GetArray(varIdx)->GetName() !=
                 ospray->GetVariableName())
             {
                 ospray::Exception("Error: primary variable " +
                                   ospray->GetVariableName() +
-                                  " not found.");               
+                                  " not found, found " + 
+                                  rgrid->GetCellData()->GetArray(varIdx)->GetName());
             }
-            if (cell_size[ncell_arrays-1] != 1)
+            if (cell_size[varIdx] != 1)
             {
                 ospray::Exception("Error: non-scalar variable " +
                                   ospray->GetVariableName() +
                                   " of length " +
-                                  std::to_string(cell_size[ncell_arrays-1]) +
+                                  std::to_string(cell_size[varIdx]) +
                                   " found.");
             }
             nX = dims[0] - 1;
             nY = dims[1] - 1;
             nZ = dims[2] - 1;
-            volumePointer = cell_arrays[ncell_arrays-1];
-            volumeDataType = cell_vartypes[ncell_arrays-1];
+            volumePointer = cell_arrays[varIdx];
+            volumeDataType = cell_vartypes[varIdx];
         }
         else if (npt_arrays > 0) {
             ospout << "[avtOSPRayVoxelExtractor] Point Dataset "
@@ -319,26 +321,27 @@ avtOSPRayVoxelExtractor::ExtractWorldSpaceGridOSPRay(vtkRectilinearGrid *rgrid,
                            << pt_size[i]       << std::endl
                            << "  pt_vartypes[" << i << "] "
                            << pt_vartypes[i]   << std::endl << std::endl;
-            if (rgrid->GetPointData()->GetArray(npt_arrays-1)->GetName() !=
+            if (rgrid->GetPointData()->GetArray(varIdx)->GetName() !=
                 ospray->GetVariableName())
             {
                 ospray::Exception("Error: primary variable " +
                                   ospray->GetVariableName() +
-                                  " not found.");               
+                                  " not found, found " + 
+                                  rgrid->GetCellData()->GetArray(varIdx)->GetName());
             }
-            if (pt_size[npt_arrays-1] != 1)
+            if (pt_size[varIdx] != 1)
             {
                 ospray::Exception("Error: non-scalar variable " +
                                   ospray->GetVariableName() +
                                   " of length " +
-                                  std::to_string(pt_size[npt_arrays-1]) +
+                                  std::to_string(pt_size[varIdx]) +
                                   " found.");
             }
             nX = dims[0];
             nY = dims[1];
             nZ = dims[2];
-            volumePointer = pt_arrays[npt_arrays-1];
-            volumeDataType = pt_vartypes[npt_arrays-1];
+            volumePointer = pt_arrays[varIdx];
+            volumeDataType = pt_vartypes[varIdx];
         } else {
             ospray::Exception("dataset found is neither nodal nor zonal. "
                               "OSPRay does not know how to handle it.");

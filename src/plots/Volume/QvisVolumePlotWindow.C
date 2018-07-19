@@ -969,7 +969,7 @@ void QvisVolumePlotWindow::CreateSamplingGroups(QWidget *parent, QLayout *pLayou
 
     //ospray group
     CreateOSPRayGroups(parent, pLayout);
-	
+        
     //raycasting group
     {
         raycastingGroup = new QGroupBox(parent);
@@ -1064,7 +1064,7 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
     defaultGroup->setVisible(false);
     raycastingGroup->setVisible(false);
     methodsGroup->setVisible(true);
-	
+        
     tfTabs->setTabEnabled(1, true);
 
     //lighting and material properties group, enabled for all but RayCastingIntegration
@@ -1143,22 +1143,22 @@ void QvisVolumePlotWindow::UpdateSamplingGroup()
 
 #ifdef VISIT_OSPRAY
     case VolumeAttributes::RayCastingOSPRay:
-	osprayGroup->setVisible(true);
-	osprayGroup->setEnabled(true);
-	raycastingGroup->setVisible(true);
-        EnableSamplingMethods(false);	
+        osprayGroup->setVisible(true);
+        osprayGroup->setEnabled(true);
+        raycastingGroup->setVisible(true);
+        EnableSamplingMethods(false);   
         samplesPerRayWidget->setEnabled(true);
-	samplesPerRay->setEnabled(true);
-	samplesPerRayLabel->setEnabled(true);	
+        samplesPerRay->setEnabled(true);
+        samplesPerRayLabel->setEnabled(true);   
         rendererSamplesWidget->setEnabled(true);
         rendererSamples->setEnabled(true);
         rendererSamplesLabel->setEnabled(true);
-	methodsGroup->setVisible(false);
+        methodsGroup->setVisible(false);
         centeredDiffButton->setEnabled(false);
-	sobelButton->setEnabled(false);
-	lightingToggle->setEnabled(true);
-	materialProperties->setEnabled(true);
-	lowGradientGroup->setVisible(false);
+        sobelButton->setEnabled(false);
+        lightingToggle->setEnabled(true);
+        materialProperties->setEnabled(true);
+        lowGradientGroup->setVisible(false);
         UpdateLowGradientGroup(false);
         break;
 #endif
@@ -1320,13 +1320,13 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
             this, SLOT(osprayShadowToggled(bool)));
     // flag: use grid accelerator
     osprayUseGridAcceleratorToggle = new QCheckBox(tr("Grid Accelerator"),
-    						   osprayGroup);
+                                                   osprayGroup);
     connect(osprayUseGridAcceleratorToggle, SIGNAL(toggled(bool)),
             this, SLOT(osprayUseGridAcceleratorToggled(bool)));
     // flag: enable pre integration
     osprayPreIntegrationToggle =
-    	new QCheckBox(tr("Transfer Function Pre-Integration"),
-    		      osprayGroup);
+        new QCheckBox(tr("Transfer Function Pre-Integration"),
+                      osprayGroup);
     connect(osprayPreIntegrationToggle, SIGNAL(toggled(bool)),
             this, SLOT(osprayPreIntegrationToggled(bool)));
     // flag: enable single shade
@@ -1335,12 +1335,12 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
             this, SLOT(ospraySingleShadeToggled(bool)));
     // flag: enable one sided shading
     osprayOneSidedLightingToggle = new QCheckBox(tr("One-Sided Lighting"),
-    						 osprayGroup);
+                                                 osprayGroup);
     connect(osprayOneSidedLightingToggle, SIGNAL(toggled(bool)),
             this, SLOT(osprayOneSidedLightingToggled(bool)));
     // flag: enable ao transparency
     osprayAoTransparencyToggle = new QCheckBox(tr("Ambient Occlusion (AO) Transparency"),
-    					       osprayGroup);
+                                               osprayGroup);
     connect(osprayAoTransparencyToggle, SIGNAL(toggled(bool)),
             this, SLOT(osprayAoTransparencyToggled(bool)));
     // value: spp
@@ -1355,7 +1355,7 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
     ospraySpp->setValue(1);
     ospraySppLabel->setBuddy(ospraySpp);
     connect(ospraySpp, SIGNAL(valueChanged(int)),
-    	    this, SLOT(ospraySppChanged(int)));
+            this, SLOT(ospraySppChanged(int)));
     sppLayout->addWidget(ospraySppLabel);
     sppLayout->addWidget(ospraySpp, Qt::AlignLeft);
     sppLayout->addStretch(QSizePolicy::Maximum);
@@ -1363,7 +1363,7 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
     osprayAoSamplesWidget        = new QWidget(osprayGroup);
     QHBoxLayout *aosamplesLayout = new QHBoxLayout(osprayAoSamplesWidget);
     osprayAoSamplesLabel         = new QLabel(tr("AO Samples"),
-    					      osprayAoSamplesWidget);
+                                              osprayAoSamplesWidget);
     osprayAoSamples              = new QSpinBox(osprayAoSamplesWidget);
     osprayAoSamples->setKeyboardTracking(false);
     osprayAoSamples->setMinimum(0);
@@ -1372,7 +1372,7 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
     osprayAoSamples->setValue(0);
     osprayAoSamplesLabel->setBuddy(osprayAoSamples);
     connect(osprayAoSamples, SIGNAL(valueChanged(int)),
-    	    this, SLOT(osprayAoSamplesChanged(int)));
+            this, SLOT(osprayAoSamplesChanged(int)));
     aosamplesLayout->addWidget(osprayAoSamplesLabel);
     aosamplesLayout->addWidget(osprayAoSamples, Qt::AlignLeft);
     aosamplesLayout->addStretch(QSizePolicy::Maximum);
@@ -1380,7 +1380,7 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
     osprayAoDistanceWidget        = new QWidget(osprayGroup);
     QHBoxLayout *aodistanceLayout = new QHBoxLayout(osprayAoDistanceWidget);
     osprayAoDistanceLabel         = new QLabel(tr("AO Distance"),
-    					      osprayAoDistanceWidget);
+                                              osprayAoDistanceWidget);
     osprayAoDistance              = new QDoubleSpinBox(osprayAoDistanceWidget);
     osprayAoDistance->setKeyboardTracking(false);
     osprayAoDistance->setMinimum(100.0);
@@ -1390,7 +1390,7 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
     osprayAoDistance->setDecimals(1);
     osprayAoDistanceLabel->setBuddy(osprayAoDistance);
     connect(osprayAoDistance, SIGNAL(valueChanged(double)),
-    	    this, SLOT(osprayAoDistanceChanged(double)));
+            this, SLOT(osprayAoDistanceChanged(double)));
     aodistanceLayout->addWidget(osprayAoDistanceLabel);
     aodistanceLayout->addWidget(osprayAoDistance, Qt::AlignLeft);
     aodistanceLayout->addStretch(QSizePolicy::Maximum);
@@ -1398,7 +1398,7 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
     osprayMinContributionWidget        = new QWidget(osprayGroup);
     QHBoxLayout *mincontributionLayout = new QHBoxLayout(osprayMinContributionWidget);
     osprayMinContributionLabel         = new QLabel(tr("Minimum Contrinution"),
-    						    osprayMinContributionWidget);
+                                                    osprayMinContributionWidget);
     osprayMinContribution              = new QDoubleSpinBox(osprayMinContributionWidget);
     osprayMinContribution->setKeyboardTracking(false);
     osprayMinContribution->setMinimum(0.001);
@@ -1408,7 +1408,7 @@ void QvisVolumePlotWindow::CreateOSPRayGroups(QWidget *parent, QLayout *pLayout)
     osprayMinContribution->setDecimals(3);
     osprayMinContributionLabel->setBuddy(osprayMinContribution);
     connect(osprayMinContribution, SIGNAL(valueChanged(double)),
-    	    this, SLOT(osprayMinContributionChanged(double)));
+            this, SLOT(osprayMinContributionChanged(double)));
     mincontributionLayout->addWidget(osprayMinContributionLabel);
     mincontributionLayout->addWidget(osprayMinContribution, Qt::AlignLeft);
     mincontributionLayout->addStretch(QSizePolicy::Maximum);
