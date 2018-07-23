@@ -1,7 +1,7 @@
 #/ssd/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.1/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Thu Jul 12 14:52:03 MDT 2018
+## created: Sat Jul 21 16:36:25 MDT 2018
 ## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -62,25 +62,37 @@ SETUP_APP_VERSION(QWT 6.1.2)
 VISIT_OPTION_DEFAULT(VISIT_QWT_DIR ${VISITHOME}/qwt/${QWT_VERSION}/${VISITARCH})
 
 ##
-## EMBREE
+## LLVM
 ##
-VISIT_OPTION_DEFAULT(VISIT_EMBREE_ROOT /home/sci/qwu/software/embree-3.2.0.x86_64.linux)
+VISIT_OPTION_DEFAULT(VISIT_LLVM_DIR ${VISITHOME}/llvm/5.0.0/${VISITARCH})
+
+##
+## MesaGL
+##
+VISIT_OPTION_DEFAULT(VISIT_MESAGL_DIR ${VISITHOME}/mesagl/17.2.8/${VISITARCH})
 
 ##
 ## ISPC
 ##
-VISIT_OPTION_DEFAULT(VISIT_ISPC_ROOT /home/sci/qwu/software/ispc-v1.9.2-linux)
+VISIT_OPTION_DEFAULT(VISIT_ISPC_DIR /home/sci/qwu/software/ispc-v1.9.2-linux)
+
+##
+## EMBREE
+##
+VISIT_OPTION_DEFAULT(VISIT_EMBREE_DIR /home/sci/qwu/software/embree-3.2.0.x86_64.linux)
 
 ##
 ## TBB
 ##
 VISIT_OPTION_DEFAULT(TBB_ROOT /home/sci/qwu/software/tbb2018_20180618oss)
+VISIT_OPTION_DEFAULT(VISIT_TBB_DIR /home/sci/qwu/software/tbb2018_20180618oss)
 
 ##
 ## OSPRay
 ##
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
-VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/sci/qwu/OSPRay/Hastur/install-visit/lib64/cmake/ospray-1.6.0)
+SETUP_APP_VERSION(OSPRAY 1.6.0)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/sci/qwu/OSPRay/Hastur/install-visit/lib64/cmake/ospray-1.6.0/../../../)
 
 ##
 ## VTK
