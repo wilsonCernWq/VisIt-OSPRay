@@ -1,8 +1,8 @@
 #/ssd/users/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.3/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Thu Jul 19 17:38:23 MDT 2018
-## system: Linux lagodelcielo 4.4.120-45-default #1 SMP Wed Mar 14 20:51:49 UTC 2018 (623211f) x86_64 x86_64 x86_64 GNU/Linux
+## created: Tue Jul 24 09:53:43 MDT 2018
+## system: Linux lagodelcielo 4.4.138-59-default #1 SMP Mon Jun 18 13:48:42 UTC 2018 (f0b8f6b) x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
 ##
@@ -74,18 +74,18 @@ VISIT_OPTION_DEFAULT(VISIT_MESAGL_DIR ${VISITHOME}/mesagl/17.2.8/${VISITARCH})
 ##
 ## ISPC
 ##
-VISIT_OPTION_DEFAULT(VISIT_ISPC_DIR ${VISITHOME}/ispc/1.9.2/${VISITARCH})
+VISIT_OPTION_DEFAULT(VISIT_ISPC_DIR /home/sci/qwu/software/ispc-v1.9.2-linux)
 
 ##
 ## EMBREE
 ##
-VISIT_OPTION_DEFAULT(VISIT_EMBREE_DIR ${VISITHOME}/embree/3.2.0/${VISITARCH})
+VISIT_OPTION_DEFAULT(VISIT_EMBREE_DIR /home/sci/qwu/software/embree-3.2.0.x86_64.linux)
 
 ##
 ## TBB
 ##
-VISIT_OPTION_DEFAULT(TBB_ROOT ${VISITHOME}/tbb/tbb2018_20171205oss/${VISITARCH})
-VISIT_OPTION_DEFAULT(VISIT_TBB_DIR ${VISITHOME}/tbb/tbb2018_20171205oss/${VISITARCH})
+VISIT_OPTION_DEFAULT(TBB_ROOT /home/sci/qwu/software/tbb2018_20180618oss)
+VISIT_OPTION_DEFAULT(VISIT_TBB_DIR /home/sci/qwu/software/tbb2018_20180618oss)
 
 ##
 ## OSPRay

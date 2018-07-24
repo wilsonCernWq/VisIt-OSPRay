@@ -36,17 +36,20 @@ ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
 if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
-ARGS=${ARGS}" --stdout "
+    #ARGS=${ARGS}" --stdout "
     ARGS=${ARGS}" --skip-opengl-context-check --mesagl --llvm "
-    ARGS=${ARGS}" --ispc --embree --tbb "
+    ARGS=${ARGS}" --alt-ispc-dir /home/sci/qwu/software/ispc-v1.9.2-linux "
+    ARGS=${ARGS}" --alt-embree-dir /home/sci/qwu/software/embree-3.2.0.x86_64.linux "
+    ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2018_20180618oss "
     ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Lagodelcielo/install-visit/lib64/cmake/ospray-1.6.0 "
     #ARGS=${ARGS}" --pidx "
     #ARGS=${ARGS}" --uintah "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
-    ARGS=${ARGS}" --ispc --embree "
-    ARGS=${ARGS}" --ospray --alt-tbb-dir /home/sci/qwu/software/tbb2018_20180618oss "
-    ARGS=${ARGS}" --alt-pidx-dir /home/sci/qwu/software/Lagodelcielo/PIDX/install "
-    ARGS=${ARGS}" --slivr --uintah "
+    #ARGS=${ARGS}" --stdout "
+    ARGS=${ARGS}" --ispc --embree --tbb "
+    ARGS=${ARGS}" --ospray "
+    ARGS=${ARGS}" --pidx " 
+    ARGS=${ARGS}" --uintah "
 fi
 
 # ------------------------------ 

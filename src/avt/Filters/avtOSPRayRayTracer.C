@@ -387,14 +387,18 @@ avtOSPRayRayTracer::Execute()
     //===================================================================//
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute before ospray", 
                             "ospout");    
-
-    ospray::InitOSP(); // initialize ospray
+    // initialize ospray
+    ospray::InitOSP();
+    // cast ospray to correct type
+    // Note (Qi): maybe this is not the best decision, however we want 
+    //            the avtVolumeFilter to `own` ospray context and create
+    //            it. Thus we want to define its data structure in a 
+    //            header only file. Then we define the actual context 
+    //            class in a different structure that we can link against 
+    //            with.
     ospray::Context* ospray = (ospray::Context*)ospray_core;
-
-    ospray->SetVariableName(activeVariable);    
-    ospray->SetBackgroundBuffer(opaqueImageData, opaqueImageDepth.data(),
-                                screen);
-
+    // setup parameters that we can directly find their meanings on ospray's
+    // documentation page
     ospray->SetAdaptiveSampling(false);
     ospray->SetAoSamples(aoSamples); 
     ospray->SetSpp(spp);
@@ -406,32 +410,30 @@ avtOSPRayRayTracer::Execute()
     ospray->SetSingleShade(singleShade);
     ospray->SetGradientShadingEnabled(gradientShadingEnabled);
     ospray->SetSamplingRate(samplingRate);
+    // setup some special parameters
+    ospray->SetVariableName(activeVariable);
+    ospray->SetBackgroundBuffer(opaqueImageData,
+                                opaqueImageDepth.data(),
+                                screen);
     ospray->SetScaleAndDataBounds(scale, dbounds);
     ospray->SetSpecular(materialProperties[2], materialProperties[3]);    
-    
+    // now we want to setup objects
     ospout << "[avrRayTracer] make ospray camera" << std::endl;
-    ospray::Camera cam(ospray->camera);
-    cam.Set(view.orthographic, view.camera, view.focus, view.viewUp,
-            view.viewAngle, view.imagePan, view.imageZoom, oldNearPlane,
-            sceneSize, screen, renderingExtents);
-
+    ospray->SetCamera(view.orthographic, view.camera, view.focus, view.viewUp,
+                      view.viewAngle, view.imagePan, view.imageZoom, 
+                      oldNearPlane, sceneSize, screen, renderingExtents);
     ospout << "[avrRayTracer] make ospray transfer function" << std::endl;
-    ospray::TransferFunction tfn(ospray->tfn);
-    tfn.Set(transferFn1D->GetTableFloat(),
-            transferFn1D->GetNumberOfTableEntries(),
-            transferFn1D->GetMin(),
-            transferFn1D->GetMax());
-    
+    ospray->SetTransferFunction(transferFn1D->GetTableFloat(),
+                                transferFn1D->GetNumberOfTableEntries(),
+                                transferFn1D->GetMin(),
+                                transferFn1D->GetMax());
     ospout << "[avrRayTracer] make ospray renderer" << std::endl;
-    ospray::Renderer ren(ospray->renderer);
+    ospray::Renderer ren = ospray->GetRenderer();
     ren.Init();
     ren.ResetLights();
-    double light_scale = gradientShadingEnabled ? 0.9 : 1.0;
-    ren.AddLight().Set(true,  materialProperties[0], light_scale); // ambient 
-    ren.AddLight().Set(false, materialProperties[1], light_scale,
-                       viewDirection);
-    ren.AddLight().Set(false, 1.5, light_scale,
-                       viewDirection); 
+    ren.AddLight().Set(true,  materialProperties[0], 1.f); // ambient 
+    ren.AddLight().Set(false, materialProperties[1], 1.f, viewDirection);
+    ren.AddLight().Set(false, 1.5, 1.f, viewDirection); 
     for (int i = 0; i < 8; ++i) { // in VisIt there are only 8 lights
         const LightAttributes& la = lightList.GetLight(i);
         if (la.GetEnabledFlag()) {
@@ -452,8 +454,7 @@ avtOSPRayRayTracer::Execute()
     }    
     ren.FinalizeLights();
     ren.Set(0, 1, false, false, false);
-    ospray::CheckMemoryHere("[avtOSPRayRayTracer] Execute after ospray",
-                            "ospout");    
+    ospray::CheckMemoryHere("[avtOSPRayRayTracer] Done ospray", "ospout");    
 
     //===================================================================//
     // continuation of previous pipeline

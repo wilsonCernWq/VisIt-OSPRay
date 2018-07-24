@@ -68,17 +68,17 @@ enum blendDirection {FRONT_TO_BACK = 0, BACK_TO_FRONT = 1};
 // ***************************************************************************
 // Threaded Blending
 // ***************************************************************************
-
-bool CheckThreadedBlend_Communicator()
-{
-    bool use = true;
-    const char* env_use = std::getenv("OSPRAY_SERIAL_BLEND");
-    if (env_use) { 
-        use = atoi(env_use) <= 0; 
+namespace {
+  bool CheckThreadedBlend()
+  {
+    const char* envNotUse = std::getenv("OSPRAY_SERIAL_BLEND");
+    if (envNotUse) { 
+      return atoi(envNotUse) <= 0;
     }
-    return use;
-}
-static bool UseThreadedBlend_Communicator = CheckThreadedBlend_Communicator();
+    return false;
+  }
+  static bool UseThreadedBlend = CheckThreadedBlend();
+};
 
 // ***************************************************************************
 //  Class: avtOSPRayIC_IceT
@@ -502,7 +502,7 @@ avtOSPRayImageCompositor::avtOSPRayImageCompositor()
     compositor = NULL;
     // debug
     if (mpiRank == 0) {
-        if (!UseThreadedBlend_Communicator) {
+        if (!UseThreadedBlend) {
             ospout << "[avtOSPRayImageCompositor] "
                    << "Not Using Multi-Threading for Blending"
                    << std::endl;
@@ -568,7 +568,7 @@ void avtOSPRayImageCompositor::BlendFrontToBack(const float *srcImage,
                                                float *&dstImage,
                                                const int dstExtents[4])
 {
-    if (UseThreadedBlend_Communicator) {
+    if (UseThreadedBlend) {
       ospray::visit::BlendFrontToBack(blendExtents,
                                 srcExtents,
                                 srcImage,
@@ -641,7 +641,7 @@ void avtOSPRayImageCompositor::BlendBackToFront(const float *srcImage,
                                                float *&dstImage,
                                                const int dstExtents[4])
 {
-    if (UseThreadedBlend_Communicator) {
+    if (UseThreadedBlend) {
       ospray::visit::BlendBackToFront(blendExtents,
                                 srcExtents,
                                 srcImage,
