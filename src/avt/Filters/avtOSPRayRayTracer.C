@@ -516,13 +516,21 @@ avtOSPRayRayTracer::Execute()
     // Initialization
     int timingIdx;
     float *compositedData = NULL;
-    int compositedW, compositedH;
-    int compositedExtents[4];
-    // Debug
-    int numPatches = extractor.GetImgPatchSize();
-    ospout << "[avtOSPRayRayTracer] Total num of patches " 
-           << numPatches << std::endl;
-    for (int i=0; i<numPatches; i++) {
+    int compositedW = renderingExtents[1] - renderingExtents[0];
+    int compositedH = renderingExtents[3] - renderingExtents[2];
+    int compositedExtents[4] = {
+      renderingExtents[0],
+      renderingExtents[1],
+      renderingExtents[2],
+      renderingExtents[3]
+    };
+    if (ospray->DoCompositing(compositedData, compositedW, compositedH))
+    {
+      // Debug
+      int numPatches = extractor.GetImgPatchSize();
+      ospout << "[avtOSPRayRayTracer] Total num of patches " 
+             << numPatches << std::endl;
+      for (int i=0; i<numPatches; i++) {
         ospray::ImgMetaData currImgMeta = extractor.GetImgMetaPatch(i);
         ospout << "[avtOSPRayRayTracer] Rank " << PAR_Rank() << " "
                << "Idx " << i << " (" << currImgMeta.patchNumber << ") " 
@@ -536,57 +544,57 @@ avtOSPRayRayTracer::Execute()
                << "current patch ending" 
                << " X = " << currImgMeta.screen_ur[0] 
                << " Y = " << currImgMeta.screen_ur[1] << std::endl;
-    }
-    //-------------------------------------------------------------------//
-    // IceT: If each rank has only one patch, we use IceT to composite
-    //-------------------------------------------------------------------//
-    if (imgComm.IceTValid() && extractor.GetImgPatchSize() == 1) {
+      }
+      //-------------------------------------------------------------------//
+      // IceT: If each rank has only one patch, we use IceT to composite
+      //-------------------------------------------------------------------//
+      if (imgComm.IceTValid() && extractor.GetImgPatchSize() == 1) {
         //---------------------------------------------------------------//
         // Setup Local Tile
         ospray::ImgMetaData currMeta = extractor.GetImgMetaPatch(0);
         ospray::ImgData     currData;
         currData.imagePatch = NULL;
         extractor.GetAndDelImgData /* do shallow copy inside */
-            (currMeta.patchNumber, currData);
+          (currMeta.patchNumber, currData);
         //---------------------------------------------------------------//
         //---------------------------------------------------------------//
         // First Composition
         if (PAR_Size() > 1) { 
-            compositedW = renderingExtents[1] - renderingExtents[0];
-            compositedH = renderingExtents[3] - renderingExtents[2];
-            compositedExtents[0] = renderingExtents[0];
-            compositedExtents[1] = renderingExtents[1];
-            compositedExtents[2] = renderingExtents[2];
-            compositedExtents[3] = renderingExtents[3];
-            if (PAR_Rank() == 0) {
-                compositedData = 
-                    new float[4 * compositedW * compositedH]();
-            }
-            int currExtents[4] = 
-                {std::max(currMeta.screen_ll[0]-renderingExtents[0], 0), 
-                 std::min(currMeta.screen_ur[0]-renderingExtents[0], 
-                          compositedW), 
-                 std::max(currMeta.screen_ll[1]-renderingExtents[2], 0),
-                 std::min(currMeta.screen_ur[1]-renderingExtents[2],
-                          compositedH)};
-            imgComm.IceTInit(compositedW, compositedH);
-            imgComm.IceTSetTile(currData.imagePatch, 
-                                currExtents,
-                                currMeta.eye_z);
-            imgComm.IceTComposite(compositedData);
-            if (currData.imagePatch != NULL) {
-                delete[] currData.imagePatch;
-                currData.imagePatch = NULL;
-            }
-        } else {
-            compositedW = currMeta.dims[0];
-            compositedH = currMeta.dims[1];
-            compositedExtents[0] = renderingExtents[0];
-            compositedExtents[1] = renderingExtents[0] + compositedW;
-            compositedExtents[2] = renderingExtents[2];
-            compositedExtents[3] = renderingExtents[2] + compositedH;
-            compositedData = currData.imagePatch;
+          //compositedW = renderingExtents[1] - renderingExtents[0];
+          //compositedH = renderingExtents[3] - renderingExtents[2];
+          //compositedExtents[0] = renderingExtents[0];
+          //compositedExtents[1] = renderingExtents[1];
+          //compositedExtents[2] = renderingExtents[2];
+          //compositedExtents[3] = renderingExtents[3];
+          if (PAR_Rank() == 0) {
+            compositedData = 
+              new float[4 * compositedW * compositedH]();
+          }
+          int currExtents[4] = 
+            {std::max(currMeta.screen_ll[0]-renderingExtents[0], 0), 
+             std::min(currMeta.screen_ur[0]-renderingExtents[0], 
+                      compositedW), 
+             std::max(currMeta.screen_ll[1]-renderingExtents[2], 0),
+             std::min(currMeta.screen_ur[1]-renderingExtents[2],
+                      compositedH)};
+          imgComm.IceTInit(compositedW, compositedH);
+          imgComm.IceTSetTile(currData.imagePatch, 
+                              currExtents,
+                              currMeta.eye_z);
+          imgComm.IceTComposite(compositedData);
+          if (currData.imagePatch != NULL) {
+            delete[] currData.imagePatch;
             currData.imagePatch = NULL;
+          }
+        } else {
+          compositedW = currMeta.dims[0];
+          compositedH = currMeta.dims[1];
+          compositedExtents[0] = renderingExtents[0];
+          compositedExtents[1] = renderingExtents[0] + compositedW;
+          compositedExtents[2] = renderingExtents[2];
+          compositedExtents[3] = renderingExtents[2] + compositedH;
+          compositedData = currData.imagePatch;
+          currData.imagePatch = NULL;
         }
         //---------------------------------------------------------------//
         //---------------------------------------------------------------//
@@ -595,11 +603,11 @@ avtOSPRayRayTracer::Execute()
                                 "IceT Compositing Done", 
                                 "ospout");
         //---------------------------------------------------------------//
-    }
-    //-------------------------------------------------------------------//
-    // SERIAL: Image Composition
-    //-------------------------------------------------------------------//
-    else if (parallelOn == false) {
+      }
+      //-------------------------------------------------------------------//
+      // SERIAL: Image Composition
+      //-------------------------------------------------------------------//
+      else if (parallelOn == false) {
         //---------------------------------------------------------------//
         // Get the Metadata for All Patches
         ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
@@ -612,7 +620,7 @@ avtOSPRayRayTracer::Execute()
         int numPatches = extractor.GetImgPatchSize();
         for (int i=0; i<numPatches; i++)
         {
-            allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
+          allPatchMeta.push_back(extractor.GetImgMetaPatch(i));
         }
         ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
                                  "Serial-Composite: Get the Metadata for "
@@ -633,34 +641,34 @@ avtOSPRayRayTracer::Execute()
         // Blend Images
         ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
                                   "Serial-Composite: Blend Images");
-        compositedW = renderingExtents[1] - renderingExtents[0];
-        compositedH = renderingExtents[3] - renderingExtents[2];
-        compositedExtents[0] = renderingExtents[0];
-        compositedExtents[1] = renderingExtents[0] + compositedW;
-        compositedExtents[2] = renderingExtents[2];
-        compositedExtents[3] = renderingExtents[2] + compositedH;           
+        //compositedW = renderingExtents[1] - renderingExtents[0];
+        //compositedH = renderingExtents[3] - renderingExtents[2];
+        //compositedExtents[0] = renderingExtents[0];
+        //compositedExtents[1] = renderingExtents[0] + compositedW;
+        //compositedExtents[2] = renderingExtents[2];
+        //compositedExtents[3] = renderingExtents[2] + compositedH;           
         if (PAR_Rank() == 0) {
-            compositedData = new float[compositedW * compositedH * 4]();
+          compositedData = new float[compositedW * compositedH * 4]();
         }
         for (int i=0; i<numPatches; i++)
         {
-            ospray::ImgMetaData currImgMeta = allPatchMeta[i];
-            ospray::ImgData     currImgData;
-            currImgData.imagePatch = NULL;
-            extractor.GetAndDelImgData /* do shallow copy inside */
-                (currImgMeta.patchNumber, currImgData);
-            const float* currData = currImgData.imagePatch;
-            const int currExtents[4] = 
-                {currImgMeta.screen_ll[0], currImgMeta.screen_ur[0], 
-                 currImgMeta.screen_ll[1], currImgMeta.screen_ur[1]};
-            avtOSPRayImageCompositor::BlendBackToFront(currData,
-                                                       currExtents,
-                                                       compositedData, 
-                                                       compositedExtents);
-            if (currImgData.imagePatch != NULL) {
-                delete[] currImgData.imagePatch;
-            }
-            currImgData.imagePatch = NULL;
+          ospray::ImgMetaData currImgMeta = allPatchMeta[i];
+          ospray::ImgData     currImgData;
+          currImgData.imagePatch = NULL;
+          extractor.GetAndDelImgData /* do shallow copy inside */
+            (currImgMeta.patchNumber, currImgData);
+          const float* currData = currImgData.imagePatch;
+          const int currExtents[4] = 
+            {currImgMeta.screen_ll[0], currImgMeta.screen_ur[0], 
+             currImgMeta.screen_ll[1], currImgMeta.screen_ur[1]};
+          avtOSPRayImageCompositor::BlendBackToFront(currData,
+                                                     currExtents,
+                                                     compositedData, 
+                                                     compositedExtents);
+          if (currImgData.imagePatch != NULL) {
+            delete[] currImgData.imagePatch;
+          }
+          currImgData.imagePatch = NULL;
         }
         allPatchMeta.clear();
         allPatchData.clear();
@@ -673,11 +681,11 @@ avtOSPRayRayTracer::Execute()
                                 "Sequential Compositing Done", 
                                 "ospout");
         //---------------------------------------------------------------//
-    } 
-    //-------------------------------------------------------------------//
-    // PARALLEL: Customized Parallel Direct Send Method
-    //-------------------------------------------------------------------//
-    else { 
+      } 
+      //-------------------------------------------------------------------//
+      // PARALLEL: Customized Parallel Direct Send Method
+      //-------------------------------------------------------------------//
+      else { 
         //---------------------------------------------------------------//
         // Parallel Direct Send
         ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
@@ -688,10 +696,10 @@ avtOSPRayRayTracer::Execute()
         int *regions = NULL;
         imgComm.RegionAllocation(regions);
         int myRegionHeight =
-            imgComm.ParallelDirectSendManyPatches
-            (extractor.imgDataHashMap, extractor.imageMetaPatchVector,
-             numPatches, regions, imgComm.GetParSize(), tags, 
-             renderingExtents);
+          imgComm.ParallelDirectSendManyPatches
+          (extractor.imgDataHashMap, extractor.imageMetaPatchVector,
+           numPatches, regions, imgComm.GetParSize(), tags, 
+           renderingExtents);
         imgComm.gatherImages(regions, imgComm.GetParSize(), 
                              imgComm.intermediateImage, 
                              imgComm.intermediateImageExtents, 
@@ -707,10 +715,10 @@ avtOSPRayRayTracer::Execute()
         ospray::CheckSectionStart("avtOSPRayRayTracer", "Execute", timingIdx,
                                   "Parallel-Composite: Some Cleanup");
         if (regions != NULL)
-            delete [] regions;
+          delete [] regions;
         regions = NULL;
         if (imgComm.intermediateImage != NULL)
-            delete [] imgComm.intermediateImage;
+          delete [] imgComm.intermediateImage;
         imgComm.intermediateImage = NULL;               
         imgComm.Barrier();
         ospray::CheckSectionStop("avtOSPRayRayTracer", "Execute", timingIdx,
@@ -719,17 +727,17 @@ avtOSPRayRayTracer::Execute()
         //---------------------------------------------------------------//
         // Setup for Final Composition
         compositedW = 
-            imgComm.finalImageExtents[1] -
-            imgComm.finalImageExtents[0];
+          imgComm.finalImageExtents[1] -
+          imgComm.finalImageExtents[0];
         compositedH = 
-            imgComm.finalImageExtents[3] -
-            imgComm.finalImageExtents[2];
+          imgComm.finalImageExtents[3] -
+          imgComm.finalImageExtents[2];
         compositedExtents[0] = imgComm.finalImageExtents[0];
         compositedExtents[1] = imgComm.finalImageExtents[1];
         compositedExtents[2] = imgComm.finalImageExtents[2];
         compositedExtents[3] = imgComm.finalImageExtents[3];
         if (PAR_Rank() == 0) {
-            compositedData = imgComm.GetFinalImageBuffer();
+          compositedData = imgComm.GetFinalImageBuffer();
         }
         //--------------------------------------------------------------//
         //--------------------------------------------------------------//
@@ -738,7 +746,8 @@ avtOSPRayRayTracer::Execute()
                                 "Parallel Compositing Done", 
                                 "ospout");
         //--------------------------------------------------------------//
-    }   
+      }   
+    }
 
     ///////////////////////////////////////////////////////////////////
     //
@@ -763,9 +772,9 @@ avtOSPRayRayTracer::Execute()
         finalVTKImage->Delete();
         SetOutput(finalImage);
     }
-    if (compositedData != NULL) { 
-        delete [] compositedData;
-    }
+    //if (compositedData != NULL) { 
+    //    delete [] compositedData;
+    //}
     compositedData = NULL; 
     ospout << "[avtOSPRayRayTracer] Raycasting OSPRay is Done !" << std::endl;
 

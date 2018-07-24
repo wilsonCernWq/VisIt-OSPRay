@@ -48,6 +48,8 @@
 #include <vector>
 #include <map>
 
+#define OSPRAY_DISTRIBUTED_FRAMEBUFFER 0
+
 namespace ospray {
 namespace visit {
   
@@ -111,7 +113,7 @@ namespace visit {
     struct RendererCore : public Object<OSPRenderer> {
         OSPData                lightData;
         std::vector<LightCore> lightList;
-    RendererCore() : Object<OSPRenderer>() {
+        RendererCore() : Object<OSPRenderer>() {
             lightData = NULL;
         }
         ~RendererCore() { ospray_rm(lightData); }
@@ -121,6 +123,7 @@ namespace visit {
      * Model Wrapper
      */
     struct ModelCore : public Object<OSPModel> {
+        std::vector<osp::box3f> regions;
         ModelCore() : Object<OSPModel>() {}
     };
 
@@ -152,11 +155,20 @@ namespace visit {
     /**
      * Now we define a PatchCore
      */
-    struct Patch {
-        VolumeCore      volume;
+    struct PatchOfl {
         ModelCore       model;
+        VolumeCore      volume;
         FrameBufferCore fb;
     };
+    typedef std::map<int, PatchOfl> PatchesOfl;
+
+#if (OSPRAY_DISTRIBUTED_FRAMEBUFFER)
+    struct PatchesDfb {
+        ModelCore       model;
+        std::map<int, VolumeCore> volumes;
+        FrameBufferCore fb;
+    };
+#endif
 
     /**
      * And a ContextCore
@@ -164,7 +176,11 @@ namespace visit {
     struct ContextCore {
         // data
         std::string varname;
-        std::map<int, Patch> patches;
+#if (OSPRAY_DISTRIBUTED_FRAMEBUFFER)
+        PatchesDfb patchesDfb;
+#else
+        PatchesOfl patchesOfl;
+#endif
         CameraCore           camera;
         RendererCore         renderer;
         TransferFunctionCore tfn;
@@ -189,6 +205,7 @@ namespace visit {
         const unsigned char *bgColorBuffer;  // backplatte color channel
         const float         *bgDepthBuffer;  // backplatte depth channel 
         int                  bgSize[2];      // channel buffer size
+        // others
         ContextCore() {
             varname = "";
             oneSidedLighting       = false;
@@ -230,6 +247,7 @@ namespace ospray {
     void Finalize();
     struct Context : public ospray::visit::ContextCore {
     public:
+        bool DoCompositing(float*&, const int width, const int height);
         void SetBackgroundBuffer(const unsigned char* color,
                                  const float* depth, const int size[2]);
         void SetSpecular(const double& k, const double& n) { Ks = k; Ns = n; }
@@ -371,6 +389,14 @@ namespace ospray {
             _CoreType* operator->() { return &(*core); }
         };
   
+        struct TransferFunction;
+        struct Camera;
+        struct Light;
+        struct Model;
+        struct Volume;
+        struct Renderer;
+        struct FrameBuffer;
+
         /**
          * Transfer Function Wrapper
          */
@@ -427,6 +453,23 @@ namespace ospray {
         };
 
         /**
+         * Model Wrapper
+         */
+        struct Model
+            : public Manipulator<ModelCore, OSPModel>
+        {
+        public:
+            Model(ModelCore& other);
+            void Reset();
+            void Init();
+            void Commit();
+            void Add(OSPVolume osp_volume);
+#if (OSPRAY_DISTRIBUTED_FRAMEBUFFER)
+            void Add(const osp::box3f& osp_region);
+#endif
+        };
+
+        /**
          * Volume Wrapper
          */
         struct Volume 
@@ -452,7 +495,8 @@ namespace ospray {
                      const osp::vec3f& global_upper,
                      const osp::vec3f& global_lower,
                      const osp::vec3f& scale,
-                     OSPTransferFunction tfn);
+                     OSPTransferFunction tfn,
+                     Model model);
             void Set(const bool adaptiveSampling,
                      const bool preIntegration, 
                      const bool singleShade, 
@@ -465,35 +509,21 @@ namespace ospray {
                      const osp::vec3f& global_upper,
                      const osp::vec3f& global_lower,
                      const osp::vec3f& scale,
-                     TransferFunction tfn)
+                     TransferFunction tfn,
+                     Model model)
             {
                 Set(adaptiveSampling,
                     preIntegration, singleShade, 
                     gradientShadingEnabled, samplingRate, 
                     Ks, Ns, X, Y, Z, nX, nY, nZ,
                     dbox, cbox, global_upper, global_lower, scale,
-                    *tfn);    
+                    *tfn, model);   
             }
-
             static void ComputeGhostBounds(bool bound[6], 
                                            const unsigned char *ghosts, 
                                            const int gnX, 
                                            const int gnY, 
                                            const int gnZ);
-        };
-
-        /**
-         * Model Wrapper
-         */
-        struct Model
-            : public Manipulator<ModelCore, OSPModel>
-        {
-        public:
-            Model(ModelCore& other);
-            void Reset();
-            void Init();
-            void Set(OSPVolume osp_volume);
-            void Set(Volume volume) { Set(*volume); }
         };
 
         /**
@@ -517,7 +547,6 @@ namespace ospray {
             void  Set(OSPModel   osp_world);
             void  Set(Model          world) { Set(*world);  }
         };
-
 
         /**
          * FrameBuffer Wrapper
@@ -554,7 +583,10 @@ namespace ospray {
     typedef ospray::visit::Volume Volume;
     typedef ospray::visit::Model Model;
     typedef ospray::visit::FrameBuffer FrameBuffer;
-    typedef ospray::visit::Patch Patch;
+    typedef ospray::visit::PatchOfl PatchOfl;
+#if (OSPRAY_DISTRIBUTED_FRAMEBUFFER)
+    typedef ospray::visit::PatchOfl PatchDfb;
+#endif
         
     // ***********************************************************************
     //  Struct:  ImgMetaData

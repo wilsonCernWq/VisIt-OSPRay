@@ -1195,6 +1195,7 @@ IF(VISIT_OSPRAY)
     LINK_DIRECTORIES(${VISIT_OSPRAY_DIR}/../..)
     SET(OSPRAY_LIBRARIES # additional module library
       ${OSPRAY_LIBRARIES}
+      ${OSPRAY_MPI_LIBRARIES}
       ${LIBRARY_PATH_PREFIX}ospray_module_ispc${LIBRARY_SUFFIX}
       ${LIBRARY_PATH_PREFIX}ospray_module_visit${LIBRARY_SUFFIX}
       ${LIBRARY_PATH_PREFIX}ospray_module_visit_common${LIBRARY_SUFFIX})
