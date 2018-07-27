@@ -142,6 +142,8 @@ function bv_ospray_initialize_vars
         if [[ "$USE_SYSTEM_OSPRAY" == "no" ]]; then
             OSPRAY_INSTALL_DIR="${VISITDIR}/ospray/${OSPRAY_VERSION}/${VISITARCH}"
         else
+            local _tmp_=$(basename ${OSPRAY_CONFIG_DIR})
+            OSPRAY_VERSION=${_tmp_:7}
             OSPRAY_INSTALL_DIR="${OSPRAY_CONFIG_DIR}/../../../"
         fi
 
