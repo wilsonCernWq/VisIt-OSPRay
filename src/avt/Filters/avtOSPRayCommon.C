@@ -369,6 +369,7 @@ ospray::visit::Model::Model(ModelCore& other)
 void ospray::visit::Model::Reset()
 {
   core->init = false;
+  core->regions.clear();
 }
 void ospray::visit::Model::Init()
 {
@@ -382,9 +383,9 @@ void ospray::visit::Model::Init()
 void ospray::visit::Model::Commit()
 {
   if (UseOSPRayDistributedFB) {
-    OSPData osp_regionsData = ospNewData(core->regions.size() * 2,
-                                         OSP_FLOAT3,
-                                         core->regions.data());
+    OSPData osp_regionsData = 
+      ospNewData(core->regions.size() * sizeof(DfbRegion),
+                 OSP_CHAR, core->regions.data());
     ospSetData(core->self, "regions", osp_regionsData);
   }
   ospCommit(core->self);
@@ -393,7 +394,7 @@ void ospray::visit::Model::Add(OSPVolume volume)
 {
   ospAddVolume(core->self, volume);
 }
-void ospray::visit::Model::Add(const osp::box3f& osp_region)
+void ospray::visit::Model::Add(const DfbRegion& osp_region)
 {
   core->regions.push_back(osp_region);
 }
@@ -429,6 +430,14 @@ bool ospray::visit::Volume::Init(const std::string volume_type,
     if (volume_type == "visit_shared_structured_volume" ||
         volume_type == "shared_structured_volume") 
     {
+// #if 1
+//       static int i = 0;
+//       std::ofstream OutFile;
+//       OutFile.open(("cthead_"+std::to_string(i++)+".raw").c_str(), 
+//                    ios::out | ios::binary);
+//       OutFile.write((char*)data_ptr, data_size * sizeof(float));
+//       OutFile.close();
+// #endif
       OSPData osp_data = ospNewData(data_size, data_type,
                                     data_ptr, OSP_DATA_SHARED_BUFFER);
       ospSetString(core->self, "voxelType", data_char.c_str());
@@ -483,8 +492,19 @@ void ospray::visit::Volume::Set(const bool adaptiveSampling,
   ospSet1i(core->self, "preIntegration", (int)preIntegration);
   ospSet1i(core->self, "singleShade", (int)singleShade);
   if (UseOSPRayDistributedFB) {
-    box3f ghost_region {clip_lower, clip_upper};
-    model.Add((const osp::box3f&)ghost_region);
+    DfbRegion region;
+    region.bounds.lower = {clip_lower.x, clip_lower.y, clip_lower.z};
+    region.bounds.upper = {clip_upper.x, clip_upper.y, clip_upper.z};
+    region.id = core->patchId;
+    model.Add(region);
+    std::cout << "patchId: " << core->patchId << std::endl;
+    // std::cout << "ghost_region " 
+    //           << ghost_region.lower.x << " "
+    //           << ghost_region.lower.y << " "
+    //           << ghost_region.lower.z << ", "
+    //           << ghost_region.upper.x << " "
+    //           << ghost_region.upper.y << " "
+    //           << ghost_region.upper.z << "\n";
   } else {
     ospSetVec3f(core->self, "volumeGlobalBoundingBoxLower", 
                 (const osp::vec3f&)global_upper);
@@ -497,6 +517,49 @@ void ospray::visit::Volume::Set(const bool adaptiveSampling,
   }
   ospSetObject(core->self, "transferFunction", tfn);
   ospCommit(core->self);
+// #if 1
+//   static int i = 0;
+//   std::ofstream OutFile;
+//   OutFile.open(("cthead_"+std::to_string(i++)+".osp").c_str(), 
+//                ios::out);
+//   OutFile << "<?xml version=\"1.0\"?>" << std::endl;
+//   OutFile << "<volume name=\"volume\">" << std::endl;
+//   OutFile << "<dimensions> "
+//           << dims.x << " "
+//           << dims.y << " " 
+//           << dims.z << " "
+//           << "</dimensions>" << std::endl;
+//   OutFile << "<!-- <regionLower> "
+//           << clip_lower.x << " " 
+//           << clip_lower.y << " "
+//           << clip_lower.z << " "
+//           << "</regionLower> -->" << std::endl;
+//   OutFile << "<!-- <regionUpper> "
+//           << clip_upper.x << " "
+//           << clip_upper.y << " "
+//           << clip_upper.z << " "
+//           << "</regionUpper> -->" << std::endl;
+//   OutFile << "<!-- <ghostLower> "
+//           << data_lower.x << " " 
+//           << data_lower.y << " "
+//           << data_lower.z << " "
+//           << "</ghostLower> -->" << std::endl;
+//   OutFile << "<!-- <ghostUpper> "
+//           << data_upper.x << " "
+//           << data_upper.y << " "
+//           << data_upper.z << " "
+//           << "</ghostUpper> -->" << std::endl;
+//   OutFile << "<!-- <spacing> "
+//           << spacing.x << " "
+//           << spacing.y << " "
+//           << spacing.z << " "
+//           << "</regionUpper> -->" << std::endl;
+//   OutFile << "<filename> cthead_" << (i-1) << ".raw </filename>" << std::endl;
+//   OutFile << "<samplingRate> 1.0 </samplingRate>" << std::endl;
+//   OutFile << "<voxelType> float </voxelType>" << std::endl;
+//   OutFile << "</volume>" << std::endl;
+//   OutFile.close();
+// #endif
 }  
 
 // =====================================================================//
@@ -525,7 +588,7 @@ void ospray::visit::FrameBuffer::Render(const int tile_w, const int tile_h,
           global_depth[tile_x + i + (tile_y + j) * global_stride];
       }
     }
-    OSPTexture2D maxDepthTexture
+    OSPTexture maxDepthTexture
       = ospNewTexture2D((const osp::vec2i&)fb_size, OSP_TEXTURE_R32F,
                         local_depth.data(), OSP_TEXTURE_FILTER_NEAREST);    
     ospCommit(maxDepthTexture);
@@ -588,15 +651,17 @@ bool ospray::Context::DoCompositing(float*& dest, const int width,
   }
 }
 
-void ospray::Context::InitPatch(const int patchID)
+void ospray::Context::InitPatch(const int patchId)
 {
   if (UseOSPRayDistributedFB) {
-    if (patchesDfb.volumes.find(patchID) == patchesDfb.volumes.end()) {
-      patchesDfb.volumes[patchID] = ospray::visit::VolumeCore();
+    if (patchesDfb.volumes.find(patchId) == patchesDfb.volumes.end()) {
+      patchesDfb.volumes[patchId] = ospray::visit::VolumeCore();
+      patchesDfb.volumes[patchId].patchId = patchId;
     }
   } else {
-    if (patchesOfl.find(patchID) == patchesOfl.end()) {
-      patchesOfl[patchID] = ospray::PatchOfl();
+    if (patchesOfl.find(patchId) == patchesOfl.end()) {
+      patchesOfl[patchId] = ospray::PatchOfl();
+      patchesOfl[patchId].volume.patchId = patchId;
     }
   }
 }
@@ -609,7 +674,7 @@ void ospray::Context::SetBackgroundBuffer(const unsigned char* color,
   bgSize[0] = size[0];
   bgSize[1] = size[1];
 }
-void ospray::Context::SetupPatch(const int patchID,
+void ospray::Context::SetupPatch(const int patchId,
                                  const int vtk_type,
                                  const size_t data_size, 
                                  const void* data_ptr,
@@ -624,8 +689,8 @@ void ospray::Context::SetupPatch(const int patchID,
   OSPDataType osp_type;
   CheckVolumeFormat(vtk_type, str_type, osp_type);
   Volume volume(UseOSPRayDistributedFB ? 
-                patchesDfb.volumes[patchID] :
-                patchesOfl[patchID].volume);
+                patchesDfb.volumes[patchId] :
+                patchesOfl[patchId].volume);
   volume.Init(UseOSPRayDistributedFB ? 
               "shared_structured_volume" : 
               "visit_shared_structured_volume",
@@ -633,7 +698,7 @@ void ospray::Context::SetupPatch(const int patchID,
               useGridAccelerator);
   Model model(UseOSPRayDistributedFB ? 
               patchesDfb.model :
-              patchesOfl[patchID].model);
+              patchesOfl[patchId].model);
   volume.Set(adaptiveSampling,
              preIntegration,
              singleShade,
@@ -649,11 +714,11 @@ void ospray::Context::SetupPatch(const int patchID,
   if (!UseOSPRayDistributedFB) {
     model.Reset();
     model.Init();
-    model.Add(*(patchesOfl[patchID].volume));
+    model.Add(*(patchesOfl[patchId].volume));
     model.Commit();
   }
 }
-void ospray::Context::RenderPatch(const int patchID,
+void ospray::Context::RenderPatch(const int patchId,
                                   const float xMin, const float xMax, 
                                   const float yMin, const float yMax,
                                   const int tile_w, const int tile_h,
@@ -662,9 +727,9 @@ void ospray::Context::RenderPatch(const int patchID,
   if (!UseOSPRayDistributedFB) {
     Camera      cam(camera);
     Renderer    ren(renderer);
-    FrameBuffer fb(patchesOfl[patchID].fb);
+    FrameBuffer fb(patchesOfl[patchId].fb);
     cam.SetScreen(xMin, xMax, yMin, yMax);
-    ren.Set(patchesOfl[patchID].model);
+    ren.Set(patchesOfl[patchId].model);
     ren.Set(camera);
     fb.Render(tile_w, tile_h,
               cam.GetWindowExts(0),

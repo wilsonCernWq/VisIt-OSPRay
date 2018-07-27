@@ -867,6 +867,7 @@ function apply_vtk_patch
             return 1
         fi
         # upgrade vtkospray only if we are running ospray 1.7.x
+        # this works only for vtk 8.1.0
         if [[ "$OSPRAY_VERSION" == "1.7."* ]] ; then
             info "Patching VTK for ospray-1.7.x"
             apply_vtkospray_upgrade_1.7.x_patch

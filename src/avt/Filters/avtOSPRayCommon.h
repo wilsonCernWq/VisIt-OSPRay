@@ -120,8 +120,12 @@ namespace ospray {
     /**
      * Model Wrapper
      */
+    struct DfbRegion {
+      osp::box3f bounds;
+      int id;
+    };
     struct ModelCore : public Object<OSPModel> {
-      std::vector<osp::box3f> regions;
+      std::vector<DfbRegion> regions;
       ModelCore() : Object<OSPModel>() {}
     };
 
@@ -129,12 +133,14 @@ namespace ospray {
      * Volume Wrapper
      */
     struct VolumeCore : public Object<OSPVolume> {
+      int         patchId;
       std::string volumeType;
       OSPDataType dataType;
       size_t      dataSize;
       const void* dataPtr;
       bool useGridAccelerator;
       VolumeCore() : Object<OSPVolume>() {
+        patchId = -1; // invalid id
         volumeType = "";
         dataType = OSP_UCHAR; /* just give it a value */
         dataSize = 0;
@@ -392,7 +398,7 @@ namespace ospray {
       void Init();
       void Commit();
       void Add(OSPVolume osp_volume);
-      void Add(const osp::box3f& osp_region);
+      void Add(const DfbRegion& osp_region);
     };
 
     /**
@@ -577,13 +583,13 @@ namespace ospray {
               canvas_size, screen_size, tile_extents);
     }
     // patch functions
-    void InitPatch(const int patchID);
-    void SetupPatch(const int patchID, const int vtk_type,
+    void InitPatch(const int patchId);
+    void SetupPatch(const int patchId, const int vtk_type,
                     const size_t data_size, const void* data_ptr,
                     const double *X, const double *Y, const double *Z, 
                     const int nX, const int nY, const int nZ,
                     const double dbox[6], const double cbox[6]);
-    void RenderPatch(const int patchID,
+    void RenderPatch(const int patchId,
                      const float xMin, const float xMax, 
                      const float yMin, const float yMax,
                      const int tile_w, const int tile_h,
