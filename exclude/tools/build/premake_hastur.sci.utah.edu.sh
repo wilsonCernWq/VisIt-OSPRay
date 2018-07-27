@@ -36,7 +36,7 @@ ARGS=${ARGS}" --boost --hdf5 --netcdf --szip --silo "
 ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2018_20180618oss "
 ARGS=${ARGS}" --alt-ispc-dir /home/sci/qwu/software/ispc-v1.9.2-linux "
 ARGS=${ARGS}" --alt-embree-dir /home/sci/qwu/software/embree-3.2.0.x86_64.linux "
-ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/Hastur/install-visit/lib64/cmake/ospray-1.6.0 "
+ARGS=${ARGS}" --alt-ospray-dir /home/sci/qwu/OSPRay/builds/Hastur/install-visit/lib64/cmake/ospray-1.6.0 "
 ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
