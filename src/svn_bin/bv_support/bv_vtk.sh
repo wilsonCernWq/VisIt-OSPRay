@@ -547,6 +547,303 @@ EOF
     fi
 }
 
+function apply_vtkospray_upgrade_1.7.x_patch
+{
+    # patch vtk's vtkOSPRay to support ospray 1.7.x features
+
+    patch -p0 << \EOF
+*** Rendering/OSPRay/vtkOSPRayMaterialHelpers.cxx.original	2017-12-22 09:33:25.000000000 -0700
+--- Rendering/OSPRay/vtkOSPRayMaterialHelpers.cxx	2018-07-26 19:53:31.956883820 -0600
+***************
+*** 21,27 ****
+  #include "vtkTexture.h"
+  
+  //------------------------------------------------------------------------------
+! osp::Texture2D *vtkOSPRayMaterialHelpers::VTKToOSPTexture
+    (vtkImageData *vColorTextureMap)
+  {
+    int xsize = vColorTextureMap->GetExtent()[1];
+--- 21,27 ----
+  #include "vtkTexture.h"
+  
+  //------------------------------------------------------------------------------
+! osp::Texture *vtkOSPRayMaterialHelpers::VTKToOSPTexture
+    (vtkImageData *vColorTextureMap)
+  {
+    int xsize = vColorTextureMap->GetExtent()[1];
+***************
+*** 42,49 ****
+        ichars+=comps;
+      }
+    }
+!   osp::Texture2D *t2d;
+!   t2d = (osp::Texture2D*)ospNewTexture2D
+      (
+       osp::vec2i{xsize+1,
+           ysize+1},
+--- 42,49 ----
+        ichars+=comps;
+      }
+    }
+!   osp::Texture *t2d;
+!   t2d = (osp::Texture*)ospNewTexture2D
+      (
+       osp::vec2i{xsize+1,
+           ysize+1},
+***************
+*** 115,122 ****
+    if (texname) \
+    { \
+      vtkImageData* vColorTextureMap = vtkImageData::SafeDownCast(texname->GetInput()); \
+!     osp::Texture2D *t2d = vtkOSPRayMaterialHelpers::VTKToOSPTexture(vColorTextureMap); \
+!     ospSetObject(oMaterial, #texname, ((OSPTexture2D)(t2d))); \
+      ospCommit(t2d); \
+    }
+  
+--- 115,122 ----
+    if (texname) \
+    { \
+      vtkImageData* vColorTextureMap = vtkImageData::SafeDownCast(texname->GetInput()); \
+!     osp::Texture *t2d = vtkOSPRayMaterialHelpers::VTKToOSPTexture(vColorTextureMap); \
+!     ospSetObject(oMaterial, #texname, ((OSPTexture)(t2d))); \
+      ospCommit(t2d); \
+    }
+  
+*** Rendering/OSPRay/vtkOSPRayMaterialHelpers.h.original	2017-12-22 09:33:25.000000000 -0700
+--- Rendering/OSPRay/vtkOSPRayMaterialHelpers.h	2018-07-26 19:47:12.106125739 -0600
+***************
+*** 42,48 ****
+    /**
+     * Manufacture an ospray texture from a 2d vtkImageData
+     */
+!   osp::Texture2D *VTKToOSPTexture(vtkImageData *vColorTextureMap);
+  
+    /**
+     * Construct a set of ospray materials for all of the material names.
+--- 42,48 ----
+    /**
+     * Manufacture an ospray texture from a 2d vtkImageData
+     */
+!   osp::Texture *VTKToOSPTexture(vtkImageData *vColorTextureMap);
+  
+    /**
+     * Construct a set of ospray materials for all of the material names.
+*** Rendering/OSPRay/vtkOSPRayPolyDataMapperNode.cxx.original	2017-12-22 09:33:25.000000000 -0700
+--- Rendering/OSPRay/vtkOSPRayPolyDataMapperNode.cxx	2018-07-26 19:55:22.214276191 -0600
+***************
+*** 294,302 ****
+      }
+      else if (vColorTextureMap && _hastm)
+      {
+!       osp::Texture2D *t2d = vtkOSPRayMaterialHelpers::VTKToOSPTexture(vColorTextureMap);
+        OSPMaterial ospMaterial = ospNewMaterial(oRenderer,"OBJMaterial");
+!       ospSetObject(ospMaterial, "map_Kd", ((OSPTexture2D)(t2d)));
+        ospCommit(t2d);
+        ospCommit(ospMaterial);
+        ospSetMaterial(ospMesh, ospMaterial);
+--- 294,302 ----
+      }
+      else if (vColorTextureMap && _hastm)
+      {
+!       osp::Texture *t2d = vtkOSPRayMaterialHelpers::VTKToOSPTexture(vColorTextureMap);
+        OSPMaterial ospMaterial = ospNewMaterial(oRenderer,"OBJMaterial");
+!       ospSetObject(ospMaterial, "map_Kd", ((OSPTexture)(t2d)));
+        ospCommit(t2d);
+        ospCommit(ospMaterial);
+        ospSetMaterial(ospMesh, ospMaterial);
+***************
+*** 454,462 ****
+      }
+      else if (vColorTextureMap && _hastm)
+      {
+!       osp::Texture2D *t2d = vtkOSPRayMaterialHelpers::VTKToOSPTexture(vColorTextureMap);
+        OSPMaterial ospMaterial = ospNewMaterial(oRenderer,"OBJMaterial");
+!       ospSetObject(ospMaterial, "map_Kd", ((OSPTexture2D)(t2d)));
+        ospCommit(t2d);
+        ospCommit(ospMaterial);
+        ospSetMaterial(ospMesh, ospMaterial);
+--- 454,462 ----
+      }
+      else if (vColorTextureMap && _hastm)
+      {
+!       osp::Texture *t2d = vtkOSPRayMaterialHelpers::VTKToOSPTexture(vColorTextureMap);
+        OSPMaterial ospMaterial = ospNewMaterial(oRenderer,"OBJMaterial");
+!       ospSetObject(ospMaterial, "map_Kd", ((OSPTexture)(t2d)));
+        ospCommit(t2d);
+        ospCommit(ospMaterial);
+        ospSetMaterial(ospMesh, ospMaterial);
+***************
+*** 579,587 ****
+      }
+      else if (vColorTextureMap && _hastm)
+      {
+!       osp::Texture2D *t2d = vtkOSPRayMaterialHelpers::VTKToOSPTexture(vColorTextureMap);
+        OSPMaterial ospMaterial = ospNewMaterial(oRenderer,"OBJMaterial");
+!       ospSetObject(ospMaterial, "map_Kd", ((OSPTexture2D)(t2d)));
+        ospCommit(t2d);
+        ospCommit(ospMaterial);
+        ospSetMaterial(ospMesh, ospMaterial);
+--- 579,587 ----
+      }
+      else if (vColorTextureMap && _hastm)
+      {
+!       osp::Texture *t2d = vtkOSPRayMaterialHelpers::VTKToOSPTexture(vColorTextureMap);
+        OSPMaterial ospMaterial = ospNewMaterial(oRenderer,"OBJMaterial");
+!       ospSetObject(ospMaterial, "map_Kd", ((OSPTexture)(t2d)));
+        ospCommit(t2d);
+        ospCommit(ospMaterial);
+        ospSetMaterial(ospMesh, ospMaterial);
+*** Rendering/OSPRay/vtkOSPRayRendererNode.cxx.original	2017-12-22 09:33:25.000000000 -0700
+--- Rendering/OSPRay/vtkOSPRayRendererNode.cxx	2018-07-26 19:54:41.763225446 -0600
+***************
+*** 117,132 ****
+  
+        The OSPRay frame buffer object must have been constructed with the OSP_FB_DEPTH flag.
+      */
+!     OSPTexture2D getOSPDepthTextureFromOpenGLPerspective(const double &fovy,
+!                                                          const double &aspect,
+!                                                          const double &zNear,
+!                                                          const double &zFar,
+!                                                          const osp::vec3f &_cameraDir,
+!                                                          const osp::vec3f &_cameraUp,
+!                                                          const float *glDepthBuffer,
+!                                                          float *ospDepthBuffer,
+!                                                          const size_t &glDepthBufferWidth,
+!                                                          const size_t &glDepthBufferHeight)
+      {
+        osp::vec3f cameraDir = (osp::vec3f&)_cameraDir;
+        osp::vec3f cameraUp = (osp::vec3f&)_cameraUp;
+--- 117,132 ----
+  
+        The OSPRay frame buffer object must have been constructed with the OSP_FB_DEPTH flag.
+      */
+!     OSPTexture getOSPDepthTextureFromOpenGLPerspective(const double &fovy,
+!                                                        const double &aspect,
+!                                                        const double &zNear,
+!                                                        const double &zFar,
+!                                                        const osp::vec3f &_cameraDir,
+!                                                        const osp::vec3f &_cameraUp,
+!                                                        const float *glDepthBuffer,
+!                                                        float *ospDepthBuffer,
+!                                                        const size_t &glDepthBufferWidth,
+!                                                        const size_t &glDepthBufferHeight)
+      {
+        osp::vec3f cameraDir = (osp::vec3f&)_cameraDir;
+        osp::vec3f cameraUp = (osp::vec3f&)_cameraUp;
+***************
+*** 171,179 ****
+        // nearest texture filtering required for depth textures -- we don't want interpolation of depth values...
+        osp::vec2i texSize = {static_cast<int>(glDepthBufferWidth),
+                              static_cast<int>(glDepthBufferHeight)};
+!       OSPTexture2D depthTexture = ospNewTexture2D((osp::vec2i&)texSize,
+!                                                   OSP_TEXTURE_R32F, ospDepthBuffer,
+!                                                   OSP_TEXTURE_FILTER_NEAREST);
+  
+        return depthTexture;
+      }
+--- 171,179 ----
+        // nearest texture filtering required for depth textures -- we don't want interpolation of depth values...
+        osp::vec2i texSize = {static_cast<int>(glDepthBufferWidth),
+                              static_cast<int>(glDepthBufferHeight)};
+!       OSPTexture depthTexture = ospNewTexture2D((osp::vec2i&)texSize,
+!                                                 OSP_TEXTURE_R32F, ospDepthBuffer,
+!                                                 OSP_TEXTURE_FILTER_NEAREST);
+  
+        return depthTexture;
+      }
+***************
+*** 361,368 ****
+          ochars[1] = bg1[1]*255;
+          ochars[2] = bg1[2]*255;
+        }
+!       osp::Texture2D *t2d;
+!       t2d = (osp::Texture2D*)ospNewTexture2D
+          (
+           osp::vec2i{jsize,isize},
+           OSP_TEXTURE_RGB8,
+--- 361,368 ----
+          ochars[1] = bg1[1]*255;
+          ochars[2] = bg1[2]*255;
+        }
+!       osp::Texture *t2d;
+!       t2d = (osp::Texture*)ospNewTexture2D
+          (
+           osp::vec2i{jsize,isize},
+           OSP_TEXTURE_RGB8,
+***************
+*** 370,376 ****
+           0);//OSP_TEXTURE_FILTER_NEAREST);
+  
+        OSPLight ospLight = ospNewLight(oRenderer, "hdri");
+!       ospSetObject(ospLight, "map", ((OSPTexture2D)(t2d)));
+        double *up = vtkOSPRayRendererNode::GetNorthPole(ren);
+        if (up)
+          {
+--- 370,376 ----
+           0);//OSP_TEXTURE_FILTER_NEAREST);
+  
+        OSPLight ospLight = ospNewLight(oRenderer, "hdri");
+!       ospSetObject(ospLight, "map", ((OSPTexture)(t2d)));
+        double *up = vtkOSPRayRendererNode::GetNorthPole(ren);
+        if (up)
+          {
+***************
+*** 1090,1096 ****
+      ospSet1i(oRenderer, "backgroundEnabled", ren->GetErase());
+      if (this->CompositeOnGL)
+      {
+!       OSPTexture2D glDepthTex=nullptr;
+        vtkRenderWindow *rwin =
+        vtkRenderWindow::SafeDownCast(ren->GetVTKWindow());
+        int viewportX, viewportY;
+--- 1090,1096 ----
+      ospSet1i(oRenderer, "backgroundEnabled", ren->GetErase());
+      if (this->CompositeOnGL)
+      {
+!       OSPTexture glDepthTex=nullptr;
+        vtkRenderWindow *rwin =
+        vtkRenderWindow::SafeDownCast(ren->GetVTKWindow());
+        int viewportX, viewportY;
+*** Rendering/OSPRay/vtkOSPRayRendererNode.h.original	2017-12-22 09:33:25.000000000 -0700
+--- Rendering/OSPRay/vtkOSPRayRendererNode.h	2018-07-26 19:50:23.181476116 -0600
+***************
+*** 40,53 ****
+  struct Model;
+  struct Renderer;
+  struct Light;
+! struct Texture2D;
+  struct FrameBuffer;
+  }
+  typedef osp::Model *OSPModel;
+  typedef osp::Renderer *OSPRenderer;
+  typedef osp::Light *OSPLight;
+  typedef osp::FrameBuffer *OSPFrameBuffer;
+! typedef osp::Texture2D* OSPTexture2D;
+  typedef osp::FrameBuffer* OSPFrameBuffer;
+  
+  class VTKRENDERINGOSPRAY_EXPORT vtkOSPRayRendererNode :
+--- 40,53 ----
+  struct Model;
+  struct Renderer;
+  struct Light;
+! struct Texture;
+  struct FrameBuffer;
+  }
+  typedef osp::Model *OSPModel;
+  typedef osp::Renderer *OSPRenderer;
+  typedef osp::Light *OSPLight;
+  typedef osp::FrameBuffer *OSPFrameBuffer;
+! typedef osp::Texture *OSPTexture;
+  typedef osp::FrameBuffer* OSPFrameBuffer;
+  
+  class VTKRENDERINGOSPRAY_EXPORT vtkOSPRayRendererNode :
+EOF
+    if [[ $? != 0 ]] ; then
+        warn "vtkOSPRay patch for upgrading OSPRay 1.7.x failed."
+        return 1
+    fi
+}
+
 function apply_vtk_patch
 {
     apply_vtkdatawriter_patch
@@ -568,6 +865,14 @@ function apply_vtk_patch
         apply_vtkospray_patches
         if [[ $? != 0 ]] ; then
             return 1
+        fi
+        # upgrade vtkospray only if we are running ospray 1.7.x
+        if [[ "$OSPRAY_VERSION" == "1.7."* ]] ; then
+            info "Patching VTK for ospray-1.7.x"
+            apply_vtkospray_upgrade_1.7.x_patch
+            if [[ $? != 0 ]] ; then
+                return 1
+            fi
         fi
     fi
 
