@@ -1,7 +1,7 @@
 #/ssd/qwu/VisIt/3rdparty/trunk/cmake/3.8.1/linux-x86_64_gcc-7.1/bin/cmake
 ##
 ## ./build_visit generated host.cmake
-## created: Sat Jul 21 16:36:25 MDT 2018
+## created: Thu Jul 26 18:27:26 MDT 2018
 ## system: Linux hastur.sci.utah.edu 3.10.0-327.36.1.el7.x86_64 #1 SMP Sun Sep 18 13:04:29 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux
 ## by: qwu
 
@@ -92,7 +92,7 @@ VISIT_OPTION_DEFAULT(VISIT_TBB_DIR /home/sci/qwu/software/tbb2018_20180618oss)
 ##
 VISIT_OPTION_DEFAULT(VISIT_OSPRAY ON TYPE BOOL)
 SETUP_APP_VERSION(OSPRAY 1.6.0)
-VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/sci/qwu/OSPRay/Hastur/install-visit/lib64/cmake/ospray-1.6.0/../../../)
+VISIT_OPTION_DEFAULT(VISIT_OSPRAY_DIR /home/sci/qwu/OSPRay/builds/Hastur/install-visit/lib64/cmake/ospray-1.6.0/../../../)
 
 ##
 ## VTK
