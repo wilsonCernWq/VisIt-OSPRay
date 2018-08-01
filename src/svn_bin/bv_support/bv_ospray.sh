@@ -70,7 +70,9 @@ function bv_ospray_info
     
     # checksum
     export OSPRAY_MD5_CHECKSUM=""
-    export OSPRAY_SHA256_CHECKSUM=""
+    export OSPRAY_SHA256_CHECKSUM="e080ca1161cbb987d889bb2ce308be7a38e0928afe7c9e952afd8273e29de432"
+    export OSPRAY_VISIT_MODULE_MD5_CHECKSUM=""
+    export OSPRAY_VISIT_MODULE_SHA256_CHECKSUM="4999f9d9ef10b72f4f71f1999cc4c6728f2fb49519991896dc0d90baa9c1a511"
 }
 
 function bv_ospray_print
@@ -83,7 +85,9 @@ function bv_ospray_print
 
 function bv_ospray_print_usage
 {
-    printf "%-15s %s [%s]\n" "--ospray" "Build OSPRay rendering support" "$DO_OSPRAY"
+    printf "%-20s %s [%s]\n" "--ospray" "Build OSPRay rendering support" "$DO_OSPRAY"
+    printf "%-20s %s [%s]\n" "--alt-ospray-dir" "Use ospray from an alternative directory"
+    printf "%-20s %s\n" "" "Note: please provide the path to osprayConfig.cmake"
 }
 
 function bv_ospray_host_profile
@@ -241,13 +245,13 @@ function build_ospray_in_source
 function build_ospray
 {
     # prepare directories
-    prepare_build_dir $OSPRAY_BUILD_DIR $OSPRAY_TARBALL
+    prepare_build_dir $OSPRAY_BUILD_DIR $OSPRAY_TARBALL "SHA256" $OSPRAY_SHA256_CHECKSUM
     untarred_ospray=$?
     if [[ $untarred_ospray == -1 ]]; then
         warn "Unable to prepare OSPRay build directory. Giving up!"
         return 1
     fi
-    prepare_build_dir $OSPRAY_VISIT_MODULE_BUILD_DIR $OSPRAY_VISIT_MODULE_TARBALL
+    prepare_build_dir $OSPRAY_VISIT_MODULE_BUILD_DIR $OSPRAY_VISIT_MODULE_TARBALL "SHA256" $OSPRAY_MODULE_VISIT_SHA256_CHECKSUM
     untarred_ospray_visit_module=$?
     if [[ $untarred_ospray_visit_module == -1 ]]; then
         warn "Unable to prepare OSPRay build directory. Giving up!"

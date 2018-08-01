@@ -89,7 +89,9 @@ function bv_tbb_host_profile
 function bv_tbb_print_usage
 {
     #tbb does not have an option, it is only dependent on tbb.
-    printf "%-15s %s [%s]\n" "--tbb" "Build TBB" "$DO_TBB"
+    printf "%-20s %s [%s]\n" "--tbb" "Build Intel Threading Building Blocks (TBB)" "$DO_TBB"
+    printf "%-20s %s [%s]\n" "--alt-tbb-dir" "Use TBB from an alternative directory"
+
 }
 
 function bv_tbb_ensure

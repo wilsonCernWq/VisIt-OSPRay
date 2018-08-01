@@ -2,7 +2,7 @@ function bv_ispc_initialize
 {
     export DO_ISPC="no"
     export USE_SYSTEM_ISPC="no"
-    add_extra_commandline_args "ispc" "alt-ispc-dir" 1 "Use alternative directory for ispc"
+    add_extra_commandline_args "ispc" "alt-ispc-dir" 1 "Use alternative directory for ISPC"
 }
 
 function bv_ispc_enable
@@ -45,16 +45,17 @@ function bv_ispc_info
         export ISPC_FILE=${ISPC_FILE:-"ispc-v${ISPC_VERSION}-osx.tar.gz"}
         export ISPC_URL=${ISPC_URL:-"http://sdvis.org/ospray/download/dependencies/osx/"}
         export ISPC_INSTALL_DIR_NAME=ispc-v$ISPC_VERSION-osx
+        export ISPC_MD5_CHECKSUM=""
+        export ISPC_SHA256_CHECKSUM=""
     else
         export ISPC_FILE=${ISPC_FILE:-"ispc-v${ISPC_VERSION}-linux.tar.gz"}
         export ISPC_URL=${ISPC_URL:-"http://sdvis.org/ospray/download/dependencies/linux/"}
         export ISPC_INSTALL_DIR_NAME=ispc-v$ISPC_VERSION-linux
+        export ISPC_MD5_CHECKSUM=""
+        export ISPC_SHA256_CHECKSUM=""
     fi
     export ISPC_COMPATIBILITY_VERSION=${ISPC_COMPATIBILITY_VERSION:-"${ISPC_VERSION}"}
     export ISPC_BUILD_DIR=${ISPC_BUILD_DIR:-"${ISPC_VERSION}"}
-
-    export ISPC_MD5_CHECKSUM=""
-    export ISPC_SHA256_CHECKSUM=""
 }
 
 function bv_ispc_print
@@ -83,7 +84,8 @@ function bv_ispc_host_profile
 function bv_ispc_print_usage
 {
     #ispc does not have an option, it is only dependent on ispc.
-    printf "%-15s %s [%s]\n" "--ispc" "Build ISPC" "$DO_ISPC"
+    printf "%-20s %s [%s]\n" "--ispc" "Build Intel SPMD Program Compiler (ISPC)" "$DO_ISPC"
+    printf "%-20s %s [%s]\n" "--alt-ispc-dir" "Use ISPC from an alternative directory"
 }
 
 function bv_ispc_ensure

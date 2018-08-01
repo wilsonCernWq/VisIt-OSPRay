@@ -3,27 +3,26 @@
 PREMAKE_VERSION=trunk
 
 ROOT=$(pwd)
-cd ${ROOT}/3rdparty/bv_files
+cd ${ROOT}/3rdparty/bv_files/${PREMAKE_VERSION}
 if [[ ! -f build_visit ]]; then
     echo "please provide build_visit file"
     exit 1
 fi
-DIR_BUILD=/Users/qwu/Work/visit/3rdparty/builds/$PREMAKE_VERSION
-DIR_INSTALL=/Users/qwu/Work/visit/3rdparty/installs/$PREMAKE_VERSION
+DIR_BUILD=${ROOT}/3rdparty/builds/$PREMAKE_VERSION
+DIR_INSTALL=${ROOT}/3rdparty/installs/$PREMAKE_VERSION
 mkdir -p $DIR_BUILD
 mkdir -p $DIR_INSTALL
 
 ARGS=""
-ARGS=${ARGS}" --debug --no-visit "
+ARGS=${ARGS}" --debug --no-visit ${@:2} "
 ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++98 "
-ARGS=${ARGS}" --makeflags -j2 "
-ARGS=${ARGS}" --cmake --python --qt --parallel "
-#ARGS=${ARGS}" --hdf5 --szip --zlib --silo "
-ARGS=${ARGS}"  --silo --hdf5 "
-ARGS=${ARGS}" --ospray "
-ARGS=${ARGS}" --alt-tbb-dir /Users/qwu/Work/softwares/tbb2018_20180312oss "
-ARGS=${ARGS}" --alt-ispc-dir /Users/qwu/Work/softwares/ispc-v1.9.2-osx "
-ARGS=${ARGS}" --alt-embree-dir /Users/qwu/Work/softwares/embree-3.2.0.x86_64.macosx "
+ARGS=${ARGS}" --makeflags -j1 "
+ARGS=${ARGS}" --system-cmake --python --qt --parallel "
+ARGS=${ARGS}" --silo --hdf5 "
+ARGS=${ARGS}" --alt-ospray-dir /Users/qwu/Work/projects/ospray/install/lib/cmake/ospray-1.7.0 "
+ARGS=${ARGS}" --alt-tbb-dir /Users/qwu/Work/downloads/tbb2018_20180312oss "
+ARGS=${ARGS}" --alt-ispc-dir /Users/qwu/Work/downloads/ispc-v1.9.2-osx "
+ARGS=${ARGS}" --alt-embree-dir /Users/qwu/Work/downloads/embree-3.2.0.x86_64.macosx "
 ARGS=${ARGS}" --thirdparty-path $DIR_INSTALL "
 ARGS=${ARGS}" --installation-build-dir $DIR_BUILD "
 
