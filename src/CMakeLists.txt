@@ -879,6 +879,7 @@ VISIT_3RDPARTY_VAR(EMBREE_DIR    "Path containing the embree library's include a
 VISIT_3RDPARTY_VAR(ISPC_DIR      "Path containing the ISPC library's include and lib")
 # Note by Qi
 # should we change TBB_ROOT to TBB_DIR ?
+VISIT_3RDPARTY_VAR(TBB_DIR       "Path containing the TBB library's include and lib")
 VISIT_3RDPARTY_VAR(TBB_ROOT      "Path containing the TBB library's include and lib")
 
 #-----------------------------------------------------------------------------
@@ -1172,17 +1173,19 @@ IF(VISIT_OSPRAY)
 
     # -- this is a hack for TBB_ROOT
     IF(NOT DEFINED TBB_ROOT)
-      SET(TBB_ROOT ${VISIT_TBB_ROOT})
+      SET(TBB_ROOT ${VISIT_TBB_DIR})
     ENDIF()
     # we have to search for the osprayConfig.cmake file in the ospray install 
-    # folder. Because ospray sometimes install its library in <...>/lib64 folder
-    # instead of the <...>/lib folder, we have to check both possibilities
+    # folder. Because ospray sometimes install its library in <...>/lib64 
+    # folder instead of the <...>/lib folder, we have to check both 
+    # possibilities
     IF(EXISTS ${OSPRAY_DIR}/lib)
       SET(ospray_DIR ${OSPRAY_DIR}/lib/cmake/ospray-${OSPRAY_VERSION})
     ELSEIF(EXISTS ${OSPRAY_DIR}/lib64)
       SET(ospray_DIR ${OSPRAY_DIR}/lib64/cmake/ospray-${OSPRAY_VERSION})
     ELSE()
-      MESSAGE(ERROR "Cannot determine ospray_DIR, given OSPRAY_DIR=${OSPRAY_DIR}")
+      MESSAGE(FATAL_ERROR 
+        "Cannot determine ospray_DIR, given OSPRAY_DIR=${OSPRAY_DIR}")
     ENDIF()
     SET(embree_DIR ${EMBREE_DIR})
     MARK_AS_ADVANCED(ospray_DIR)
@@ -1255,6 +1258,7 @@ IF(VISIT_OSPRAY)
     ENDIF(NOT VISIT_OSPRAY_SKIP_INSTALL)
 
     # debug
+    MESSAGE(STATUS "OSPRAY_VERSION: " ${OSPRAY_VERSION})
     MESSAGE(STATUS "OSPRAY_INCLUDE_DIR: " ${OSPRAY_INCLUDE_DIR})
     MESSAGE(STATUS "OSPRAY_LIBRARIES: " ${OSPRAY_LIBRARIES})
     MESSAGE(STATUS "OSPRay for VisIt: ON")
