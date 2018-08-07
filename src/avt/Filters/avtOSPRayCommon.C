@@ -430,6 +430,7 @@ bool ospray::visit::Volume::Init(const std::string volume_type,
     if (volume_type == "visit_shared_structured_volume" ||
         volume_type == "shared_structured_volume") 
     {
+      // std::cout << volume_type << std::endl;
 // #if 1
 //       static int i = 0;
 //       std::ofstream OutFile;
@@ -446,8 +447,10 @@ bool ospray::visit::Volume::Init(const std::string volume_type,
     }
     // TODO: there is a bug inside the module_visit, therefore we cannot 
     //       enable grid accelerator currently
-    ospSet1i(core->self, "useGridAccelerator", 
-             /*(int)use_grid_accelerator*/false);
+    if (!UseOSPRayDistributedFB) {
+      ospSet1i(core->self, "useGridAccelerator", 
+	       /*(int)use_grid_accelerator*/false);
+    }
     core->init = true;
     return true;
   }
@@ -479,8 +482,7 @@ void ospray::visit::Volume::Set(const bool adaptiveSampling,
                          (const vec3f&)scale);
   const vec3f clip_upper(vec3f(cbox[3], cbox[4], cbox[5]) * 
                          (const vec3f&)scale);
-  const vec3f spacing = (data_upper - data_lower)/
-    ((const vec3f)dims - 1.0f);
+  const vec3f spacing = (data_upper - data_lower)/((const vec3f)dims - 1.0f);
   ospSetVec3f(core->self, "gridSpacing", (const osp::vec3f&)spacing);
   ospSetVec3f(core->self, "gridOrigin",  (const osp::vec3f&)data_lower);
   ospSetVec3i(core->self, "dimensions",  (const osp::vec3i&)dims);
@@ -491,13 +493,26 @@ void ospray::visit::Volume::Set(const bool adaptiveSampling,
   ospSet1i(core->self, "adaptiveSampling", (int)adaptiveSampling);
   ospSet1i(core->self, "preIntegration", (int)preIntegration);
   ospSet1i(core->self, "singleShade", (int)singleShade);
+  if (!UseOSPRayDistributedFB) {
+    ospSetVec3f(core->self, "volumeGlobalBoundingBoxLower", 
+                (const osp::vec3f&)global_upper);
+    ospSetVec3f(core->self, "volumeGlobalBoundingBoxUpper",
+                (const osp::vec3f&)global_lower);
+  }
+  ospSetVec3f(core->self, "volumeClippingBoxLower", 
+	      (const osp::vec3f&)clip_lower);
+  ospSetVec3f(core->self, "volumeClippingBoxUpper", 
+	      (const osp::vec3f&)clip_upper);
+  ospSetObject(core->self, "transferFunction", tfn);
+  ospCommit(core->self);
   if (UseOSPRayDistributedFB) {
     DfbRegion region;
     region.bounds.lower = {clip_lower.x, clip_lower.y, clip_lower.z};
     region.bounds.upper = {clip_upper.x, clip_upper.y, clip_upper.z};
     region.id = core->patchId;
     model.Add(region);
-    std::cout << "patchId: " << core->patchId << std::endl;
+    model.Add(core->self);
+    // std::cout << "patchId: " << core->patchId << std::endl;
     // std::cout << "ghost_region " 
     //           << ghost_region.lower.x << " "
     //           << ghost_region.lower.y << " "
@@ -505,18 +520,13 @@ void ospray::visit::Volume::Set(const bool adaptiveSampling,
     //           << ghost_region.upper.x << " "
     //           << ghost_region.upper.y << " "
     //           << ghost_region.upper.z << "\n";
-  } else {
-    ospSetVec3f(core->self, "volumeGlobalBoundingBoxLower", 
-                (const osp::vec3f&)global_upper);
-    ospSetVec3f(core->self, "volumeGlobalBoundingBoxUpper",
-                (const osp::vec3f&)global_lower);
-    ospSetVec3f(core->self, "volumeClippingBoxLower", 
-                (const osp::vec3f&)clip_lower);
-    ospSetVec3f(core->self, "volumeClippingBoxUpper", 
-                (const osp::vec3f&)clip_upper);
   }
-  ospSetObject(core->self, "transferFunction", tfn);
-  ospCommit(core->self);
+  // std::cout << "clip bbox " 
+  // 	    << clip_lower << " " 
+  // 	    << clip_upper << std::endl;
+  // std::cout << "data bbox " 
+  // 	    << data_lower << " " 
+  // 	    << data_upper << std::endl;
 // #if 1
 //   static int i = 0;
 //   std::ofstream OutFile;
@@ -620,25 +630,29 @@ void ospray::visit::FrameBuffer::Render(const int tile_w, const int tile_h,
 // OSPRay::Context
 //
 // ***************************************************************************
-
-bool ospray::Context::DoCompositing(float*& dest, const int width, 
-                                    const int height) {
+void ospray::Context::NewFrame()
+{
+  if (UseOSPRayDistributedFB) {
+    Model model(patchesDfb.model);
+    model.Reset();
+    model.Init();
+  }
+}
+bool ospray::Context::DoCompositing(float*& dest, 
+				    const int width, 
+                                    const int height) 
+{
   if (UseOSPRayDistributedFB) {
     if (PAR_Rank() == 0) {
       dest = new float[width * height * 4]();
     }
     Camera      cam(camera);
     Renderer    ren(renderer);
-    Model model(patchesDfb.model);
-    model.Reset();
-    model.Init();
-    for (int i = 0; i < patchesDfb.volumes.size(); ++i) {
-      model.Add(*(patchesDfb.volumes[i]));
-    }
-    model.Commit();
+    Model       mod(patchesDfb.model);
     FrameBuffer fb(patchesDfb.fb);
-    ren.Set(model);
-    ren.Set(camera);
+    mod.Commit(); // remember to commit model here
+    ren.Set(mod);
+    ren.Set(cam);
     fb.Render(width, height,
               cam.GetWindowExts(0),
               cam.GetWindowExts(2),
@@ -770,17 +784,12 @@ void ospray::InitOSP(int numThreads)
 #endif
   }
   
-  // load ospray module
-  {
-    OSPError err;
-    err = ospLoadModule("ispc");
-    if (err != OSP_NO_ERROR) {
-      osperr << "[Error] can't load ispc module" << std::endl;
-    }
-    err = ospLoadModule("visit");
-    if (err != OSP_NO_ERROR) {
-      osperr << "[Error] can't load visit module" << std::endl;
-    }      
+  // load ospray module even if ospray device has been initialized
+  if (ospLoadModule("ispc") != OSP_NO_ERROR) {
+    osperr << "[Error] can't load ispc module" << std::endl;
+  }
+  if (ospLoadModule("visit") != OSP_NO_ERROR) {
+    osperr << "[Error] can't load visit module" << std::endl;
   }
 
   // load ospray device
@@ -792,10 +801,12 @@ void ospray::InitOSP(int numThreads)
     ospray::Warning("(Qi): ospray is not being initialized by VTK, "
                     "something is probably wrong ... ");
     if (UseOSPRayDistributedFB) {
-      OSPError err = ospLoadModule("mpi");
-      if (err != OSP_NO_ERROR) {
-        osperr << "[Error] can't load mpi module" << std::endl;
+      if (ospLoadModule("mpi") != OSP_NO_ERROR) {
+	osperr << "[Error] can't load mpi module" << std::endl;
+	UseOSPRayDistributedFB = false; // we dont want it to crash
       }
+    }
+    if (UseOSPRayDistributedFB) {
       device = ospNewDevice("mpi_distributed"); 
       ospDeviceSet1i(device, "masterRank", 0);
     } else {

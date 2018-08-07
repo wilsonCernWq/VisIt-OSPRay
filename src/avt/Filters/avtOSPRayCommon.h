@@ -530,6 +530,7 @@ namespace ospray {
   // *************************************************************************
   struct Context : public ospray::visit::ContextCore {
   public:
+    void NewFrame();
     bool DoCompositing(float*&, const int width, const int height);
     void SetBackgroundBuffer(const unsigned char* color,
                              const float* depth, const int size[2]);

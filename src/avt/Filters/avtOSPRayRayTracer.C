@@ -454,6 +454,7 @@ avtOSPRayRayTracer::Execute()
     }    
     ren.FinalizeLights();
     ren.Set(0, 1, false, false, false);
+    ospray->NewFrame();
     ospray::CheckMemoryHere("[avtOSPRayRayTracer] Done ospray", "ospout");    
 
     //===================================================================//
