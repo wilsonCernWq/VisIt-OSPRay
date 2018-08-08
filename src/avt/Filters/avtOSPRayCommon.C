@@ -490,12 +490,15 @@ void ospray::visit::Volume::Set(const bool adaptiveSampling,
     ospSetVec3f(core->self, "volumeGlobalBoundingBoxUpper",
                 (const osp::vec3f&)global_lower);
   }
+  // Note: it is safe to manually clip all the subvolumes. It causes problems
+  // in practice if we don't do it in MPI Distributed mode.
   ospSetVec3f(core->self, "volumeClippingBoxLower", 
 	      (const osp::vec3f&)clip_lower);
   ospSetVec3f(core->self, "volumeClippingBoxUpper", 
 	      (const osp::vec3f&)clip_upper);
   ospSetObject(core->self, "transferFunction", tfn);
   ospCommit(core->self);
+  // setup regions for model
   if (UseOSPRayDistributedFB) {
     DfbRegion region;
     region.bounds.lower = {clip_lower.x, clip_lower.y, clip_lower.z};
@@ -520,6 +523,8 @@ void ospray::visit::FrameBuffer::Render(const int tile_w, const int tile_h,
 {
   const vec2i fb_size(tile_w, tile_h);
   // prepare the maxDepthDexture
+  // TODO: this functionality is current not supported by the ospray
+  // distributed framebuffer. 
   if (!UseOSPRayDistributedFB) {
     // The reason I use round(r * (N-1)) instead of floor(r * N) is that
     // during the composition phase, there will be a wired offset between
@@ -542,20 +547,18 @@ void ospray::visit::FrameBuffer::Render(const int tile_w, const int tile_h,
   }    
   // do the rendering
   // ALWAYS create a new framebuffer
+  ospray_rm(core->self);
+  core->self = ospNewFrameBuffer((const osp::vec2i&)fb_size,
+				 OSP_FB_RGBA32F, OSP_FB_COLOR);
+  ospray_check(core->self, "framebuffer");
+  ospRenderFrame(core->self, renderer, OSP_FB_COLOR);
+  if (UseOSPRayDistributedFB ? (PAR_Rank() == 0) : true) 
   {
-    ospray_rm(core->self);
-    core->self = ospNewFrameBuffer((const osp::vec2i&)fb_size,
-                                   OSP_FB_RGBA32F, OSP_FB_COLOR);
-    ospray_check(core->self, "framebuffer");
-    ospRenderFrame(core->self, renderer, OSP_FB_COLOR);
-    if (UseOSPRayDistributedFB ? (PAR_Rank() == 0) : true) 
-    {
-      const float* image = 
-        (float*)ospMapFrameBuffer(core->self, OSP_FB_COLOR);
-      std::copy(image, image + (tile_w * tile_h) * 4, dest);
-      ospUnmapFrameBuffer(image, core->self);
-      ospray_rm(core->self);      
-    }
+    const float* image = 
+      (float*)ospMapFrameBuffer(core->self, OSP_FB_COLOR);
+    std::copy(image, image + (tile_w * tile_h) * 4, dest);
+    ospUnmapFrameBuffer(image, core->self);
+    ospray_rm(core->self);      
   }
 }
 
@@ -710,13 +713,11 @@ void ospray::InitOSP(int numThreads)
   ospray_initialized = true;
   
   // check hostname
-  {
 #ifdef __unix__
-    char hname[200];
-    gethostname(hname, 200);
-    ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
+  char hname[200];
+  gethostname(hname, 200);
+  ospout << "[ospray] on host >> " << hname << "<<" << std::endl;;
 #endif
-  }
   
   // load ospray module even if ospray device has been initialized
   if (ospLoadModule("ispc") != OSP_NO_ERROR) {
