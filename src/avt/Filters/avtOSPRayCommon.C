@@ -430,15 +430,6 @@ bool ospray::visit::Volume::Init(const std::string volume_type,
     if (volume_type == "visit_shared_structured_volume" ||
         volume_type == "shared_structured_volume") 
     {
-      // std::cout << volume_type << std::endl;
-// #if 1
-//       static int i = 0;
-//       std::ofstream OutFile;
-//       OutFile.open(("cthead_"+std::to_string(i++)+".raw").c_str(), 
-//                    ios::out | ios::binary);
-//       OutFile.write((char*)data_ptr, data_size * sizeof(float));
-//       OutFile.close();
-// #endif
       OSPData osp_data = ospNewData(data_size, data_type,
                                     data_ptr, OSP_DATA_SHARED_BUFFER);
       ospSetString(core->self, "voxelType", data_char.c_str());
@@ -512,64 +503,7 @@ void ospray::visit::Volume::Set(const bool adaptiveSampling,
     region.id = core->patchId;
     model.Add(region);
     model.Add(core->self);
-    // std::cout << "patchId: " << core->patchId << std::endl;
-    // std::cout << "ghost_region " 
-    //           << ghost_region.lower.x << " "
-    //           << ghost_region.lower.y << " "
-    //           << ghost_region.lower.z << ", "
-    //           << ghost_region.upper.x << " "
-    //           << ghost_region.upper.y << " "
-    //           << ghost_region.upper.z << "\n";
   }
-  // std::cout << "clip bbox " 
-  // 	    << clip_lower << " " 
-  // 	    << clip_upper << std::endl;
-  // std::cout << "data bbox " 
-  // 	    << data_lower << " " 
-  // 	    << data_upper << std::endl;
-// #if 1
-//   static int i = 0;
-//   std::ofstream OutFile;
-//   OutFile.open(("cthead_"+std::to_string(i++)+".osp").c_str(), 
-//                ios::out);
-//   OutFile << "<?xml version=\"1.0\"?>" << std::endl;
-//   OutFile << "<volume name=\"volume\">" << std::endl;
-//   OutFile << "<dimensions> "
-//           << dims.x << " "
-//           << dims.y << " " 
-//           << dims.z << " "
-//           << "</dimensions>" << std::endl;
-//   OutFile << "<!-- <regionLower> "
-//           << clip_lower.x << " " 
-//           << clip_lower.y << " "
-//           << clip_lower.z << " "
-//           << "</regionLower> -->" << std::endl;
-//   OutFile << "<!-- <regionUpper> "
-//           << clip_upper.x << " "
-//           << clip_upper.y << " "
-//           << clip_upper.z << " "
-//           << "</regionUpper> -->" << std::endl;
-//   OutFile << "<!-- <ghostLower> "
-//           << data_lower.x << " " 
-//           << data_lower.y << " "
-//           << data_lower.z << " "
-//           << "</ghostLower> -->" << std::endl;
-//   OutFile << "<!-- <ghostUpper> "
-//           << data_upper.x << " "
-//           << data_upper.y << " "
-//           << data_upper.z << " "
-//           << "</ghostUpper> -->" << std::endl;
-//   OutFile << "<!-- <spacing> "
-//           << spacing.x << " "
-//           << spacing.y << " "
-//           << spacing.z << " "
-//           << "</regionUpper> -->" << std::endl;
-//   OutFile << "<filename> cthead_" << (i-1) << ".raw </filename>" << std::endl;
-//   OutFile << "<samplingRate> 1.0 </samplingRate>" << std::endl;
-//   OutFile << "<voxelType> float </voxelType>" << std::endl;
-//   OutFile << "</volume>" << std::endl;
-//   OutFile.close();
-// #endif
 }  
 
 // =====================================================================//
@@ -796,7 +730,7 @@ void ospray::InitOSP(int numThreads)
   ospout << "[ospray] Initialize OSPRay" << std::endl;    
   OSPDevice device = ospGetCurrentDevice();
   if (!device) { // check if ospray has been initialized already
-    // currently ospray is being initialized by vtkOSPRay, this 
+    // currently ospray should be initialized by vtkOSPRay, this 
     // section should never be entered ... 
     ospray::Warning("(Qi): ospray is not being initialized by VTK, "
                     "something is probably wrong ... ");
@@ -955,6 +889,10 @@ ospray::ComputeProjections(const avtViewInfo &view,
   //----------------------------------------------------------------------//
   // compute canvas size (parallel scale)
   //----------------------------------------------------------------------//
+  // Note by Qi: The variable "canvas_size" indicates the size of the camera
+  // film in world space. I am not entirely sure how this should be related
+  // to the variable "parallel scale", but I think there should be a better
+  // way to get "canvas_size" directly from "parallel scale".
   if (!view.orthographic)
   {
     canvas_size[0] = 2.0 * old_near_plane / matProj->GetElement(0, 0);
@@ -972,7 +910,7 @@ ospray::ComputeProjections(const avtViewInfo &view,
   //----------------------------------------------------------------------//
   // get the renderable region
   //----------------------------------------------------------------------//
-  double depths[2];
+  double depths[2]; // dummy return values ...
   ospray::ProjectWorldToScreenCube(data_bound,
                                    screen_size[0], screen_size[1], 
                                    view.imagePan, view.imageZoom,
@@ -1041,7 +979,8 @@ ospray::ProjectScreenToWorld(const int screenCoord[2], const double z,
     (y - screenHeight / 2.0) / (screenHeight / 2.0), z, 1.0};
   imvp->MultiplyPoint(clipHCoord, worldHCoord);
   // check error
-  if (worldHCoord[3] == 0) {
+  if (worldHCoord[3] == 0)
+  {
     std::cerr << "world coordinates: (" 
               << worldHCoord[0] << ", " 
               << worldHCoord[1] << ", " 
@@ -1096,6 +1035,8 @@ ospray::ProjectScreenToCamera(const int screenCoord[2], const double z,
   cameraCoord[2] = cameraHCoord[2]/cameraHCoord[3];
 }
 
+// This is to project a box into the screen space and find the AABB
+// of the projection in the screen coordinate
 void
 ospray::ProjectWorldToScreenCube(const double cube[6],
                                  const int screenWidth, 
@@ -1179,6 +1120,9 @@ ospray::CompositeBackground(int screen[2],
                             unsigned char *&imgFinal)
 {
   if (UseThreadedBlend) {
+    // Note by Qi: this function goes into ospray and calls a multi-threaded
+    // function to do image composition. This "should" be faster but I have
+    // never done benchmarks for it.
     visit::CompositeBackground(screen,
                                compositedImageExtents,
                                compositedImageWidth,
@@ -1252,6 +1196,7 @@ ospray::CompositeBackground(int screen[2],
   }
 }
 
+//// Extra useful functions //////////////////////////////////////////////////
 void
 ospray::WriteArrayToPPM(std::string filename, const float * image,
                         int dimX, int dimY)

@@ -48,11 +48,24 @@
 #include <vector>
 #include <map>
 
+/**
+ * Note: This header has been divided into two parts. The first part will
+ *       be used by default. The second part will be ignored if we have 
+ *       preprocessor variable VISIT_OSPRAY_CONTEXT_ONLY defined. The reason
+ *       for me to do that is, this header file will be used inside the 
+ *       class "avtVolumeFilter". The library containing "avtVolumeFilter"
+ *       is not always linked together with "avtfilter_*". Thus for those 
+ *       libraries/targets do not link against "avtfilter_*", there is a
+ *       potential risk for undefined linkage error. Therefore I put all the
+ *       class fields in the first part of the file (as a kind of forward 
+ *       definition). All the class methods are defined in the second part
+ *       of this header.
+ */
 namespace ospray {
   namespace visit {
   
     /** 
-     * Helper Functions
+     * Helper Function to safely remove an ospray target
      */
     template<typename T> void ospray_rm(T& obj) {
       if (!obj) { ospRelease(obj); obj = NULL; }
@@ -120,8 +133,8 @@ namespace ospray {
     /**
      * Model Wrapper
      */
-    struct DfbRegion {
-      osp::box3f bounds;
+    struct DfbRegion {   // --> distributed framebuffer region
+      osp::box3f bounds; // compatiable to ospray release 1.7+
       int id;
     };
     struct ModelCore : public Object<OSPModel> {
@@ -159,13 +172,25 @@ namespace ospray {
     /**
      * Now we define a PatchCore
      */
-    struct PatchOfl {
+    // I have implemented two methods for rendering distributed volumes.
+    //
+    // The first method uses ospray locally and produces N tiles. Those
+    // tiles will be then composited in VisIt.
+    //
+    // The second method uses OSPRay's distributed framebuffer to handle
+    // data distributed rendering. In this mode we have to provide one
+    // clipping box and one patch id for each patch (subvolume) we are
+    // we are rendering. There can be multiple clipping boxes on one rank
+    // but they cannot have overlapps. Please see ospray's documentation
+    // page for more information.
+    //
+    struct PatchOfl {   // first method
       ModelCore       model;
       VolumeCore      volume;
       FrameBufferCore fb;
     };
     typedef std::map<int, PatchOfl> PatchesOfl;
-    struct PatchesDfb {
+    struct PatchesDfb { // second method
       ModelCore       model;
       std::map<int, VolumeCore> volumes;
       FrameBufferCore fb;
@@ -195,10 +220,11 @@ namespace ospray {
       double Ks;
       double Ns;
       double samplingRate;
-      int aoSamples;
-      int spp;
-      double scale[3];
-      double gbbox[6];
+      int aoSamples; 
+      int spp; // sample per pixel
+      double scale[3]; // scale the volume along axes
+      double gbbox[6]; // the global bounding box for the entire volume
+                       // across all the ranks 
       // (shared, dont delete here)
       const unsigned char *bgColorBuffer;  // backplatte color channel
       const float         *bgDepthBuffer;  // backplatte depth channel 
@@ -280,6 +306,10 @@ typedef ospray::visit::ContextCore OSPVisItContext;
 #endif
 
 // ostreams customized for ospray
+// they will produce outputs to stdout/stderr if
+//    environmental variable  OSPRAY_VERBOSE >1
+//    environmental variable  OSPRAY_LOG_LEVEL > 1
+//    environmental variable  OSPRAY_DEBUG > 1 
 #ifdef ospout
 #undef ospout
 #endif
@@ -322,7 +352,8 @@ namespace ospray {
       _OSPType   operator* () { return *(*core); }
       _CoreType* operator->() { return &(*core); }
     };
-  
+
+    // forward definitions
     struct TransferFunction;
     struct Camera;
     struct Light;
@@ -365,6 +396,8 @@ namespace ospray {
                const double canvas_size[2],
                const int screen_size[2],
                const int tile_extents[4]);
+      // to set correct "imageStart" and "imageEnd" for camera.
+      // see ospray documentation for details.
       void SetScreen(const double xMin, const double xMax,
                      const double yMin, const double yMax);
     };
@@ -467,9 +500,9 @@ namespace ospray {
     public:
       Renderer(RendererCore& other);
       void  Init();
-      void  ResetLights();
-      Light AddLight();
-      void  FinalizeLights();
+      void  ResetLights();    // for those three functions, we should call 
+      Light AddLight();       // them in a sequence. We can add multiple
+      void  FinalizeLights(); // lights to the module.
       void  Set(const int aoSamples, const int spp, 
                 const bool oneSidedLighting,
                 const bool shadowsEnabled,
@@ -530,8 +563,11 @@ namespace ospray {
   // *************************************************************************
   struct Context : public ospray::visit::ContextCore {
   public:
+    // call this before extracting voxels
     void NewFrame();
+    // call this after extracting voxels
     bool DoCompositing(float*&, const int width, const int height);
+    // this sets the maximum depth texture for ospray
     void SetBackgroundBuffer(const unsigned char* color,
                              const float* depth, const int size[2]);
     void SetSpecular(const double& k, const double& n) { Ks = k; Ns = n; }
@@ -608,12 +644,12 @@ namespace ospray {
   //  Purpose:
   //    Holds information about patches but not the image 
   //
-  //  Programmer:  
+  //  Programmer:  Pascal Grosset
   //  Creation:   
   //
   // ***********************************************************************
 
-  struct ImgMetaData
+  struct ImgMetaData // Legacy code, I dont think this is necessary
   {
     int procId;       // processor that produced the patch
     int patchNumber;  // id of the patch on that processor
@@ -633,7 +669,7 @@ namespace ospray {
   //  Purpose:
   //    Holds the image data generated
   //
-  //  Programmer:  
+  //  Programmer:  Pascal Grosset
   //  Creation:    
   //
   // ***********************************************************************
@@ -655,7 +691,20 @@ namespace ospray {
   //  Helper Functions
   //
   // ***********************************************************************
-        
+
+  inline void Exception(const std::string str)
+  {
+    std::cerr << str << std::endl;
+    debug1    << str << std::endl;
+    EXCEPTION1(ImproperUseException, str.c_str());
+    avtCallback::SetRenderingException(str);
+  }
+
+  inline void Warning(const std::string str)
+  {
+    avtCallback::IssueWarning(str.c_str());
+  }
+
   void CheckMemoryHere(const std::string& message, 
                        std::string debugN = "debug5");
   void CheckMemoryHere(const std::string& message, 
@@ -683,18 +732,6 @@ namespace ospray {
     debug5 << c << "::" << f << " " << str << " Done" << std::endl;
   }
 
-  inline void Exception(const std::string str)
-  {
-    std::cerr << str << std::endl;
-    debug1    << str << std::endl;
-    EXCEPTION1(ImproperUseException, str.c_str());
-    avtCallback::SetRenderingException(str);
-  }
-
-  inline void Warning(const std::string str)
-  {
-    avtCallback::IssueWarning(str.c_str());
-  }
   void CheckVolumeFormat(const int dt,
                          std::string& str_type,
                          OSPDataType& osp_type);
