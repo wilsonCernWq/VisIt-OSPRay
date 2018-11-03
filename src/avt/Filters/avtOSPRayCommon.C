@@ -73,8 +73,8 @@ namespace {
       while (ss >> arg) {
         if (arg == "--osp:mpi-distributed") return true;
       }
-      return false;
     }
+    return false;
   }
   static bool CheckThreadedBlend() {
     const char* envNotUse = std::getenv("OSPRAY_SERIAL_BLEND");
@@ -705,11 +705,15 @@ static void OSPContext_StatusFunc(const char* msg)
 { 
   osperr << "#osp: (rank " << PAR_Rank() << ")" << msg; 
 }
-static bool ospray_initialized = false;
 void ospray::InitOSP(int numThreads) 
-{   
+{
   // return if ospray has been initialized already
-  if (!ospray_initialized) { return; }
+  // make sure we only run this function once and only once
+  static bool ospray_initialized = false;
+  if (ospray_initialized) {
+    std::cout << "[ospray] skip initialization" << std::endl;
+    return;
+  }
   ospray_initialized = true;
   
   // check hostname
@@ -726,6 +730,10 @@ void ospray::InitOSP(int numThreads)
   if (ospLoadModule("visit") != OSP_NO_ERROR) {
     osperr << "[Error] can't load visit module" << std::endl;
   }
+  if (UseOSPRayDistributedFB && ospLoadModule("mpi") != OSP_NO_ERROR) {
+    osperr << "[Error] can't load mpi module" << std::endl;
+    UseOSPRayDistributedFB = false; // we dont want it to crash
+  }
 
   // load ospray device
   ospout << "[ospray] Initialize OSPRay" << std::endl;    
@@ -736,25 +744,18 @@ void ospray::InitOSP(int numThreads)
     ospray::Warning("(Qi): ospray is not being initialized by VTK, "
                     "something is probably wrong ... ");
     if (UseOSPRayDistributedFB) {
-      if (ospLoadModule("mpi") != OSP_NO_ERROR) {
-	osperr << "[Error] can't load mpi module" << std::endl;
-	UseOSPRayDistributedFB = false; // we dont want it to crash
-      }
-    }
-    if (UseOSPRayDistributedFB) {
       device = ospNewDevice("mpi_distributed"); 
       ospDeviceSet1i(device, "masterRank", 0);
     } else {
       device = ospNewDevice("default"); 
     }
     if (numThreads > 0) ospDeviceSet1i(device, "numThreads", numThreads);
-  }
-    
-  // set it as current device
-  ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
-  ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
-  ospDeviceCommit(device);
-  ospSetCurrentDevice(device);
+    // set it as current device
+    ospDeviceSetErrorFunc(device, OSPContext_ErrorFunc);
+    ospDeviceSetStatusFunc(device, OSPContext_StatusFunc);
+    ospDeviceCommit(device);
+    ospSetCurrentDevice(device);    
+  }    
 }
 
 void ospray::Finalize()
