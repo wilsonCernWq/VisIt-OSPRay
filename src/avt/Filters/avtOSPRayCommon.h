@@ -138,7 +138,7 @@ namespace ospray {
       int id;
     };
     struct ModelCore : public Object<OSPModel> {
-      std::vector<DfbRegion> regions;
+      DfbRegion region;
       ModelCore() : Object<OSPModel>() {}
     };
 
@@ -175,7 +175,15 @@ namespace ospray {
     // I have implemented two methods for rendering distributed volumes.
     //
     // The first method uses ospray locally and produces N tiles. Those
-    // tiles will be then composited in VisIt.
+    // tiles will be then composited in VisIt. Therefore each patch can
+    // have one framebuffer
+    //
+    struct PatchOfl {   // first method
+      ModelCore       model;
+      VolumeCore      volume;
+      FrameBufferCore fb;
+    };
+    typedef std::map<int, PatchOfl> PatchesOfl;
     //
     // The second method uses OSPRay's distributed framebuffer to handle
     // data distributed rendering. In this mode we have to provide one
@@ -184,15 +192,12 @@ namespace ospray {
     // but they cannot have overlapps. Please see ospray's documentation
     // page for more information.
     //
-    struct PatchOfl {   // first method
-      ModelCore       model;
-      VolumeCore      volume;
-      FrameBufferCore fb;
+    struct PatchDfb { // second method
+      ModelCore   model;
+      VolumeCore  volume;
     };
-    typedef std::map<int, PatchOfl> PatchesOfl;
-    struct PatchesDfb { // second method
-      ModelCore       model;
-      std::map<int, VolumeCore> volumes;
+    struct PatchesDfb { 
+      std::map<int, PatchDfb> patches;
       FrameBufferCore fb;
     };
 
@@ -511,6 +516,7 @@ namespace ospray {
       void  Set(Camera        camera) { Set(*camera); }
       void  Set(OSPModel   osp_world);
       void  Set(Model          world) { Set(*world);  }
+      void  Set(std::vector<OSPModel>& models);
     };
 
     /**

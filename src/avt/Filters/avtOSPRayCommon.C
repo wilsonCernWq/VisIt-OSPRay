@@ -71,7 +71,9 @@ namespace {
       std::stringstream ss(envArgs);
       std::string arg;
       while (ss >> arg) {
-        if (arg == "--osp:mpi-distributed") return true;
+        if (arg == "--osp:mpi-distributed") {
+	  return true;
+	}
       }
     }
     return false;
@@ -360,6 +362,17 @@ void ospray::visit::Renderer::Set(OSPModel osp_world)
   ospSetObject(core->self, "model", osp_world);
   ospCommit(core->self);
 }
+void ospray::visit::Renderer::Set(std::vector<OSPModel>& models)
+{
+  if (!core->init && CheckVerbose()) { 
+    ospray::Exception("[avtOSPRayCommon] renderer found uninitialized "
+                      "while calling Set(std::vector<OSPModel>).");
+  }
+  OSPData osp_models =
+    ospNewData(models.size(), OSP_OBJECT, models.data());
+  ospSetData(core->self, "model", osp_models);
+  ospCommit(core->self);
+}
     
 // =====================================================================//
 //
@@ -369,7 +382,6 @@ ospray::visit::Model::Model(ModelCore& other)
 void ospray::visit::Model::Reset()
 {
   core->init = false;
-  core->regions.clear();
 }
 void ospray::visit::Model::Init()
 {
@@ -383,20 +395,21 @@ void ospray::visit::Model::Init()
 void ospray::visit::Model::Commit()
 {
   if (UseOSPRayDistributedFB) {
-    OSPData osp_regionsData = 
-      ospNewData(core->regions.size() * sizeof(DfbRegion),
-                 OSP_CHAR, core->regions.data());
-    ospSetData(core->self, "regions", osp_regionsData);
+    ospSet1i(core->self, "id", core->region.id);
+    ospSetVec3f(core->self, "region.lower", core->region.bounds.lower);
+    ospSetVec3f(core->self, "region.upper", core->region.bounds.upper);
   }
   ospCommit(core->self);
 }
 void ospray::visit::Model::Add(OSPVolume volume)
 {
+  std::cout << "??\n";
   ospAddVolume(core->self, volume);
+  std::cout << "xx\n";
 }
 void ospray::visit::Model::Add(const DfbRegion& osp_region)
 {
-  core->regions.push_back(osp_region);
+  core->region = osp_region;
 }
 
 // =====================================================================//
@@ -498,14 +511,16 @@ void ospray::visit::Volume::Set(const bool adaptiveSampling,
 	      (const osp::vec3f&)clip_upper);
   ospSetObject(core->self, "transferFunction", tfn);
   ospCommit(core->self);
-  // setup regions for model
+  // setup region info for model
   if (UseOSPRayDistributedFB) {
     DfbRegion region;
     region.bounds.lower = {clip_lower.x, clip_lower.y, clip_lower.z};
     region.bounds.upper = {clip_upper.x, clip_upper.y, clip_upper.z};
     region.id = core->patchId;
+    std::cout << "ready to setup model" << core->self << "\n";
     model.Add(region);
     model.Add(core->self);
+    std::cout << "setup model\n";
   }
 }  
 
@@ -569,11 +584,6 @@ void ospray::visit::FrameBuffer::Render(const int tile_w, const int tile_h,
 // ***************************************************************************
 void ospray::Context::NewFrame()
 {
-  if (UseOSPRayDistributedFB) {
-    Model model(patchesDfb.model);
-    model.Reset();
-    model.Init();
-  }
 }
 bool ospray::Context::DoCompositing(float*& dest, 
 				    const int width, 
@@ -585,10 +595,14 @@ bool ospray::Context::DoCompositing(float*& dest,
     }
     Camera      cam(camera);
     Renderer    ren(renderer);
-    Model       mod(patchesDfb.model);
+    std::vector<OSPModel> models;
+    for (auto& p : patchesDfb.patches) {
+      Model m(p.second.model);
+      m.Commit(); // remember to commit model here
+      models.push_back(*m);
+    }
     FrameBuffer fb(patchesDfb.fb);
-    mod.Commit(); // remember to commit model here
-    ren.Set(mod);
+    ren.Set(models);
     ren.Set(cam);
     fb.Render(width, height,
               cam.GetWindowExts(0),
@@ -605,9 +619,10 @@ bool ospray::Context::DoCompositing(float*& dest,
 void ospray::Context::InitPatch(const int patchId)
 {
   if (UseOSPRayDistributedFB) {
-    if (patchesDfb.volumes.find(patchId) == patchesDfb.volumes.end()) {
-      patchesDfb.volumes[patchId] = ospray::visit::VolumeCore();
-      patchesDfb.volumes[patchId].patchId = patchId;
+    if (patchesDfb.patches.find(patchId) == patchesDfb.patches.end()) {
+      patchesDfb.patches[patchId].model = ospray::visit::ModelCore();
+      patchesDfb.patches[patchId].volume = ospray::visit::VolumeCore();
+      patchesDfb.patches[patchId].volume.patchId = patchId;
     }
   } else {
     if (patchesOfl.find(patchId) == patchesOfl.end()) {
@@ -640,16 +655,19 @@ void ospray::Context::SetupPatch(const int patchId,
   OSPDataType osp_type;
   CheckVolumeFormat(vtk_type, str_type, osp_type);
   Volume volume(UseOSPRayDistributedFB ? 
-                patchesDfb.volumes[patchId] :
+                patchesDfb.patches[patchId].volume :
                 patchesOfl[patchId].volume);
+  std::cout << "create volume\n";
   volume.Init(UseOSPRayDistributedFB ? 
               "shared_structured_volume" : 
               "visit_shared_structured_volume",
               osp_type, str_type, data_size, data_ptr,
               useGridAccelerator);
+  std::cout << "init volume\n";
   Model model(UseOSPRayDistributedFB ? 
-              patchesDfb.model :
+              patchesDfb.patches[patchId].model :
               patchesOfl[patchId].model);
+  std::cout << "create model\n";
   volume.Set(adaptiveSampling,
              preIntegration,
              singleShade,
@@ -662,6 +680,7 @@ void ospray::Context::SetupPatch(const int patchId,
              osp::vec3f{(float)gbbox[3],(float)gbbox[4],(float)gbbox[5]},
              osp::vec3f{(float)scale[0],(float)scale[1],(float)scale[2]},
              tfn, model);
+  std::cout << "set model/volume\n";
   if (!UseOSPRayDistributedFB) {
     model.Reset();
     model.Init();
@@ -711,8 +730,11 @@ void ospray::InitOSP(int numThreads)
   // make sure we only run this function once and only once
   static bool ospray_initialized = false;
   if (ospray_initialized) {
-    std::cout << "[ospray] skip initialization" << std::endl;
+    ospout << "[ospray] skip initialization" << std::endl;
     return;
+  }
+  if (UseOSPRayDistributedFB) {
+    std::cout << "[ospray] use ospray dfb" << std::endl;
   }
   ospray_initialized = true;
   
