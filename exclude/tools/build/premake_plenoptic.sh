@@ -25,7 +25,7 @@ mkdir -p $DIR_BUILD
 mkdir -p $DIR_INSTALL
 
 ARGS=""
-ARGS=${ARGS}" --no-visit "
+ARGS=${ARGS}" --no-visit --stdout "
 ARGS=${ARGS}" --fortran --cc gcc --cxx g++ --cxxflag -std=c++11 "
 ARGS=${ARGS}" --makeflags -j4 "
 ARGS=${ARGS}" --parallel "
@@ -39,7 +39,7 @@ if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --alt-tbb-dir /home/qadwu/Work/softwares/tbb/tbb-2018_20180618-install "
     ARGS=${ARGS}" --alt-ispc-dir /home/qadwu/Work/softwares/ispc/ispc-1.9.2-install "
     ARGS=${ARGS}" --alt-embree-dir /home/qadwu/Work/softwares/embree/embree-3.2.0-install "
-    ARGS=${ARGS}" --alt-ospray-dir /home/qadwu/Work/projects/ospray/builds/ospray-visit-install/lib/cmake/ospray-1.7.0 "
+    ARGS=${ARGS}" --alt-ospray-dir /home/qadwu/Work/projects/ospray/builds/ospray-visit-install/lib/cmake/ospray-1.8.0 "
     #ARGS=${ARGS}" --pidx "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then
     #ARGS=${ARGS}" --stdout "
