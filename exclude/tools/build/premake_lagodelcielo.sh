@@ -41,7 +41,7 @@ if   [[ "$PREMAKE_VERSION" == "trunk" ]]; then
     ARGS=${ARGS}" --alt-ispc-dir /home/sci/qwu/software/ispc-v1.9.2-linux "
     ARGS=${ARGS}" --alt-embree-dir /home/sci/qwu/software/embree-3.2.0.x86_64.linux "
     ARGS=${ARGS}" --alt-tbb-dir /home/sci/qwu/software/tbb2018_20180618oss "
-    ARGS=${ARGS}" --alt-ospray-dir /ssd/users/qwu/ospray/install-visit/lib64/cmake/ospray-1.7.0 "
+    ARGS=${ARGS}" --alt-ospray-dir /ssd/users/qwu/ospray/install-visit/lib64/cmake/ospray-1.8.0 "
     #ARGS=${ARGS}" --pidx "
     #ARGS=${ARGS}" --uintah "
 elif [[ "$PREMAKE_VERSION" == "rc2.13" ]]; then

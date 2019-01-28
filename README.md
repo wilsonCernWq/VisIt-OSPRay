@@ -83,4 +83,4 @@ If there are some files should be removed from VisIt source due to some renaming
 in [`exclude/tools/removelist.txt`](exclude/tools/removelist.txt) file. However it will not cause any problem if those files are not removed.
 
 ### Running the Development Version
-Currently in this branch I have also implemented a version to test the new OSPRay distributed framebuffer. In order to test this functionality, you need to set the environmental variable `VTKOSPRAY_ARGS` to be `"--osp:mpi-distribute"`.
+Currently in this branch I have also implemented a version to test the new OSPRay distributed framebuffer. In order to test this functionality, you need to set the environmental variable `VTKOSPRAY_ARGS` to be `"--osp:mpi-distributed"`.
