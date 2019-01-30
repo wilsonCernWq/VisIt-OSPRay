@@ -1,6 +1,6 @@
 #*****************************************************************************
 #
-# Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
+# Copyright (c) 2000 - 2019, Lawrence Livermore National Security, LLC
 # Produced at the Lawrence Livermore National Laboratory
 # LLNL-CODE-442911
 # All rights reserved.
@@ -437,6 +437,15 @@
 #    vs installed version) into separate CMake files, all handled by
 #    PluginVsInstallHelpers.cmake.
 #
+#    Kathleen Biagas, Mon Dec 10 14:41:27 MST 2018
+#    Have CMake find the MSVC runtime libraries needed for Windows distro.
+#
+#    Kevin Griffin, Wed Dec 12 18:00:27 PST 2018
+#    Added back osxfixup logic.
+#
+#    Eric Brugger, Mon Jan 28 15:14:54 PST 2019
+#    Changed SVN_REVISION to GIT_VERSION.
+#
 #****************************************************************************/
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.8 FATAL_ERROR)
@@ -741,6 +750,7 @@ OPTION(VISIT_CREATE_SOCKET_RELAY_EXECUTABLE "Create a separate executable that f
 OPTION(VISIT_RPATH_RELATIVE_TO_EXECUTABLE_PATH "Install rpath relative to executable location using \$ORIGIN tag" OFF)
 OPTION(VISIT_FORTRAN "Enable compilation of Fortran example progams" OFF)
 OPTION(VISIT_DATA_MANUAL_EXAMPLES "Build Getting Data Into VisIt examples" OFF)
+OPTION(VISIT_SPHINX "Enable ability to build sphinx documentation" OFF)
 
 OPTION(IGNORE_THIRD_PARTY_LIB_PROBLEMS "Ignore problems finding requested third party libraries")
 OPTION(VISIT_FORCE_SSH_TUNNELING "Force ssh tunnelling for sockets" OFF)
@@ -768,6 +778,7 @@ OPTION(VISIT_BUILD_DIAGNOSTICS  "Enable building of diagnostices" ON)
 OPTION(VISIT_ENABLE_XDB "Enable Intelligent Light XDB database plugin." OFF) # OFF for now
 
 SET(VISIT_INSTALL_PROFILES_TO_HOSTS "" CACHE STRING "Install specified host profiles (no action if empty)." )
+SET(VISIT_DEFAULT_SILO_DRIVER "PDB" CACHE STRING "Default driver for generating silo data. Valid values are PDB, HDF5 or empty. An empty value means driver can be specified via make on the command line." )
 
 MACRO(VISIT_3RDPARTY_VAR libvar comment)
     IF(NOT DEFINED VISIT_${libvar})
@@ -997,8 +1008,8 @@ VISIT_INSTALLED_VERSION_INCLUDE
 
 # experimental!!
 # ctest/cdash testing support
-SET(BUILD_TESTING OFF CACHE BOOL "Enable ctest hooks into VisIt's regression suite")
-IF(BUILD_TESTING)
+SET(BUILD_CTEST_TESTING OFF CACHE BOOL "Enable ctest hooks into VisIt's regression suite")
+IF(BUILD_CTEST_TESTING)
     # enable native cmake testing
     INCLUDE(CTest)
     CONFIGURE_FILE(
@@ -1011,7 +1022,7 @@ IF(BUILD_TESTING)
     # * test data is generated from a set of programs
     #   that need to be built, also not in the source tree,
     #   but configured by this cmake lists file
-    SET(VISIT_TEST_DIR "${VISIT_SOURCE_DIR}/../test"
+    SET(VISIT_TEST_DIR "${VISIT_SOURCE_DIR}/test"
         CACHE PATH "Path to VisIt's regression suite")
     SET(VISIT_BASELINE_DIR "${VISIT_SOURCE_DIR}/../test/baseline"
         CACHE PATH "Path to baseline images used by VisIt's regression suite")
@@ -1021,7 +1032,7 @@ IF(BUILD_TESTING)
     # this will likely be a source of confusion for the
     # uninitiated
     IF ((NOT EXISTS ${VISIT_TEST_DIR}) OR (NOT EXISTS ${VISIT_BASELINE_DIR})
-       OR ((NOT EXISTS ${VISIT_DATA_DIR}) AND (NOT EXISTS "${VISIT_SOURCE_DIR}/../data")))
+       OR ((NOT EXISTS ${VISIT_DATA_DIR}) AND (NOT EXISTS "${VISIT_SOURCE_DIR}/data")))
         MESSAGE(FATAL_ERROR
            "CTest based testing requires a checkout of trunk/test and trunk/data")
     ENDIF()
@@ -1463,7 +1474,6 @@ IF (WIN32 AND VISIT_MAKE_NSIS_INSTALLER)
     INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindNSIS.cmake)
 ENDIF (WIN32 AND VISIT_MAKE_NSIS_INSTALLER)
 
-
 IF(VISIT_STATIC)
     SET(BUILD_SHARED_LIBS 0)
 ENDIF(VISIT_STATIC)
@@ -1800,32 +1810,32 @@ FUNCTION(MAC_NIB_INSTALL exename)
 ENDFUNCTION(MAC_NIB_INSTALL)
 
 #-----------------------------------------------------------------------------
-# Read the SVN revision
+# Read the GIT version
 #-----------------------------------------------------------------------------
 #dummy revision, in case commands fail
-SET(VISIT_SVN_REVISION "Unknown")
+SET(VISIT_GIT_VERSION "Unknown")
 # Get the subversion revision number
-IF(EXISTS ${VISIT_SOURCE_DIR}/SVN_REVISION)
-    FILE(STRINGS ${VISIT_SOURCE_DIR}/SVN_REVISION VISIT_SVN_REVISION)
-ELSE(EXISTS ${VISIT_SOURCE_DIR}/SVN_REVISION)
-    IF (EXISTS ${VISIT_SOURCE_DIR}/.svn)
+IF(EXISTS ${VISIT_SOURCE_DIR}/GIT_VERSION)
+    FILE(STRINGS ${VISIT_SOURCE_DIR}/GIT_VERSION VISIT_GIT_VERSION)
+ELSE(EXISTS ${VISIT_SOURCE_DIR}/GIT_VERSION)
+    IF (EXISTS ${VISIT_SOURCE_DIR}/../.git)
         # Only try and determine the version number if it looks like
-        # we're in a working copy (a .svn directory should be present)
-        FIND_PACKAGE(Subversion)
-        IF(Subversion_FOUND)
-            Subversion_WC_INFO(${PROJECT_SOURCE_DIR} VISIT)
-            SET(VISIT_SVN_REVISION "${VISIT_WC_REVISION}")
-        ELSE(Subversion_FOUND)
-            IF(WIN32)
-                INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindTortoiseSVN.cmake)
-                IF(TortoiseSVN_FOUND)
-                    TortoiseSVN_WC_INFO(${PROJECT_SOURCE_DIR} VISIT)
-                    SET(VISIT_SVN_REVISION "${VISIT_WC_REVISION}")
-                ENDIF(TortoiseSVN_FOUND)
-            ENDIF(WIN32)
-        ENDIF(Subversion_FOUND)
-    ENDIF (EXISTS ${VISIT_SOURCE_DIR}/.svn)
-ENDIF(EXISTS ${VISIT_SOURCE_DIR}/SVN_REVISION)
+        # we're in a working copy (a .git directory should be present)
+#        FIND_PACKAGE(Subversion)
+#        IF(Subversion_FOUND)
+#            Subversion_WC_INFO(${PROJECT_SOURCE_DIR} VISIT)
+#            SET(VISIT_SVN_REVISION "${VISIT_WC_REVISION}")
+#        ELSE(Subversion_FOUND)
+#            IF(WIN32)
+#                INCLUDE(${VISIT_SOURCE_DIR}/CMake/FindTortoiseSVN.cmake)
+#                IF(TortoiseSVN_FOUND)
+#                    TortoiseSVN_WC_INFO(${PROJECT_SOURCE_DIR} VISIT)
+#                    SET(VISIT_SVN_REVISION "${VISIT_WC_REVISION}")
+#                ENDIF(TortoiseSVN_FOUND)
+#            ENDIF(WIN32)
+#        ENDIF(Subversion_FOUND)
+    ENDIF (EXISTS ${VISIT_SOURCE_DIR}/../.git)
+ENDIF(EXISTS ${VISIT_SOURCE_DIR}/GIT_VERSION)
 
 #-----------------------------------------------------------------------------
 # Set up resource files for Windows applications.
@@ -2146,7 +2156,6 @@ IF(NOT VISIT_SERVER_COMPONENTS_ONLY AND NOT VISIT_ENGINE_ONLY AND NOT VISIT_DBIO
     IF(VISIT_PYTHON_SCRIPTING AND PYTHONLIBS_FOUND)
         IF(NOT VISIT_STATIC)
             ADD_SUBDIRECTORY(visitpy)
-            ADD_SUBDIRECTORY(ultrawrapper)
         ENDIF(NOT VISIT_STATIC)
     ENDIF(VISIT_PYTHON_SCRIPTING AND PYTHONLIBS_FOUND)
     IF(VISIT_JAVA)
@@ -2231,57 +2240,39 @@ ADD_SUBDIRECTORY(include)
 ADD_SUBDIRECTORY(resources)
 
 #-----------------------------------------------------------------------------
-# Add the "data" directory if it exists
+# Add the "data" directory on WINDOWS if it exists
 #-----------------------------------------------------------------------------
-IF(NOT VISIT_ENGINE_ONLY AND NOT VISIT_SERVER_COMPONENTS_ONLY)
-IF(IS_DIRECTORY ${VISIT_SOURCE_DIR}/../data)
-    IF(WIN32)
-        # Don't want the data dir files to be added to the main VISIT
-        # solution file, so 'EXCLUDE_FROM_ALL' here, and create a new
-        # PROJECT in data/CMakeLists.txt
-        SET(V_EX "EXCLUDE_FROM_ALL")
-    ENDIF(WIN32)
-    IF(VISIT_OUT_OF_SOURCE_BUILD)
-        ADD_SUBDIRECTORY(${VISIT_SOURCE_DIR}/../data
-                         ${CMAKE_CURRENT_BINARY_DIR}/data
-                         ${V_EX})
-    ELSE(VISIT_OUT_OF_SOURCE_BUILD)
-        ADD_SUBDIRECTORY(${VISIT_SOURCE_DIR}/../data
-                         ${VISIT_SOURCE_DIR}/../data
-                         ${V_EX})
-    ENDIF(VISIT_OUT_OF_SOURCE_BUILD)
-ENDIF(IS_DIRECTORY ${VISIT_SOURCE_DIR}/../data)
-ENDIF(NOT VISIT_ENGINE_ONLY AND NOT VISIT_SERVER_COMPONENTS_ONLY)
+if(IS_DIRECTORY ${VISIT_SOURCE_DIR}/../data)
+    # Don't want the data dir files to be added to the main VISIT
+    # solution file, so 'EXCLUDE_FROM_ALL' here, and create a new
+    # PROJECT in data/CMakeLists.txt
+    add_subdirectory(${VISIT_SOURCE_DIR}/../data
+                     ${CMAKE_CURRENT_BINARY_DIR}/testdata
+                     EXCLUDE_FROM_ALL)
+endif()
 
 
 #-----------------------------------------------------------------------------
-# Add the "test" directory if it exists
+# Add the "test" directory 
 #-----------------------------------------------------------------------------
 # I'm trying to make the new tetsing work hramoniously with the old testing
 # while it's evaluated. if the new testing were ever made permanent then
 # this code would be removed.
-IF(NOT VISIT_ENGINE_ONLY AND NOT VISIT_SERVER_COMPONENTS_ONLY)
-IF (NOT BUILD_TESTING)
-    IF(IS_DIRECTORY ${VISIT_SOURCE_DIR}/../test)
-        IF(VISIT_OUT_OF_SOURCE_BUILD)
-            ADD_SUBDIRECTORY(${VISIT_SOURCE_DIR}/../test
-                             ${CMAKE_CURRENT_BINARY_DIR}/test)
-        ELSE(VISIT_OUT_OF_SOURCE_BUILD)
-            ADD_SUBDIRECTORY(${VISIT_SOURCE_DIR}/../test
-                             ${VISIT_SOURCE_DIR}/../test)
-        ENDIF(VISIT_OUT_OF_SOURCE_BUILD)
-    ENDIF(IS_DIRECTORY ${VISIT_SOURCE_DIR}/../test)
-ENDIF()
-ENDIF(NOT VISIT_ENGINE_ONLY AND NOT VISIT_SERVER_COMPONENTS_ONLY)
+if(NOT VISIT_ENGINE_ONLY AND NOT VISIT_SERVER_COMPONENTS_ONLY AND NOT BUILD_CTEST_TESTING)
+      add_subdirectory(test)
+endif()
 
+IF(VISIT_SPHINX)
+    ADD_SUBDIRECTORY(doc)
+ENDIF()
 
 #-----------------------------------------------------------------------------
 # CPack -- This leverages our install targets to provide a "make package" that
 #          packages up a VisIt distribution.
 #-----------------------------------------------------------------------------
 
-CONFIGURE_FILE(${VISIT_SOURCE_DIR}/svn_bin/Info.plist.in
-               ${VISIT_BINARY_DIR}/svn_bin/Info.plist @ONLY IMMEDIATE)
+CONFIGURE_FILE(${VISIT_SOURCE_DIR}/tools/dev/scripts/Info.plist.in
+               ${VISIT_BINARY_DIR}/tools/dev/scripts/Info.plist @ONLY IMMEDIATE)
 
 # temporarily turn this off on windows
 IF (NOT WIN32)
@@ -2291,8 +2282,8 @@ IF (NOT WIN32)
         SET (CPACK_PACKAGE_FILE_NAME "VisIt-${VISIT_VERSION}")
         SET (CPACK_BUNDLE_NAME "VisIt")
         SET (CPACK_BUNDLE_ICON "${VISIT_SOURCE_DIR}/common/icons/VisItIcon.icns")
-        SET (CPACK_BUNDLE_PLIST "${VISIT_BINARY_DIR}/svn_bin/Info.plist")
-        SET (CPACK_BUNDLE_STARTUP_COMMAND "${VISIT_SOURCE_DIR}/svn_bin/LaunchVisItFromAppBundle.sh")
+        SET (CPACK_BUNDLE_PLIST "${VISIT_BINARY_DIR}/tools/dev/scripts/Info.plist")
+        SET (CPACK_BUNDLE_STARTUP_COMMAND "${VISIT_SOURCE_DIR}/tools/dev/scripts/LaunchVisItFromAppBundle.sh")
     ELSE(APPLE AND VISIT_CREATE_APPBUNDLE_PACKAGE)
         SET(CPACK_GENERATOR "TGZ")
 
@@ -2317,6 +2308,8 @@ IF (NOT WIN32)
 ELSE (NOT WIN32)
     IF(VISIT_MAKE_NSIS_INSTALLER)
       IF(${MAKENSIS_FOUND})
+        set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION ".")
+        include("InstallRequiredSystemLibraries")
         # create a custom target that will run our nsis scripts.
         # Make sure it won't run unless specifically called.
         #
@@ -2343,11 +2336,6 @@ ELSE (NOT WIN32)
         ADD_CUSTOM_TARGET(_PACKAGE ALL DEPENDS visit${VISIT_VERSION}.exe)
         ADD_CUSTOM_COMMAND(TARGET _PACKAGE PRE_BUILD
             COMMAND ${CMAKE_COMMAND} -DBUILD_TYPE=${CMAKE_CFG_INTDIR} -P cmake_install.cmake)
-        IF(IS_DIRECTORY ${VISIT_SOURCE_DIR}/../data)
-            ADD_CUSTOM_COMMAND(TARGET _PACKAGE PRE_BUILD
-                COMMAND ${CMAKE_COMMAND} -DBUILD_TYPE=${CMAKE_CFG_INTDIR} -P ${VISIT_BINARY_DIR}/data/cmake_install.cmake)
-        ENDIF(IS_DIRECTORY ${VISIT_SOURCE_DIR}/../data)
-
         SET_TARGET_PROPERTIES(_PACKAGE PROPERTIES
                               EXCLUDE_FROM_DEFAULT_BUILD 1
                               EXCLUDE_FROM_ALL 1 )
@@ -2374,18 +2362,6 @@ ELSE (NOT WIN32)
     ENDIF(VISIT_MAKE_NSIS_INSTALLER)
 ENDIF (NOT WIN32)
 
-#CMake add subdirectory forces this action to go last
-#todo: find way for this function to execute as last
-#step of make install process
-#ADD_CUSTOM_TARGET(osxfixup ALL
-#     COMMAND ${PYTHON_EXECUTABLE} ${CMAKE_SOURCE_DIR}/osxfixup/osxfixup.py \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${VISIT_INSTALLED_VERSION} @executable_path/.. 3)
-#ADD_DEPENDENCIES(osxfixup install)
-
-#todo: replace add_subdirectory with the lines above
-IF(APPLE)
-    ADD_SUBDIRECTORY(osxfixup)
-ENDIF(APPLE)
-
 IF (NOT WIN32)
     MESSAGE(STATUS "\n\nUse recmake_visit.sh or search for `CMAKE_INVOKE' in CMakeCache.txt to re-run CMake with the same arguments\n\n")
 ELSE (NOT WIN32)
@@ -2393,8 +2369,6 @@ ELSE (NOT WIN32)
 ENDIF (NOT WIN32)
 
 if(VISIT_INSTALL_THIRD_PARTY)
-
     include(${VISIT_SOURCE_DIR}/CMake/PluginVsInstallHelpers.cmake)
-
 endif()
 

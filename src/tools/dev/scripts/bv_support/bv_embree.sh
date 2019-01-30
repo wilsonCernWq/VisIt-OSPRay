@@ -44,17 +44,16 @@ function bv_embree_info
     if [[ "$OPSYS" == "Darwin" ]] ; then
         export EMBREE_FILE=${EMBREE_FILE:-"embree-${EMBREE_VERSION}.x86_64.macosx.tar.gz"}
         export EMBREE_INSTALL_DIR_NAME=embree-$EMBREE_VERSION.x86_64.macosx
-        export EMBREE_MD5_CHECKSUM=""
-        export EMBREE_SHA256_CHECKSUM=""
     else
         export EMBREE_FILE=${EMBREE_FILE:-"embree-${EMBREE_VERSION}.x86_64.linux.tar.gz"}
         export EMBREE_INSTALL_DIR_NAME=embree-$EMBREE_VERSION.x86_64.linux
-        export EMBREE_MD5_CHECKSUM=""
-        export EMBREE_SHA256_CHECKSUM=""
     fi
     export EMBREE_COMPATIBILITY_VERSION=${EMBREE_COMPATIBILITY_VERSION:-"${EMBREE_VERSION}"}
     export EMBREE_BUILD_DIR=${EMBREE_BUILD_DIR:-"${EMBREE_VERSION}"}
     export EMBREE_URL=${EMBREE_URL:-"https://github.com/embree/embree/releases/download/v${EMBREE_VERSION}/"}
+
+    export EMBREE_MD5_CHECKSUM=""
+    export EMBREE_SHA256_CHECKSUM=""
 }
 
 function bv_embree_print

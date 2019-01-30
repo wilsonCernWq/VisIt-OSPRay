@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-* Copyright (c) 2000 - 2018, Lawrence Livermore National Security, LLC
+* Copyright (c) 2000 - 2019, Lawrence Livermore National Security, LLC
 * Produced at the Lawrence Livermore National Laboratory
 * LLNL-CODE-442911
 * All rights reserved.
@@ -788,7 +788,7 @@ avtImage_p
 avtVolumeFilter::RenderImage(avtImage_p opaque_image,
                              const WindowAttributes &window)
 {
-#if defined(VISIT_SLIVR) || defined(VISIT_SLIVR)
+#if defined(VISIT_SLIVR) || defined(VISIT_OSPRAY)
     if (atts.GetRendererType() == VolumeAttributes::RayCastingSLIVR ||
         atts.GetRendererType() == VolumeAttributes::RayCastingOSPRay){
         return RenderImageRayCasting(opaque_image,window);

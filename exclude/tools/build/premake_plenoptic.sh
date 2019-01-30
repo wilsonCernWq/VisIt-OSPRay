@@ -53,7 +53,7 @@ fi
 # ------------------------------ 
 export PAR_COMPILER=/usr/bin/mpicc
 export PAR_COMPILER_CXX=/usr/bin/mpicxx
-export PAR_INCLUDE="-I/usr/include/mpich"
+export PAR_INCLUDE="-I/usr/lib/x86_64-linux-gnu/openmpi/include"
 
 # ------------------------------ 
 # VisIt Environment
