@@ -6,7 +6,7 @@ if [[ -z "$1" ]]; then
     exit -1
 elif [[ "$1" == "trunk" ]]; then
     PREMAKE_VERSION=trunk
-elif [[ "$1" == "2.13" ]]; then
+elif [[ "$1" == "rc2.13" ]]; then
     PREMAKE_VERSION=rc2.13
 else
     echo "Error: unknown visit version: $1"
